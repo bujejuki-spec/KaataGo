@@ -5,6 +5,15 @@ plugins {
     id "dev.flutter.flutter-gradle-plugin"
 }
 
+// Release signing config — kept out of source control (android/key.properties
+// is gitignored). Falls back to nothing if the file is missing, so a fresh
+// checkout still builds debug/profile fine; only `--release` needs it.
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file("key.properties")
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
 android {
     namespace = "com.gamskahfi.pos_app"
     compileSdk = 35 // some plugins now need SDK 35+ (backward compatible)
@@ -30,11 +39,23 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        release {
+            if (keystorePropertiesFile.exists()) {
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+                storeFile file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.debug
+            // Real release signing (android/key.properties + kaatago-release.jks)
+            // when present; falls back to the debug key otherwise so a fresh
+            // checkout without the keystore still builds.
+            signingConfig = keystorePropertiesFile.exists() ? signingConfigs.release : signingConfigs.debug
         }
     }
 }

@@ -4,13 +4,24 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../supabase_config.dart';
 
-enum EmployeeRole { admin, kasir, chef }
+enum EmployeeRole { superAdmin, admin, kasir, chef }
+
+/// Maps between the Dart enum and the `employees.role` text values in
+/// Postgres ("super_admin" uses a snake_case DB value, unlike the other
+/// three, so it can't just rely on [EmployeeRole.name]).
+const _roleDbValues = {
+  EmployeeRole.superAdmin: 'super_admin',
+  EmployeeRole.admin: 'admin',
+  EmployeeRole.kasir: 'kasir',
+  EmployeeRole.chef: 'chef',
+};
 
 /// Handles Google Sign-In (via Supabase Auth) and figures out the
 /// signed-in account's role AND which restaurant they work at, both
 /// checked against the `employees` table in Postgres (keyed by
-/// lowercased email, with `role`: "admin" | "kasir" | "chef", and
-/// `resto_id`: which restaurant's data this account can see/manage).
+/// lowercased email, with `role`: "super_admin" | "admin" | "kasir" |
+/// "chef", and `resto_id`: which restaurant's data this account can
+/// see/manage — null for super_admin, who isn't scoped to one resto).
 ///
 /// No login at all, or a login that isn't a registered employee, is
 /// treated as "customer" — self-order browsing doesn't require an
@@ -30,6 +41,7 @@ class AuthProvider extends ChangeNotifier {
 
   bool get isLoggedIn => user != null;
   bool get isEmployee => role != null;
+  bool get isSuperAdmin => role == EmployeeRole.superAdmin;
   bool get isAdmin => role == EmployeeRole.admin;
   bool get isKasir => role == EmployeeRole.kasir;
   bool get isChef => role == EmployeeRole.chef;
@@ -105,11 +117,14 @@ class AuthProvider extends ChangeNotifier {
         final active = row['active'] != false;
         final roleStr = row['role'] as String?;
         final restoIdValue = row['resto_id'] as String?;
-        if (active && roleStr != null && restoIdValue != null) {
-          role = EmployeeRole.values.firstWhere(
-            (r) => r.name == roleStr,
-            orElse: () => throw StateError('Unknown role: $roleStr'),
-          );
+        // super_admin isn't scoped to a single resto, so resto_id is
+        // allowed to be null only for that role.
+        final isSuperAdminRow = roleStr == _roleDbValues[EmployeeRole.superAdmin];
+        if (active && roleStr != null && (restoIdValue != null || isSuperAdminRow)) {
+          role = _roleDbValues.entries
+              .firstWhere((e) => e.value == roleStr,
+                  orElse: () => throw StateError('Unknown role: $roleStr'))
+              .key;
           restoId = restoIdValue;
         } else {
           role = null;

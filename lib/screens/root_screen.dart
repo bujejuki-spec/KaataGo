@@ -7,6 +7,7 @@ import 'chef_home_screen.dart';
 import 'customer_home_screen.dart';
 import 'pos_home_screen.dart';
 import 'role_choice_screen.dart';
+import 'super_admin_home_screen.dart';
 
 /// Decides which experience to show:
 /// - Admin/Kasir/Chef still signed in (Firebase Auth persists across app
@@ -46,6 +47,7 @@ class _RootScreenState extends State<RootScreen> {
     if (auth.isInitializing) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
+    if (auth.isSuperAdmin) return const SuperAdminHomeScreen();
     if (auth.isAdmin) return const PosHomeScreen(isAdmin: true);
     if (auth.isKasir) return const PosHomeScreen(isAdmin: false);
     if (auth.isChef) return const ChefHomeScreen();

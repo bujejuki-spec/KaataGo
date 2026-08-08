@@ -11,6 +11,13 @@ class RestaurantRepository {
     return Restaurant.fromMap(id, rows.first);
   }
 
+  /// All restaurants — used by Super Admin screens (resto picker when
+  /// adding an employee, restaurant list).
+  Future<List<Restaurant>> getAll() async {
+    final rows = await _client.from('restaurants').select().order('name');
+    return rows.map((r) => Restaurant.fromMap(r['id'] as String, r)).toList();
+  }
+
   Stream<Restaurant?> watch(String id) {
     return _client
         .from('restaurants')
