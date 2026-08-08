@@ -21,6 +21,7 @@ import 'customer_cart_screen.dart';
 import 'customer_history_screen.dart';
 import 'customer_order_status_screen.dart';
 import 'customer_profile_screen.dart';
+import 'restaurant_list_screen.dart';
 import 'scan_table_screen.dart';
 
 /// Self-order browsing screen for customers. Reads the product catalog
@@ -66,7 +67,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
   /// right after scanning/resuming a table).
   void _syncOrderWatch() {
     final session = context.read<TableSessionProvider>();
-    if (!session.hasActiveTable) {
+    if (!session.hasActiveResto) {
       _orderWatch?.cancel();
       _orderWatch = null;
       _remoteActiveWatch?.cancel();
@@ -242,7 +243,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
     // right now (a no-op if it's already watching this sessionId).
     WidgetsBinding.instance.addPostFrameCallback((_) => _syncOrderWatch());
 
-    if (!session.hasActiveTable) {
+    if (!session.hasActiveResto) {
       return PopScope(
         canPop: !loggedInAsCustomer,
         child: Scaffold(
@@ -260,7 +261,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                     size: 72, color: Colors.indigo),
                 const SizedBox(height: 16),
                 const Text(
-                  'Scan QR code di meja kamu dulu untuk mulai pesan.',
+                  'Scan QR code di meja kamu, atau pilih resto dulu untuk mulai pesan.',
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 16),
                 ),
@@ -271,6 +272,14 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                   ),
                   icon: const Icon(Icons.qr_code_scanner),
                   label: const Text('Scan QR Meja'),
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const RestaurantListScreen()),
+                  ),
+                  icon: const Icon(Icons.storefront_outlined),
+                  label: const Text('Pilih Resto'),
                 ),
               ],
             ),
@@ -284,7 +293,11 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
       child: Scaffold(
         appBar: AppBar(
           automaticallyImplyLeading: !loggedInAsCustomer,
-          title: Text('Meja ${session.tableNumber}'),
+          title: Text(
+            session.tableNumber != null
+                ? 'Meja ${session.tableNumber}'
+                : 'KaataGo (Customer)',
+          ),
           actions: [
             IconButton(
               icon: const Icon(Icons.receipt_long_outlined),

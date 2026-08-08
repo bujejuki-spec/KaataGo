@@ -99,15 +99,29 @@ class _FinanceIncomeScreenState extends State<FinanceIncomeScreen> {
                   children: [
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      color: Colors.indigo.shade50,
+                      padding: const EdgeInsets.all(20),
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [Color(0xFF10B981), Color(0xFF0F766E)],
+                        ),
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Total Pemasukan (semua waktu)',
-                              style: TextStyle(color: Colors.grey)),
+                          Row(
+                            children: [
+                              Icon(Icons.trending_up, color: Colors.white.withOpacity(0.85), size: 18),
+                              const SizedBox(width: 6),
+                              Text('Total Pemasukan (semua waktu)',
+                                  style: TextStyle(color: Colors.white.withOpacity(0.85))),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
                           Text(currency.format(grandTotal),
-                              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                              style: const TextStyle(
+                                  fontSize: 26, fontWeight: FontWeight.bold, color: Colors.white)),
                         ],
                       ),
                     ),

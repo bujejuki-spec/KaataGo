@@ -58,6 +58,13 @@ android {
             signingConfig = keystorePropertiesFile.exists() ? signingConfigs.release : signingConfigs.debug
         }
     }
+    // Note: renaming the release APK's output filename via
+    // applicationVariants doesn't survive `flutter build apk` — Flutter's
+    // own tooling copies the assembled APK to the canonical
+    // build/app/outputs/flutter-apk/app-release.apk path regardless of
+    // any custom Gradle output name. The rename to
+    // "KaataGo-Release-<version>.apk" is done as a copy step after the
+    // build instead (see the build commands used for releases).
 }
 
 flutter {

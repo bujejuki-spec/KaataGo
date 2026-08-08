@@ -58,7 +58,7 @@ class _RootScreenState extends State<RootScreen> {
     if (!session.loaded) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
-    if (session.hasActiveTable) return const CustomerHomeScreen();
+    if (session.hasActiveResto) return const CustomerHomeScreen();
     return const RoleChoiceScreen();
   }
 }

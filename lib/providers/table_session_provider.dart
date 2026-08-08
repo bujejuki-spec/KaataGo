@@ -46,6 +46,13 @@ class TableSessionProvider extends ChangeNotifier {
   bool get hasActiveTable =>
       restoId != null && tableNumber != null && sessionId != null && sessionActive;
 
+  /// True once a resto is picked, with or without a table number yet —
+  /// covers both entry paths (QR scan, which always has a table; or
+  /// picking from the restaurant list, which doesn't until checkout).
+  /// [CustomerHomeScreen] gates browsing on this instead of
+  /// [hasActiveTable], so browsing-without-a-table works.
+  bool get hasActiveResto => restoId != null && sessionId != null && sessionActive;
+
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
     restoId = prefs.getString(_kRestoId);
@@ -86,6 +93,47 @@ class TableSessionProvider extends ChangeNotifier {
     _sessionRepo
         .upsertActive(sessionId: sessionId!, restoId: restoId, tableNumber: table)
         .catchError((_) {});
+  }
+
+  /// Called when a customer picks a restaurant from the list instead of
+  /// scanning a table QR — same idea as [setTable] but with no table
+  /// number yet (it's mandatory at checkout instead, see
+  /// [setTableNumber]).
+  Future<void> setResto(String restoId) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final isSameDeviceSameResto =
+        this.restoId == restoId && tableNumber == null && sessionId != null;
+
+    this.restoId = restoId;
+    tableNumber = null;
+    sessionId = isSameDeviceSameResto ? sessionId : _uuid.v4();
+    sessionActive = true;
+
+    await prefs.setString(_kRestoId, restoId);
+    await prefs.remove(_kTableNumber);
+    await prefs.setString(_kSessionId, sessionId!);
+    await prefs.setBool(_kSessionActive, true);
+    notifyListeners();
+
+    _sessionRepo
+        .upsertActive(sessionId: sessionId!, restoId: restoId)
+        .catchError((_) {});
+  }
+
+  /// Fills in the table number for a session that started without one
+  /// (picked from the restaurant list) — mandatory at checkout, entered
+  /// once and then greyed out/read-only from then on, same as a QR-scan
+  /// session.
+  Future<void> setTableNumber(int table) async {
+    final prefs = await SharedPreferences.getInstance();
+    tableNumber = table;
+    await prefs.setInt(_kTableNumber, table);
+    notifyListeners();
+
+    if (sessionId != null) {
+      _sessionRepo.setTableNumber(sessionId!, table).catchError((_) {});
+    }
   }
 
   /// Ends the current session (via the "Selesai" button, or the local

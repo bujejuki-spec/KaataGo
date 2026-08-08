@@ -13,6 +13,14 @@ const _roleLabels = {
   'finance': 'Finance',
 };
 
+const _roleColors = {
+  'super_admin': Color(0xFF7C3AED),
+  'admin': Color(0xFF6366F1),
+  'kasir': Color(0xFF0EA5E9),
+  'chef': Color(0xFFF97316),
+  'finance': Color(0xFF10B981),
+};
+
 /// Super Admin only: lists every employee across every restaurant, and
 /// lets you add/edit/deactivate/remove any of them — this is the "insert
 /// data employee" screen the app previously had no UI for at all (only
@@ -103,34 +111,107 @@ class _EmployeeManagementScreenState extends State<EmployeeManagementScreen> {
               ? const Center(child: Text('Belum ada karyawan.'))
               : RefreshIndicator(
                   onRefresh: _load,
-                  child: ListView.builder(
-                    itemCount: _employees.length,
-                    itemBuilder: (context, i) {
-                      final e = _employees[i];
-                      return ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: e.active ? null : Colors.grey.shade300,
-                          child: Icon(e.active ? Icons.person : Icons.person_off_outlined),
-                        ),
-                        title: Text(e.email),
-                        subtitle: Text(
-                          '${_roleLabels[e.role] ?? e.role} • ${_restoName(e.restoId)}'
-                          '${e.active ? '' : ' • nonaktif'}',
-                        ),
-                        trailing: PopupMenuButton<String>(
-                          onSelected: (v) {
-                            if (v == 'edit') _openForm(existing: e);
-                            if (v == 'delete') _delete(e);
-                          },
-                          itemBuilder: (_) => const [
-                            PopupMenuItem(value: 'edit', child: Text('Edit')),
-                            PopupMenuItem(value: 'delete', child: Text('Hapus')),
-                          ],
+                  child: ListView(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    children: _groupByResto().entries.map((group) {
+                      return Card(
+                        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        clipBehavior: Clip.antiAlias,
+                        child: ExpansionTile(
+                          initiallyExpanded: true,
+                          leading: const Icon(Icons.storefront_outlined),
+                          title: Text(group.key,
+                              style: const TextStyle(fontWeight: FontWeight.bold)),
+                          subtitle: Text('${group.value.length} karyawan'),
+                          children: group.value.map((e) => _EmployeeRow(
+                                employee: e,
+                                restoName: _restoName(e.restoId),
+                                onEdit: () => _openForm(existing: e),
+                                onDelete: () => _delete(e),
+                              )).toList(),
                         ),
                       );
-                    },
+                    }).toList(),
                   ),
                 ),
+    );
+  }
+
+  /// Groups employees by restaurant name (Super Admins — no resto — get
+  /// their own "Super Admin" group), each group sorted alphabetically by
+  /// resto name with "Super Admin" pinned first.
+  Map<String, List<Employee>> _groupByResto() {
+    final byResto = <String, List<Employee>>{};
+    for (final e in _employees) {
+      final key = e.restoId == null ? 'Super Admin' : _restoName(e.restoId);
+      byResto.putIfAbsent(key, () => []).add(e);
+    }
+    final sortedKeys = byResto.keys.toList()
+      ..sort((a, b) {
+        if (a == 'Super Admin') return -1;
+        if (b == 'Super Admin') return 1;
+        return a.compareTo(b);
+      });
+    return {for (final k in sortedKeys) k: byResto[k]!};
+  }
+}
+
+class _EmployeeRow extends StatelessWidget {
+  final Employee employee;
+  final String restoName;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  const _EmployeeRow({
+    required this.employee,
+    required this.restoName,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final e = employee;
+    final color = _roleColors[e.role] ?? Colors.grey;
+    return ListTile(
+      leading: CircleAvatar(
+        backgroundColor: e.active ? color : Colors.grey.shade300,
+        child: Icon(e.active ? Icons.person : Icons.person_off_outlined, color: Colors.white),
+      ),
+      title: Text(e.email, style: const TextStyle(fontWeight: FontWeight.w600)),
+      subtitle: Padding(
+        padding: const EdgeInsets.only(top: 4),
+        child: Wrap(
+          spacing: 6,
+          runSpacing: 4,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                _roleLabels[e.role] ?? e.role,
+                style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 11),
+              ),
+            ),
+            if (!e.active)
+              Text('nonaktif', style: TextStyle(color: Colors.red.shade400, fontSize: 12)),
+          ],
+        ),
+      ),
+      trailing: PopupMenuButton<String>(
+        onSelected: (v) {
+          if (v == 'edit') onEdit();
+          if (v == 'delete') onDelete();
+        },
+        itemBuilder: (_) => const [
+          PopupMenuItem(value: 'edit', child: Text('Edit')),
+          PopupMenuItem(value: 'delete', child: Text('Hapus')),
+        ],
+      ),
     );
   }
 }

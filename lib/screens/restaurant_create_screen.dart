@@ -3,11 +3,15 @@ import 'package:flutter/material.dart';
 import '../db/restaurant_repository.dart';
 import '../models/restaurant.dart';
 
-/// Super Admin only: creates a brand-new restaurant row (a new tenant).
-/// Regular Admins can edit their own resto's info (RestaurantInfoScreen)
-/// but can't create new ones — only Super Admin has that RLS privilege.
+/// Super Admin only: creates a brand-new restaurant row (a new tenant),
+/// or — when [existing] is passed — edits one (from the "List Resto"
+/// screen). Regular Admins can edit their own resto's info
+/// (RestaurantInfoScreen) but can't create new ones or edit others —
+/// only Super Admin has that RLS privilege.
 class RestaurantCreateScreen extends StatefulWidget {
-  const RestaurantCreateScreen({super.key});
+  final Restaurant? existing;
+
+  const RestaurantCreateScreen({super.key, this.existing});
 
   @override
   State<RestaurantCreateScreen> createState() => _RestaurantCreateScreenState();
@@ -15,12 +19,24 @@ class RestaurantCreateScreen extends StatefulWidget {
 
 class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _idCtrl = TextEditingController();
-  final _nameCtrl = TextEditingController();
-  final _addressCtrl = TextEditingController();
+  late final TextEditingController _idCtrl;
+  late final TextEditingController _nameCtrl;
+  late final TextEditingController _addressCtrl;
   String? _category;
   final _repo = RestaurantRepository();
   bool _saving = false;
+
+  bool get _isEditing => widget.existing != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final r = widget.existing;
+    _idCtrl = TextEditingController(text: r?.id ?? '');
+    _nameCtrl = TextEditingController(text: r?.name ?? '');
+    _addressCtrl = TextEditingController(text: r?.address ?? '');
+    _category = r?.category;
+  }
 
   @override
   void dispose() {
@@ -45,14 +61,16 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
 
     setState(() => _saving = true);
     try {
-      final existing = await _repo.getOnce(id);
-      if (existing != null) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('ID "$id" sudah dipakai resto lain, pakai ID lain.')),
-        );
-        setState(() => _saving = false);
-        return;
+      if (!_isEditing) {
+        final existing = await _repo.getOnce(id);
+        if (existing != null) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('ID "$id" sudah dipakai resto lain, pakai ID lain.')),
+          );
+          setState(() => _saving = false);
+          return;
+        }
       }
 
       await _repo.save(Restaurant(
@@ -64,13 +82,13 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Resto "$id" berhasil dibuat.')),
+        SnackBar(content: Text(_isEditing ? 'Resto "$id" diperbarui.' : 'Resto "$id" berhasil dibuat.')),
       );
       Navigator.of(context).pop();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal membuat resto: $e')),
+        SnackBar(content: Text('Gagal menyimpan: $e')),
       );
       setState(() => _saving = false);
     }
@@ -79,7 +97,7 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Buat Resto Baru')),
+      appBar: AppBar(title: Text(_isEditing ? 'Edit Resto' : 'Buat Resto Baru')),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -91,6 +109,7 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
                 decoration: const InputDecoration(labelText: 'Nama resto'),
                 validator: (v) => (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null,
                 onChanged: (v) {
+                  if (_isEditing) return; // don't reshuffle an existing id
                   // Auto-fill a slug id from the name, but let the user
                   // still hand-edit it (e.g. if they want it shorter).
                   final auto = _slugify(v);
@@ -100,6 +119,7 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
               const SizedBox(height: 12),
               TextFormField(
                 controller: _idCtrl,
+                enabled: !_isEditing, // id is the primary key — can't change once created
                 decoration: const InputDecoration(
                   labelText: 'ID resto (unik, dipakai internal)',
                   helperText: 'Huruf kecil, angka, dan strip saja — misal: warung-bu-siti',
@@ -133,7 +153,7 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
                 child: _saving
                     ? const SizedBox(
                         width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Text('Buat Resto'),
+                    : Text(_isEditing ? 'Simpan Perubahan' : 'Buat Resto'),
               ),
             ],
           ),

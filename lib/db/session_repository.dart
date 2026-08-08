@@ -13,10 +13,13 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class SessionRepository {
   final _client = Supabase.instance.client;
 
+  /// [tableNumber] is null when the customer entered by picking a
+  /// restaurant from the list (no QR scan) — it gets filled in later via
+  /// [setTableNumber], mandatorily, at checkout.
   Future<void> upsertActive({
     required String sessionId,
     required String restoId,
-    required int tableNumber,
+    int? tableNumber,
   }) async {
     await _client.from('sessions').upsert({
       'id': sessionId,
@@ -26,6 +29,13 @@ class SessionRepository {
       'last_order_at': DateTime.now().toUtc().toIso8601String(),
       'updated_at': DateTime.now().toUtc().toIso8601String(),
     });
+  }
+
+  /// Fills in the table number for a session that started without one
+  /// (picked a resto from the list instead of scanning) — called once,
+  /// mandatorily, at checkout.
+  Future<void> setTableNumber(String sessionId, int tableNumber) async {
+    await _client.from('sessions').update({'table_number': tableNumber}).eq('id', sessionId);
   }
 
   /// Called every time a new order is placed in this session — resets the

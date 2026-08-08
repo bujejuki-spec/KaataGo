@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.1.0+2
+version: 1.3.0+4
 
 environment:
   sdk: ^3.5.4
@@ -71,6 +71,11 @@ dependencies:
   # Reads the app's version/build number (from pubspec.yaml) at runtime,
   # shown as a footer on the role-choice screen.
   package_info_plus: ^8.0.2
+
+  # Finance's bank-statement-style transaction report: generates a PDF
+  # (pdf) and hands it to the OS share/print sheet (printing).
+  pdf: ^3.11.1
+  printing: ^5.13.4
 
 dependency_overrides:
   # app_links 6.4.x's Android build.gradle references `flutter.compileSdkVersion`

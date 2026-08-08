@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../db/expense_gl_account_repository.dart';
 import '../db/expense_repository.dart';
-import '../db/gl_account_repository.dart';
 import '../db/order_repository.dart';
 import '../models/customer_order.dart';
 import '../models/expense.dart';
-import '../models/gl_account.dart';
+import '../models/expense_gl_account.dart';
 import '../providers/auth_provider.dart';
 
 /// Balance = total paid income (all time, from Supabase `orders`) minus
@@ -25,11 +25,11 @@ class FinanceBalanceScreen extends StatefulWidget {
 class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
   final _orderRepo = OrderRepository();
   final _expenseRepo = ExpenseRepository();
-  final _glRepo = GlAccountRepository();
+  final _expenseGlRepo = ExpenseGlAccountRepository();
 
   int _income = 0;
   List<Expense> _expenses = [];
-  List<GlAccount> _glAccounts = [];
+  List<ExpenseGlAccount> _expenseGlAccounts = [];
   bool _loading = true;
 
   String get _restoId => context.read<AuthProvider>().restoId!;
@@ -46,7 +46,7 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
     final results = await Future.wait([
       _orderRepo.watchAll(restoId).first,
       _expenseRepo.getForResto(restoId),
-      _glRepo.getForResto(restoId),
+      _expenseGlRepo.getForResto(restoId),
     ]);
     if (!mounted) return;
     final orders = (results[0] as List<CustomerOrder>)
@@ -54,7 +54,7 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
     setState(() {
       _income = orders.fold(0, (sum, o) => sum + o.total);
       _expenses = results[1] as List<Expense>;
-      _glAccounts = results[2] as List<GlAccount>;
+      _expenseGlAccounts = results[2] as List<ExpenseGlAccount>;
       _loading = false;
     });
   }
@@ -62,10 +62,20 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
   int get _totalExpenses => _expenses.fold(0, (sum, e) => sum + e.amount);
   int get _balance => _income - _totalExpenses;
 
+  List<_DayExpenseGroup> _groupExpensesByDay() {
+    final byDay = <DateTime, List<Expense>>{};
+    for (final e in _expenses) {
+      final day = DateTime(e.createdAt.year, e.createdAt.month, e.createdAt.day);
+      byDay.putIfAbsent(day, () => []).add(e);
+    }
+    final days = byDay.keys.toList()..sort((a, b) => b.compareTo(a));
+    return days.map((d) => _DayExpenseGroup(d, byDay[d]!)).toList();
+  }
+
   Future<void> _addExpense() async {
     final saved = await showDialog<bool>(
       context: context,
-      builder: (_) => _AddExpenseDialog(restoId: _restoId, glAccounts: _glAccounts),
+      builder: (_) => _AddExpenseDialog(restoId: _restoId, glAccounts: _expenseGlAccounts),
     );
     if (saved == true) _load();
   }
@@ -93,7 +103,6 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
   @override
   Widget build(BuildContext context) {
     final currency = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
-    final dateFmt = DateFormat('dd MMM yyyy, HH:mm', 'id_ID');
 
     return Scaffold(
       appBar: AppBar(title: const Text('Saldo & Pengeluaran')),
@@ -109,38 +118,60 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  Card(
-                    color: _balance >= 0 ? Colors.green.shade50 : Colors.red.shade50,
+                  Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: _balance >= 0
+                            ? [const Color(0xFF10B981), const Color(0xFF0F766E)]
+                            : [const Color(0xFFEF4444), const Color(0xFFB91C1C)],
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: (_balance >= 0 ? const Color(0xFF10B981) : const Color(0xFFEF4444))
+                              .withOpacity(0.25),
+                          blurRadius: 18,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
                     child: Padding(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(20),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Saldo Total', style: TextStyle(color: Colors.grey)),
+                          Row(
+                            children: [
+                              Icon(Icons.account_balance_wallet_outlined,
+                                  color: Colors.white.withOpacity(0.85), size: 18),
+                              const SizedBox(width: 6),
+                              Text('Saldo Total', style: TextStyle(color: Colors.white.withOpacity(0.85))),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
                           Text(
                             currency.format(_balance),
-                            style: TextStyle(
-                              fontSize: 26,
-                              fontWeight: FontWeight.bold,
-                              color: _balance >= 0 ? Colors.green.shade800 : Colors.red.shade800,
-                            ),
+                            style: const TextStyle(
+                                fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
                           ),
-                          const Divider(height: 24),
+                          Divider(height: 28, color: Colors.white.withOpacity(0.3)),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text('Pemasukan'),
+                              Text('Pemasukan', style: TextStyle(color: Colors.white.withOpacity(0.9))),
                               Text(currency.format(_income),
-                                  style: const TextStyle(fontWeight: FontWeight.w600)),
+                                  style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.white)),
                             ],
                           ),
                           const SizedBox(height: 4),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text('Pengeluaran'),
+                              Text('Pengeluaran', style: TextStyle(color: Colors.white.withOpacity(0.9))),
                               Text('- ${currency.format(_totalExpenses)}',
-                                  style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.red)),
+                                  style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.white)),
                             ],
                           ),
                         ],
@@ -156,19 +187,32 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
                       child: Text('Belum ada pengeluaran tercatat.', style: TextStyle(color: Colors.grey)),
                     )
                   else
-                    ..._expenses.map((e) => Card(
-                          child: ListTile(
-                            leading: const Icon(Icons.receipt_long_outlined),
-                            title: Text(e.description),
-                            subtitle: Text(
-                              '${dateFmt.format(e.createdAt)} • ${e.createdBy}'
-                              '${e.glCode != null ? ' • GL ${e.glCode}' : ''}',
-                            ),
-                            trailing: Text('- ${currency.format(e.amount)}',
-                                style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w600)),
-                            onLongPress: () => _deleteExpense(e),
-                          ),
-                        )),
+                    ..._groupExpensesByDay().map((group) {
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        clipBehavior: Clip.antiAlias,
+                        child: ExpansionTile(
+                          initiallyExpanded: true,
+                          title: Text(DateFormat('EEEE, dd MMM yyyy', 'id_ID').format(group.day),
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                          subtitle: Text('- ${currency.format(group.total)}',
+                              style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w600)),
+                          childrenPadding: const EdgeInsets.only(bottom: 4),
+                          children: group.expenses.map((e) => ListTile(
+                                dense: true,
+                                leading: const Icon(Icons.receipt_long_outlined),
+                                title: Text(e.description),
+                                subtitle: Text(
+                                  '${DateFormat('HH:mm').format(e.createdAt)} • ${e.createdBy}'
+                                  '${e.glCode != null ? ' • GL ${e.glCode}' : ''}',
+                                ),
+                                trailing: Text('- ${currency.format(e.amount)}',
+                                    style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w600)),
+                                onLongPress: () => _deleteExpense(e),
+                              )).toList(),
+                        ),
+                      );
+                    }),
                 ],
               ),
             ),
@@ -176,9 +220,18 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
   }
 }
 
+class _DayExpenseGroup {
+  final DateTime day;
+  final List<Expense> expenses;
+  final int total;
+
+  _DayExpenseGroup(this.day, this.expenses)
+      : total = expenses.fold(0, (sum, e) => sum + e.amount);
+}
+
 class _AddExpenseDialog extends StatefulWidget {
   final String restoId;
-  final List<GlAccount> glAccounts;
+  final List<ExpenseGlAccount> glAccounts;
 
   const _AddExpenseDialog({required this.restoId, required this.glAccounts});
 
