@@ -4,16 +4,17 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../supabase_config.dart';
 
-enum EmployeeRole { superAdmin, admin, kasir, chef }
+enum EmployeeRole { superAdmin, admin, kasir, chef, finance }
 
 /// Maps between the Dart enum and the `employees.role` text values in
-/// Postgres ("super_admin" uses a snake_case DB value, unlike the other
-/// three, so it can't just rely on [EmployeeRole.name]).
+/// Postgres ("super_admin" uses a snake_case DB value, unlike the
+/// others, so it can't just rely on [EmployeeRole.name]).
 const _roleDbValues = {
   EmployeeRole.superAdmin: 'super_admin',
   EmployeeRole.admin: 'admin',
   EmployeeRole.kasir: 'kasir',
   EmployeeRole.chef: 'chef',
+  EmployeeRole.finance: 'finance',
 };
 
 /// Handles Google Sign-In (via Supabase Auth) and figures out the
@@ -45,6 +46,7 @@ class AuthProvider extends ChangeNotifier {
   bool get isAdmin => role == EmployeeRole.admin;
   bool get isKasir => role == EmployeeRole.kasir;
   bool get isChef => role == EmployeeRole.chef;
+  bool get isFinance => role == EmployeeRole.finance;
 
   AuthProvider() {
     _bootstrap();

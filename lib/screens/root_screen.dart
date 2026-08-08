@@ -5,6 +5,7 @@ import '../providers/auth_provider.dart';
 import '../providers/table_session_provider.dart';
 import 'chef_home_screen.dart';
 import 'customer_home_screen.dart';
+import 'finance_home_screen.dart';
 import 'pos_home_screen.dart';
 import 'role_choice_screen.dart';
 import 'super_admin_home_screen.dart';
@@ -51,6 +52,7 @@ class _RootScreenState extends State<RootScreen> {
     if (auth.isAdmin) return const PosHomeScreen(isAdmin: true);
     if (auth.isKasir) return const PosHomeScreen(isAdmin: false);
     if (auth.isChef) return const ChefHomeScreen();
+    if (auth.isFinance) return const FinanceHomeScreen();
 
     final session = context.watch<TableSessionProvider>();
     if (!session.loaded) {

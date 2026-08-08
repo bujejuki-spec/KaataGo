@@ -10,6 +10,7 @@ const _roleLabels = {
   'admin': 'Admin',
   'kasir': 'Kasir',
   'chef': 'Chef',
+  'finance': 'Finance',
 };
 
 /// Super Admin only: lists every employee across every restaurant, and
