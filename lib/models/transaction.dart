@@ -1,3 +1,5 @@
+import 'order_type.dart';
+
 class TransactionItem {
   final String productId;
   final String productName;
@@ -48,6 +50,7 @@ class PosTransaction {
   final List<TransactionItem> items;
   final PaymentMethod paymentMethod;
   final int total;
+  final OrderType orderType;
 
   PosTransaction({
     required this.id,
@@ -55,6 +58,7 @@ class PosTransaction {
     required this.items,
     required this.paymentMethod,
     required this.total,
+    this.orderType = OrderType.dineIn,
   });
 
   Map<String, dynamic> toMap() {
@@ -63,6 +67,7 @@ class PosTransaction {
       'createdAt': createdAt.toIso8601String(),
       'paymentMethod': paymentMethod.name,
       'total': total,
+      'orderType': orderType.dbValue,
     };
   }
 
@@ -78,6 +83,7 @@ class PosTransaction {
         (e) => e.name == map['paymentMethod'],
       ),
       total: map['total'] as int,
+      orderType: OrderTypeDb.fromDb(map['orderType'] as String?),
     );
   }
 }

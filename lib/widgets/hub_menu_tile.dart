@@ -88,7 +88,7 @@ class HubHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(20, 28, 20, 28),
+      padding: const EdgeInsets.fromLTRB(20, 44, 20, 24),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -97,11 +97,14 @@ class HubHeader extends StatelessWidget {
         ),
       ),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           logo,
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
           Text(
             roleLabel,
+            textAlign: TextAlign.center,
             style: const TextStyle(
               color: Colors.white,
               fontSize: 20,
@@ -110,9 +113,10 @@ class HubHeader extends StatelessWidget {
             ),
           ),
           if (detail != null) ...[
-            const SizedBox(height: 4),
+            const SizedBox(height: 8),
             Text(
               detail!,
+              textAlign: TextAlign.center,
               style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 12.5),
             ),
           ],

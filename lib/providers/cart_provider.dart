@@ -7,6 +7,7 @@ import '../db/product_repository.dart';
 import '../db/transaction_repository.dart';
 import '../models/cart_item.dart';
 import '../models/customer_order.dart';
+import '../models/order_type.dart';
 import '../models/product.dart';
 import '../models/transaction.dart';
 
@@ -117,18 +118,21 @@ class CartProvider extends ChangeNotifier {
   /// and [restoId] (required at checkout) are used to mirror this sale
   /// into the shared Firestore "orders" feed so the Chef sees it
   /// alongside customer self-orders, with a table to deliver it to and
-  /// scoped to the right restaurant.
+  /// scoped to the right restaurant. [tableNumber] is null for a
+  /// [OrderType.takeAway] sale — no table involved.
   Future<PosTransaction> checkout(
     PaymentMethod method, {
     String? cashierLabel,
-    required int tableNumber,
+    int? tableNumber,
     required String restoId,
+    OrderType orderType = OrderType.dineIn,
   }) async {
     final tx = PosTransaction(
       id: _uuid.v4(),
       createdAt: DateTime.now(),
       paymentMethod: method,
       total: total,
+      orderType: orderType,
       items: _items
           .map((i) => TransactionItem(
                 productId: i.product.id,
@@ -170,6 +174,7 @@ class CartProvider extends ChangeNotifier {
       paymentMethod: _paymentLabels[method],
       tableNumber: tableNumber,
       restoId: restoId,
+      orderType: orderType,
     )).catchError((_) {
       return '';
     });

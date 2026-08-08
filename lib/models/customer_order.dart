@@ -1,3 +1,5 @@
+import 'order_type.dart';
+
 class CustomerOrderItem {
   final String productId;
   final String productName;
@@ -64,6 +66,7 @@ class CustomerOrder {
   final String? sessionId; // groups a customer's orders after scanning a table QR
   final KitchenStatus kitchenStatus;
   final String restoId; // which restaurant this order belongs to
+  final OrderType orderType; // dine-in or take-away, chosen at checkout
 
   CustomerOrder({
     required this.id,
@@ -78,6 +81,7 @@ class CustomerOrder {
     this.tableNumber,
     this.sessionId,
     this.kitchenStatus = KitchenStatus.waiting,
+    this.orderType = OrderType.dineIn,
   });
 
   /// Maps to Postgres `orders` table columns (snake_case). `id` and
@@ -93,6 +97,7 @@ class CustomerOrder {
         if (tableNumber != null) 'table_number': tableNumber,
         if (sessionId != null) 'session_id': sessionId,
         'kitchen_status': kitchenStatus.name,
+        'order_type': orderType.dbValue,
       };
 
   factory CustomerOrder.fromMap(Map<String, dynamic> data) {
@@ -120,6 +125,7 @@ class CustomerOrder {
         orElse: () => KitchenStatus.waiting,
       ),
       restoId: data['resto_id'] as String? ?? '',
+      orderType: OrderTypeDb.fromDb(data['order_type'] as String?),
     );
   }
 }

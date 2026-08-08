@@ -33,9 +33,9 @@ class FinanceHomeScreen extends StatelessWidget {
         slivers: [
           SliverAppBar(
             pinned: true,
-            backgroundColor: const Color(0xFF0F766E),
+            backgroundColor: KaataTheme.brandDark,
             automaticallyImplyLeading: false,
-            expandedHeight: 190,
+            expandedHeight: 200,
             actions: [
               IconButton(
                 icon: const Icon(Icons.logout),
@@ -48,8 +48,8 @@ class FinanceHomeScreen extends StatelessWidget {
                 logo: const KaataLogo(size: 64),
                 roleLabel: 'Finance',
                 detail: email,
-                colorA: const Color(0xFF14B8A6),
-                colorB: const Color(0xFF0F766E),
+                colorA: KaataTheme.brand,
+                colorB: KaataTheme.brandDark,
               ),
             ),
           ),

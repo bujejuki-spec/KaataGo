@@ -35,6 +35,7 @@ class _FinanceGlMappingScreenState extends State<FinanceGlMappingScreen> {
   List<ExpenseGlAccount> _expenseAccounts = [];
   bool _loading = true;
   bool _saving = false;
+  String? _loadError;
 
   String get _restoId => context.read<AuthProvider>().restoId!;
 
@@ -56,20 +57,32 @@ class _FinanceGlMappingScreenState extends State<FinanceGlMappingScreen> {
   }
 
   Future<void> _load() async {
-    final restoId = _restoId;
-    final results = await Future.wait([
-      _repo.getForResto(restoId),
-      _expenseGlRepo.getForResto(restoId),
-    ]);
-    if (!mounted) return;
-    for (final a in results[0] as List<GlAccount>) {
-      _codeCtrls[a.paymentMethod]?.text = a.glCode;
-      _nameCtrls[a.paymentMethod]?.text = a.glName;
-    }
     setState(() {
-      _expenseAccounts = results[1] as List<ExpenseGlAccount>;
-      _loading = false;
+      _loading = true;
+      _loadError = null;
     });
+    try {
+      final restoId = _restoId;
+      final results = await Future.wait([
+        _repo.getForResto(restoId),
+        _expenseGlRepo.getForResto(restoId),
+      ]);
+      if (!mounted) return;
+      for (final a in results[0] as List<GlAccount>) {
+        _codeCtrls[a.paymentMethod]?.text = a.glCode;
+        _nameCtrls[a.paymentMethod]?.text = a.glName;
+      }
+      setState(() {
+        _expenseAccounts = results[1] as List<ExpenseGlAccount>;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loadError = '$e';
+        _loading = false;
+      });
+    }
   }
 
   Future<void> _save() async {
@@ -162,7 +175,23 @@ class _FinanceGlMappingScreenState extends State<FinanceGlMappingScreen> {
       appBar: AppBar(title: const Text('Mapping GL Account')),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : Padding(
+          : _loadError != null
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                        const SizedBox(height: 12),
+                        Text('Gagal memuat data:\n$_loadError', textAlign: TextAlign.center),
+                        const SizedBox(height: 16),
+                        FilledButton(onPressed: _load, child: const Text('Coba Lagi')),
+                      ],
+                    ),
+                  ),
+                )
+              : Padding(
               padding: const EdgeInsets.all(16),
               child: Form(
                 key: _formKey,

@@ -34,6 +34,7 @@ class TableSessionProvider extends ChangeNotifier {
   static const _kTableNumber = 'table_session_number';
   static const _kSessionId = 'table_session_id';
   static const _kSessionActive = 'table_session_active';
+  static const _kEnteredViaQr = 'table_session_entered_via_qr';
   final _uuid = const Uuid();
   final _sessionRepo = SessionRepository();
 
@@ -42,6 +43,13 @@ class TableSessionProvider extends ChangeNotifier {
   String? sessionId;
   bool sessionActive = false;
   bool loaded = false;
+
+  /// True if this session started from scanning a table QR code, false
+  /// if it started from picking a restaurant off the list instead.
+  /// [CustomerHomeScreen] only offers a "Ganti Resto" menu for the
+  /// latter — switching restos mid-QR-session doesn't make sense since
+  /// the table itself is tied to one resto.
+  bool enteredViaQr = false;
 
   bool get hasActiveTable =>
       restoId != null && tableNumber != null && sessionId != null && sessionActive;
@@ -59,6 +67,7 @@ class TableSessionProvider extends ChangeNotifier {
     tableNumber = prefs.getInt(_kTableNumber);
     sessionId = prefs.getString(_kSessionId);
     sessionActive = prefs.getBool(_kSessionActive) ?? false;
+    enteredViaQr = prefs.getBool(_kEnteredViaQr) ?? false;
     loaded = true;
     notifyListeners();
   }
@@ -80,11 +89,13 @@ class TableSessionProvider extends ChangeNotifier {
     tableNumber = table;
     sessionId = isSameDeviceSameTable ? sessionId : _uuid.v4();
     sessionActive = true;
+    enteredViaQr = true;
 
     await prefs.setString(_kRestoId, restoId);
     await prefs.setInt(_kTableNumber, table);
     await prefs.setString(_kSessionId, sessionId!);
     await prefs.setBool(_kSessionActive, true);
+    await prefs.setBool(_kEnteredViaQr, true);
     notifyListeners();
 
     // Mirror to Firestore so the Cloud Function (and the customer's own
@@ -109,11 +120,13 @@ class TableSessionProvider extends ChangeNotifier {
     tableNumber = null;
     sessionId = isSameDeviceSameResto ? sessionId : _uuid.v4();
     sessionActive = true;
+    enteredViaQr = false;
 
     await prefs.setString(_kRestoId, restoId);
     await prefs.remove(_kTableNumber);
     await prefs.setString(_kSessionId, sessionId!);
     await prefs.setBool(_kSessionActive, true);
+    await prefs.setBool(_kEnteredViaQr, false);
     notifyListeners();
 
     _sessionRepo
@@ -173,10 +186,12 @@ class TableSessionProvider extends ChangeNotifier {
     await prefs.remove(_kTableNumber);
     await prefs.remove(_kSessionId);
     await prefs.remove(_kSessionActive);
+    await prefs.remove(_kEnteredViaQr);
     restoId = null;
     tableNumber = null;
     sessionId = null;
     sessionActive = false;
+    enteredViaQr = false;
     notifyListeners();
   }
 }

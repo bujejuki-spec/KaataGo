@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../models/customer_order.dart';
+import '../models/order_type.dart';
 
 /// Shared order-detail card used by both the Admin's and Chef's
 /// "Pesanan Masuk" views: customer/kasir label, table number, payment
@@ -100,6 +101,41 @@ class OrderCard extends StatelessWidget {
                       color: order.source == OrderSource.kasir ? Colors.indigo : Colors.purple,
                       fontWeight: FontWeight.w600,
                     ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: order.orderType == OrderType.takeAway
+                        ? Colors.amber.shade50
+                        : Colors.teal.shade50,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        order.orderType == OrderType.takeAway
+                            ? Icons.shopping_bag_outlined
+                            : Icons.restaurant_outlined,
+                        size: 12,
+                        color: order.orderType == OrderType.takeAway
+                            ? Colors.amber.shade800
+                            : Colors.teal.shade800,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        kOrderTypeLabels[order.orderType]!,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: order.orderType == OrderType.takeAway
+                              ? Colors.amber.shade800
+                              : Colors.teal.shade800,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(width: 8),

@@ -198,6 +198,33 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
     ];
   }
 
+  /// Only offered when this session started via "Pilih Resto" (not a QR
+  /// scan — a scanned table is tied to one resto, switching wouldn't make
+  /// sense there). Clears the cart (it's scoped to the old resto's
+  /// products) and the current resto/session, then lets them pick a new
+  /// one from the list.
+  Future<void> _switchResto(BuildContext context) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Ganti Resto?'),
+        content: const Text('Keranjang belanja kamu saat ini akan dikosongkan.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Batal')),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Ganti Resto')),
+        ],
+      ),
+    );
+    if (confirm != true || !context.mounted) return;
+
+    context.read<CustomerCartProvider>().clear();
+    await context.read<TableSessionProvider>().clear();
+    if (!context.mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const RestaurantListScreen()),
+    );
+  }
+
   Future<void> _openQuantityDialog(
       BuildContext context, CustomerCartProvider cart, Product product) async {
     final currentQty = cart.quantityOf(product.id);
@@ -299,6 +326,12 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                 : 'KaataGo (Customer)',
           ),
           actions: [
+            if (!session.enteredViaQr)
+              IconButton(
+                icon: const Icon(Icons.storefront_outlined),
+                tooltip: 'Ganti Resto',
+                onPressed: () => _switchResto(context),
+              ),
             IconButton(
               icon: const Icon(Icons.receipt_long_outlined),
               tooltip: 'Pesanan Saya',

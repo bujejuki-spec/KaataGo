@@ -140,7 +140,7 @@ class _RoleChoiceScreenState extends State<RoleChoiceScreen> {
                 height: 52,
                 child: FilledButton.icon(
                   icon: const Icon(Icons.person_outline),
-                  label: const Text('Saya Customer'),
+                  label: const Text('Customer'),
                   onPressed: _chooseCustomer,
                 ),
               ),
@@ -149,8 +149,8 @@ class _RoleChoiceScreenState extends State<RoleChoiceScreen> {
                 width: double.infinity,
                 height: 52,
                 child: OutlinedButton.icon(
-                  icon: const Icon(Icons.badge_outlined),
-                  label: const Text('Saya Karyawan'),
+                  icon: const Icon(Icons.storefront_outlined),
+                  label: const Text('Resto'),
                   onPressed: () => Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => const EmployeeLoginScreen()),
                   ),

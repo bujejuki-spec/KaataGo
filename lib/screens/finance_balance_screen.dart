@@ -31,6 +31,7 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
   List<Expense> _expenses = [];
   List<ExpenseGlAccount> _expenseGlAccounts = [];
   bool _loading = true;
+  String? _loadError;
 
   String get _restoId => context.read<AuthProvider>().restoId!;
 
@@ -41,22 +42,33 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
   }
 
   Future<void> _load() async {
-    setState(() => _loading = true);
-    final restoId = _restoId;
-    final results = await Future.wait([
-      _orderRepo.watchAll(restoId).first,
-      _expenseRepo.getForResto(restoId),
-      _expenseGlRepo.getForResto(restoId),
-    ]);
-    if (!mounted) return;
-    final orders = (results[0] as List<CustomerOrder>)
-        .where((o) => o.paymentStatus == OrderPaymentStatus.paid);
     setState(() {
-      _income = orders.fold(0, (sum, o) => sum + o.total);
-      _expenses = results[1] as List<Expense>;
-      _expenseGlAccounts = results[2] as List<ExpenseGlAccount>;
-      _loading = false;
+      _loading = true;
+      _loadError = null;
     });
+    try {
+      final restoId = _restoId;
+      final results = await Future.wait([
+        _orderRepo.watchAll(restoId).first,
+        _expenseRepo.getForResto(restoId),
+        _expenseGlRepo.getForResto(restoId),
+      ]);
+      if (!mounted) return;
+      final orders = (results[0] as List<CustomerOrder>)
+          .where((o) => o.paymentStatus == OrderPaymentStatus.paid);
+      setState(() {
+        _income = orders.fold(0, (sum, o) => sum + o.total);
+        _expenses = results[1] as List<Expense>;
+        _expenseGlAccounts = results[2] as List<ExpenseGlAccount>;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loadError = '$e';
+        _loading = false;
+      });
+    }
   }
 
   int get _totalExpenses => _expenses.fold(0, (sum, e) => sum + e.amount);
@@ -113,7 +125,23 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
+          : _loadError != null
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                        const SizedBox(height: 12),
+                        Text('Gagal memuat data:\n$_loadError', textAlign: TextAlign.center),
+                        const SizedBox(height: 16),
+                        FilledButton(onPressed: _load, child: const Text('Coba Lagi')),
+                      ],
+                    ),
+                  ),
+                )
+              : RefreshIndicator(
               onRefresh: _load,
               child: ListView(
                 padding: const EdgeInsets.all(16),

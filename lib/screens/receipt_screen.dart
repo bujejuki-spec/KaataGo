@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../models/order_type.dart';
 import '../models/transaction.dart';
 
 /// Shows an animated success checkmark followed by the itemized receipt.
@@ -133,6 +134,14 @@ class _ReceiptScreenState extends State<ReceiptScreen>
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
               child: Column(
                 children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Tipe Pesanan'),
+                      Text(kOrderTypeLabels[tx.orderType]!),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [

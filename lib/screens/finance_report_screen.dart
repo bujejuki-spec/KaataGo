@@ -153,11 +153,19 @@ class _FinanceReportScreenState extends State<FinanceReportScreen> {
     final currency = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
     final dateFmt = DateFormat('dd/MM/yy HH:mm', 'id_ID');
     final periodFmt = DateFormat('dd MMM yyyy', 'id_ID');
+    // The pdf package's default base-14 font (Helvetica) doesn't have
+    // glyphs for characters like "—" or "•" — they render as tofu boxes.
+    // Loading a full Unicode font fixes that for any text (including
+    // free-typed expense descriptions), not just the ones we control.
+    final regularFont = await PdfGoogleFonts.notoSansRegular();
+    final boldFont = await PdfGoogleFonts.notoSansBold();
+
     final doc = pw.Document();
 
     doc.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
+        theme: pw.ThemeData.withFont(base: regularFont, bold: boldFont),
         header: (context) => pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../models/order_type.dart';
 import '../models/transaction.dart';
 import '../providers/auth_provider.dart';
 import '../providers/cart_provider.dart';
@@ -19,6 +20,7 @@ class CheckoutScreen extends StatefulWidget {
 
 class _CheckoutScreenState extends State<CheckoutScreen> {
   final _tableCtrl = TextEditingController();
+  OrderType _orderType = OrderType.dineIn;
 
   @override
   void dispose() {
@@ -26,7 +28,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     super.dispose();
   }
 
+  bool get _isDineIn => _orderType == OrderType.dineIn;
   int? get _tableNumber => int.tryParse(_tableCtrl.text.trim());
+
+  /// Take Away needs no table; Dine In does.
+  bool get _canPay => _isDineIn ? _tableNumber != null : true;
 
   @override
   Widget build(BuildContext context) {
@@ -81,17 +87,35 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   children: [
-                    TextField(
-                      controller: _tableCtrl,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Nomor Meja',
-                        prefixIcon: Icon(Icons.table_bar_outlined),
-                        border: OutlineInputBorder(),
-                      ),
-                      onChanged: (_) => setState(() {}),
+                    SegmentedButton<OrderType>(
+                      segments: const [
+                        ButtonSegment(
+                          value: OrderType.dineIn,
+                          label: Text('Dine In'),
+                          icon: Icon(Icons.restaurant_outlined),
+                        ),
+                        ButtonSegment(
+                          value: OrderType.takeAway,
+                          label: Text('Take Away'),
+                          icon: Icon(Icons.shopping_bag_outlined),
+                        ),
+                      ],
+                      selected: {_orderType},
+                      onSelectionChanged: (v) => setState(() => _orderType = v.first),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
+                    if (_isDineIn)
+                      TextField(
+                        controller: _tableCtrl,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'Nomor Meja',
+                          prefixIcon: Icon(Icons.table_bar_outlined),
+                          border: OutlineInputBorder(),
+                        ),
+                        onChanged: (_) => setState(() {}),
+                      ),
+                    if (_isDineIn) const SizedBox(height: 16),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -108,7 +132,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       children: [
                         Expanded(
                           child: OutlinedButton(
-                            onPressed: _tableNumber == null
+                            onPressed: !_canPay
                                 ? null
                                 : () => _handlePayment(context, cart, PaymentMethod.cash),
                             child: const Text('Tunai'),
@@ -117,7 +141,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         const SizedBox(width: 8),
                         Expanded(
                           child: OutlinedButton(
-                            onPressed: _tableNumber == null
+                            onPressed: !_canPay
                                 ? null
                                 : () => _handlePayment(context, cart, PaymentMethod.qris),
                             child: const Text('QRIS'),
@@ -126,7 +150,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         const SizedBox(width: 8),
                         Expanded(
                           child: OutlinedButton(
-                            onPressed: _tableNumber == null
+                            onPressed: !_canPay
                                 ? null
                                 : () => _handlePayment(context, cart, PaymentMethod.transfer),
                             child: const Text('Transfer'),
@@ -134,7 +158,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         ),
                       ],
                     ),
-                    if (_tableNumber == null) ...[
+                    if (!_canPay) ...[
                       const SizedBox(height: 8),
                       const Text(
                         'Isi nomor meja dulu sebelum bisa checkout.',
@@ -153,8 +177,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   Future<void> _handlePayment(
       BuildContext context, CartProvider cart, PaymentMethod method) async {
-    final tableNumber = _tableNumber;
-    if (tableNumber == null) return;
+    if (!_canPay) return;
+    final tableNumber = _isDineIn ? _tableNumber : null;
 
     // Cash needs no extra confirmation screen. QRIS/Transfer show a dummy
     // "simulate payment" screen first, and only proceed if the cashier
@@ -178,6 +202,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       cashierLabel: auth.user?.email,
       tableNumber: tableNumber,
       restoId: auth.restoId!,
+      orderType: _orderType,
     );
 
     // Refresh product list so updated stock is reflected everywhere

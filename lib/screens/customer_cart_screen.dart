@@ -2,16 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../models/order_type.dart';
 import '../providers/auth_provider.dart';
 import '../providers/customer_cart_provider.dart';
 import '../providers/table_session_provider.dart';
 import 'customer_qris_screen.dart';
 
-/// Checkout screen. If the session came from scanning a table QR code,
-/// the table number is already known — shown here read-only/greyed out.
-/// If it came from picking a restaurant off the list instead (no QR),
-/// there's no table number yet, so this screen makes it a mandatory
-/// field before "Pesan & Bayar" can be pressed.
+/// Checkout screen. Lets the customer pick Dine In or Take Away first —
+/// for Take Away no table is needed at all, so the table-number field is
+/// hidden entirely. For Dine In: if the session came from scanning a
+/// table QR code, the table number is already known — shown here
+/// read-only/greyed out. If it came from picking a restaurant off the
+/// list instead (no QR), there's no table number yet, so this screen
+/// makes it a mandatory field before "Pesan & Bayar" can be pressed.
 class CustomerCartScreen extends StatefulWidget {
   const CustomerCartScreen({super.key});
 
@@ -22,6 +25,7 @@ class CustomerCartScreen extends StatefulWidget {
 class _CustomerCartScreenState extends State<CustomerCartScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _tableCtrl;
+  OrderType _orderType = OrderType.dineIn;
   bool _placing = false;
 
   @override
@@ -43,12 +47,16 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
     final session = context.read<TableSessionProvider>();
     final cart = context.read<CustomerCartProvider>();
     final auth = context.read<AuthProvider>();
+    final isDineIn = _orderType == OrderType.dineIn;
 
-    // Table came in via QR scan already — nothing new to save. Otherwise
-    // this is the first time it's known, so persist it to the session.
-    final tableNumber = session.tableNumber ?? int.parse(_tableCtrl.text.trim());
-    if (session.tableNumber == null) {
-      await session.setTableNumber(tableNumber);
+    int? tableNumber;
+    if (isDineIn) {
+      // Table came in via QR scan already — nothing new to save.
+      // Otherwise this is the first time it's known, so persist it.
+      tableNumber = session.tableNumber ?? int.parse(_tableCtrl.text.trim());
+      if (session.tableNumber == null) {
+        await session.setTableNumber(tableNumber);
+      }
     }
 
     setState(() => _placing = true);
@@ -59,6 +67,7 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
       tableNumber: tableNumber,
       sessionId: session.sessionId!,
       restoId: session.restoId!,
+      orderType: _orderType,
     );
     if (!mounted) return;
     Navigator.of(context).pushReplacement(
@@ -80,6 +89,7 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
       decimalDigits: 0,
     );
     final tableKnown = context.watch<TableSessionProvider>().tableNumber != null;
+    final isDineIn = _orderType == OrderType.dineIn;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Keranjang')),
@@ -116,26 +126,44 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     children: [
-                      TextFormField(
-                        controller: _tableCtrl,
-                        enabled: !tableKnown,
-                        keyboardType: TextInputType.number,
-                        decoration: InputDecoration(
-                          labelText: 'Nomor Meja',
-                          helperText: tableKnown
-                              ? 'Terisi otomatis dari QR yang kamu scan'
-                              : 'Wajib diisi — nomor meja tempat kamu duduk',
-                          filled: tableKnown,
-                          fillColor: tableKnown ? Colors.grey.shade200 : null,
-                        ),
-                        validator: (v) {
-                          if (tableKnown) return null;
-                          if (v == null || v.trim().isEmpty) return 'Wajib diisi';
-                          if (int.tryParse(v.trim()) == null) return 'Harus angka';
-                          return null;
-                        },
+                      SegmentedButton<OrderType>(
+                        segments: const [
+                          ButtonSegment(
+                            value: OrderType.dineIn,
+                            label: Text('Dine In'),
+                            icon: Icon(Icons.restaurant_outlined),
+                          ),
+                          ButtonSegment(
+                            value: OrderType.takeAway,
+                            label: Text('Take Away'),
+                            icon: Icon(Icons.shopping_bag_outlined),
+                          ),
+                        ],
+                        selected: {_orderType},
+                        onSelectionChanged: (v) => setState(() => _orderType = v.first),
                       ),
                       const SizedBox(height: 16),
+                      if (isDineIn)
+                        TextFormField(
+                          controller: _tableCtrl,
+                          enabled: !tableKnown,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            labelText: 'Nomor Meja',
+                            helperText: tableKnown
+                                ? 'Terisi otomatis dari QR yang kamu scan'
+                                : 'Wajib diisi — nomor meja tempat kamu duduk',
+                            filled: tableKnown,
+                            fillColor: tableKnown ? Colors.grey.shade200 : null,
+                          ),
+                          validator: (v) {
+                            if (tableKnown) return null;
+                            if (v == null || v.trim().isEmpty) return 'Wajib diisi';
+                            if (int.tryParse(v.trim()) == null) return 'Harus angka';
+                            return null;
+                          },
+                        ),
+                      if (isDineIn) const SizedBox(height: 16),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [

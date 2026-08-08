@@ -34,7 +34,7 @@ class SuperAdminHomeScreen extends StatelessWidget {
             pinned: true,
             backgroundColor: KaataTheme.brandDark,
             automaticallyImplyLeading: false,
-            expandedHeight: 190,
+            expandedHeight: 200,
             actions: [
               IconButton(
                 icon: const Icon(Icons.logout),

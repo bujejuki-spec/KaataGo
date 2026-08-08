@@ -5,6 +5,7 @@ import '../db/order_repository.dart';
 import '../db/session_repository.dart';
 import '../models/cart_item.dart';
 import '../models/customer_order.dart';
+import '../models/order_type.dart';
 import '../models/product.dart';
 
 /// Cart for the customer self-order flow. Separate from [CartProvider]
@@ -72,15 +73,17 @@ class CustomerCartProvider extends ChangeNotifier {
   /// immediately in the employee app's "Pesanan Masuk" list — and returns
   /// the order id so the QR screen can mark it paid once confirmed.
   ///
-  /// [tableNumber], [sessionId] and [restoId] all come from
-  /// [TableSessionProvider] — required so the order can be tied to a
-  /// table (and the right restaurant) and so the customer can track its
-  /// status afterward without an account.
+  /// [sessionId] and [restoId] come from [TableSessionProvider] —
+  /// required so the order can be tied to the right restaurant and so
+  /// the customer can track its status afterward without an account.
+  /// [tableNumber] is null for a [OrderType.takeAway] order (no table
+  /// involved); required for [OrderType.dineIn].
   Future<String> placeOrder(
     String customerLabel, {
-    required int tableNumber,
+    int? tableNumber,
     required String sessionId,
     required String restoId,
+    OrderType orderType = OrderType.dineIn,
   }) async {
     final order = CustomerOrder(
       id: '', // assigned by Firestore
@@ -100,6 +103,7 @@ class CustomerCartProvider extends ChangeNotifier {
       tableNumber: tableNumber,
       sessionId: sessionId,
       restoId: restoId,
+      orderType: orderType,
     );
     final id = await _orderRepo.create(order);
 

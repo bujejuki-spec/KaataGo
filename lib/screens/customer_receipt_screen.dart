@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../db/mail_request_repository.dart';
 import '../models/customer_order.dart';
+import '../models/order_type.dart';
 
 /// Itemized receipt for one customer order, with an option to have it
 /// emailed. Reachable from "Pesanan Saya" (order status screen).
@@ -86,6 +87,9 @@ class _CustomerReceiptScreenState extends State<CustomerReceiptScreen> {
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           Text(dateFmt.format(order.createdAt),
               style: const TextStyle(color: Colors.grey)),
+          const SizedBox(height: 4),
+          Text(kOrderTypeLabels[order.orderType]!,
+              style: TextStyle(color: Colors.grey.shade700, fontWeight: FontWeight.w600, fontSize: 13)),
           const SizedBox(height: 16),
           const Divider(),
           Expanded(
