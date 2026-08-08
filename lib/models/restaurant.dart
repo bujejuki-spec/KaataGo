@@ -31,18 +31,21 @@ class Restaurant {
   final String name;
   final String address;
   final String? category;
+  final bool active;
 
   Restaurant({
     required this.id,
     required this.name,
     required this.address,
     this.category,
+    this.active = true,
   });
 
   Map<String, dynamic> toMap() => {
         'name': name,
         'address': address,
         if (category != null) 'category': category,
+        'active': active,
       };
 
   factory Restaurant.fromMap(String id, Map<String, dynamic> map) {
@@ -51,6 +54,7 @@ class Restaurant {
       name: map['name'] as String? ?? 'Resto',
       address: map['address'] as String? ?? '',
       category: map['category'] as String?,
+      active: map['active'] as bool? ?? true,
     );
   }
 }

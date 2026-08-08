@@ -3,12 +3,16 @@
 /// to one restaurant (except `super_admin`, which isn't scoped at all).
 class Employee {
   final String email;
-  final String role; // 'super_admin' | 'admin' | 'kasir' | 'chef'
+  final String name;
+  final String? nip; // Nomor Induk Pegawai — internal employee ID number
+  final String role; // 'super_admin' | 'admin' | 'kasir' | 'chef' | 'finance'
   final String? restoId;
   final bool active;
 
   Employee({
     required this.email,
+    required this.name,
+    this.nip,
     required this.role,
     required this.restoId,
     this.active = true,
@@ -16,6 +20,8 @@ class Employee {
 
   Map<String, dynamic> toMap() => {
         'email': email,
+        'name': name,
+        'nip': nip,
         'role': role,
         'resto_id': restoId,
         'active': active,
@@ -24,6 +30,8 @@ class Employee {
   factory Employee.fromMap(Map<String, dynamic> map) {
     return Employee(
       email: map['email'] as String,
+      name: map['name'] as String? ?? '',
+      nip: map['nip'] as String?,
       role: map['role'] as String,
       restoId: map['resto_id'] as String?,
       active: map['active'] as bool? ?? true,

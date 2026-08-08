@@ -178,30 +178,43 @@ class _EmployeeRow extends StatelessWidget {
         backgroundColor: e.active ? color : Colors.grey.shade300,
         child: Icon(e.active ? Icons.person : Icons.person_off_outlined, color: Colors.white),
       ),
-      title: Text(e.email, style: const TextStyle(fontWeight: FontWeight.w600)),
+      title: Text(
+        e.name.isEmpty ? e.email : e.name,
+        style: const TextStyle(fontWeight: FontWeight.w600),
+      ),
       subtitle: Padding(
         padding: const EdgeInsets.only(top: 4),
-        child: Wrap(
-          spacing: 6,
-          runSpacing: 4,
-          crossAxisAlignment: WrapCrossAlignment.center,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                _roleLabels[e.role] ?? e.role,
-                style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 11),
-              ),
+            if (e.name.isNotEmpty) Text(e.email, style: const TextStyle(fontSize: 12)),
+            if (e.nip != null && e.nip!.isNotEmpty)
+              Text('NIP: ${e.nip}', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+            const SizedBox(height: 4),
+            Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    _roleLabels[e.role] ?? e.role,
+                    style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 11),
+                  ),
+                ),
+                if (!e.active)
+                  Text('nonaktif', style: TextStyle(color: Colors.red.shade400, fontSize: 12)),
+              ],
             ),
-            if (!e.active)
-              Text('nonaktif', style: TextStyle(color: Colors.red.shade400, fontSize: 12)),
           ],
         ),
       ),
+      isThreeLine: e.name.isNotEmpty,
       trailing: PopupMenuButton<String>(
         onSelected: (v) {
           if (v == 'edit') onEdit();
@@ -229,6 +242,8 @@ class _EmployeeFormDialog extends StatefulWidget {
 class _EmployeeFormDialogState extends State<_EmployeeFormDialog> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _emailCtrl;
+  late final TextEditingController _nameCtrl;
+  late final TextEditingController _nipCtrl;
   late String _role;
   String? _restoId;
   late bool _active;
@@ -240,6 +255,8 @@ class _EmployeeFormDialogState extends State<_EmployeeFormDialog> {
     super.initState();
     final e = widget.existing;
     _emailCtrl = TextEditingController(text: e?.email ?? '');
+    _nameCtrl = TextEditingController(text: e?.name ?? '');
+    _nipCtrl = TextEditingController(text: e?.nip ?? '');
     _role = e?.role ?? 'kasir';
     _restoId = e?.restoId;
     _active = e?.active ?? true;
@@ -248,6 +265,8 @@ class _EmployeeFormDialogState extends State<_EmployeeFormDialog> {
   @override
   void dispose() {
     _emailCtrl.dispose();
+    _nameCtrl.dispose();
+    _nipCtrl.dispose();
     super.dispose();
   }
 
@@ -265,6 +284,8 @@ class _EmployeeFormDialogState extends State<_EmployeeFormDialog> {
     try {
       await _repo.upsert(Employee(
         email: _emailCtrl.text.trim().toLowerCase(),
+        name: _nameCtrl.text.trim(),
+        nip: _nipCtrl.text.trim().isEmpty ? null : _nipCtrl.text.trim(),
         role: _role,
         restoId: _role == 'super_admin' ? null : _restoId,
         active: _active,
@@ -291,6 +312,17 @@ class _EmployeeFormDialogState extends State<_EmployeeFormDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              TextFormField(
+                controller: _nameCtrl,
+                decoration: const InputDecoration(labelText: 'Nama'),
+                validator: (v) => (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _nipCtrl,
+                decoration: const InputDecoration(labelText: 'NIP (opsional)'),
+              ),
+              const SizedBox(height: 12),
               TextFormField(
                 controller: _emailCtrl,
                 enabled: !isEditing, // email is the primary key — can't rename

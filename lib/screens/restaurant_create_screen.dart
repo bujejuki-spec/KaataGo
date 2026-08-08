@@ -78,6 +78,10 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
         name: _nameCtrl.text.trim(),
         address: _addressCtrl.text.trim(),
         category: _category,
+        // Preserve the existing active/inactive status when editing —
+        // that's managed separately via the switch on List Resto, not
+        // this form.
+        active: widget.existing?.active ?? true,
       ));
 
       if (!mounted) return;

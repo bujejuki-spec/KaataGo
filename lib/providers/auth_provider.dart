@@ -103,6 +103,7 @@ class AuthProvider extends ChangeNotifier {
     }
     isCheckingRole = true;
     notifyListeners();
+    var restoDeactivated = false;
 
     try {
       final email = user!.email!.toLowerCase();
@@ -123,11 +124,32 @@ class AuthProvider extends ChangeNotifier {
         // allowed to be null only for that role.
         final isSuperAdminRow = roleStr == _roleDbValues[EmployeeRole.superAdmin];
         if (active && roleStr != null && (restoIdValue != null || isSuperAdminRow)) {
-          role = _roleDbValues.entries
-              .firstWhere((e) => e.value == roleStr,
-                  orElse: () => throw StateError('Unknown role: $roleStr'))
-              .key;
-          restoId = restoIdValue;
+          // Also check the resto itself isn't deactivated by Super Admin —
+          // an otherwise-valid, active employee row is still blocked if
+          // their restaurant has been switched off.
+          if (restoIdValue != null) {
+            final restoRows = await _supabase
+                .from('restaurants')
+                .select('active')
+                .eq('id', restoIdValue)
+                .limit(1);
+            final restoActive =
+                restoRows.isEmpty || restoRows.first['active'] != false;
+            if (!restoActive) {
+              role = null;
+              restoId = null;
+              lastError =
+                  'Resto ini sedang dinonaktifkan sementara.\nSilakan hubungi Call Center KaataGo untuk info lebih lanjut.';
+              restoDeactivated = true;
+            }
+          }
+          if (!restoDeactivated) {
+            role = _roleDbValues.entries
+                .firstWhere((e) => e.value == roleStr,
+                    orElse: () => throw StateError('Unknown role: $roleStr'))
+                .key;
+            restoId = restoIdValue;
+          }
         } else {
           role = null;
           restoId = null;
@@ -145,6 +167,15 @@ class AuthProvider extends ChangeNotifier {
 
     isCheckingRole = false;
     notifyListeners();
+
+    // Signed out last (not returned early above) so isCheckingRole is
+    // already false by the time listeners react to isLoggedIn flipping —
+    // avoids the login screen flashing a stuck spinner mid-transition.
+    // signOut() doesn't touch lastError, so the message set above survives
+    // for the login screen to display.
+    if (restoDeactivated) {
+      await signOut();
+    }
   }
 
   Future<void> signOut() async {

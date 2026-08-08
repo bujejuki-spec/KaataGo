@@ -11,11 +11,22 @@ class RestaurantRepository {
     return Restaurant.fromMap(id, rows.first);
   }
 
-  /// All restaurants — used by Super Admin screens (resto picker when
-  /// adding an employee, restaurant list).
+  /// All restaurants (active or not) — used by Super Admin screens
+  /// (resto picker when adding an employee, restaurant list).
   Future<List<Restaurant>> getAll() async {
     final rows = await _client.from('restaurants').select().order('name');
     return rows.map((r) => Restaurant.fromMap(r['id'] as String, r)).toList();
+  }
+
+  /// Only active restaurants — used by the customer's "Pilih Resto" list,
+  /// so a deactivated resto can't be picked to order from.
+  Future<List<Restaurant>> getAllActive() async {
+    final rows = await _client.from('restaurants').select().eq('active', true).order('name');
+    return rows.map((r) => Restaurant.fromMap(r['id'] as String, r)).toList();
+  }
+
+  Future<void> setActive(String id, bool active) async {
+    await _client.from('restaurants').update({'active': active}).eq('id', id);
   }
 
   Stream<Restaurant?> watch(String id) {

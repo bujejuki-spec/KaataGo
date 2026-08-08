@@ -29,7 +29,7 @@ class _RestaurantListScreenState extends State<RestaurantListScreen> {
   }
 
   Future<void> _load() async {
-    final all = await _repo.getAll();
+    final all = await _repo.getAllActive();
     if (!mounted) return;
     setState(() {
       _restaurants = all;

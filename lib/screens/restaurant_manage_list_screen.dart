@@ -5,7 +5,10 @@ import '../models/restaurant.dart';
 import 'restaurant_create_screen.dart';
 
 /// Super Admin's "List Resto" — every registered restaurant, tap one to
-/// edit its name/address/category. Distinct from the customer-facing
+/// edit its name/address/category, and a switch to activate/deactivate
+/// it. A deactivated resto disappears from the customer's "Pilih Resto"
+/// list, and its employees are blocked from logging in (see
+/// AuthProvider._checkEmployeeRole). Distinct from the customer-facing
 /// [RestaurantListScreen] (browse-to-order, no edit capability).
 class RestaurantManageListScreen extends StatefulWidget {
   const RestaurantManageListScreen({super.key});
@@ -42,6 +45,38 @@ class _RestaurantManageListScreenState extends State<RestaurantManageListScreen>
     _load();
   }
 
+  Future<void> _toggleActive(Restaurant resto, bool value) async {
+    if (!value) {
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Nonaktifkan resto?'),
+          content: Text(
+            '${resto.name} akan hilang dari daftar "Pilih Resto" customer, dan '
+            'karyawan resto ini tidak akan bisa login sampai diaktifkan lagi.',
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Batal')),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Nonaktifkan'),
+            ),
+          ],
+        ),
+      );
+      if (confirm != true) return;
+    }
+
+    setState(() {
+      _restaurants = _restaurants
+          .map((r) => r.id == resto.id
+              ? Restaurant(id: r.id, name: r.name, address: r.address, category: r.category, active: value)
+              : r)
+          .toList();
+    });
+    await _repo.setActive(resto.id, value);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -71,16 +106,32 @@ class _RestaurantManageListScreenState extends State<RestaurantManageListScreen>
                       return Card(
                         clipBehavior: Clip.antiAlias,
                         child: ListTile(
-                          leading: const CircleAvatar(child: Icon(Icons.storefront_outlined)),
+                          leading: CircleAvatar(
+                            backgroundColor: resto.active ? null : Colors.grey.shade300,
+                            child: const Icon(Icons.storefront_outlined),
+                          ),
                           title: Text(resto.name, style: const TextStyle(fontWeight: FontWeight.bold)),
                           subtitle: Text(
                             [
                               if (resto.category != null) resto.category!,
                               resto.address.isEmpty ? 'Alamat belum diisi' : resto.address,
+                              if (!resto.active) 'Nonaktif',
                             ].join(' • '),
+                            style: resto.active ? null : TextStyle(color: Colors.red.shade400),
                           ),
-                          trailing: const Icon(Icons.chevron_right),
-                          onTap: () => _edit(resto),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Switch(
+                                value: resto.active,
+                                onChanged: (v) => _toggleActive(resto, v),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.edit_outlined),
+                                onPressed: () => _edit(resto),
+                              ),
+                            ],
+                          ),
                         ),
                       );
                     },

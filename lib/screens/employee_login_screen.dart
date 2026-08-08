@@ -93,9 +93,27 @@ class _EmployeeLoginScreenState extends State<EmployeeLoginScreen> {
                 ),
                 const SizedBox(height: 24),
                 if (auth.lastError != null) ...[
-                  Text(auth.lastError!,
-                      style: const TextStyle(color: Colors.red), textAlign: TextAlign.center),
-                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.red.shade100),
+                    ),
+                    child: Column(
+                      children: [
+                        Icon(Icons.store_mall_directory_outlined,
+                            color: Colors.red.shade400, size: 28),
+                        const SizedBox(height: 8),
+                        Text(
+                          auth.lastError!,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Colors.red.shade700, fontSize: 13),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                 ],
                 FilledButton.icon(
                   onPressed: () => auth.signInWithGoogle(),
