@@ -20,19 +20,23 @@ class CheckoutScreen extends StatefulWidget {
 
 class _CheckoutScreenState extends State<CheckoutScreen> {
   final _tableCtrl = TextEditingController();
+  final _customerNameCtrl = TextEditingController();
   OrderType _orderType = OrderType.dineIn;
 
   @override
   void dispose() {
     _tableCtrl.dispose();
+    _customerNameCtrl.dispose();
     super.dispose();
   }
 
   bool get _isDineIn => _orderType == OrderType.dineIn;
   int? get _tableNumber => int.tryParse(_tableCtrl.text.trim());
+  String get _customerName => _customerNameCtrl.text.trim();
 
-  /// Take Away needs no table; Dine In does.
-  bool get _canPay => _isDineIn ? _tableNumber != null : true;
+  /// Dine In needs a table number; Take Away needs a customer name
+  /// instead (there's no table to deliver it to).
+  bool get _canPay => _isDineIn ? _tableNumber != null : _customerName.isNotEmpty;
 
   @override
   Widget build(BuildContext context) {
@@ -114,8 +118,19 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           border: OutlineInputBorder(),
                         ),
                         onChanged: (_) => setState(() {}),
+                      )
+                    else
+                      TextField(
+                        controller: _customerNameCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Nama Customer',
+                          prefixIcon: Icon(Icons.person_outline),
+                          border: OutlineInputBorder(),
+                          helperText: 'Wajib diisi — dipanggil saat pesanan siap diambil',
+                        ),
+                        onChanged: (_) => setState(() {}),
                       ),
-                    if (_isDineIn) const SizedBox(height: 16),
+                    const SizedBox(height: 16),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -160,9 +175,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     ),
                     if (!_canPay) ...[
                       const SizedBox(height: 8),
-                      const Text(
-                        'Isi nomor meja dulu sebelum bisa checkout.',
-                        style: TextStyle(color: Colors.red, fontSize: 12),
+                      Text(
+                        _isDineIn
+                            ? 'Isi nomor meja dulu sebelum bisa checkout.'
+                            : 'Isi nama customer dulu sebelum bisa checkout.',
+                        style: const TextStyle(color: Colors.red, fontSize: 12),
                       ),
                     ],
                   ],
@@ -203,6 +220,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       tableNumber: tableNumber,
       restoId: auth.restoId!,
       orderType: _orderType,
+      customerName: _isDineIn ? null : _customerName,
     );
 
     // Refresh product list so updated stock is reflected everywhere

@@ -100,7 +100,8 @@ class _FinanceReportScreenState extends State<FinanceReportScreen> {
       if (!o.createdAt.isBefore(periodStart) && !o.createdAt.isAfter(periodEnd)) {
         entries.add(_LedgerEntry(
           date: o.createdAt,
-          description: 'Pemasukan — ${o.customerLabel} (${o.items.length} item)',
+          description:
+              'Pemasukan — #${o.id.substring(0, 8).toUpperCase()} (${o.items.length} item)',
           credit: o.total,
         ));
       }

@@ -14,8 +14,13 @@ class OrderRepository {
     return row['id'] as String;
   }
 
+  /// Confirms the customer's (dummy) QRIS payment. Goes through the
+  /// `mark_order_paid` RPC (SECURITY DEFINER) instead of a direct table
+  /// UPDATE — a guest customer has no employee RLS privileges to update
+  /// `orders` directly, and the RPC's own guardrails (source='customer',
+  /// pending→paid only) keep this safe without reopening that up.
   Future<void> markPaid(String orderId) async {
-    await _client.from('orders').update({'payment_status': 'paid'}).eq('id', orderId);
+    await _client.rpc('mark_order_paid', params: {'p_order_id': orderId});
   }
 
   Future<void> updateKitchenStatus(String orderId, KitchenStatus status) async {

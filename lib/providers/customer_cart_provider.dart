@@ -77,13 +77,16 @@ class CustomerCartProvider extends ChangeNotifier {
   /// required so the order can be tied to the right restaurant and so
   /// the customer can track its status afterward without an account.
   /// [tableNumber] is null for a [OrderType.takeAway] order (no table
-  /// involved); required for [OrderType.dineIn].
+  /// involved); required for [OrderType.dineIn]. [customerName] is
+  /// mandatory (validated by the checkout screen, not here) for
+  /// take-away — who to call out when it's ready.
   Future<String> placeOrder(
     String customerLabel, {
     int? tableNumber,
     required String sessionId,
     required String restoId,
     OrderType orderType = OrderType.dineIn,
+    String? customerName,
   }) async {
     final order = CustomerOrder(
       id: '', // assigned by Firestore
@@ -104,6 +107,7 @@ class CustomerCartProvider extends ChangeNotifier {
       sessionId: sessionId,
       restoId: restoId,
       orderType: orderType,
+      customerName: customerName,
     );
     final id = await _orderRepo.create(order);
 

@@ -5,9 +5,11 @@ import '../db/restaurant_repository.dart';
 import '../models/restaurant.dart';
 import '../providers/auth_provider.dart';
 
-/// Lets the Admin set this restaurant's display name, address, and
-/// category — shown to customers at the top of their self-order screen
-/// once they scan a table QR.
+/// Lets the Admin update this restaurant's category and address —
+/// shown to customers at the top of their self-order screen once they
+/// scan a table QR. The name itself is read-only here; only Super Admin
+/// can rename a resto (via List Resto), since it's the resto's
+/// identifying label across the whole platform.
 class RestaurantInfoScreen extends StatefulWidget {
   const RestaurantInfoScreen({super.key});
 
@@ -76,9 +78,13 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
                   children: [
                     TextFormField(
                       controller: _nameCtrl,
-                      decoration: const InputDecoration(labelText: 'Nama Resto'),
-                      validator: (v) =>
-                          (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null,
+                      enabled: false,
+                      decoration: const InputDecoration(
+                        labelText: 'Nama Resto',
+                        helperText: 'Cuma Super Admin yang bisa ubah nama resto',
+                        filled: true,
+                        fillColor: Color(0xFFEEEEEE),
+                      ),
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(

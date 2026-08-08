@@ -61,17 +61,23 @@ class CustomerOrderStatusScreen extends StatelessWidget {
     );
     final dateFmt = DateFormat('HH:mm', 'id_ID');
 
-    if (!session.hasActiveTable) {
+    if (!session.hasActiveResto) {
       return Scaffold(
         appBar: AppBar(title: const Text('Pesanan Saya')),
-        body: const Center(child: Text('Belum ada sesi meja aktif.')),
+        body: const Center(child: Text('Belum ada sesi aktif.')),
       );
     }
 
     final repo = OrderRepository();
 
     return Scaffold(
-      appBar: AppBar(title: Text('Pesanan Saya • Meja ${session.tableNumber}')),
+      appBar: AppBar(
+        title: Text(
+          session.tableNumber != null
+              ? 'Pesanan Saya • Meja ${session.tableNumber}'
+              : 'Pesanan Saya • Take Away',
+        ),
+      ),
       body: StreamBuilder<List<CustomerOrder>>(
         stream: repo.watchBySession(session.sessionId!),
         builder: (context, snapshot) {

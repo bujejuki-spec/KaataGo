@@ -170,7 +170,7 @@ class _FinanceIncomeScreenState extends State<FinanceIncomeScreen> {
                                   title: Text(currency.format(o.total)),
                                   subtitle: Text(
                                     '${DateFormat('HH:mm').format(o.createdAt)} • '
-                                    '${_methodLabels[_methodKey(o)]} • ${o.customerLabel}',
+                                    '${_methodLabels[_methodKey(o)]} • #${o.id.substring(0, 8).toUpperCase()}',
                                   ),
                                   trailing: Text('${o.items.length} item'),
                                 );

@@ -31,14 +31,22 @@ class _CustomerQrisScreenState extends State<CustomerQrisScreen> {
 
   Future<void> _confirmPaid() async {
     setState(() => _confirming = true);
-    await _orderRepo.markPaid(widget.orderId);
-    if (!mounted) return;
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(
-        builder: (_) => _OrderPlacedScreen(orderId: widget.orderId),
-      ),
-      (route) => route.isFirst,
-    );
+    try {
+      await _orderRepo.markPaid(widget.orderId);
+      if (!mounted) return;
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(
+          builder: (_) => _OrderPlacedScreen(orderId: widget.orderId),
+        ),
+        (route) => route.isFirst,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal konfirmasi pembayaran: $e')),
+      );
+      setState(() => _confirming = false);
+    }
   }
 
   @override

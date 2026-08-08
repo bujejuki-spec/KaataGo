@@ -141,6 +141,16 @@ class _ReceiptScreenState extends State<ReceiptScreen>
                       Text(kOrderTypeLabels[tx.orderType]!),
                     ],
                   ),
+                  if (tx.customerName != null && tx.customerName!.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Nama Customer'),
+                        Text(tx.customerName!),
+                      ],
+                    ),
+                  ],
                   const SizedBox(height: 4),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,

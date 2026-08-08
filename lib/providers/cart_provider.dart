@@ -120,12 +120,16 @@ class CartProvider extends ChangeNotifier {
   /// alongside customer self-orders, with a table to deliver it to and
   /// scoped to the right restaurant. [tableNumber] is null for a
   /// [OrderType.takeAway] sale — no table involved.
+  /// [customerName] is mandatory (validated by the checkout screen, not
+  /// here) for [OrderType.takeAway] — the Kasir types in who to call out
+  /// when it's ready, since there's no table to deliver it to.
   Future<PosTransaction> checkout(
     PaymentMethod method, {
     String? cashierLabel,
     int? tableNumber,
     required String restoId,
     OrderType orderType = OrderType.dineIn,
+    String? customerName,
   }) async {
     final tx = PosTransaction(
       id: _uuid.v4(),
@@ -133,6 +137,7 @@ class CartProvider extends ChangeNotifier {
       paymentMethod: method,
       total: total,
       orderType: orderType,
+      customerName: customerName,
       items: _items
           .map((i) => TransactionItem(
                 productId: i.product.id,
@@ -175,6 +180,7 @@ class CartProvider extends ChangeNotifier {
       tableNumber: tableNumber,
       restoId: restoId,
       orderType: orderType,
+      customerName: customerName,
     )).catchError((_) {
       return '';
     });

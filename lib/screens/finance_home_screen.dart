@@ -9,6 +9,7 @@ import 'finance_balance_screen.dart';
 import 'finance_gl_mapping_screen.dart';
 import 'finance_income_screen.dart';
 import 'finance_report_screen.dart';
+import 'settings_screen.dart';
 
 /// Home screen for the 'finance' role: view resto-wide income (grouped
 /// per day, broken down by payment method), view balance + record
@@ -97,6 +98,16 @@ class FinanceHomeScreen extends StatelessWidget {
                   color: const Color(0xFF0EA5E9),
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => const FinanceReportScreen()),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                HubMenuTile(
+                  icon: Icons.payments_outlined,
+                  title: 'Pengaturan Pembayaran',
+                  subtitle: 'Atur QRIS & rekening bank resto',
+                  color: const Color(0xFFEC4899),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const SettingsScreen(editable: true)),
                   ),
                 ),
               ]),

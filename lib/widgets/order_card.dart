@@ -53,6 +53,22 @@ class OrderCard extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 8),
+                      ] else if (order.orderType == OrderType.takeAway &&
+                          order.customerName != null &&
+                          order.customerName!.isNotEmpty) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.shade50,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            'a.n. ${order.customerName}',
+                            style: TextStyle(
+                                fontSize: 12, fontWeight: FontWeight.bold, color: Colors.amber.shade800),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
                       ],
                       Flexible(
                         child: Text(

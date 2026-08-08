@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../db/customer_profile_repository.dart';
 import '../models/order_type.dart';
 import '../providers/auth_provider.dart';
 import '../providers/customer_cart_provider.dart';
@@ -10,11 +11,14 @@ import 'customer_qris_screen.dart';
 
 /// Checkout screen. Lets the customer pick Dine In or Take Away first —
 /// for Take Away no table is needed at all, so the table-number field is
-/// hidden entirely. For Dine In: if the session came from scanning a
-/// table QR code, the table number is already known — shown here
-/// read-only/greyed out. If it came from picking a restaurant off the
-/// list instead (no QR), there's no table number yet, so this screen
-/// makes it a mandatory field before "Pesan & Bayar" can be pressed.
+/// hidden entirely, but a customer name IS required (there's no table
+/// to deliver it to, so the name is what gets called out when it's
+/// ready) — pre-filled from their profile if logged in, but editable.
+/// For Dine In: if the session came from scanning a table QR code, the
+/// table number is already known — shown here read-only/greyed out. If
+/// it came from picking a restaurant off the list instead (no QR),
+/// there's no table number yet, so this screen makes it a mandatory
+/// field before "Pesan & Bayar" can be pressed.
 class CustomerCartScreen extends StatefulWidget {
   const CustomerCartScreen({super.key});
 
@@ -25,6 +29,7 @@ class CustomerCartScreen extends StatefulWidget {
 class _CustomerCartScreenState extends State<CustomerCartScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _tableCtrl;
+  final _nameCtrl = TextEditingController();
   OrderType _orderType = OrderType.dineIn;
   bool _placing = false;
 
@@ -33,11 +38,25 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
     super.initState();
     final known = context.read<TableSessionProvider>().tableNumber;
     _tableCtrl = TextEditingController(text: known?.toString() ?? '');
+    _prefillNameFromProfile();
+  }
+
+  /// If logged in, use their saved profile name as a starting point —
+  /// still freely editable (e.g. ordering for someone else).
+  Future<void> _prefillNameFromProfile() async {
+    final email = context.read<AuthProvider>().user?.email;
+    if (email == null) return;
+    final profile = await CustomerProfileRepository().getOnce(email);
+    if (!mounted || profile == null || profile.name.isEmpty) return;
+    if (_nameCtrl.text.isEmpty) {
+      setState(() => _nameCtrl.text = profile.name);
+    }
   }
 
   @override
   void dispose() {
     _tableCtrl.dispose();
+    _nameCtrl.dispose();
     super.dispose();
   }
 
@@ -68,6 +87,7 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
       sessionId: session.sessionId!,
       restoId: session.restoId!,
       orderType: _orderType,
+      customerName: isDineIn ? null : _nameCtrl.text.trim(),
     );
     if (!mounted) return;
     Navigator.of(context).pushReplacement(
@@ -162,8 +182,18 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
                             if (int.tryParse(v.trim()) == null) return 'Harus angka';
                             return null;
                           },
+                        )
+                      else
+                        TextFormField(
+                          controller: _nameCtrl,
+                          decoration: const InputDecoration(
+                            labelText: 'Nama Customer',
+                            helperText: 'Wajib diisi — nama yang akan dipanggil saat pesanan siap',
+                          ),
+                          validator: (v) =>
+                              (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null,
                         ),
-                      if (isDineIn) const SizedBox(height: 16),
+                      const SizedBox(height: 16),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [

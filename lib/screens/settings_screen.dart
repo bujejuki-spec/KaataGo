@@ -1,11 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../providers/auth_provider.dart';
 import '../providers/settings_provider.dart';
 
+/// Payment settings (QRIS + bank transfer info). Admin only gets a
+/// read-only view here (all fields greyed out, "Kembali" instead of
+/// "Simpan") — Finance is the one who can actually edit these, via
+/// [editable] = true (see FinanceHomeScreen's own "Pengaturan
+/// Pembayaran" entry).
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key});
+  final bool editable;
+
+  const SettingsScreen({super.key, this.editable = false});
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -18,16 +26,43 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late final TextEditingController _bankNameCtrl;
   late final TextEditingController _accountNumberCtrl;
   late final TextEditingController _accountHolderCtrl;
+  bool _loading = true;
 
   @override
   void initState() {
     super.initState();
+    // Pre-fill from this device's local cache first (instant, no flash of
+    // empty fields), then refresh from Supabase below — the source of
+    // truth, since Admin and Finance are very likely different devices.
     final s = context.read<SettingsProvider>();
     _merchantCtrl = TextEditingController(text: s.merchantName);
     _qrisIdCtrl = TextEditingController(text: s.qrisId);
     _bankNameCtrl = TextEditingController(text: s.bankName);
     _accountNumberCtrl = TextEditingController(text: s.accountNumber);
     _accountHolderCtrl = TextEditingController(text: s.accountHolder);
+    _loadFromSupabase();
+  }
+
+  Future<void> _loadFromSupabase() async {
+    try {
+      final restoId = context.read<AuthProvider>().restoId!;
+      final rows = await Supabase.instance.client
+          .from('settings')
+          .select()
+          .eq('resto_id', restoId)
+          .limit(1);
+      if (rows.isNotEmpty && mounted) {
+        final row = rows.first;
+        _merchantCtrl.text = row['merchant_name'] as String? ?? _merchantCtrl.text;
+        _qrisIdCtrl.text = row['qris_id'] as String? ?? _qrisIdCtrl.text;
+        _bankNameCtrl.text = row['bank_name'] as String? ?? _bankNameCtrl.text;
+        _accountNumberCtrl.text = row['account_number'] as String? ?? _accountNumberCtrl.text;
+        _accountHolderCtrl.text = row['account_holder'] as String? ?? _accountHolderCtrl.text;
+      }
+    } catch (_) {
+      // Offline — keep showing the local cache loaded above.
+    }
+    if (mounted) setState(() => _loading = false);
   }
 
   @override
@@ -57,10 +92,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  InputDecoration _decoration(String label) {
+    return InputDecoration(
+      labelText: label,
+      filled: !widget.editable,
+      fillColor: widget.editable ? null : const Color(0xFFEEEEEE),
+    );
+  }
+
+  String? _requiredValidator(String? v) {
+    if (!widget.editable) return null; // view-only: nothing to validate
+    return (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Pengaturan Pembayaran')),
+      appBar: AppBar(
+        title: const Text('Pengaturan Pembayaran'),
+        actions: [
+          if (_loading)
+            const Padding(
+              padding: EdgeInsets.only(right: 16),
+              child: Center(
+                child: SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                ),
+              ),
+            ),
+        ],
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -74,16 +137,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(height: 8),
               TextFormField(
                 controller: _merchantCtrl,
-                decoration: const InputDecoration(labelText: 'Nama Merchant'),
-                validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null,
+                enabled: widget.editable,
+                decoration: _decoration('Nama Merchant'),
+                validator: _requiredValidator,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _qrisIdCtrl,
-                decoration: const InputDecoration(labelText: 'ID QRIS Merchant'),
-                validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null,
+                enabled: widget.editable,
+                decoration: _decoration('ID QRIS Merchant'),
+                validator: _requiredValidator,
               ),
               const SizedBox(height: 24),
               const Text(
@@ -93,31 +156,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(height: 8),
               TextFormField(
                 controller: _bankNameCtrl,
-                decoration: const InputDecoration(labelText: 'Nama Bank'),
-                validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null,
+                enabled: widget.editable,
+                decoration: _decoration('Nama Bank'),
+                validator: _requiredValidator,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _accountNumberCtrl,
-                decoration: const InputDecoration(labelText: 'Nomor Rekening'),
+                enabled: widget.editable,
+                decoration: _decoration('Nomor Rekening'),
                 keyboardType: TextInputType.number,
-                validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null,
+                validator: _requiredValidator,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _accountHolderCtrl,
-                decoration:
-                    const InputDecoration(labelText: 'Atas Nama (a.n. ...)'),
-                validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null,
+                enabled: widget.editable,
+                decoration: _decoration('Atas Nama (a.n. ...)'),
+                validator: _requiredValidator,
               ),
               const SizedBox(height: 24),
-              FilledButton(
-                onPressed: _save,
-                child: const Text('Simpan'),
-              ),
+              if (widget.editable)
+                FilledButton(
+                  onPressed: _save,
+                  child: const Text('Simpan'),
+                )
+              else
+                OutlinedButton.icon(
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(Icons.arrow_back),
+                  label: const Text('Kembali'),
+                ),
             ],
           ),
         ),

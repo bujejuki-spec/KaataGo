@@ -6,13 +6,13 @@ import '../theme.dart';
 import '../widgets/hub_menu_tile.dart';
 import '../widgets/kaata_logo.dart';
 import 'employee_management_screen.dart';
-import 'restaurant_create_screen.dart';
 import 'restaurant_manage_list_screen.dart';
 
 /// Home screen for the 'super_admin' role — not scoped to any single
 /// restaurant. Two jobs: manage employees across every resto (the app
-/// previously had no UI for this at all), and create brand-new restos
-/// (new tenants) for KaataGo to onboard.
+/// previously had no UI for this at all), and manage restos (including
+/// creating new ones — that's the "+ Resto Baru" FAB inside List Resto,
+/// not a separate menu entry here).
 class SuperAdminHomeScreen extends StatelessWidget {
   const SuperAdminHomeScreen({super.key});
 
@@ -76,16 +76,6 @@ class SuperAdminHomeScreen extends StatelessWidget {
                   color: const Color(0xFF0EA5E9),
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => const RestaurantManageListScreen()),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                HubMenuTile(
-                  icon: Icons.add_business_outlined,
-                  title: 'Buat Resto Baru',
-                  subtitle: 'Onboard tenant/resto baru ke KaataGo',
-                  color: const Color(0xFFF59E0B),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const RestaurantCreateScreen()),
                   ),
                 ),
               ]),

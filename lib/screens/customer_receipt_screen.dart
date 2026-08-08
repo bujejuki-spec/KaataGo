@@ -90,6 +90,9 @@ class _CustomerReceiptScreenState extends State<CustomerReceiptScreen> {
           const SizedBox(height: 4),
           Text(kOrderTypeLabels[order.orderType]!,
               style: TextStyle(color: Colors.grey.shade700, fontWeight: FontWeight.w600, fontSize: 13)),
+          if (order.customerName != null && order.customerName!.isNotEmpty)
+            Text('a.n. ${order.customerName}',
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
           const SizedBox(height: 16),
           const Divider(),
           Expanded(

@@ -24,7 +24,7 @@ class DatabaseHelper {
 
     return openDatabase(
       path,
-      version: 6,
+      version: 7,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE products (
@@ -46,7 +46,8 @@ class DatabaseHelper {
             createdAt TEXT NOT NULL,
             paymentMethod TEXT NOT NULL,
             total INTEGER NOT NULL,
-            orderType TEXT NOT NULL DEFAULT 'dine_in'
+            orderType TEXT NOT NULL DEFAULT 'dine_in',
+            customerName TEXT
           )
         ''');
 
@@ -92,6 +93,9 @@ class DatabaseHelper {
         if (oldVersion < 6) {
           await db.execute(
               "ALTER TABLE transactions ADD COLUMN orderType TEXT NOT NULL DEFAULT 'dine_in'");
+        }
+        if (oldVersion < 7) {
+          await db.execute('ALTER TABLE transactions ADD COLUMN customerName TEXT');
         }
       },
     );

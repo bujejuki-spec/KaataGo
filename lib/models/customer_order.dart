@@ -68,6 +68,10 @@ class CustomerOrder {
   final String restoId; // which restaurant this order belongs to
   final OrderType orderType; // dine-in or take-away, chosen at checkout
 
+  /// Who to call out when the order's ready for pickup — mandatory for
+  /// take-away (there's no table to deliver it to), unused for dine-in.
+  final String? customerName;
+
   CustomerOrder({
     required this.id,
     required this.createdAt,
@@ -82,6 +86,7 @@ class CustomerOrder {
     this.sessionId,
     this.kitchenStatus = KitchenStatus.waiting,
     this.orderType = OrderType.dineIn,
+    this.customerName,
   });
 
   /// Maps to Postgres `orders` table columns (snake_case). `id` and
@@ -98,6 +103,7 @@ class CustomerOrder {
         if (sessionId != null) 'session_id': sessionId,
         'kitchen_status': kitchenStatus.name,
         'order_type': orderType.dbValue,
+        if (customerName != null) 'customer_name': customerName,
       };
 
   factory CustomerOrder.fromMap(Map<String, dynamic> data) {
@@ -126,6 +132,7 @@ class CustomerOrder {
       ),
       restoId: data['resto_id'] as String? ?? '',
       orderType: OrderTypeDb.fromDb(data['order_type'] as String?),
+      customerName: data['customer_name'] as String?,
     );
   }
 }

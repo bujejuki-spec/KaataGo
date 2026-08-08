@@ -52,6 +52,11 @@ class PosTransaction {
   final int total;
   final OrderType orderType;
 
+  /// Who to call out when the order's ready — mandatory for
+  /// [OrderType.takeAway] (there's no table to deliver it to), unused
+  /// for dine-in.
+  final String? customerName;
+
   PosTransaction({
     required this.id,
     required this.createdAt,
@@ -59,6 +64,7 @@ class PosTransaction {
     required this.paymentMethod,
     required this.total,
     this.orderType = OrderType.dineIn,
+    this.customerName,
   });
 
   Map<String, dynamic> toMap() {
@@ -68,6 +74,7 @@ class PosTransaction {
       'paymentMethod': paymentMethod.name,
       'total': total,
       'orderType': orderType.dbValue,
+      'customerName': customerName,
     };
   }
 
@@ -84,6 +91,7 @@ class PosTransaction {
       ),
       total: map['total'] as int,
       orderType: OrderTypeDb.fromDb(map['orderType'] as String?),
+      customerName: map['customerName'] as String?,
     );
   }
 }
