@@ -88,7 +88,7 @@ else
   GITHUB_TOKEN="$TOKEN" python3 "$APP_DIR/scripts/github_release.py" \
     "$REPO" "$TAG" "KaataGo $VERSION" \
     "Build $BUILD · ${SIZE_MB} MB · Android 6.0 ke atas" \
-    "$BUILT"
+    "$BUILT" "$WEB_DIR/downloads.json"
 fi
 
 # ── 3. Landing page ──────────────────────────────────────────────────

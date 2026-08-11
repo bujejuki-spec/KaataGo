@@ -5,6 +5,7 @@ import '../providers/auth_provider.dart';
 import '../theme.dart';
 import '../utils/logout_confirm.dart';
 import '../widgets/hub_menu_tile.dart';
+import '../widgets/resto_switcher.dart';
 import '../widgets/kaata_logo.dart';
 import 'employee_orders_screen.dart';
 import 'pos_home_screen.dart';
@@ -47,6 +48,7 @@ class AdminHomeScreen extends StatelessWidget {
             subtitle: email == null ? 'Admin' : 'Admin • $email',
             colorA: KaataTheme.brand,
             colorB: KaataTheme.brandDark,
+            trailing: const RestoSwitcher(),
           ),
           Expanded(
             child: ListView(

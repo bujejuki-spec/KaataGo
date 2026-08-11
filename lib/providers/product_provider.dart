@@ -21,7 +21,7 @@ class ProductProvider extends ChangeNotifier {
   List<Product> get products => _products;
 
   Future<void> load() async {
-    _products = await _repo.getAll();
+    _products = await _repo.getAll(restoId);
     notifyListeners();
   }
 
@@ -37,6 +37,10 @@ class ProductProvider extends ChangeNotifier {
   /// there never reach the server, so nobody else ever sees them.
   Future<void> syncWithResto(String? restoId) async {
     this.restoId = restoId;
+    // Produk warisan (dibuat sebelum aplikasi mengenal banyak resto)
+    // diakui sebagai milik resto ini sekali saja, supaya resto kedua
+    // tidak ikut menariknya ke dalam katalognya sendiri.
+    if (restoId != null) await _repo.claimUnassigned(restoId);
     await load();
     await pullStockFromFirestore();
     await pullNewProductsFromFirestore();
@@ -95,7 +99,7 @@ class ProductProvider extends ChangeNotifier {
       final localIds = _products.map((p) => p.id).toSet();
       for (final remote in remoteProducts) {
         if (!localIds.contains(remote.id)) {
-          await _repo.insert(remote);
+          await _repo.insert(remote, restoId);
         }
       }
       await load();
@@ -129,13 +133,13 @@ class ProductProvider extends ChangeNotifier {
       ppnExempt: ppnExempt,
       serviceExempt: serviceExempt,
     );
-    await _repo.insert(product);
+    await _repo.insert(product, restoId);
     _mirrorToFirestore(product);
     await load();
   }
 
   Future<void> updateProduct(Product product) async {
-    await _repo.update(product);
+    await _repo.update(product, restoId);
     _mirrorToFirestore(product);
     await load();
   }

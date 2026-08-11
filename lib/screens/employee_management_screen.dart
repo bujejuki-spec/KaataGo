@@ -8,6 +8,7 @@ import '../widgets/dialog_actions.dart';
 
 const _roleLabels = {
   'super_admin': 'Super Admin',
+  'owner': 'Owner',
   'admin': 'Admin',
   'kasir': 'Kasir',
   'chef': 'Chef',
@@ -16,6 +17,7 @@ const _roleLabels = {
 
 const _roleColors = {
   'super_admin': Color(0xFF7C3AED),
+  'owner': Color(0xFFD97706),
   'admin': Color(0xFF6366F1),
   'kasir': Color(0xFF0EA5E9),
   'chef': Color(0xFFF97316),
@@ -94,7 +96,7 @@ class _EmployeeManagementScreenState extends State<EmployeeManagementScreen> {
       ),
     );
     if (confirm != true) return;
-    await _employeeRepo.delete(e.email);
+    await _employeeRepo.delete(e.email, e.restoId);
     _load();
   }
 

@@ -10,6 +10,11 @@ Rilis lama dihapus lebih dulu: URL "releases/latest/download" hanya
 menunjuk satu rilis, jadi menumpuknya cuma menyimpan APK usang yang tak
 pernah diunduh siapa pun.
 
+Sebelum dihapus, jumlah unduhannya dipanen ke downloads.json. Angka itu
+menempel pada rilis — ikut terhapus bersamanya — sehingga tanpa dipanen
+lebih dulu, penghitung di landing page akan kembali nol setiap kali versi
+baru terbit.
+
 Permintaannya dikirim lewat `curl`, bukan urllib. Python bawaan Homebrew
 di mesin ini tidak dipasangi sertifikat CA, sehingga setiap koneksi HTTPS
 gagal di tahap verifikasi; curl memakai penyimpanan sertifikat sistem dan
@@ -65,10 +70,35 @@ def request(token, method, url, *, body=None, body_file=None, content_type=None)
     return code, parsed
 
 
+def carry_forward(path, harvested):
+    """Menambahkan unduhan rilis yang akan dihapus ke saldo awal.
+
+    Halaman menjumlahkan saldo ini dengan unduhan rilis yang sedang
+    berjalan, sehingga totalnya terus naik alih-alih ikut hilang bersama
+    rilis lamanya.
+    """
+    try:
+        with open(path) as f:
+            data = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        data = {}
+
+    before = int(data.get("carried", 0))
+    data["carried"] = before + harvested
+    with open(path, "w") as f:
+        json.dump(data, f, indent=2)
+        f.write("\n")
+    print(f"  unduhan dipanen: +{harvested} (saldo awal {before} → {data['carried']})")
+
+
 def main():
-    if len(sys.argv) != 6:
-        raise SystemExit("pakai: github_release.py <repo> <tag> <nama> <catatan> <path-apk>")
-    repo, tag, name, body, apk_path = sys.argv[1:]
+    if len(sys.argv) not in (6, 7):
+        raise SystemExit(
+            "pakai: github_release.py <repo> <tag> <nama> <catatan> <path-apk> "
+            "[downloads.json]"
+        )
+    repo, tag, name, body, apk_path = sys.argv[1:6]
+    tally_path = sys.argv[6] if len(sys.argv) == 7 else None
 
     token = os.environ.get("GITHUB_TOKEN", "").strip()
     if not token:
@@ -77,6 +107,15 @@ def main():
         raise SystemExit(f"APK tidak ditemukan: {apk_path}")
 
     _, releases = request(token, "GET", f"{API}/repos/{repo}/releases?per_page=100")
+
+    harvested = sum(
+        a.get("download_count", 0)
+        for r in releases or []
+        for a in r.get("assets", [])
+    )
+    if tally_path and harvested:
+        carry_forward(tally_path, harvested)
+
     for r in releases or []:
         request(token, "DELETE", f"{API}/repos/{repo}/releases/{r['id']}")
         print(f"  rilis lama dihapus: {r.get('tag_name') or r['id']}")

@@ -27,7 +27,18 @@ class EmployeeRepository {
     await _client.from('employees').upsert(employee.toMap());
   }
 
-  Future<void> delete(String email) async {
-    await _client.from('employees').delete().eq('email', email);
+  /// Menghapus keanggotaan pada satu resto, bukan seluruh akunnya.
+  ///
+  /// Satu email kini bisa terdaftar di beberapa resto sekaligus, jadi
+  /// menghapus berdasarkan email saja akan mengeluarkan orang itu dari
+  /// semua cabang — termasuk yang tidak sedang diurus.
+  Future<void> delete(String email, String? restoId) async {
+    final query = _client.from('employees').delete().eq('email', email);
+    if (restoId != null) {
+      await query.eq('resto_id', restoId);
+    } else {
+      // super_admin tidak terikat resto; barisnya memang cuma satu.
+      await query;
+    }
   }
 }

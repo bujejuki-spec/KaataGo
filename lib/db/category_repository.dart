@@ -8,15 +8,29 @@ import 'database_helper.dart';
 class CategoryRepository {
   final _dbHelper = DatabaseHelper.instance;
 
-  Future<List<ProductCategory>> getAll() async {
+  /// Kategori milik satu resto. Baris tanpa pemilik ikut terbawa — itu
+  /// kategori yang dibuat sebelum aplikasi mengenal banyak resto.
+  Future<List<ProductCategory>> getAll(String? restoId) async {
     final db = await _dbHelper.database;
-    final maps = await db.query('categories', orderBy: 'name ASC');
+    final maps = restoId == null
+        ? await db.query('categories', orderBy: 'name ASC')
+        : await db.query(
+            'categories',
+            where: 'resto_id = ? OR resto_id IS NULL',
+            whereArgs: [restoId],
+            orderBy: 'name ASC',
+          );
     return maps.map((m) => ProductCategory.fromMap(m)).toList();
   }
 
-  Future<void> insert(ProductCategory category) async {
+  Future<void> claimUnassigned(String restoId) async {
     final db = await _dbHelper.database;
-    await db.insert('categories', category.toMap());
+    await db.update('categories', {'resto_id': restoId}, where: 'resto_id IS NULL');
+  }
+
+  Future<void> insert(ProductCategory category, String? restoId) async {
+    final db = await _dbHelper.database;
+    await db.insert('categories', {...category.toMap(), 'resto_id': restoId});
   }
 
   Future<void> delete(String id) async {

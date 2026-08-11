@@ -4,22 +4,45 @@ import 'database_helper.dart';
 class ProductRepository {
   final _dbHelper = DatabaseHelper.instance;
 
-  Future<List<Product>> getAll() async {
+  /// Katalog satu resto.
+  ///
+  /// Baris ber-resto_id NULL ikut terbawa: itu produk yang sudah ada
+  /// sebelum aplikasi mengenal banyak resto, dan pada perangkat yang
+  /// bersangkutan memang hanya ada satu resto. Sekali disentuh
+  /// [claimUnassigned], kepemilikannya jadi tegas.
+  Future<List<Product>> getAll(String? restoId) async {
     final db = await _dbHelper.database;
-    final maps = await db.query('products', orderBy: 'name ASC');
+    final maps = restoId == null
+        ? await db.query('products', orderBy: 'name ASC')
+        : await db.query(
+            'products',
+            where: 'resto_id = ? OR resto_id IS NULL',
+            whereArgs: [restoId],
+            orderBy: 'name ASC',
+          );
     return maps.map((m) => Product.fromMap(m)).toList();
   }
 
-  Future<void> insert(Product product) async {
+  /// Menandai produk warisan sebagai milik resto yang sedang dibuka.
+  ///
+  /// Dijalankan sekali saat resto pertama kali dibuka setelah pembaruan.
+  /// Setelah itu tidak ada lagi baris tanpa pemilik, sehingga resto kedua
+  /// tidak akan ikut mengklaimnya.
+  Future<void> claimUnassigned(String restoId) async {
     final db = await _dbHelper.database;
-    await db.insert('products', product.toMap());
+    await db.update('products', {'resto_id': restoId}, where: 'resto_id IS NULL');
   }
 
-  Future<void> update(Product product) async {
+  Future<void> insert(Product product, String? restoId) async {
+    final db = await _dbHelper.database;
+    await db.insert('products', {...product.toMap(), 'resto_id': restoId});
+  }
+
+  Future<void> update(Product product, String? restoId) async {
     final db = await _dbHelper.database;
     await db.update(
       'products',
-      product.toMap(),
+      {...product.toMap(), 'resto_id': restoId},
       where: 'id = ?',
       whereArgs: [product.id],
     );

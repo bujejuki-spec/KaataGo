@@ -18,7 +18,7 @@ class CategoryProvider extends ChangeNotifier {
   List<ProductCategory> get categories => _categories;
 
   Future<void> load() async {
-    _categories = await _repo.getAll();
+    _categories = await _repo.getAll(restoId);
     notifyListeners();
   }
 
@@ -33,12 +33,15 @@ class CategoryProvider extends ChangeNotifier {
   /// this device's local database — e.g. ones seeded directly via SQL.
   Future<void> pullNewFromSupabase() async {
     if (restoId == null) return;
+    // Kategori warisan diakui milik resto ini sekali saja — sama seperti
+    // produk, supaya resto kedua tidak ikut mengklaimnya.
+    await _repo.claimUnassigned(restoId!);
     try {
       final remote = await _syncRepo.getAllOnce(restoId!);
       final localIds = _categories.map((c) => c.id).toSet();
       for (final r in remote) {
         if (!localIds.contains(r.id)) {
-          await _repo.insert(r);
+          await _repo.insert(r, restoId);
         }
       }
       await load();
@@ -49,7 +52,7 @@ class CategoryProvider extends ChangeNotifier {
 
   Future<void> addCategory(String name) async {
     final category = ProductCategory(id: _uuid.v4(), name: name);
-    await _repo.insert(category);
+    await _repo.insert(category, restoId);
     if (restoId != null) {
       _syncRepo.upsert(category, restoId!).catchError((_) {});
     }

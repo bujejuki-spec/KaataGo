@@ -24,7 +24,7 @@ class DatabaseHelper {
 
     return openDatabase(
       path,
-      version: 10,
+      version: 11,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE products (
@@ -38,7 +38,12 @@ class DatabaseHelper {
             level_groups TEXT,
             level_prices TEXT,
             ppn_exempt INTEGER NOT NULL DEFAULT 0,
-            service_exempt INTEGER NOT NULL DEFAULT 0
+            service_exempt INTEGER NOT NULL DEFAULT 0,
+            -- Katalog milik resto mana. Tanpa kolom ini, akun yang
+            -- memegang dua cabang akan melihat produk keduanya bercampur
+            -- di satu daftar — dan sinkronisasi akan mendorong produk
+            -- cabang yang satu ke cabang yang lain.
+            resto_id TEXT
           )
         ''');
 
@@ -73,7 +78,8 @@ class DatabaseHelper {
         await db.execute('''
           CREATE TABLE categories (
             id TEXT PRIMARY KEY,
-            name TEXT NOT NULL
+            name TEXT NOT NULL,
+            resto_id TEXT
           )
         ''');
       },
@@ -118,6 +124,15 @@ class DatabaseHelper {
           await db.execute('ALTER TABLE transactions ADD COLUMN baseAmount INTEGER');
           await db.execute('ALTER TABLE transactions ADD COLUMN serviceAmount INTEGER');
           await db.execute('ALTER TABLE transactions ADD COLUMN ppnAmount INTEGER');
+        }
+        if (oldVersion < 11) {
+          // Produk lama tidak tahu miliknya resto mana. Dibiarkan NULL
+          // dan diperlakukan sebagai milik resto mana pun yang pertama
+          // kali membukanya setelah pembaruan ini — satu-satunya
+          // kemungkinan yang benar, karena sampai sekarang memang cuma
+          // ada satu resto per perangkat.
+          await db.execute('ALTER TABLE products ADD COLUMN resto_id TEXT');
+          await db.execute('ALTER TABLE categories ADD COLUMN resto_id TEXT');
         }
       },
     );

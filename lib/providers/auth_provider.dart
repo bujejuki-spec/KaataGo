@@ -1,10 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../supabase_config.dart';
 
-enum EmployeeRole { superAdmin, admin, kasir, chef, finance }
+enum EmployeeRole { superAdmin, owner, admin, kasir, chef, finance }
 
 /// Which door the sign-in came through, so the account can be checked
 /// against what the person actually picked.
@@ -20,6 +21,7 @@ enum LoginIntent { customer, employee }
 /// others, so it can't just rely on [EmployeeRole.name]).
 const _roleDbValues = {
   EmployeeRole.superAdmin: 'super_admin',
+  EmployeeRole.owner: 'owner',
   EmployeeRole.admin: 'admin',
   EmployeeRole.kasir: 'kasir',
   EmployeeRole.chef: 'chef',
@@ -28,6 +30,7 @@ const _roleDbValues = {
 
 const _roleDisplayLabels = {
   EmployeeRole.superAdmin: 'Super Admin',
+  EmployeeRole.owner: 'Owner',
   EmployeeRole.admin: 'Admin',
   EmployeeRole.kasir: 'Kasir',
   EmployeeRole.chef: 'Chef',
@@ -49,7 +52,12 @@ const _roleDisplayLabels = {
 /// [AuthProvider]'s fields.
 class _EmployeeLookup {
   final EmployeeRole? role;
-  final String? restoId;
+
+  /// Semua resto yang dipegang akun ini. Seorang pemilik dua cabang
+  /// punya satu baris `employees` per resto, jadi hasilnya bisa lebih
+  /// dari satu.
+  final List<String> restoIds;
+
   final String? name;
 
   /// Set when the account resolves to an employee whose resto has been
@@ -57,7 +65,12 @@ class _EmployeeLookup {
   /// message is meant for the login screen.
   final String? blockedReason;
 
-  const _EmployeeLookup({this.role, this.restoId, this.name, this.blockedReason});
+  const _EmployeeLookup({
+    this.role,
+    this.restoIds = const [],
+    this.name,
+    this.blockedReason,
+  });
 
   bool get isEmployee => role != null;
 }
@@ -70,7 +83,17 @@ class AuthProvider extends ChangeNotifier {
 
   User? user;
   EmployeeRole? role;
+
+  /// Resto yang sedang dibuka. Semua layar membaca ini, jadi berpindah
+  /// resto cukup mengubah satu nilai — asalkan layarnya dibangun ulang,
+  /// yang dijamin RootScreen lewat key-nya.
   String? restoId;
+
+  /// Seluruh resto yang boleh dia kelola. Satu isi untuk kebanyakan
+  /// karyawan; lebih dari satu untuk Admin/Finance/Owner yang memegang
+  /// beberapa cabang.
+  List<String> restoIds = const [];
+
   String? employeeName;
   bool isCheckingRole = false;
   bool isInitializing = true;
@@ -83,6 +106,11 @@ class AuthProvider extends ChangeNotifier {
   bool get isKasir => role == EmployeeRole.kasir;
   bool get isChef => role == EmployeeRole.chef;
   bool get isFinance => role == EmployeeRole.finance;
+
+  /// Owner memegang seluruh menu Chef, Kasir, Admin, dan Finance.
+  bool get isOwner => role == EmployeeRole.owner;
+
+  bool get hasMultipleRestos => restoIds.length > 1;
 
   /// Human-readable role label ("Admin", "Super Admin", ...) for display
   /// on each role's home screen header, or null if not an employee.
@@ -168,7 +196,8 @@ class AuthProvider extends ChangeNotifier {
 
       user = signedIn;
       role = found.role;
-      restoId = found.restoId;
+      restoIds = found.restoIds;
+      restoId = await _restoreSelectedResto(found.restoIds);
       employeeName = found.name;
       notifyListeners();
     } catch (e) {
@@ -186,6 +215,7 @@ class AuthProvider extends ChangeNotifier {
     user = null;
     role = null;
     restoId = null;
+    restoIds = const [];
     employeeName = null;
     notifyListeners();
   }
@@ -206,7 +236,8 @@ class AuthProvider extends ChangeNotifier {
 
     final found = await _lookupEmployee(email);
     role = found.role;
-    restoId = found.restoId;
+    restoIds = found.restoIds;
+    restoId = await _restoreSelectedResto(found.restoIds);
     employeeName = found.name;
     if (found.blockedReason != null) lastError = found.blockedReason;
 
@@ -220,60 +251,111 @@ class AuthProvider extends ChangeNotifier {
     if (found.blockedReason != null) await signOut();
   }
 
-  /// Reads the `employees` row for [email] without touching any state.
+  /// Membaca seluruh baris `employees` milik [rawEmail] tanpa menyentuh
+  /// state apa pun.
+  ///
+  /// Bisa mengembalikan beberapa resto: satu orang punya satu baris per
+  /// resto yang dia pegang. Perannya diambil dari baris pertama yang sah
+  /// — satu orang tidak dimaksudkan berperan beda-beda di tiap cabang,
+  /// dan kalau itu terjadi, yang pertama yang berlaku.
   Future<_EmployeeLookup> _lookupEmployee(String rawEmail) async {
     final email = rawEmail.toLowerCase();
     try {
-      debugPrint('[Auth] Checking employee role for: $email');
-      final rows = await _supabase
-          .from('employees')
-          .select()
-          .eq('email', email)
-          .limit(1);
+      debugPrint('[Auth] Checking employee rows for: $email');
+      final rows = await _supabase.from('employees').select().eq('email', email);
       debugPrint('[Auth] Rows: $rows');
       if (rows.isEmpty) return const _EmployeeLookup();
 
-      final row = rows.first;
-      final active = row['active'] != false;
-      final roleStr = row['role'] as String?;
-      final restoIdValue = row['resto_id'] as String?;
-      // super_admin isn't scoped to a single resto, so resto_id is
-      // allowed to be null only for that role.
-      final isSuperAdminRow = roleStr == _roleDbValues[EmployeeRole.superAdmin];
-      if (!active || roleStr == null || (restoIdValue == null && !isSuperAdminRow)) {
-        return const _EmployeeLookup();
-      }
+      EmployeeRole? role;
+      String? name;
+      final restoIds = <String>[];
 
-      // The employee row can be perfectly valid while the restaurant
-      // itself has been switched off by Super Admin — that blocks entry
-      // just as firmly.
-      if (restoIdValue != null) {
-        final restoRows = await _supabase
-            .from('restaurants')
-            .select('active')
-            .eq('id', restoIdValue)
-            .limit(1);
-        final restoActive = restoRows.isEmpty || restoRows.first['active'] != false;
-        if (!restoActive) {
-          return const _EmployeeLookup(
-            blockedReason: 'Resto ini sedang dinonaktifkan sementara.\n'
-                'Silakan hubungi Call Center KaataGo untuk info lebih lanjut.',
-          );
+      for (final row in rows) {
+        final active = row['active'] != false;
+        final roleStr = row['role'] as String?;
+        final restoIdValue = row['resto_id'] as String?;
+        if (!active || roleStr == null) continue;
+
+        // Peran yang tidak dikenal (mis. baris lama dari versi
+        // berikutnya) dilewati diam-diam, bukan melempar galat yang akan
+        // mengunci seluruh akun dari aplikasi.
+        EmployeeRole? parsed;
+        for (final entry in _roleDbValues.entries) {
+          if (entry.value == roleStr) {
+            parsed = entry.key;
+            break;
+          }
         }
+        if (parsed == null) continue;
+
+        // super_admin tidak terikat satu resto, jadi resto_id-nya boleh
+        // kosong — untuk peran lain, baris tanpa resto tidak berarti apa
+        // pun dan dilewati.
+        if (parsed == EmployeeRole.superAdmin) {
+          return _EmployeeLookup(role: parsed, name: row['name'] as String?);
+        }
+        if (restoIdValue == null) continue;
+
+        role ??= parsed;
+        name ??= row['name'] as String?;
+        if (!restoIds.contains(restoIdValue)) restoIds.add(restoIdValue);
       }
 
-      return _EmployeeLookup(
-        role: _roleDbValues.entries
-            .firstWhere((e) => e.value == roleStr,
-                orElse: () => throw StateError('Unknown role: $roleStr'))
-            .key,
-        restoId: restoIdValue,
-        name: row['name'] as String?,
-      );
+      if (role == null || restoIds.isEmpty) return const _EmployeeLookup();
+
+      // Resto yang dinonaktifkan Super Admin disaring, bukan memblokir
+      // seluruh akun: pemilik dua cabang yang satu cabangnya ditutup
+      // sementara tetap harus bisa mengurus cabang yang lain.
+      final restoRows = await _supabase
+          .from('restaurants')
+          .select('id, active')
+          .inFilter('id', restoIds);
+      final activeIds = restoIds
+          .where((id) => restoRows
+              .where((r) => r['id'] == id)
+              .every((r) => r['active'] != false))
+          .toList();
+
+      if (activeIds.isEmpty) {
+        return const _EmployeeLookup(
+          blockedReason: 'Resto ini sedang dinonaktifkan sementara.\n'
+              'Silakan hubungi Call Center KaataGo untuk info lebih lanjut.',
+        );
+      }
+
+      return _EmployeeLookup(role: role, restoIds: activeIds, name: name);
     } catch (e) {
       debugPrint('[Auth] ERROR checking employee role: $e');
       return _EmployeeLookup(blockedReason: 'Gagal cek status karyawan: $e');
     }
+  }
+
+  /// Berpindah ke resto lain yang dia pegang.
+  ///
+  /// Pilihannya diingat sampai logout, supaya membuka aplikasi besok
+  /// tidak melemparnya kembali ke cabang yang salah.
+  Future<void> switchResto(String id) async {
+    if (!restoIds.contains(id) || id == restoId) return;
+    restoId = id;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_lastRestoKey, id);
+    notifyListeners();
+  }
+
+  static const _lastRestoKey = 'auth_last_resto_id';
+
+  /// Menentukan resto mana yang dibuka setelah login: yang terakhir
+  /// dipilih kalau masih dipegang, kalau tidak yang pertama.
+  Future<String?> _restoreSelectedResto(List<String> available) async {
+    if (available.isEmpty) return null;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final last = prefs.getString(_lastRestoKey);
+      if (last != null && available.contains(last)) return last;
+    } catch (_) {
+      // Preferensi tidak terbaca — jatuh ke pilihan pertama saja.
+    }
+    return available.first;
   }
 
   Future<void> signOut() async {
@@ -282,6 +364,7 @@ class AuthProvider extends ChangeNotifier {
     user = null;
     role = null;
     restoId = null;
+    restoIds = const [];
     employeeName = null;
     notifyListeners();
   }

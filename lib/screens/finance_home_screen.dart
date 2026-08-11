@@ -5,6 +5,7 @@ import '../providers/auth_provider.dart';
 import '../theme.dart';
 import '../utils/logout_confirm.dart';
 import '../widgets/hub_menu_tile.dart';
+import '../widgets/resto_switcher.dart';
 import '../widgets/kaata_logo.dart';
 import 'cash_deposit_screen.dart';
 import 'finance_balance_screen.dart';
@@ -48,6 +49,7 @@ class FinanceHomeScreen extends StatelessWidget {
             subtitle: email == null ? 'Finance' : 'Finance • $email',
             colorA: KaataTheme.brand,
             colorB: KaataTheme.brandDark,
+            trailing: const RestoSwitcher(),
           ),
           Expanded(
             child: ListView(

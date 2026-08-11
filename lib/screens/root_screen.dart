@@ -8,6 +8,7 @@ import 'chef_home_screen.dart';
 import 'customer_home_screen.dart';
 import 'finance_home_screen.dart';
 import 'kasir_home_screen.dart';
+import 'owner_home_screen.dart';
 import 'role_choice_screen.dart';
 import 'super_admin_home_screen.dart';
 
@@ -50,10 +51,16 @@ class _RootScreenState extends State<RootScreen> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
     if (auth.isSuperAdmin) return const SuperAdminHomeScreen();
-    if (auth.isAdmin) return const AdminHomeScreen();
-    if (auth.isKasir) return const KasirHomeScreen();
-    if (auth.isChef) return const ChefHomeScreen();
-    if (auth.isFinance) return const FinanceHomeScreen();
+
+    // Layar peran dibangun ulang sepenuhnya saat resto berganti.
+    // Sebagian besar layar membaca restoId sekali di initState dan
+    // menyimpan hasilnya; tanpa dipaksa mulai dari awal, berpindah resto
+    // akan meninggalkan data cabang lama di layar — persis percampuran
+    // yang harus dihindari.
+    final home = _homeForRole(auth);
+    if (home != null) {
+      return KeyedSubtree(key: ValueKey(auth.restoId), child: home);
+    }
 
     // Signed in but not on the employee list — a customer. Their hub is
     // home the same way each role's screen is, so a restart lands there
@@ -68,5 +75,14 @@ class _RootScreenState extends State<RootScreen> {
     }
     if (session.hasActiveResto) return const CustomerHomeScreen();
     return const RoleChoiceScreen();
+  }
+
+  Widget? _homeForRole(AuthProvider auth) {
+    if (auth.isOwner) return const OwnerHomeScreen();
+    if (auth.isAdmin) return const AdminHomeScreen();
+    if (auth.isKasir) return const KasirHomeScreen();
+    if (auth.isChef) return const ChefHomeScreen();
+    if (auth.isFinance) return const FinanceHomeScreen();
+    return null;
   }
 }

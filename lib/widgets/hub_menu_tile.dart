@@ -75,6 +75,10 @@ class HubHeader extends StatelessWidget {
   final Color colorA;
   final Color colorB;
 
+  /// Ditampilkan di bawah subtitle. Dipakai pemilih resto, yang hanya
+  /// muncul untuk akun pemegang lebih dari satu cabang.
+  final Widget? trailing;
+
   const HubHeader({
     super.key,
     required this.logo,
@@ -82,6 +86,7 @@ class HubHeader extends StatelessWidget {
     required this.colorA,
     required this.colorB,
     this.subtitle,
+    this.trailing,
   });
 
   @override
@@ -120,6 +125,7 @@ class HubHeader extends StatelessWidget {
               style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 12.5),
             ),
           ],
+          if (trailing != null) trailing!,
         ],
       ),
     );
