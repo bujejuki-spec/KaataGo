@@ -2,6 +2,12 @@
 
 ## Yang harus kamu lakukan lebih dulu
 
+> **Perbaikan:** percobaan pertama gagal dengan
+> `column "resto_id" ... contains null values`. Penyebabnya baris
+> super_admin memang ber-`resto_id` NULL, sementara kunci utama menolak
+> NULL. File sudah diperbaiki — memakai unique index, bukan kunci utama —
+> jadi jalankan ulang file yang sama. Perlu APK 1.31.1 atau lebih baru.
+
 Jalankan **satu file** ini di SQL Editor Supabase:
 
 ```

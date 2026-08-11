@@ -23,22 +23,29 @@ alter table employees add constraint employees_role_check
   check (role in ('admin', 'kasir', 'chef', 'super_admin', 'finance', 'owner'));
 
 -- ── 2. Satu email, banyak resto ──────────────────────────────────────
--- Kunci utamanya berpindah dari email saja ke pasangan (email, resto_id):
--- keanggotaan seseorang memang melekat pada restonya, bukan pada dirinya
--- semata. Baris yang sudah ada tidak tersentuh — masing-masing tetap sah
--- sebagai satu pasangan.
+-- Keanggotaan seseorang melekat pada restonya, bukan pada dirinya semata,
+-- jadi yang harus unik adalah pasangan (email, resto_id).
+--
+-- Pasangan itu TIDAK dijadikan kunci utama, karena baris super_admin
+-- sengaja punya resto_id NULL — mereka memang tidak terikat satu resto —
+-- dan kunci utama menolak NULL. Sebagai gantinya dipakai unique index,
+-- yang mengizinkan NULL sekaligus tetap mencegah baris kembar.
+--
+-- NULLS NOT DISTINCT membuat dua baris super_admin dengan email sama
+-- tetap dianggap bentrok; tanpa itu, Postgres menganggap setiap NULL
+-- berbeda dan email yang sama bisa masuk dua kali. Klausa itu baru ada
+-- sejak Postgres 15, jadi ada jalan mundurnya.
+alter table employees drop constraint if exists employees_pkey;
+
 do $$
 begin
-  if exists (
-    select 1 from pg_constraint
-    where conrelid = 'employees'::regclass
-      and contype = 'p'
-      and conname = 'employees_pkey'
-      and (select count(*) from unnest(conkey)) = 1
-  ) then
-    alter table employees drop constraint employees_pkey;
-    alter table employees add constraint employees_pkey primary key (email, resto_id);
-  end if;
+  begin
+    create unique index if not exists employees_email_resto_uidx
+      on employees (email, resto_id) nulls not distinct;
+  exception when syntax_error or feature_not_supported then
+    create unique index if not exists employees_email_resto_uidx
+      on employees (email, resto_id);
+  end;
 end $$;
 
 -- Pencarian karyawan selalu lewat email, dan sekarang bisa mengembalikan

@@ -23,8 +23,18 @@ class EmployeeRepository {
     return rows.map((r) => Employee.fromMap(r)).toList();
   }
 
+  /// Menyimpan (atau memperbarui) keanggotaan seseorang pada satu resto.
+  ///
+  /// Target konfliknya disebut eksplisit karena tabel ini tidak lagi
+  /// punya kunci utama: yang unik adalah pasangan (email, resto_id),
+  /// dijaga oleh unique index — baris super_admin ber-resto_id NULL
+  /// membuat pasangan itu tidak bisa dijadikan kunci utama. Tanpa
+  /// onConflict, PostgREST akan mencari kunci utama yang sudah tidak ada
+  /// dan penyimpanan gagal.
   Future<void> upsert(Employee employee) async {
-    await _client.from('employees').upsert(employee.toMap());
+    await _client
+        .from('employees')
+        .upsert(employee.toMap(), onConflict: 'email,resto_id');
   }
 
   /// Menghapus keanggotaan pada satu resto, bukan seluruh akunnya.
