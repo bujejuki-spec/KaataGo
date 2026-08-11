@@ -20,6 +20,10 @@ android {
     ndkVersion = "26.1.10909125" // required by app_links, google_sign_in, etc.
 
     compileOptions {
+        // flutter_local_notifications memakai API java.time, yang baru ada
+        // di Android 8. Desugaring menyediakan tiruannya untuk perangkat
+        // lebih lama — tanpa ini build release ditolak mentah-mentah.
+        coreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }
@@ -69,4 +73,10 @@ android {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // Pasangan dari coreLibraryDesugaringEnabled di atas: pustaka inilah
+    // yang menyediakan java.time dkk untuk Android di bawah 8.
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'
 }

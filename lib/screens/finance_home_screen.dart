@@ -6,6 +6,7 @@ import '../theme.dart';
 import '../utils/logout_confirm.dart';
 import '../widgets/hub_menu_tile.dart';
 import '../widgets/kaata_logo.dart';
+import 'cash_deposit_screen.dart';
 import 'finance_balance_screen.dart';
 import 'finance_gl_mapping_screen.dart';
 import 'finance_income_screen.dart';
@@ -73,6 +74,16 @@ class FinanceHomeScreen extends StatelessWidget {
                   color: const Color(0xFF6366F1),
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => const FinanceBalanceScreen()),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                HubMenuTile(
+                  icon: Icons.account_balance_outlined,
+                  title: 'Setor Saldo Cash',
+                  subtitle: 'Riwayat setoran tunai berikut buktinya',
+                  color: const Color(0xFF0EA5E9),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const CashDepositScreen()),
                   ),
                 ),
                 const SizedBox(height: 12),

@@ -99,7 +99,7 @@ class _RoleChoiceScreenState extends State<RoleChoiceScreen> {
     // hazard doesn't apply, and that's the whole point of capturing it.
     // ignore: use_build_context_synchronously
     await withLoadingOverlay(rootContext, () async {
-      await auth.signInWithGoogle();
+      await auth.signInWithGoogle(intent: LoginIntent.customer);
       // Orders placed on this device before signing in follow them into
       // the account, but only if the email is new to KaataGo — see
       // claimGuestOrdersForLogin. Folded into the same overlay so there's
@@ -109,11 +109,16 @@ class _RoleChoiceScreenState extends State<RoleChoiceScreen> {
       }
     });
 
-    // Either they backed out of Google's account picker (still not logged
-    // in), or the email turned out to be a registered employee — in both
-    // cases RootScreen has already decided what to show, so there's
-    // nothing left to do here.
-    if (!auth.isLoggedIn || auth.isEmployee) return;
+    // A staff email handed to the Customer door is refused outright now,
+    // with the reason left here. Previously it just signed them into the
+    // staff app instead, quietly ignoring which button they pressed.
+    if (auth.lastError != null) {
+      // ignore: use_build_context_synchronously
+      await _showLoginBlocked(rootContext, auth.lastError!);
+      return;
+    }
+    // Backed out of Google's account picker — nothing to do.
+    if (!auth.isLoggedIn) return;
 
     if (claimed > 0) {
       messenger.showSnackBar(
@@ -135,53 +140,38 @@ class _RoleChoiceScreenState extends State<RoleChoiceScreen> {
   Future<void> _chooseEmployee() async {
     setState(() => _signingInEmployee = true);
     final auth = context.read<AuthProvider>();
-    await withLoadingOverlay(context, () => auth.signInWithGoogle());
+    await withLoadingOverlay(
+      context,
+      () => auth.signInWithGoogle(intent: LoginIntent.employee),
+    );
     if (!mounted) return;
     setState(() => _signingInEmployee = false);
 
-    if (auth.isLoggedIn && !auth.isEmployee) {
-      // Logged in fine, but this email isn't staff anywhere — kick them
-      // back out so they don't linger half-authenticated, then explain.
-      final email = auth.user?.email;
-      await auth.signOut();
-      if (!mounted) return;
-      await showDialog<void>(
-        context: context,
-        builder: (_) => AlertDialog(
-          icon: const Icon(Icons.block, size: 40, color: Colors.orange),
-          title: const Text('Belum Terdaftar'),
-          content: Text(
-            'Akun $email belum terdaftar sebagai karyawan resto.\n'
-            'Minta admin untuk menambahkan email ini ke daftar karyawan.',
-            textAlign: TextAlign.center,
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK')),
-          ],
-        ),
-      );
-      return;
-    }
-
-    if (!auth.isLoggedIn && auth.lastError != null) {
-      // e.g. resto deactivated — _checkEmployeeRole signs them back out
-      // itself but leaves the message for us to show here.
-      if (!mounted) return;
-      await showDialog<void>(
-        context: context,
-        builder: (_) => AlertDialog(
-          icon: const Icon(Icons.block, size: 40, color: Colors.red),
-          title: const Text('Tidak Bisa Masuk'),
-          content: Text(auth.lastError!, textAlign: TextAlign.center),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK')),
-          ],
-        ),
-      );
+    // Not staff, resto switched off, or the lookup failed — AuthProvider
+    // refuses all of them the same way and leaves the reason here. It
+    // never signs a rejected account in, so this screen is still mounted
+    // to explain.
+    if (auth.lastError != null) {
+      await _showLoginBlocked(context, auth.lastError!);
     }
     // Otherwise: either cancelled (nothing logged in, no error — just
     // stay put), or they're a valid employee and RootScreen already
     // handles the swap.
+  }
+
+  Future<void> _showLoginBlocked(BuildContext context, String reason) {
+    return showDialog<void>(
+      context: context,
+      builder: (_) => AlertDialog(
+        icon: const Icon(Icons.block, size: 40, color: Colors.orange),
+        title: const Text('Tidak Bisa Masuk'),
+        content: Text(reason, textAlign: TextAlign.center),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK')),
+        ],
+      ),
+    );
   }
 
   @override

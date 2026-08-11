@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../db/order_repository.dart';
 import '../models/customer_order.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/kitchen_checklist_dialog.dart';
 import '../utils/logout_confirm.dart';
 import '../widgets/grouped_order_list.dart';
 
@@ -94,6 +95,33 @@ class _ChefHomeScreenState extends State<ChefHomeScreen> {
     );
   }
 
+  /// Menutup pesanan lewat daftar centang, bukan satu tombol.
+  ///
+  /// Centang separuh tetap disimpan dan pesanannya bertahan di "Sedang
+  /// Dimasak" — dapur yang mengerjakan lima menu sekaligus jarang
+  /// menyelesaikan semuanya dalam satu waktu, dan memaksanya sekali klik
+  /// hanya akan membuat daftar centangnya diabaikan.
+  Future<void> _openChecklist(CustomerOrder order) async {
+    final result = await showDialog<Set<int>>(
+      context: context,
+      builder: (_) => KitchenChecklistDialog(order: order),
+    );
+    if (result == null) return;
+
+    final allDone = result.length >= order.items.length;
+    try {
+      await _repo.updateChecklist(
+        order.id,
+        itemsDone: result,
+        status: allDone ? KitchenStatus.done : KitchenStatus.onProgress,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Gagal menyimpan: $e')));
+    }
+  }
+
   Widget? _buildActions(CustomerOrder order) {
     switch (order.kitchenStatus) {
       case KitchenStatus.waiting:
@@ -107,13 +135,44 @@ class _ChefHomeScreenState extends State<ChefHomeScreen> {
           ),
         );
       case KitchenStatus.onProgress:
-        return SizedBox(
-          width: double.infinity,
-          child: FilledButton.icon(
-            icon: const Icon(Icons.check_circle_outline, size: 18),
-            label: const Text('Selesai'),
-            onPressed: () => _repo.updateKitchenStatus(order.id, KitchenStatus.done),
-          ),
+        final done = order.itemsDone.length;
+        final total = order.items.length;
+        final partial = done > 0 && done < total;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (partial) ...[
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF59E0B).withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.pending_actions, size: 14, color: Color(0xFF92400E)),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        'Sebagian selesai — $done dari $total menu',
+                        style: const TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF92400E),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+            FilledButton.icon(
+              icon: const Icon(Icons.checklist_rtl, size: 18),
+              label: Text(partial ? 'Lanjutkan Cek Menu' : 'Cek Menu & Selesai'),
+              onPressed: () => _openChecklist(order),
+            ),
+          ],
         );
       case KitchenStatus.done:
         return null;

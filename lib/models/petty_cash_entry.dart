@@ -1,13 +1,21 @@
-enum PettyCashSource { manual, incomeWithdrawal }
+/// Dari mana uang petty cash datang.
+///
+/// [incomeWithdrawal] dulu berarti "dari seluruh penghasilan", waktu
+/// tunai dan non-tunai belum dibedakan. Baris lama dibiarkan apa adanya
+/// dan sekarang dibaca sebagai Non Cash — menulis ulang riwayat justru
+/// akan mengaku tahu sesuatu yang saat itu memang tidak tercatat.
+enum PettyCashSource { manual, incomeWithdrawal, cashWithdrawal }
 
 const _sourceDbValues = {
   PettyCashSource.manual: 'manual',
   PettyCashSource.incomeWithdrawal: 'income_withdrawal',
+  PettyCashSource.cashWithdrawal: 'cash_withdrawal',
 };
 
 const kPettyCashSourceLabels = {
   PettyCashSource.manual: 'Top Up Manual',
-  PettyCashSource.incomeWithdrawal: 'Withdraw dari Penghasilan',
+  PettyCashSource.incomeWithdrawal: 'Withdraw dari Saldo Non Cash',
+  PettyCashSource.cashWithdrawal: 'Withdraw dari Saldo Cash',
 };
 
 extension PettyCashSourceDb on PettyCashSource {

@@ -6,6 +6,10 @@
          older devices still do. -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="29" />
+    <!-- Notifikasi status pesanan. Wajib diminta saat berjalan sejak
+         Android 13; tanpa izin ini notifikasinya terkirim tapi tidak
+         pernah terlihat. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <application
         android:label="KaataGo"
         android:name="${applicationName}"

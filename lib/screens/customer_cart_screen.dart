@@ -115,7 +115,11 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
       sessionId: session.sessionId!,
       restoId: session.restoId!,
       orderType: _orderType,
-      customerName: isDineIn ? null : _nameCtrl.text.trim(),
+      // Dipakai juga untuk Dine In sekarang: nomor meja memberi tahu
+      // dapur ke mana mengantar, tapi tidak memberi tahu siapa yang
+      // dipanggil kalau mejanya berisi beberapa orang yang memesan
+      // sendiri-sendiri.
+      customerName: _nameCtrl.text.trim(),
     );
     // A logged-in customer's history comes from their email, so this is
     // only needed for guests — it's the only record they'd otherwise have.
@@ -218,7 +222,7 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
                         onSelectionChanged: (v) => setState(() => _orderType = v.first),
                       ),
                       const SizedBox(height: 16),
-                      if (isDineIn)
+                      if (isDineIn) ...[
                         TextFormField(
                           controller: _tableCtrl,
                           enabled: !tableKnown,
@@ -236,16 +240,21 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
                             if (v == null || v.trim().isEmpty) return 'Wajib diisi';
                             return null;
                           },
-                        )
-                      else
-                        TextFormField(
-                          controller: _nameCtrl,
-                          decoration: const InputDecoration(
-                            labelText: 'Nama Customer',
-                            helperText: 'Wajib diisi — nama yang akan dipanggil saat pesanan siap',
-                          ),
-                          validator: (v) => (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null,
                         ),
+                        const SizedBox(height: 12),
+                      ],
+                      TextFormField(
+                        controller: _nameCtrl,
+                        textCapitalization: TextCapitalization.words,
+                        decoration: InputDecoration(
+                          labelText: 'Nama Customer',
+                          helperText: isDineIn
+                              ? 'Wajib diisi — supaya pesananmu tidak tertukar dengan teman semeja'
+                              : 'Wajib diisi — nama yang akan dipanggil saat pesanan siap',
+                        ),
+                        validator: (v) =>
+                            (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null,
+                      ),
                       const SizedBox(height: 16),
                       ChargeSummary(
                         charges: cart.chargesFor(_orderType),

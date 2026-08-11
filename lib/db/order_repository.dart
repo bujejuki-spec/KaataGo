@@ -27,6 +27,23 @@ class OrderRepository {
     await _client.from('orders').update({'kitchen_status': status.name}).eq('id', orderId);
   }
 
+  /// Menyimpan menu mana saja yang sudah dicentang dapur, sekaligus
+  /// status barunya.
+  ///
+  /// Keduanya ditulis dalam satu perintah supaya tidak pernah ada
+  /// keadaan antara: pesanan yang sudah tercentang penuh tapi statusnya
+  /// masih "dimasak" karena update kedua gagal di tengah jalan.
+  Future<void> updateChecklist(
+    String orderId, {
+    required Set<int> itemsDone,
+    required KitchenStatus status,
+  }) async {
+    await _client.from('orders').update({
+      'items_done': itemsDone.toList()..sort(),
+      'kitchen_status': status.name,
+    }).eq('id', orderId);
+  }
+
   /// Live stream of all orders for one restaurant, newest first. Used by
   /// the Admin/Chef "Pesanan Masuk" screens.
   Stream<List<CustomerOrder>> watchAll(String restoId) {

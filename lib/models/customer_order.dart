@@ -71,6 +71,14 @@ class CustomerOrder {
   final String? tableNumber;
   final String? sessionId; // groups a customer's orders after scanning a table QR
   final KitchenStatus kitchenStatus;
+
+  /// Nomor baris [items] yang sudah dicentang selesai oleh dapur.
+  ///
+  /// Nomor baris, bukan productId: satu produk bisa muncul beberapa kali
+  /// sebagai baris terpisah dengan opsi berbeda, dan productId tidak
+  /// membedakannya. Urutan [items] tidak pernah berubah setelah pesanan
+  /// dibuat, jadi nomornya aman dijadikan penanda.
+  final Set<int> itemsDone;
   final String restoId; // which restaurant this order belongs to
   final OrderType orderType; // dine-in or take-away, chosen at checkout
 
@@ -103,13 +111,14 @@ class CustomerOrder {
     this.tableNumber,
     this.sessionId,
     this.kitchenStatus = KitchenStatus.waiting,
+    Set<int>? itemsDone,
     this.orderType = OrderType.dineIn,
     this.customerName,
     this.cashierName,
     this.baseAmount,
     this.serviceAmount,
     this.ppnAmount,
-  });
+  }) : itemsDone = itemsDone ?? const {};
 
   /// Maps to Postgres `orders` table columns (snake_case). `id` and
   /// `created_at` are left out — assigned by the database on insert.
@@ -153,6 +162,10 @@ class CustomerOrder {
       glCode: data['gl_code'] as String?,
       tableNumber: data['table_number']?.toString(),
       sessionId: data['session_id'] as String?,
+      itemsDone: {
+        for (final v in (data['items_done'] as List<dynamic>? ?? const []))
+          (v as num).toInt(),
+      },
       kitchenStatus: KitchenStatus.values.firstWhere(
         (e) => e.name == data['kitchen_status'],
         orElse: () => KitchenStatus.waiting,

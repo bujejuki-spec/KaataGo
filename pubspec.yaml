@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.28.4+63
+version: 1.30.0+65
 
 environment:
   sdk: ^3.5.4
@@ -96,6 +96,7 @@ dependencies:
   # (pdf) and hands it to the OS share/print sheet (printing).
   pdf: ^3.11.1
   printing: ^5.13.4
+  flutter_local_notifications: ^19.5.0
 
 dependency_overrides:
   # app_links 6.4.x's Android build.gradle references `flutter.compileSdkVersion`

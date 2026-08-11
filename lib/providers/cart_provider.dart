@@ -64,6 +64,11 @@ class CartProvider extends ChangeNotifier {
 
   int get itemCount => _items.fold(0, (sum, item) => sum + item.quantity);
 
+  /// Semua baris untuk satu produk — bisa lebih dari satu kalau menu
+  /// yang sama dipesan dengan opsi berbeda.
+  List<CartItem> linesOf(String productId) =>
+      _items.where((i) => i.product.id == productId).toList();
+
   /// How many of [productId] are in the cart across every variant —
   /// used by the grid badge, where "2" should mean two plates of nasi
   /// goreng regardless of how many lines they're split over.

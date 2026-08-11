@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -10,6 +11,7 @@ import '../db/guest_order_store.dart';
 import '../db/order_repository.dart';
 import '../db/restaurant_repository.dart';
 import '../db/session_repository.dart';
+import '../models/cart_item.dart';
 import '../models/customer_order.dart';
 import '../models/product.dart';
 import '../models/restaurant.dart';
@@ -17,6 +19,7 @@ import '../providers/auth_provider.dart';
 import '../providers/customer_cart_provider.dart';
 import '../providers/table_session_provider.dart';
 import '../utils/customer_login_flow.dart';
+import '../utils/greeting.dart';
 import '../utils/logout_confirm.dart';
 import '../theme.dart';
 import '../widgets/cart_bottom_bar.dart';
@@ -24,6 +27,7 @@ import '../widgets/hub_menu_tile.dart';
 import '../widgets/kaata_logo.dart';
 import '../widgets/loading_overlay.dart';
 import '../widgets/product_category_list.dart';
+import '../widgets/product_lines_sheet.dart';
 import '../widgets/quantity_dialog.dart';
 import 'customer_cart_screen.dart';
 import 'customer_history_screen.dart';
@@ -32,6 +36,7 @@ import 'customer_profile_screen.dart';
 import 'restaurant_list_screen.dart';
 import 'scan_table_screen.dart';
 import '../widgets/dialog_actions.dart';
+import '../utils/id_time.dart';
 
 /// Self-order browsing screen for customers. Reads the product catalog
 /// live from Firestore (mirrored by the employee app), so stock/prices
@@ -76,6 +81,10 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
   /// email's local part while it loads or if no profile exists yet.
   String? _profileName;
 
+  /// Foto profil mereka, kalau sudah diunggah — dipakai menggantikan
+  /// logo KaataGo di header, supaya hub-nya terasa milik mereka sendiri.
+  String? _profilePhoto;
+
   @override
   void initState() {
     super.initState();
@@ -109,7 +118,10 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
     try {
       final profile = await CustomerProfileRepository().getOnce(email);
       if (!mounted || profile == null || profile.name.trim().isEmpty) return;
-      setState(() => _profileName = profile.name.trim());
+      setState(() {
+        _profileName = profile.name.trim();
+        _profilePhoto = profile.photoBase64;
+      });
     } catch (_) {
       // Offline — the greeting falls back to the email's local part.
     }
@@ -193,7 +205,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
     setState(() => _loggingIn = true);
     var claimed = 0;
     await withLoadingOverlay(context, () async {
-      await auth.signInWithGoogle();
+      await auth.signInWithGoogle(intent: LoginIntent.customer);
       if (auth.isLoggedIn && !auth.isEmployee) {
         claimed = await claimGuestOrdersForLogin();
       }
@@ -222,10 +234,10 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
       return;
     }
 
+    // Left over: the account picker was dismissed. A staff email is no
+    // longer a case that reaches here — AuthProvider refuses it and the
+    // lastError branch above explains why.
     if (mounted) setState(() => _loggingIn = false);
-    // If it turns out this email IS a registered employee, RootScreen
-    // will notice the role change and switch to the staff screens on its
-    // own — nothing else to do here.
   }
 
   /// Icons shown on both the "scan first" screen and the main ordering
@@ -356,20 +368,29 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
     );
   }
 
-  /// Always adds a *new* line rather than editing what's already in the
-  /// cart — the same dish ordered two different ways stays two lines.
-  /// Editing happens from the cart screen.
-  Future<void> _openQuantityDialog(
+  /// Menu yang belum ada di keranjang langsung membuka popup jumlah.
+  /// Yang sudah ada membuka daftar barisnya, supaya jumlahnya bisa
+  /// diubah atau dihapus tanpa harus maju dulu ke keranjang.
+  Future<void> _onTapProduct(
+    BuildContext context,
+    CustomerCartProvider cart,
+    Product product,
+  ) async {
+    if (cart.linesOf(product.id).isEmpty) {
+      await _addLine(context, cart, product);
+      return;
+    }
+    await _openLinesSheet(context, product);
+  }
+
+  Future<void> _addLine(
     BuildContext context,
     CustomerCartProvider cart,
     Product product,
   ) async {
     final result = await showDialog<QuantityDialogResult>(
       context: context,
-      builder: (_) => QuantityDialog(
-        product: product,
-        ppnPercent: cart.ppnPercent,
-      ),
+      builder: (_) => QuantityDialog(product: product, ppnPercent: cart.ppnPercent),
     );
     if (result == null) return;
     cart.addLine(
@@ -380,19 +401,68 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
     );
   }
 
-  /// Rotates through a few casual openers so the hub doesn't read the
-  /// same every single time — picked from the day of the year rather
-  /// than randomly, so it stays put while the screen is open instead of
-  /// changing on every rebuild.
-  static const _greetings = [
-    'Lagi pengen makan apa hari ini?',
-    'Perut udah bunyi belum?',
-    'Yuk, cari yang enak-enak!',
-    'Siap-siap kenyang hari ini 😋',
-    'Mau yang pedes atau yang manis?',
-    'Laper? Gas pesan sekarang!',
-    'Waktunya makan enak nih.',
-  ];
+  Future<void> _editLine(
+    BuildContext context,
+    CustomerCartProvider cart,
+    CartItem line,
+  ) async {
+    final result = await showDialog<QuantityDialogResult>(
+      context: context,
+      builder: (_) => QuantityDialog(
+        product: line.product,
+        initialQuantity: line.quantity,
+        initialLevels: line.selectedLevels,
+        initialNotes: line.notes,
+        ppnPercent: cart.ppnPercent,
+        editing: true,
+      ),
+    );
+    if (result == null) return;
+    cart.updateLine(
+      line.lineId,
+      quantity: result.quantity,
+      selectedLevels: result.selectedLevels,
+      notes: result.notes,
+    );
+  }
+
+  Future<void> _openLinesSheet(BuildContext context, Product product) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (sheetContext) => Consumer<CustomerCartProvider>(
+        builder: (_, cart, __) {
+          final lines = cart.linesOf(product.id);
+          // Baris terakhir dihapus berarti tidak ada lagi yang bisa
+          // diatur — menutup sendiri lebih baik daripada menyisakan
+          // panel kosong.
+          if (lines.isEmpty) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (Navigator.of(sheetContext).canPop()) Navigator.of(sheetContext).pop();
+            });
+            return const SizedBox.shrink();
+          }
+          return ProductLinesSheet(
+            product: product,
+            lines: lines,
+            unitPriceOf: (l) => cart.menuSubtotalOf(l) ~/ l.quantity,
+            lineTotalOf: cart.menuSubtotalOf,
+            onIncrement: cart.incrementLine,
+            onDecrement: cart.decrementLine,
+            onDelete: cart.removeLine,
+            onEdit: (line) => _editLine(sheetContext, cart, line),
+            onAddVariant: () {
+              Navigator.pop(sheetContext);
+              _addLine(context, cart, product);
+            },
+          );
+        },
+      ),
+    );
+  }
 
   String get _displayName {
     if (_profileName != null && _profileName!.isNotEmpty) return _profileName!;
@@ -403,8 +473,9 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
   }
 
   Widget _hubView(BuildContext context) {
-    final greeting = _greetings[
-        DateTime.now().difference(DateTime(DateTime.now().year)).inDays % _greetings.length];
+    // Jam WIB, bukan jam perangkat: customer yang HP-nya masih di zona
+    // lain akan disapa "makan malam" saat di sini baru sore.
+    final greeting = greetingFor(DateTime.now().toWib());
 
     // This hub is a logged-in customer's home, the same way each role's
     // hub is for employees — so back exits the app rather than dropping
@@ -423,7 +494,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
         body: Column(
           children: [
             HubHeader(
-              logo: const KaataLogo(size: 64),
+              logo: _CustomerAvatar(photoBase64: _profilePhoto),
               title: 'Hi, $_displayName!',
               subtitle: greeting,
               colorA: KaataTheme.brand,
@@ -680,7 +751,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                         products: products,
                         quantityOf: cart.quantityOf,
                         ppnPercent: cart.ppnPercent,
-                        onTapProduct: (p) => _openQuantityDialog(context, cart, p),
+                        onTapProduct: (p) => _onTapProduct(context, cart, p),
                       );
                     },
                   );
@@ -704,6 +775,37 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
             );
           },
         ),
+      ),
+    );
+  }
+}
+
+/// Foto profil customer di header hub, dengan logo KaataGo sebagai
+/// penggantinya selama belum ada foto — termasuk kalau data fotonya
+/// ternyata rusak, karena gagal menggambar di sini akan mengosongkan
+/// seluruh header.
+class _CustomerAvatar extends StatelessWidget {
+  final String? photoBase64;
+
+  const _CustomerAvatar({required this.photoBase64});
+
+  @override
+  Widget build(BuildContext context) {
+    final photo = photoBase64;
+    if (photo == null || photo.isEmpty) return const KaataLogo(size: 64);
+
+    return Container(
+      width: 64,
+      height: 64,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white.withOpacity(0.7), width: 2),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Image.memory(
+        base64Decode(photo),
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => const KaataLogo(size: 64),
       ),
     );
   }

@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../db/restaurant_repository.dart';
+import '../models/cart_item.dart';
 import '../models/product.dart';
 import '../providers/auth_provider.dart';
 import '../providers/cart_provider.dart';
 import '../providers/product_provider.dart';
 import '../widgets/cart_bottom_bar.dart';
 import '../widgets/product_category_list.dart';
+import '../widgets/product_lines_sheet.dart';
 import '../widgets/quantity_dialog.dart';
 import 'checkout_screen.dart';
 
@@ -48,18 +50,24 @@ class _PosHomeScreenState extends State<PosHomeScreen> {
     }
   }
 
-  /// Always adds a *new* line rather than editing whatever's already in
-  /// the cart: one nasi goreng pedas and one tidak pedas are two
-  /// different things, and the old behaviour overwrote the first with
-  /// the second. Editing an existing line happens from the cart itself.
-  Future<void> _openQuantityDialog(BuildContext context, Product product) async {
+  /// Menu yang belum ada di keranjang langsung membuka popup jumlah.
+  /// Yang sudah ada membuka daftar barisnya, supaya jumlahnya bisa
+  /// dikurangi atau dihapus tanpa harus maju dulu ke keranjang — di
+  /// depan menu inilah orang berubah pikiran.
+  Future<void> _onTapProduct(BuildContext context, Product product) async {
+    final cart = context.read<CartProvider>();
+    if (cart.linesOf(product.id).isEmpty) {
+      await _addLine(context, product);
+      return;
+    }
+    await _openLinesSheet(context, product);
+  }
+
+  Future<void> _addLine(BuildContext context, Product product) async {
     final cart = context.read<CartProvider>();
     final result = await showDialog<QuantityDialogResult>(
       context: context,
-      builder: (_) => QuantityDialog(
-        product: product,
-        ppnPercent: cart.ppnPercent,
-      ),
+      builder: (_) => QuantityDialog(product: product, ppnPercent: cart.ppnPercent),
     );
     if (result == null) return;
     cart.addLine(
@@ -67,6 +75,66 @@ class _PosHomeScreenState extends State<PosHomeScreen> {
       quantity: result.quantity,
       selectedLevels: result.selectedLevels,
       notes: result.notes,
+    );
+  }
+
+  Future<void> _editLine(BuildContext context, CartItem line) async {
+    final cart = context.read<CartProvider>();
+    final result = await showDialog<QuantityDialogResult>(
+      context: context,
+      builder: (_) => QuantityDialog(
+        product: line.product,
+        initialQuantity: line.quantity,
+        initialLevels: line.selectedLevels,
+        initialNotes: line.notes,
+        ppnPercent: cart.ppnPercent,
+        editing: true,
+      ),
+    );
+    if (result == null) return;
+    cart.updateLine(
+      line.lineId,
+      quantity: result.quantity,
+      selectedLevels: result.selectedLevels,
+      notes: result.notes,
+    );
+  }
+
+  Future<void> _openLinesSheet(BuildContext context, Product product) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (sheetContext) => Consumer<CartProvider>(
+        builder: (_, cart, __) {
+          final lines = cart.linesOf(product.id);
+          // Baris terakhir dihapus berarti tidak ada lagi yang bisa
+          // diatur — menutup sendiri lebih baik daripada menyisakan
+          // panel kosong yang harus ditutup manual.
+          if (lines.isEmpty) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (Navigator.of(sheetContext).canPop()) Navigator.of(sheetContext).pop();
+            });
+            return const SizedBox.shrink();
+          }
+          return ProductLinesSheet(
+            product: product,
+            lines: lines,
+            unitPriceOf: (l) => cart.menuSubtotalOf(l) ~/ l.quantity,
+            lineTotalOf: cart.menuSubtotalOf,
+            onIncrement: cart.incrementLine,
+            onDecrement: cart.decrementLine,
+            onDelete: cart.removeLine,
+            onEdit: (line) => _editLine(sheetContext, line),
+            onAddVariant: () {
+              Navigator.pop(sheetContext);
+              _addLine(context, product);
+            },
+          );
+        },
+      ),
     );
   }
 
@@ -104,7 +172,7 @@ class _PosHomeScreenState extends State<PosHomeScreen> {
             products: products,
             quantityOf: cart.quantityOf,
             ppnPercent: cart.ppnPercent,
-            onTapProduct: (p) => _openQuantityDialog(context, p),
+            onTapProduct: (p) => _onTapProduct(context, p),
           );
         },
       ),

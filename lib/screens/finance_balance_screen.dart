@@ -2,22 +2,23 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../db/expense_gl_account_repository.dart';
+import '../db/cash_deposit_repository.dart';
 import '../db/expense_repository.dart';
 import '../db/order_repository.dart';
 import '../db/petty_cash_repository.dart';
+import '../models/cash_deposit.dart';
 import '../models/customer_order.dart';
 import '../models/expense.dart';
 import '../models/expense_gl_account.dart';
 import '../models/petty_cash_entry.dart';
 import '../providers/auth_provider.dart';
 import '../utils/id_time.dart';
+import '../utils/photo_picker.dart';
 import '../widgets/dialog_actions.dart';
 import '../utils/rupiah_input.dart';
 
@@ -47,8 +48,11 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
   final _expenseRepo = ExpenseRepository();
   final _expenseGlRepo = ExpenseGlAccountRepository();
   final _pettyCashRepo = PettyCashRepository();
+  final _depositRepo = CashDepositRepository();
 
-  int _totalIncome = 0;
+  int _cashIncome = 0;
+  int _nonCashIncome = 0;
+  List<CashDeposit> _deposits = [];
   List<Expense> _expenses = [];
   List<ExpenseGlAccount> _expenseGlAccounts = [];
   List<PettyCashEntry> _pettyCashEntries = [];
@@ -87,14 +91,25 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
         _expenseGlRepo.getForResto(restoId),
         _pettyCashRepo.getForResto(restoId),
         Supabase.instance.client.from('settings').select().eq('resto_id', restoId).limit(1),
+        _depositRepo.getForResto(restoId),
       ]);
       if (!mounted) return;
       final orders = (results[0] as List<CustomerOrder>)
           .where((o) => o.paymentStatus == OrderPaymentStatus.paid);
       final settingsRows = results[4] as List<Map<String, dynamic>>;
       final settings = settingsRows.isNotEmpty ? settingsRows.first : null;
+      // Tunai dipisah dari yang lain karena sifatnya beda: uangnya ada
+      // di laci dan harus disetor, sementara QRIS/transfer sudah masuk
+      // rekening. Pesanan lama tanpa payment_method dianggap non-tunai —
+      // itu semuanya self-order QRIS.
       setState(() {
-        _totalIncome = orders.fold(0, (sum, o) => sum + o.total);
+        _cashIncome = orders
+            .where((o) => o.paymentMethod == 'cash')
+            .fold(0, (sum, o) => sum + o.total);
+        _nonCashIncome = orders
+            .where((o) => o.paymentMethod != 'cash')
+            .fold(0, (sum, o) => sum + o.total);
+        _deposits = results[5] as List<CashDeposit>;
         _expenses = results[1] as List<Expense>;
         _expenseGlAccounts = results[2] as List<ExpenseGlAccount>;
         _pettyCashEntries = results[3] as List<PettyCashEntry>;
@@ -114,22 +129,37 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
 
   int get _expenseBalance => _expenses.fold(0, (sum, e) => sum + e.amount);
 
-  int get _pettyCashWithdrawnFromIncome => _pettyCashEntries
-      .where((e) => e.source == PettyCashSource.incomeWithdrawal)
+  int _pettyCashFrom(PettyCashSource source) => _pettyCashEntries
+      .where((e) => e.source == source)
       .fold(0, (sum, e) => sum + e.amount);
+
+  /// Uang tunai yang sudah disetor ke rekening. Berpindah tempat, bukan
+  /// hilang — karena itu ia dikurangkan dari Saldo Cash tapi tidak dari
+  /// Saldo Total.
+  int get _depositedTotal => _deposits.fold(0, (sum, d) => sum + d.amount);
+
+  /// Yang seharusnya masih ada di laci kasir sekarang.
+  int get _cashBalance =>
+      _cashIncome - _depositedTotal - _pettyCashFrom(PettyCashSource.cashWithdrawal);
+
+  int get _nonCashBalance =>
+      _nonCashIncome - _pettyCashFrom(PettyCashSource.incomeWithdrawal);
 
   int get _pettyCashToppedUp => _pettyCashEntries.fold(0, (sum, e) => sum + e.amount);
 
-  /// Income only ever loses money by being withdrawn into Petty Cash —
-  /// spending itself never comes straight out of it.
-  int get _incomeBalance => _totalIncome - _pettyCashWithdrawnFromIncome;
+  /// Penghasilan yang belum berpindah ke mana-mana: tunai yang masih di
+  /// laci ditambah non-tunai yang masih utuh.
+  int get _incomeBalance => _cashBalance + _nonCashBalance;
 
   /// Every expense is paid from Petty Cash, so this bucket is shown net
   /// of them — which is why the total below just adds the two rather than
   /// subtracting expenses again (that would double-count them).
   int get _pettyCashBalance => _pettyCashToppedUp - _expenseBalance;
 
-  int get _totalBalance => _incomeBalance + _pettyCashBalance;
+  /// Setoran ikut dihitung: uangnya pindah ke rekening resto, bukan
+  /// keluar dari resto. Tanpa baris ini setiap setoran akan terlihat
+  /// seperti kehilangan uang.
+  int get _totalBalance => _incomeBalance + _pettyCashBalance + _depositedTotal;
 
   List<_DayGroup<Expense>> _groupByDay(List<Expense> items) {
     final byDay = <DateTime, List<Expense>>{};
@@ -192,7 +222,11 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
   Future<void> _addPettyCash() async {
     final saved = await showDialog<bool>(
       context: context,
-      builder: (_) => _AddPettyCashDialog(restoId: _restoId, availableIncome: _incomeBalance),
+      builder: (_) => _AddPettyCashDialog(
+        restoId: _restoId,
+        availableCash: _cashBalance,
+        availableNonCash: _nonCashBalance,
+      ),
     );
     if (saved == true) _load();
   }
@@ -294,7 +328,8 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
                               ),
                               Divider(height: 24, color: Colors.white.withOpacity(0.3)),
                               Text(
-                                'Penghasilan + Petty Cash (pengeluaran sudah dikurangi)',
+                                'Penghasilan + Petty Cash + Setoran '
+                                '(pengeluaran sudah dikurangi)',
                                 style: TextStyle(color: Colors.white.withOpacity(0.75), fontSize: 12),
                               ),
                             ],
@@ -302,6 +337,17 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
                         ),
                       ),
                       const SizedBox(height: 12),
+                      // Penghasilan dipecah dulu ke Cash/Non Cash sebelum
+                      // kartu ringkasnya: angka tunai adalah yang paling
+                      // sering dicari — itulah yang harus cocok dengan isi
+                      // laci saat tutup toko.
+                      _IncomeSplitCard(
+                        cashBalance: _cashBalance,
+                        nonCashBalance: _nonCashBalance,
+                        deposited: _depositedTotal,
+                        currency: currency,
+                      ),
+                      const SizedBox(height: 8),
                       Row(
                         children: [
                           Expanded(
@@ -676,7 +722,6 @@ class _AddExpenseDialogState extends State<_AddExpenseDialog> {
   final _descCtrl = TextEditingController();
   String? _glCode;
   File? _receipt;
-  final _picker = ImagePicker();
   final _repo = ExpenseRepository();
   bool _saving = false;
 
@@ -687,76 +732,9 @@ class _AddExpenseDialogState extends State<_AddExpenseDialog> {
     super.dispose();
   }
 
-  /// Receipts are mostly photographed on the spot, so the camera is
-  /// offered alongside the gallery. Kept at 900px/70% — big enough that
-  /// the nota's numbers stay readable, small enough that the base64 blob
-  /// doesn't bloat the row (product photos use the same approach at a
-  /// smaller size, since those don't need to be legible as text).
-  Future<void> _pickReceipt(ImageSource source) async {
-    // mobile_scanner declares android.permission.CAMERA, which makes
-    // Android refuse the capture intent outright unless it's been
-    // granted — and image_picker doesn't ask for it. A Finance user has
-    // no reason to have hit the QR scanner that would have.
-    if (source == ImageSource.camera) {
-      final status = await Permission.camera.request();
-      if (!mounted) return;
-      if (!status.isGranted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Izin kamera ditolak. Pakai galeri, atau aktifkan lewat Pengaturan.'),
-            action: status.isPermanentlyDenied
-                ? const SnackBarAction(label: 'Pengaturan', onPressed: openAppSettings)
-                : null,
-          ),
-        );
-        return;
-      }
-    }
-
-    try {
-      final picked = await _picker.pickImage(
-        source: source,
-        maxWidth: 900,
-        imageQuality: 70,
-      );
-      if (picked == null || !mounted) return;
-      setState(() => _receipt = File(picked.path));
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal mengambil gambar: $e')),
-      );
-    }
-  }
-
-  Future<void> _chooseReceiptSource() async {
-    final source = await showModalBottomSheet<ImageSource>(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 8),
-            ListTile(
-              leading: const Icon(Icons.photo_camera_outlined),
-              title: const Text('Ambil Foto'),
-              onTap: () => Navigator.pop(context, ImageSource.camera),
-            ),
-            ListTile(
-              leading: const Icon(Icons.photo_library_outlined),
-              title: const Text('Pilih dari Galeri'),
-              onTap: () => Navigator.pop(context, ImageSource.gallery),
-            ),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
-    );
-    if (source == null) return;
-    await _pickReceipt(source);
+  Future<void> _attachReceipt() async {
+    final picked = await pickProofPhoto(context);
+    if (picked != null && mounted) setState(() => _receipt = picked);
   }
 
   Future<void> _save() async {
@@ -874,7 +852,8 @@ class _AddExpenseDialogState extends State<_AddExpenseDialog> {
                     final n = parseRupiah(v ?? '');
                     if (n == null || n <= 0) return 'Wajib diisi, angka > 0';
                     if (n > widget.availablePettyCash) {
-                      return 'Melebihi saldo Petty Cash yang tersedia';
+                      return 'Melebihi Petty Cash '
+                          '(maks ${currency.format(widget.availablePettyCash)})';
                     }
                     return null;
                   },
@@ -909,7 +888,7 @@ class _AddExpenseDialogState extends State<_AddExpenseDialog> {
                 const SizedBox(height: 8),
                 if (_receipt == null)
                   OutlinedButton.icon(
-                    onPressed: _chooseReceiptSource,
+                    onPressed: _attachReceipt,
                     icon: const Icon(Icons.add_a_photo_outlined, size: 18),
                     label: const Text('Lampirkan Foto Nota'),
                     style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(46)),
@@ -933,7 +912,7 @@ class _AddExpenseDialogState extends State<_AddExpenseDialog> {
                               _ReceiptAction(
                                 icon: Icons.edit_outlined,
                                 tooltip: 'Ganti foto',
-                                onTap: _chooseReceiptSource,
+                                onTap: _attachReceipt,
                               ),
                               const SizedBox(width: 6),
                               _ReceiptAction(
@@ -986,9 +965,18 @@ class _AddExpenseDialogState extends State<_AddExpenseDialog> {
 /// (needed on day one, before any income exists to withdraw from).
 class _AddPettyCashDialog extends StatefulWidget {
   final String restoId;
-  final int availableIncome;
+  /// Dipisah karena keduanya benar-benar dompet yang berbeda: menarik
+  /// dari tunai mengurangi uang di laci, menarik dari non-tunai
+  /// mengurangi saldo rekening. Satu angka gabungan akan membolehkan
+  /// penarikan tunai yang uangnya sebenarnya tidak ada di laci.
+  final int availableCash;
+  final int availableNonCash;
 
-  const _AddPettyCashDialog({required this.restoId, required this.availableIncome});
+  const _AddPettyCashDialog({
+    required this.restoId,
+    required this.availableCash,
+    required this.availableNonCash,
+  });
 
   @override
   State<_AddPettyCashDialog> createState() => _AddPettyCashDialogState();
@@ -998,7 +986,7 @@ class _AddPettyCashDialogState extends State<_AddPettyCashDialog> {
   final _formKey = GlobalKey<FormState>();
   final _amountCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
-  PettyCashSource _source = PettyCashSource.incomeWithdrawal;
+  PettyCashSource _source = PettyCashSource.cashWithdrawal;
   final _repo = PettyCashRepository();
   bool _saving = false;
 
@@ -1035,7 +1023,10 @@ class _AddPettyCashDialogState extends State<_AddPettyCashDialog> {
   @override
   Widget build(BuildContext context) {
     final currency = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
-    final isWithdrawal = _source == PettyCashSource.incomeWithdrawal;
+    final isWithdrawal = _source != PettyCashSource.manual;
+    final available = _source == PettyCashSource.cashWithdrawal
+        ? widget.availableCash
+        : widget.availableNonCash;
     final accentColor = isWithdrawal ? const Color(0xFF10B981) : const Color(0xFF6366F1);
 
     return Dialog(
@@ -1085,11 +1076,23 @@ class _AddPettyCashDialogState extends State<_AddPettyCashDialog> {
                     children: [
                       Expanded(
                         child: _SourceTab(
-                          icon: Icons.trending_up,
-                          label: 'Dari Penghasilan',
-                          selected: isWithdrawal,
-                          color: const Color(0xFF10B981),
-                          onTap: () => setState(() => _source = PettyCashSource.incomeWithdrawal),
+                          icon: Icons.payments_outlined,
+                          label: 'Cash',
+                          selected: _source == PettyCashSource.cashWithdrawal,
+                          color: const Color(0xFF0EA5E9),
+                          onTap: () =>
+                              setState(() => _source = PettyCashSource.cashWithdrawal),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: _SourceTab(
+                          icon: Icons.qr_code_2,
+                          label: 'Non Cash',
+                          selected: _source == PettyCashSource.incomeWithdrawal,
+                          color: const Color(0xFF8B5CF6),
+                          onTap: () =>
+                              setState(() => _source = PettyCashSource.incomeWithdrawal),
                         ),
                       ),
                       const SizedBox(width: 4),
@@ -1097,7 +1100,7 @@ class _AddPettyCashDialogState extends State<_AddPettyCashDialog> {
                         child: _SourceTab(
                           icon: Icons.edit_outlined,
                           label: 'Manual',
-                          selected: !isWithdrawal,
+                          selected: _source == PettyCashSource.manual,
                           color: const Color(0xFF6366F1),
                           onTap: () => setState(() => _source = PettyCashSource.manual),
                         ),
@@ -1121,7 +1124,8 @@ class _AddPettyCashDialogState extends State<_AddPettyCashDialog> {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'Saldo Penghasilan tersedia: ${currency.format(widget.availableIncome)}',
+                            '${kPettyCashSourceLabels[_source]!.replaceFirst('Withdraw dari ', '')} '
+                            'tersedia: ${currency.format(available)}',
                             style: TextStyle(
                                 fontSize: 12.5, color: accentColor, fontWeight: FontWeight.w600),
                           ),
@@ -1138,13 +1142,20 @@ class _AddPettyCashDialogState extends State<_AddPettyCashDialog> {
                     prefixText: 'Rp ',
                   ),
                   keyboardType: TextInputType.number,
+                  // Pemisah ribuan seperti kolom nominal lainnya. Tanpa
+                  // ini validatornya menolak "50.000" yang diketik orang
+                  // secara wajar, padahal penyimpanannya sendiri sudah
+                  // membaca lewat parseRupiah.
+                  inputFormatters: [ThousandsInputFormatter()],
                   style: const TextStyle(fontWeight: FontWeight.bold),
                   validator: (v) {
-                    if (v == null || v.trim().isEmpty) return 'Wajib diisi';
-                    final n = int.tryParse(v.trim());
-                    if (n == null || n <= 0) return 'Harus angka > 0';
-                    if (isWithdrawal && n > widget.availableIncome) {
-                      return 'Melebihi Saldo Penghasilan yang tersedia';
+                    final n = parseRupiah(v ?? '');
+                    if (n == null || n <= 0) return 'Wajib diisi, angka > 0';
+                    // Top up manual tidak dibatasi: itu modal segar dari
+                    // luar, bukan pemindahan dari saldo yang sudah ada.
+                    if (isWithdrawal && n > available) {
+                      return 'Melebihi ${kPettyCashSourceLabels[_source]!.replaceFirst('Withdraw dari ', '')} '
+                          '(maks ${currency.format(available)})';
                     }
                     return null;
                   },
@@ -1230,6 +1241,120 @@ class _SourceTab extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Memecah Saldo Penghasilan jadi tunai dan non-tunai.
+///
+/// Keduanya terlihat sama di laporan, tapi tidak di kenyataan: yang tunai
+/// masih berupa lembaran di laci dan menjadi tanggung jawab kasir sampai
+/// disetorkan, sedangkan QRIS dan transfer sudah aman di rekening. Satu
+/// angka gabungan menyembunyikan persis perbedaan itu.
+class _IncomeSplitCard extends StatelessWidget {
+  final int cashBalance;
+  final int nonCashBalance;
+  final int deposited;
+  final NumberFormat currency;
+
+  const _IncomeSplitCard({
+    required this.cashBalance,
+    required this.nonCashBalance,
+    required this.deposited,
+    required this.currency,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: _half(
+                  icon: Icons.payments_outlined,
+                  color: const Color(0xFF0EA5E9),
+                  label: 'Saldo Cash',
+                  hint: 'Ada di laci kasir',
+                  value: cashBalance,
+                ),
+              ),
+              Container(width: 1, height: 46, color: Colors.grey.shade200),
+              Expanded(
+                child: _half(
+                  icon: Icons.qr_code_2,
+                  color: const Color(0xFF8B5CF6),
+                  label: 'Saldo Non Cash',
+                  hint: 'QRIS & transfer',
+                  value: nonCashBalance,
+                ),
+              ),
+            ],
+          ),
+          if (deposited > 0) ...[
+            const Divider(height: 18),
+            Row(
+              children: [
+                Icon(Icons.account_balance_outlined, size: 15, color: Colors.grey.shade600),
+                const SizedBox(width: 7),
+                Expanded(
+                  child: Text(
+                    'Sudah disetor ke rekening',
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                  ),
+                ),
+                Text(
+                  currency.format(deposited),
+                  style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _half({
+    required IconData icon,
+    required Color color,
+    required String label,
+    required String hint,
+    required int value,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 14, color: color),
+              const SizedBox(width: 5),
+              Flexible(
+                child: Text(
+                  label,
+                  style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: color),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 3),
+          Text(
+            currency.format(value),
+            style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.bold),
+          ),
+          Text(hint, style: TextStyle(fontSize: 10.5, color: Colors.grey.shade500)),
+        ],
       ),
     );
   }

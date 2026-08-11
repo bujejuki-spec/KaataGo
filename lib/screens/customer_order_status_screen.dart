@@ -4,7 +4,9 @@ import 'package:provider/provider.dart';
 
 import '../db/order_repository.dart';
 import '../models/customer_order.dart';
+import '../models/order_type.dart';
 import '../providers/auth_provider.dart';
+import '../theme.dart';
 import '../providers/table_session_provider.dart';
 import '../utils/id_time.dart';
 import 'customer_receipt_screen.dart';
@@ -82,13 +84,12 @@ class CustomerOrderStatusScreen extends StatelessWidget {
     final restoId = session.restoId;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          session.tableNumber != null
-              ? 'Pesanan Saya • Meja ${session.tableNumber}'
-              : 'Pesanan Saya • Take Away',
-        ),
-      ),
+      // Judulnya cukup "Pesanan Saya". Meja/Take Away dulu ditempel di
+      // sini, padahal itu milik masing-masing pesanan, bukan milik
+      // layarnya: daftar ini bisa memuat pesanan Dine In dan Take Away
+      // sekaligus, jadi satu label di header pasti salah untuk sebagian
+      // isinya.
+      appBar: AppBar(title: const Text('Pesanan Saya')),
       body: StreamBuilder<List<CustomerOrder>>(
         stream: email != null
             ? repo.watchByCustomerEmail(email)
@@ -150,6 +151,8 @@ class CustomerOrderStatusScreen extends StatelessWidget {
                           ),
                         ],
                       ),
+                      const SizedBox(height: 6),
+                      _OrderPlaceLine(order: order),
                       const SizedBox(height: 8),
                       Row(
                         children: [
@@ -222,6 +225,71 @@ class CustomerOrderStatusScreen extends StatelessWidget {
             onPressed: () => _confirmEndSession(context),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Tempat pesanan ini diantar: nomor meja untuk Dine In, atau nama yang
+/// akan dipanggil untuk Take Away.
+///
+/// Sebelumnya keterangan ini menempel di judul layar, yang membuatnya
+/// berlaku untuk semua pesanan sekaligus — padahal satu orang bisa punya
+/// pesanan Dine In dan Take Away berdampingan di daftar yang sama.
+class _OrderPlaceLine extends StatelessWidget {
+  final CustomerOrder order;
+
+  const _OrderPlaceLine({required this.order});
+
+  @override
+  Widget build(BuildContext context) {
+    final takeAway = order.orderType == OrderType.takeAway;
+    final name = order.customerName?.trim();
+
+    final label = takeAway
+        ? 'Take Away'
+        : (order.tableNumber != null && order.tableNumber!.isNotEmpty
+            ? 'Meja ${order.tableNumber}'
+            : 'Dine In');
+
+    return Wrap(
+      spacing: 6,
+      runSpacing: 4,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        _chip(
+          icon: takeAway ? Icons.shopping_bag_outlined : Icons.table_restaurant_outlined,
+          text: label,
+          color: takeAway ? const Color(0xFFF59E0B) : KaataTheme.brand,
+        ),
+        if (name != null && name.isNotEmpty)
+          _chip(
+            icon: Icons.person_outline,
+            text: name,
+            color: Colors.grey.shade600,
+          ),
+      ],
+    );
+  }
+
+  Widget _chip({required IconData icon, required String text, required Color color}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.10),
+        borderRadius: BorderRadius.circular(7),
+        border: Border.all(color: color.withOpacity(0.22)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 4),
+          Text(
+            text,
+            style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: color),
+          ),
+        ],
       ),
     );
   }
