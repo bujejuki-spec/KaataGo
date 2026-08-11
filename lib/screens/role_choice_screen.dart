@@ -6,8 +6,9 @@ import '../providers/auth_provider.dart';
 import '../theme.dart';
 import '../utils/customer_login_flow.dart';
 import '../widgets/kaata_logo.dart';
+import '../widgets/loading_overlay.dart';
+import 'about_screen.dart';
 import 'customer_home_screen.dart';
-import 'employee_login_screen.dart';
 
 /// First screen shown to anyone who isn't already a recognized employee
 /// and hasn't scanned a table before. Picks the experience: browse/order
@@ -22,6 +23,7 @@ class RoleChoiceScreen extends StatefulWidget {
 
 class _RoleChoiceScreenState extends State<RoleChoiceScreen> {
   String _versionLabel = '';
+  bool _signingInEmployee = false;
 
   @override
   void initState() {
@@ -72,29 +74,114 @@ class _RoleChoiceScreenState extends State<RoleChoiceScreen> {
     );
     if (loginFirst == null || !mounted) return; // dialog dismissed without a choice
 
-    if (loginFirst) {
-      final auth = context.read<AuthProvider>();
-      await auth.signInWithGoogle();
-      if (!mounted) return;
-
-      if (!auth.isLoggedIn || auth.isEmployee) {
-        // Either they backed out of Google's account picker (still not
-        // logged in), or the email turned out to be a registered
-        // employee — in both cases stay right here on the choice screen.
-        // RootScreen watches AuthProvider itself, so an employee login
-        // switches to the staff screens automatically without us pushing
-        // anything.
-        return;
-      }
-
-      await ensureCustomerProfile(context, auth.user!.email!);
-      if (!mounted) return;
+    if (!loginFirst) {
+      // Guest: nothing for RootScreen to react to, so open the customer
+      // experience on top of this screen.
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const CustomerHomeScreen()),
+      );
+      return;
     }
 
+    // A successful customer login makes RootScreen swap this screen out
+    // for CustomerHomeScreen — which disposes it mid-flow. Hold the root
+    // navigator's context so the steps after sign-in still have somewhere
+    // valid to show a dialog from; `this.context` is gone by then, and
+    // guarding on `mounted` instead would silently skip them.
+    final navigator = Navigator.of(context, rootNavigator: true);
+    final messenger = ScaffoldMessenger.of(context);
+    final rootContext = navigator.context;
+    final auth = context.read<AuthProvider>();
+
+    var claimed = 0;
+    // rootContext belongs to the app's root navigator, which outlives
+    // this screen — the usual "don't reuse a context across an await"
+    // hazard doesn't apply, and that's the whole point of capturing it.
+    // ignore: use_build_context_synchronously
+    await withLoadingOverlay(rootContext, () async {
+      await auth.signInWithGoogle();
+      // Orders placed on this device before signing in follow them into
+      // the account, but only if the email is new to KaataGo — see
+      // claimGuestOrdersForLogin. Folded into the same overlay so there's
+      // one uninterrupted "signing you in" beat rather than two.
+      if (auth.isLoggedIn && !auth.isEmployee) {
+        claimed = await claimGuestOrdersForLogin();
+      }
+    });
+
+    // Either they backed out of Google's account picker (still not logged
+    // in), or the email turned out to be a registered employee — in both
+    // cases RootScreen has already decided what to show, so there's
+    // nothing left to do here.
+    if (!auth.isLoggedIn || auth.isEmployee) return;
+
+    if (claimed > 0) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('$claimed riwayat pesanan dipindahkan ke akun ini.')),
+      );
+    }
+
+    await ensureCustomerProfile(navigator, auth.user!.email!);
+    // No push: RootScreen is already showing CustomerHomeScreen for this
+    // now-logged-in customer.
+  }
+
+  /// Straight to Google's account picker — no intermediate "Masuk sebagai
+  /// Karyawan" screen at all. If it succeeds and the account is a
+  /// registered employee, RootScreen (watching AuthProvider) swaps to the
+  /// staff app on its own. If the picker is cancelled, or the account
+  /// isn't a registered employee (or their resto's been deactivated), we
+  /// just stay right here on the choice screen — same page as before.
+  Future<void> _chooseEmployee() async {
+    setState(() => _signingInEmployee = true);
+    final auth = context.read<AuthProvider>();
+    await withLoadingOverlay(context, () => auth.signInWithGoogle());
     if (!mounted) return;
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const CustomerHomeScreen()),
-    );
+    setState(() => _signingInEmployee = false);
+
+    if (auth.isLoggedIn && !auth.isEmployee) {
+      // Logged in fine, but this email isn't staff anywhere — kick them
+      // back out so they don't linger half-authenticated, then explain.
+      final email = auth.user?.email;
+      await auth.signOut();
+      if (!mounted) return;
+      await showDialog<void>(
+        context: context,
+        builder: (_) => AlertDialog(
+          icon: const Icon(Icons.block, size: 40, color: Colors.orange),
+          title: const Text('Belum Terdaftar'),
+          content: Text(
+            'Akun $email belum terdaftar sebagai karyawan resto.\n'
+            'Minta admin untuk menambahkan email ini ke daftar karyawan.',
+            textAlign: TextAlign.center,
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK')),
+          ],
+        ),
+      );
+      return;
+    }
+
+    if (!auth.isLoggedIn && auth.lastError != null) {
+      // e.g. resto deactivated — _checkEmployeeRole signs them back out
+      // itself but leaves the message for us to show here.
+      if (!mounted) return;
+      await showDialog<void>(
+        context: context,
+        builder: (_) => AlertDialog(
+          icon: const Icon(Icons.block, size: 40, color: Colors.red),
+          title: const Text('Tidak Bisa Masuk'),
+          content: Text(auth.lastError!, textAlign: TextAlign.center),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK')),
+          ],
+        ),
+      );
+    }
+    // Otherwise: either cancelled (nothing logged in, no error — just
+    // stay put), or they're a valid employee and RootScreen already
+    // handles the swap.
   }
 
   @override
@@ -106,6 +193,19 @@ class _RoleChoiceScreenState extends State<RoleChoiceScreen> {
           padding: const EdgeInsets.all(24),
           child: Column(
             children: [
+              // Deliberately understated next to the two role buttons —
+              // it's a "what is this?" affordance, not a third choice.
+              Align(
+                alignment: Alignment.centerRight,
+                child: IconButton(
+                  icon: const Icon(Icons.info_outline),
+                  color: Colors.grey.shade500,
+                  tooltip: 'Tentang KaataGo',
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const AboutScreen()),
+                  ),
+                ),
+              ),
               const Spacer(),
               const KaataLogo(size: 96),
               const SizedBox(height: 20),
@@ -149,11 +249,15 @@ class _RoleChoiceScreenState extends State<RoleChoiceScreen> {
                 width: double.infinity,
                 height: 52,
                 child: OutlinedButton.icon(
-                  icon: const Icon(Icons.storefront_outlined),
+                  icon: _signingInEmployee
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.storefront_outlined),
                   label: const Text('Resto'),
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const EmployeeLoginScreen()),
-                  ),
+                  onPressed: _signingInEmployee ? null : _chooseEmployee,
                 ),
               ),
               const Spacer(),

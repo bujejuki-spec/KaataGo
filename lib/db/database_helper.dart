@@ -24,7 +24,7 @@ class DatabaseHelper {
 
     return openDatabase(
       path,
-      version: 7,
+      version: 10,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE products (
@@ -36,7 +36,9 @@ class DatabaseHelper {
             description TEXT,
             photo_base64 TEXT,
             level_groups TEXT,
-            level_prices TEXT
+            level_prices TEXT,
+            ppn_exempt INTEGER NOT NULL DEFAULT 0,
+            service_exempt INTEGER NOT NULL DEFAULT 0
           )
         ''');
 
@@ -47,7 +49,12 @@ class DatabaseHelper {
             paymentMethod TEXT NOT NULL,
             total INTEGER NOT NULL,
             orderType TEXT NOT NULL DEFAULT 'dine_in',
-            customerName TEXT
+            customerName TEXT,
+            cashierName TEXT,
+            cashReceived INTEGER,
+            baseAmount INTEGER,
+            serviceAmount INTEGER,
+            ppnAmount INTEGER
           )
         ''');
 
@@ -96,6 +103,21 @@ class DatabaseHelper {
         }
         if (oldVersion < 7) {
           await db.execute('ALTER TABLE transactions ADD COLUMN customerName TEXT');
+        }
+        if (oldVersion < 8) {
+          await db.execute('ALTER TABLE transactions ADD COLUMN cashierName TEXT');
+        }
+        if (oldVersion < 9) {
+          await db.execute('ALTER TABLE transactions ADD COLUMN cashReceived INTEGER');
+        }
+        if (oldVersion < 10) {
+          await db.execute(
+              'ALTER TABLE products ADD COLUMN ppn_exempt INTEGER NOT NULL DEFAULT 0');
+          await db.execute(
+              'ALTER TABLE products ADD COLUMN service_exempt INTEGER NOT NULL DEFAULT 0');
+          await db.execute('ALTER TABLE transactions ADD COLUMN baseAmount INTEGER');
+          await db.execute('ALTER TABLE transactions ADD COLUMN serviceAmount INTEGER');
+          await db.execute('ALTER TABLE transactions ADD COLUMN ppnAmount INTEGER');
         }
       },
     );

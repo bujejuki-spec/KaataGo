@@ -4,6 +4,7 @@ import '../db/employee_repository.dart';
 import '../db/restaurant_repository.dart';
 import '../models/employee.dart';
 import '../models/restaurant.dart';
+import '../widgets/dialog_actions.dart';
 
 const _roleLabels = {
   'super_admin': 'Super Admin',
@@ -82,11 +83,12 @@ class _EmployeeManagementScreenState extends State<EmployeeManagementScreen> {
       builder: (_) => AlertDialog(
         title: const Text('Hapus karyawan?'),
         content: Text('${e.email} akan kehilangan akses staff sepenuhnya.'),
+        actionsAlignment: MainAxisAlignment.center,
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Batal')),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Hapus', style: TextStyle(color: Colors.red)),
+          DialogActions(
+            confirmLabel: 'Hapus',
+            destructive: true,
+            onConfirm: () => Navigator.pop(context, true),
           ),
         ],
       ),

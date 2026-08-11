@@ -12,6 +12,7 @@ import '../models/customer_order.dart';
 import '../models/expense.dart';
 import '../models/restaurant.dart';
 import '../providers/auth_provider.dart';
+import '../utils/id_time.dart';
 
 /// One line in the combined ledger — either a credit (income, from a
 /// paid order) or a debit (an expense), used to render both the
@@ -87,19 +88,22 @@ class _FinanceReportScreenState extends State<FinanceReportScreen> {
 
     // Opening balance = net of everything that happened before the
     // period starts, same idea as a bank statement's "saldo awal".
+    // Compared in WIB wall-clock time — the picked date range is a
+    // calendar day in Indonesia, not the backend's raw UTC.
     var opening = 0;
     for (final o in orders) {
-      if (o.createdAt.isBefore(periodStart)) opening += o.total;
+      if (o.createdAt.toWib().isBefore(periodStart)) opening += o.total;
     }
     for (final e in expenses) {
-      if (e.createdAt.isBefore(periodStart)) opening -= e.amount;
+      if (e.createdAt.toWib().isBefore(periodStart)) opening -= e.amount;
     }
 
     final entries = <_LedgerEntry>[];
     for (final o in orders) {
-      if (!o.createdAt.isBefore(periodStart) && !o.createdAt.isAfter(periodEnd)) {
+      final wib = o.createdAt.toWib();
+      if (!wib.isBefore(periodStart) && !wib.isAfter(periodEnd)) {
         entries.add(_LedgerEntry(
-          date: o.createdAt,
+          date: wib,
           description:
               'Pemasukan — #${o.id.substring(0, 8).toUpperCase()} (${o.items.length} item)',
           credit: o.total,
@@ -107,9 +111,10 @@ class _FinanceReportScreenState extends State<FinanceReportScreen> {
       }
     }
     for (final e in expenses) {
-      if (!e.createdAt.isBefore(periodStart) && !e.createdAt.isAfter(periodEnd)) {
+      final wib = e.createdAt.toWib();
+      if (!wib.isBefore(periodStart) && !wib.isAfter(periodEnd)) {
         entries.add(_LedgerEntry(
-          date: e.createdAt,
+          date: wib,
           description: e.description,
           debit: e.amount,
         ));

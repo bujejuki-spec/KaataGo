@@ -62,7 +62,13 @@ class CustomerOrder {
   final String customerLabel; // email, or "Tamu" if not logged in
   final OrderSource source;
   final String? paymentMethod; // e.g. "Tunai", "QRIS", "Transfer" — kasir only
-  final int? tableNumber;
+
+  /// This resto's Mapping GL Account code for [paymentMethod] (or QRIS,
+  /// for customer self-orders) — kept in sync by a database trigger, not
+  /// set from the app. Null if that GL isn't configured yet. See
+  /// supabase/orders_gl_code.sql.
+  final String? glCode;
+  final String? tableNumber;
   final String? sessionId; // groups a customer's orders after scanning a table QR
   final KitchenStatus kitchenStatus;
   final String restoId; // which restaurant this order belongs to
@@ -71,6 +77,17 @@ class CustomerOrder {
   /// Who to call out when the order's ready for pickup — mandatory for
   /// take-away (there's no table to deliver it to), unused for dine-in.
   final String? customerName;
+
+  /// Name of the Kasir/Admin who entered this order. Null for a customer
+  /// self-order — nobody entered it on their behalf.
+  final String? cashierName;
+
+  /// How [total] splits into revenue, service charge and PPN — stored on
+  /// the order so the journal can credit three separate GL accounts and
+  /// a reprint shows the original figures.
+  final int? baseAmount;
+  final int? serviceAmount;
+  final int? ppnAmount;
 
   CustomerOrder({
     required this.id,
@@ -82,11 +99,16 @@ class CustomerOrder {
     required this.restoId,
     this.source = OrderSource.customer,
     this.paymentMethod,
+    this.glCode,
     this.tableNumber,
     this.sessionId,
     this.kitchenStatus = KitchenStatus.waiting,
     this.orderType = OrderType.dineIn,
     this.customerName,
+    this.cashierName,
+    this.baseAmount,
+    this.serviceAmount,
+    this.ppnAmount,
   });
 
   /// Maps to Postgres `orders` table columns (snake_case). `id` and
@@ -104,6 +126,10 @@ class CustomerOrder {
         'kitchen_status': kitchenStatus.name,
         'order_type': orderType.dbValue,
         if (customerName != null) 'customer_name': customerName,
+        if (cashierName != null) 'cashier_name': cashierName,
+        if (baseAmount != null) 'base_amount': baseAmount,
+        if (serviceAmount != null) 'service_amount': serviceAmount,
+        if (ppnAmount != null) 'ppn_amount': ppnAmount,
       };
 
   factory CustomerOrder.fromMap(Map<String, dynamic> data) {
@@ -124,7 +150,8 @@ class CustomerOrder {
         orElse: () => OrderSource.customer,
       ),
       paymentMethod: data['payment_method'] as String?,
-      tableNumber: (data['table_number'] as num?)?.toInt(),
+      glCode: data['gl_code'] as String?,
+      tableNumber: data['table_number']?.toString(),
       sessionId: data['session_id'] as String?,
       kitchenStatus: KitchenStatus.values.firstWhere(
         (e) => e.name == data['kitchen_status'],
@@ -133,6 +160,10 @@ class CustomerOrder {
       restoId: data['resto_id'] as String? ?? '',
       orderType: OrderTypeDb.fromDb(data['order_type'] as String?),
       customerName: data['customer_name'] as String?,
+      cashierName: data['cashier_name'] as String?,
+      baseAmount: (data['base_amount'] as num?)?.toInt(),
+      serviceAmount: (data['service_amount'] as num?)?.toInt(),
+      ppnAmount: (data['ppn_amount'] as num?)?.toInt(),
     );
   }
 }

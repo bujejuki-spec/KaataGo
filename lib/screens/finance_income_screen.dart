@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../db/order_repository.dart';
 import '../models/customer_order.dart';
 import '../providers/auth_provider.dart';
+import '../utils/id_time.dart';
 
 /// Resto-wide daily income summary for Finance — pulls every PAID order
 /// from Supabase `orders` (both Kasir walk-in sales and customer
@@ -33,17 +34,24 @@ class _DayIncome {
         };
 }
 
-/// Normalizes an order's payment into one of 'cash' | 'qris' | 'transfer'.
-/// Customer self-orders are always QRIS-paid but don't set
-/// `payment_method` (only Kasir sales do) — so default those to 'qris'.
+/// Normalizes an order's payment into one of 'cash' | 'qris' | 'transfer'
+/// — matching `gl_accounts.payment_method` so income can be grouped the
+/// same way it's booked to GL. Customer self-orders always write 'qris'
+/// directly now; Kasir sales write the lowercase key too going forward
+/// (see cart_provider.dart), but this still recognizes the old
+/// capitalized labels ('QRIS'/'Transfer'/'Tunai') so orders recorded
+/// before that change still group correctly.
 String _methodKey(CustomerOrder o) {
   if (o.source == OrderSource.customer) return 'qris';
   switch (o.paymentMethod) {
     case 'QRIS':
+    case 'qris':
       return 'qris';
     case 'Transfer':
+    case 'transfer':
       return 'transfer';
     case 'Tunai':
+    case 'cash':
     default:
       return 'cash';
   }
@@ -73,7 +81,8 @@ class _FinanceIncomeScreenState extends State<FinanceIncomeScreen> {
   List<_DayIncome> _groupByDay() {
     final byDay = <DateTime, List<CustomerOrder>>{};
     for (final o in _orders) {
-      final day = DateTime(o.createdAt.year, o.createdAt.month, o.createdAt.day);
+      final wib = o.createdAt.toWib();
+      final day = DateTime(wib.year, wib.month, wib.day);
       byDay.putIfAbsent(day, () => []).add(o);
     }
     final days = byDay.keys.toList()..sort((a, b) => b.compareTo(a));
@@ -169,7 +178,7 @@ class _FinanceIncomeScreenState extends State<FinanceIncomeScreen> {
                                   dense: true,
                                   title: Text(currency.format(o.total)),
                                   subtitle: Text(
-                                    '${DateFormat('HH:mm').format(o.createdAt)} • '
+                                    '${DateFormat('HH:mm').format(o.createdAt.toWib())} • '
                                     '${_methodLabels[_methodKey(o)]} • #${o.id.substring(0, 8).toUpperCase()}',
                                   ),
                                   trailing: Text('${o.items.length} item'),

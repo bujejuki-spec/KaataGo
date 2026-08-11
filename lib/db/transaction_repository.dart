@@ -1,6 +1,13 @@
 import '../models/transaction.dart';
 import 'database_helper.dart';
 
+/// Local record of Kasir/Admin sales.
+///
+/// Still written on every checkout — the receipt shown immediately after
+/// payment is built from it, and it keeps a copy on the device even if
+/// the mirror to Supabase fails. Riwayat Transaksi no longer reads from
+/// here though: a shift close has to cover every till in the resto, so it
+/// reads the shared `orders` table instead.
 class TransactionRepository {
   final _dbHelper = DatabaseHelper.instance;
 

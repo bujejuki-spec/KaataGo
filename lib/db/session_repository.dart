@@ -19,7 +19,7 @@ class SessionRepository {
   Future<void> upsertActive({
     required String sessionId,
     required String restoId,
-    int? tableNumber,
+    String? tableNumber,
   }) async {
     await _client.from('sessions').upsert({
       'id': sessionId,
@@ -34,7 +34,7 @@ class SessionRepository {
   /// Fills in the table number for a session that started without one
   /// (picked a resto from the list instead of scanning) — called once,
   /// mandatorily, at checkout.
-  Future<void> setTableNumber(String sessionId, int tableNumber) async {
+  Future<void> setTableNumber(String sessionId, String tableNumber) async {
     await _client.from('sessions').update({'table_number': tableNumber}).eq('id', sessionId);
   }
 

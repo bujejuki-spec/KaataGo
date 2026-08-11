@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.4.7+15
+version: 1.28.4+63
 
 environment:
   sdk: ^3.5.4
@@ -66,7 +66,27 @@ dependencies:
 
   # Profile photo: pick from gallery, stored as base64 in the customers
   # table (no separate object-storage bucket needed)
+  # Used to trim the blank tail off the rasterised receipt (see
+  # utils/receipt_image.dart). Already present transitively via printing.
+  image: ^4.5.4
   image_picker: ^1.1.2
+
+  # Needed only for image_picker's CAMERA source: mobile_scanner puts
+  # android.permission.CAMERA in the manifest, and Android then refuses
+  # ACTION_IMAGE_CAPTURE with a SecurityException unless that permission
+  # has been granted. image_picker never requests it itself, and a
+  # Finance user photographing a receipt would otherwise never have been
+  # through the QR scanner that does.
+  permission_handler: ^11.3.1
+
+  # Saves the rendered receipt PNG into the device's photo gallery, so a
+  # customer can keep/share their struk like any other picture.
+  gal: ^2.3.0
+
+  # Hands the receipt image to Android's share sheet (WhatsApp, Telegram,
+  # Gmail, ...). Replaces the email-a-receipt flow, which needed a mail
+  # provider and an Edge Function that were never deployed.
+  share_plus: ^10.1.2
 
   # Reads the app's version/build number (from pubspec.yaml) at runtime,
   # shown as a footer on the role-choice screen.

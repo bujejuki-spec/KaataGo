@@ -57,6 +57,24 @@ class PosTransaction {
   /// for dine-in.
   final String? customerName;
 
+  /// Name of the Kasir/Admin who rang this sale up — shown on the
+  /// receipt and in Riwayat Transaksi so a day's takings can be traced
+  /// back to whoever was on shift.
+  final String? cashierName;
+
+  /// How much cash the customer handed over. Only set for
+  /// [PaymentMethod.cash] — QRIS and transfer are always exact, so there
+  /// is nothing to give back.
+  final int? cashReceived;
+
+  /// How [total] splits into revenue, service charge and PPN. Stored
+  /// rather than recomputed so a receipt reprinted later still shows the
+  /// figures that were actually charged, even if the resto has changed
+  /// its rates since.
+  final int? baseAmount;
+  final int? serviceAmount;
+  final int? ppnAmount;
+
   PosTransaction({
     required this.id,
     required this.createdAt,
@@ -65,7 +83,15 @@ class PosTransaction {
     required this.total,
     this.orderType = OrderType.dineIn,
     this.customerName,
+    this.cashierName,
+    this.cashReceived,
+    this.baseAmount,
+    this.serviceAmount,
+    this.ppnAmount,
   });
+
+  /// Change owed back. Null unless this was a cash sale.
+  int? get changeDue => cashReceived == null ? null : cashReceived! - total;
 
   Map<String, dynamic> toMap() {
     return {
@@ -75,6 +101,11 @@ class PosTransaction {
       'total': total,
       'orderType': orderType.dbValue,
       'customerName': customerName,
+      'cashierName': cashierName,
+      'cashReceived': cashReceived,
+      'baseAmount': baseAmount,
+      'serviceAmount': serviceAmount,
+      'ppnAmount': ppnAmount,
     };
   }
 
@@ -92,6 +123,11 @@ class PosTransaction {
       total: map['total'] as int,
       orderType: OrderTypeDb.fromDb(map['orderType'] as String?),
       customerName: map['customerName'] as String?,
+      cashierName: map['cashierName'] as String?,
+      cashReceived: map['cashReceived'] as int?,
+      baseAmount: map['baseAmount'] as int?,
+      serviceAmount: map['serviceAmount'] as int?,
+      ppnAmount: map['ppnAmount'] as int?,
     );
   }
 }

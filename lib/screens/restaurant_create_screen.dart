@@ -1,13 +1,22 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 import '../db/restaurant_repository.dart';
 import '../models/restaurant.dart';
+import '../widgets/edit_action_bar.dart';
+import '../widgets/logo_picker.dart';
 
 /// Super Admin only: creates a brand-new restaurant row (a new tenant),
 /// or — when [existing] is passed — edits one (from the "List Resto"
 /// screen). Regular Admins can edit their own resto's info
 /// (RestaurantInfoScreen) but can't create new ones or edit others —
 /// only Super Admin has that RLS privilege.
+///
+/// Creating a new resto has nothing to accidentally overwrite, so it's
+/// directly editable. Editing an existing one opens view-only (all
+/// fields greyed) until "Edit" is tapped.
 class RestaurantCreateScreen extends StatefulWidget {
   final Restaurant? existing;
 
@@ -17,14 +26,29 @@ class RestaurantCreateScreen extends StatefulWidget {
   State<RestaurantCreateScreen> createState() => _RestaurantCreateScreenState();
 }
 
+/// Drops a trailing ".0" so a rate of 11 shows as "11", not "11.0".
+String _pctText(double value) =>
+    value == 0 ? '' : value.toStringAsFixed(2).replaceFirst(RegExp(r'\.?0+$'), '');
+
 class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _idCtrl;
   late final TextEditingController _nameCtrl;
   late final TextEditingController _addressCtrl;
+  late final TextEditingController _phoneCtrl;
+  late final TextEditingController _ppnCtrl;
+  late final TextEditingController _serviceCtrl;
   String? _category;
+  String? _existingLogo;
+  File? _pickedLogo;
+  bool _logoRemoved = false;
   final _repo = RestaurantRepository();
   bool _saving = false;
+  late bool _editing;
+
+  /// What Batal restores. Unused when creating — cancelling a brand-new
+  /// resto just leaves the form.
+  Map<String, String?> _snapshot = const {};
 
   bool get _isEditing => widget.existing != null;
 
@@ -35,7 +59,12 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
     _idCtrl = TextEditingController(text: r?.id ?? '');
     _nameCtrl = TextEditingController(text: r?.name ?? '');
     _addressCtrl = TextEditingController(text: r?.address ?? '');
+    _phoneCtrl = TextEditingController(text: r?.phone ?? '');
+    _ppnCtrl = TextEditingController(text: _pctText(r?.ppnPercent ?? 0));
+    _serviceCtrl = TextEditingController(text: _pctText(r?.servicePercent ?? 0));
     _category = r?.category;
+    _existingLogo = r?.logoBase64;
+    _editing = !_isEditing;
   }
 
   @override
@@ -43,6 +72,9 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
     _idCtrl.dispose();
     _nameCtrl.dispose();
     _addressCtrl.dispose();
+    _phoneCtrl.dispose();
+    _ppnCtrl.dispose();
+    _serviceCtrl.dispose();
     super.dispose();
   }
 
@@ -53,6 +85,45 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
         .replaceAll(RegExp(r'[^a-z0-9]+'), '-')
         .replaceAll(RegExp(r'(^-+)|(-+$)'), '');
     return slug.isEmpty ? null : slug;
+  }
+
+  /// Logo state at the moment Edit was tapped, alongside the text
+  /// fields, so Batal also undoes an upload or a staged removal.
+  File? _snapshotPickedLogo;
+  String? _snapshotExistingLogo;
+  bool _snapshotLogoRemoved = false;
+
+  void _startEdit() {
+    _snapshot = {
+      'name': _nameCtrl.text,
+      'address': _addressCtrl.text,
+      'phone': _phoneCtrl.text,
+      'ppn': _ppnCtrl.text,
+      'service': _serviceCtrl.text,
+      'category': _category,
+    };
+    _snapshotPickedLogo = _pickedLogo;
+    _snapshotExistingLogo = _existingLogo;
+    _snapshotLogoRemoved = _logoRemoved;
+    setState(() => _editing = true);
+  }
+
+  void _cancelEdit() {
+    if (!_isEditing) {
+      Navigator.of(context).pop();
+      return;
+    }
+    _nameCtrl.text = _snapshot['name'] ?? '';
+    _addressCtrl.text = _snapshot['address'] ?? '';
+    _phoneCtrl.text = _snapshot['phone'] ?? '';
+    _ppnCtrl.text = _snapshot['ppn'] ?? '';
+    _serviceCtrl.text = _snapshot['service'] ?? '';
+    _category = _snapshot['category'];
+    _pickedLogo = _snapshotPickedLogo;
+    _existingLogo = _snapshotExistingLogo;
+    _logoRemoved = _snapshotLogoRemoved;
+    _formKey.currentState?.reset();
+    setState(() => _editing = false);
   }
 
   Future<void> _save() async {
@@ -73,11 +144,22 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
         }
       }
 
+      String? logoBase64 = _existingLogo;
+      if (_pickedLogo != null) {
+        logoBase64 = base64Encode(await _pickedLogo!.readAsBytes());
+      } else if (_logoRemoved) {
+        logoBase64 = null;
+      }
+
       await _repo.save(Restaurant(
         id: id,
         name: _nameCtrl.text.trim(),
         address: _addressCtrl.text.trim(),
+        phone: _phoneCtrl.text.trim().isEmpty ? null : _phoneCtrl.text.trim(),
+        ppnPercent: double.tryParse(_ppnCtrl.text.trim().replaceAll(',', '.')) ?? 0,
+        servicePercent: double.tryParse(_serviceCtrl.text.trim().replaceAll(',', '.')) ?? 0,
         category: _category,
+        logoBase64: logoBase64,
         // Preserve the existing active/inactive status when editing —
         // that's managed separately via the switch on List Resto, not
         // this form.
@@ -88,7 +170,14 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(_isEditing ? 'Resto "$id" diperbarui.' : 'Resto "$id" berhasil dibuat.')),
       );
-      Navigator.of(context).pop();
+      if (_isEditing) {
+        setState(() {
+          _saving = false;
+          _editing = false;
+        });
+      } else {
+        Navigator.of(context).pop();
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -101,7 +190,17 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(_isEditing ? 'Edit Resto' : 'Buat Resto Baru')),
+      appBar: AppBar(
+        title: Text(_isEditing ? 'Edit Resto' : 'Buat Resto Baru'),
+        actions: [
+          if (_isEditing && !_editing)
+            IconButton(
+              icon: const Icon(Icons.edit_outlined),
+              tooltip: 'Edit',
+              onPressed: _startEdit,
+            ),
+        ],
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -110,7 +209,12 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
             children: [
               TextFormField(
                 controller: _nameCtrl,
-                decoration: const InputDecoration(labelText: 'Nama resto'),
+                enabled: _editing,
+                decoration: InputDecoration(
+                  labelText: 'Nama resto',
+                  filled: !_editing,
+                  fillColor: _editing ? null : const Color(0xFFEEEEEE),
+                ),
                 validator: (v) => (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null,
                 onChanged: (v) {
                   if (_isEditing) return; // don't reshuffle an existing id
@@ -127,6 +231,8 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
                 decoration: const InputDecoration(
                   labelText: 'ID resto (unik, dipakai internal)',
                   helperText: 'Huruf kecil, angka, dan strip saja — misal: warung-bu-siti',
+                  filled: true,
+                  fillColor: Color(0xFFEEEEEE),
                 ),
                 validator: (v) {
                   if (v == null || v.trim().isEmpty) return 'Wajib diisi';
@@ -139,26 +245,94 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
               const SizedBox(height: 12),
               TextFormField(
                 controller: _addressCtrl,
-                decoration: const InputDecoration(labelText: 'Alamat'),
+                enabled: _editing,
+                decoration: InputDecoration(
+                  labelText: 'Alamat',
+                  filled: !_editing,
+                  fillColor: _editing ? null : const Color(0xFFEEEEEE),
+                ),
                 maxLines: 2,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _phoneCtrl,
+                enabled: _editing,
+                keyboardType: TextInputType.phone,
+                decoration: InputDecoration(
+                  labelText: 'Nomor HP (opsional)',
+                  helperText: 'Ditampilkan di struk',
+                  filled: !_editing,
+                  fillColor: _editing ? null : const Color(0xFFEEEEEE),
+                ),
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 value: _category,
-                decoration: const InputDecoration(labelText: 'Kategori (opsional)'),
+                decoration: InputDecoration(
+                  labelText: 'Kategori (opsional)',
+                  filled: !_editing,
+                  fillColor: _editing ? null : const Color(0xFFEEEEEE),
+                ),
                 items: kRestaurantCategories
                     .map((c) => DropdownMenuItem(value: c, child: Text(c)))
                     .toList(),
-                onChanged: (v) => setState(() => _category = v),
+                onChanged: _editing ? (v) => setState(() => _category = v) : null,
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _ppnCtrl,
+                      enabled: _editing,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: InputDecoration(
+                        labelText: 'PPN (%)',
+                        filled: !_editing,
+                        fillColor: _editing ? null : const Color(0xFFEEEEEE),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _serviceCtrl,
+                      enabled: _editing,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: InputDecoration(
+                        labelText: 'Service (%)',
+                        filled: !_editing,
+                        fillColor: _editing ? null : const Color(0xFFEEEEEE),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Harga menu ditampilkan sudah termasuk keduanya. Service hanya '
+                'dikenakan untuk Dine In.',
+                style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600),
+              ),
+              const SizedBox(height: 20),
+              LogoPicker(
+                existingBase64: _existingLogo,
+                picked: _pickedLogo,
+                removed: _logoRemoved,
+                enabled: _editing,
+                onChanged: ({File? picked, bool removed = false}) => setState(() {
+                  _pickedLogo = picked;
+                  _logoRemoved = removed;
+                }),
               ),
               const SizedBox(height: 24),
-              FilledButton(
-                onPressed: _saving ? null : _save,
-                child: _saving
-                    ? const SizedBox(
-                        width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                    : Text(_isEditing ? 'Simpan Perubahan' : 'Buat Resto'),
-              ),
+              if (_editing)
+                EditActionBar(
+                  onCancel: _cancelEdit,
+                  onSave: _save,
+                  saving: _saving,
+                  saveLabel: _isEditing ? 'Simpan Perubahan' : 'Buat Resto',
+                ),
             ],
           ),
         ),

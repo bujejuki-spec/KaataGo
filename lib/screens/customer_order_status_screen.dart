@@ -4,12 +4,23 @@ import 'package:provider/provider.dart';
 
 import '../db/order_repository.dart';
 import '../models/customer_order.dart';
+import '../providers/auth_provider.dart';
 import '../providers/table_session_provider.dart';
+import '../utils/id_time.dart';
 import 'customer_receipt_screen.dart';
+import '../widgets/dialog_actions.dart';
 
-/// Lets the customer track their own orders live — grouped under the
-/// session id assigned when they scanned their table's QR code, so no
-/// account is needed. Also where they end their session once done.
+/// Lets the customer track their own orders live. Also where they end
+/// their session once done.
+///
+/// Which orders count as "mine" depends on whether they're signed in:
+///
+///  - **Guest**: the session id assigned when they scanned the table QR.
+///    It lives in this device's storage, which is all a guest has.
+///  - **Signed in**: everything booked under their email at this resto.
+///    Keying off the session there meant a new phone generated a new
+///    session id and their orders vanished — even though the server had
+///    them all along.
 class CustomerOrderStatusScreen extends StatelessWidget {
   const CustomerOrderStatusScreen({super.key});
 
@@ -33,14 +44,11 @@ class CustomerOrderStatusScreen extends StatelessWidget {
           'Sesi meja ini akan diakhiri. Kalau kamu mau pesan lagi nanti, '
           'scan ulang QR meja yang sama untuk melanjutkan riwayat pesanan ini.',
         ),
+        actionsAlignment: MainAxisAlignment.center,
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Batal'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Ya, Selesai'),
+          DialogActions(
+            confirmLabel: 'Ya, Selesai',
+            onConfirm: () => Navigator.pop(context, true),
           ),
         ],
       ),
@@ -69,6 +77,9 @@ class CustomerOrderStatusScreen extends StatelessWidget {
     }
 
     final repo = OrderRepository();
+    final auth = context.watch<AuthProvider>();
+    final email = auth.isLoggedIn && !auth.isEmployee ? auth.user?.email : null;
+    final restoId = session.restoId;
 
     return Scaffold(
       appBar: AppBar(
@@ -79,7 +90,9 @@ class CustomerOrderStatusScreen extends StatelessWidget {
         ),
       ),
       body: StreamBuilder<List<CustomerOrder>>(
-        stream: repo.watchBySession(session.sessionId!),
+        stream: email != null
+            ? repo.watchByCustomerEmail(email)
+            : repo.watchBySession(session.sessionId!),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -90,7 +103,14 @@ class CustomerOrderStatusScreen extends StatelessWidget {
                   textAlign: TextAlign.center),
             );
           }
-          final orders = snapshot.data ?? [];
+          var orders = snapshot.data ?? [];
+          // The email stream spans every resto they've ever ordered from;
+          // this screen is about the place they're sitting in right now.
+          // (Supabase streams only take one equality filter, so the resto
+          // narrowing has to happen here.)
+          if (email != null && restoId != null) {
+            orders = orders.where((o) => o.restoId == restoId).toList();
+          }
           if (orders.isEmpty) {
             return const Center(child: Text('Belum ada pesanan di sesi ini.'));
           }
@@ -114,7 +134,7 @@ class CustomerOrderStatusScreen extends StatelessWidget {
                               style: const TextStyle(fontWeight: FontWeight.bold)),
                           Row(
                             children: [
-                              Text(dateFmt.format(order.createdAt),
+                              Text(dateFmt.format(order.createdAt.toWib()),
                                   style: const TextStyle(color: Colors.grey, fontSize: 12)),
                               IconButton(
                                 icon: const Icon(Icons.receipt_long_outlined, size: 20),

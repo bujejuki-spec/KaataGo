@@ -4,16 +4,16 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../providers/auth_provider.dart';
 import '../providers/settings_provider.dart';
+import '../widgets/edit_action_bar.dart';
 
-/// Payment settings (QRIS + bank transfer info). Admin only gets a
-/// read-only view here (all fields greyed out, "Kembali" instead of
-/// "Simpan") — Finance is the one who can actually edit these, via
-/// [editable] = true (see FinanceHomeScreen's own "Pengaturan
-/// Pembayaran" entry).
+/// Payment settings (QRIS + bank transfer info) — Finance only, since
+/// they're the only role allowed to change these. Admin gets
+/// [PaymentInfoScreen] instead, a plain read-only detail view.
+///
+/// Opens read-only even for Finance: tapping "Edit" is what unlocks the
+/// fields, so nothing can change just from opening the screen.
 class SettingsScreen extends StatefulWidget {
-  final bool editable;
-
-  const SettingsScreen({super.key, this.editable = false});
+  const SettingsScreen({super.key});
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -27,6 +27,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late final TextEditingController _accountNumberCtrl;
   late final TextEditingController _accountHolderCtrl;
   bool _loading = true;
+  bool _editing = false;
+  bool _saving = false;
 
   @override
   void initState() {
@@ -75,33 +77,73 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.dispose();
   }
 
+  /// Snapshot taken when Edit is tapped, so Batal can put every field
+  /// back exactly as it was rather than leaving half-typed changes on
+  /// screen looking saved.
+  Map<String, String> _snapshot = const {};
+
+  void _startEdit() {
+    _snapshot = {
+      'merchant': _merchantCtrl.text,
+      'qrisId': _qrisIdCtrl.text,
+      'bankName': _bankNameCtrl.text,
+      'accountNumber': _accountNumberCtrl.text,
+      'accountHolder': _accountHolderCtrl.text,
+    };
+    setState(() => _editing = true);
+  }
+
+  void _cancelEdit() {
+    _merchantCtrl.text = _snapshot['merchant'] ?? '';
+    _qrisIdCtrl.text = _snapshot['qrisId'] ?? '';
+    _bankNameCtrl.text = _snapshot['bankName'] ?? '';
+    _accountNumberCtrl.text = _snapshot['accountNumber'] ?? '';
+    _accountHolderCtrl.text = _snapshot['accountHolder'] ?? '';
+    // Drops any validation errors raised during the abandoned edit.
+    _formKey.currentState?.reset();
+    setState(() => _editing = false);
+  }
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     final restoId = context.read<AuthProvider>().restoId!;
-    await context.read<SettingsProvider>().save(
-          restoId: restoId,
-          merchantName: _merchantCtrl.text.trim(),
-          qrisId: _qrisIdCtrl.text.trim(),
-          bankName: _bankNameCtrl.text.trim(),
-          accountNumber: _accountNumberCtrl.text.trim(),
-          accountHolder: _accountHolderCtrl.text.trim(),
-        );
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Pengaturan disimpan')),
-    );
+    setState(() => _saving = true);
+    try {
+      await context.read<SettingsProvider>().save(
+            restoId: restoId,
+            merchantName: _merchantCtrl.text.trim(),
+            qrisId: _qrisIdCtrl.text.trim(),
+            bankName: _bankNameCtrl.text.trim(),
+            accountNumber: _accountNumberCtrl.text.trim(),
+            accountHolder: _accountHolderCtrl.text.trim(),
+          );
+      if (!mounted) return;
+      setState(() {
+        _editing = false;
+        _saving = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Pengaturan disimpan')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _saving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal menyimpan: $e')),
+      );
+    }
   }
 
   InputDecoration _decoration(String label) {
     return InputDecoration(
       labelText: label,
-      filled: !widget.editable,
-      fillColor: widget.editable ? null : const Color(0xFFEEEEEE),
+      filled: !_editing,
+      fillColor: _editing ? null : const Color(0xFFEEEEEE),
     );
   }
 
   String? _requiredValidator(String? v) {
-    if (!widget.editable) return null; // view-only: nothing to validate
+    if (!_editing) return null; // view-only: nothing to validate
     return (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null;
   }
 
@@ -121,6 +163,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                 ),
               ),
+            )
+          else if (!_editing)
+            IconButton(
+              icon: const Icon(Icons.edit_outlined),
+              tooltip: 'Edit',
+              onPressed: _startEdit,
             ),
         ],
       ),
@@ -137,14 +185,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(height: 8),
               TextFormField(
                 controller: _merchantCtrl,
-                enabled: widget.editable,
+                enabled: _editing,
                 decoration: _decoration('Nama Merchant'),
                 validator: _requiredValidator,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _qrisIdCtrl,
-                enabled: widget.editable,
+                enabled: _editing,
                 decoration: _decoration('ID QRIS Merchant'),
                 validator: _requiredValidator,
               ),
@@ -156,14 +204,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(height: 8),
               TextFormField(
                 controller: _bankNameCtrl,
-                enabled: widget.editable,
+                enabled: _editing,
                 decoration: _decoration('Nama Bank'),
                 validator: _requiredValidator,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _accountNumberCtrl,
-                enabled: widget.editable,
+                enabled: _editing,
                 decoration: _decoration('Nomor Rekening'),
                 keyboardType: TextInputType.number,
                 validator: _requiredValidator,
@@ -171,21 +219,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(height: 12),
               TextFormField(
                 controller: _accountHolderCtrl,
-                enabled: widget.editable,
+                enabled: _editing,
                 decoration: _decoration('Atas Nama (a.n. ...)'),
                 validator: _requiredValidator,
               ),
               const SizedBox(height: 24),
-              if (widget.editable)
-                FilledButton(
-                  onPressed: _save,
-                  child: const Text('Simpan'),
-                )
-              else
-                OutlinedButton.icon(
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.arrow_back),
-                  label: const Text('Kembali'),
+              if (_editing)
+                EditActionBar(
+                  onCancel: _cancelEdit,
+                  onSave: _save,
+                  saving: _saving,
                 ),
             ],
           ),

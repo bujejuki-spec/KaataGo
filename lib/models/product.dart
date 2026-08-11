@@ -27,6 +27,11 @@ class Product {
   /// "Ukuran" (size), but works for any level group.
   final Map<String, Map<String, int>> levelPrices;
 
+  /// Opt-outs from the resto-wide PPN / service rates, for the odd item
+  /// that genuinely isn't subject to them.
+  final bool ppnExempt;
+  final bool serviceExempt;
+
   Product({
     required this.id,
     required this.name,
@@ -37,6 +42,8 @@ class Product {
     this.photoBase64,
     this.levelGroups = const [],
     this.levelPrices = const {},
+    this.ppnExempt = false,
+    this.serviceExempt = false,
   });
 
   /// Extra price for the chosen [option] within [group], or 0 if unset.
@@ -54,6 +61,9 @@ class Product {
       'photo_base64': photoBase64,
       'level_groups': levelGroups.isEmpty ? null : levelGroups.join(','),
       'level_prices': levelPrices.isEmpty ? null : jsonEncode(levelPrices),
+      // SQLite has no bool — 0/1 round-trips through both it and Postgres.
+      'ppn_exempt': ppnExempt ? 1 : 0,
+      'service_exempt': serviceExempt ? 1 : 0,
     };
   }
 
@@ -80,8 +90,13 @@ class Product {
                     .map((opt, delta) => MapEntry(opt, (delta as num).toInt())),
               ),
             ),
+      ppnExempt: _asBool(map['ppn_exempt']),
+      serviceExempt: _asBool(map['service_exempt']),
     );
   }
+
+  /// SQLite hands these back as 0/1 ints, Postgres as real booleans.
+  static bool _asBool(Object? value) => value == true || value == 1;
 
   /// Sentinel used so `copyWith` can tell "not passed" apart from
   /// "explicitly set to null" (e.g. clearing a photo/description).
@@ -96,6 +111,8 @@ class Product {
     Object? photoBase64 = _unset,
     List<String>? levelGroups,
     Map<String, Map<String, int>>? levelPrices,
+    bool? ppnExempt,
+    bool? serviceExempt,
   }) {
     return Product(
       id: id,
@@ -109,6 +126,8 @@ class Product {
           identical(photoBase64, _unset) ? this.photoBase64 : photoBase64 as String?,
       levelGroups: levelGroups ?? this.levelGroups,
       levelPrices: levelPrices ?? this.levelPrices,
+      ppnExempt: ppnExempt ?? this.ppnExempt,
+      serviceExempt: serviceExempt ?? this.serviceExempt,
     );
   }
 }

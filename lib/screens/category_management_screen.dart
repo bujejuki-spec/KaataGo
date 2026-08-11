@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/category_provider.dart';
+import '../widgets/dialog_actions.dart';
 
 /// Tab content (inside Kelola Produk) for managing the list of product
 /// categories — added/deleted here, then picked from a dropdown on the
@@ -20,17 +21,15 @@ class CategoryManagementScreen extends StatelessWidget {
           autofocus: true,
           decoration: const InputDecoration(labelText: 'Nama Kategori'),
         ),
+        actionsAlignment: MainAxisAlignment.center,
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Batal'),
-          ),
-          FilledButton(
-            onPressed: () {
+          DialogActions(
+            confirmLabel: 'Tambah',
+            onConfirm: () {
               final value = controller.text.trim();
               Navigator.pop(context, value.isEmpty ? null : value);
             },
-            child: const Text('Tambah'),
+            onCancel: () => Navigator.pop(context),
           ),
         ],
       ),
@@ -67,15 +66,13 @@ class CategoryManagementScreen extends StatelessWidget {
                         content: Text(
                             'Hapus "${c.name}"? Produk yang sudah pakai kategori ini tidak ikut terhapus.'),
                         actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context, false),
-                            child: const Text('Batal'),
-                          ),
-                          TextButton(
-                            onPressed: () => Navigator.pop(context, true),
-                            child: const Text('Hapus'),
+                          DialogActions(
+                            confirmLabel: 'Hapus',
+                            destructive: true,
+                            onConfirm: () => Navigator.pop(context, true),
                           ),
                         ],
+                        actionsAlignment: MainAxisAlignment.center,
                       ),
                     );
                     if (confirm == true) {

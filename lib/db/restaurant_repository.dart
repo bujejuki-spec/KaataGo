@@ -37,10 +37,39 @@ class RestaurantRepository {
         .map((rows) => rows.isEmpty ? null : Restaurant.fromMap(id, rows.first));
   }
 
+  /// Creates or replaces a restaurant. Insert is super_admin-only under
+  /// RLS, so an Admin editing their own resto must use [update] instead:
+  /// an upsert is an INSERT ... ON CONFLICT, and Postgres checks the
+  /// insert policy first — which rejects them before the update policy
+  /// is ever consulted.
   Future<void> save(Restaurant restaurant) async {
     await _client.from('restaurants').upsert({
       'id': restaurant.id,
       ...restaurant.toMap(),
+    });
+  }
+
+  /// Edits an existing restaurant. Allowed for that resto's Admin as
+  /// well as super_admin.
+  Future<void> update(Restaurant restaurant) async {
+    await _client
+        .from('restaurants')
+        .update(restaurant.toMap())
+        .eq('id', restaurant.id);
+  }
+
+  /// Sets the PPN and service rates. Goes through an RPC rather than a
+  /// plain update so Finance can change these two columns without being
+  /// granted write access to the rest of the restaurant row.
+  Future<void> setTaxRates(
+    String restoId, {
+    required double ppnPercent,
+    required double servicePercent,
+  }) async {
+    await _client.rpc('set_tax_rates', params: {
+      'p_resto_id': restoId,
+      'p_ppn_percent': ppnPercent,
+      'p_service_percent': servicePercent,
     });
   }
 }

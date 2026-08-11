@@ -3,10 +3,11 @@ import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
 import '../providers/table_session_provider.dart';
+import 'admin_home_screen.dart';
 import 'chef_home_screen.dart';
 import 'customer_home_screen.dart';
 import 'finance_home_screen.dart';
-import 'pos_home_screen.dart';
+import 'kasir_home_screen.dart';
 import 'role_choice_screen.dart';
 import 'super_admin_home_screen.dart';
 
@@ -44,15 +45,22 @@ class _RootScreenState extends State<RootScreen> {
     // from RoleChoiceScreen), and swapping this screen out mid-flow would
     // tear down whatever screen/dialog was mid-await, discarding it.
     // Screens that specifically want a spinner during a role check show
-    // one themselves (see EmployeeLoginScreen).
+    // one themselves (e.g. the Google sign-in flow in RoleChoiceScreen).
     if (auth.isInitializing) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
     if (auth.isSuperAdmin) return const SuperAdminHomeScreen();
-    if (auth.isAdmin) return const PosHomeScreen(isAdmin: true);
-    if (auth.isKasir) return const PosHomeScreen(isAdmin: false);
+    if (auth.isAdmin) return const AdminHomeScreen();
+    if (auth.isKasir) return const KasirHomeScreen();
     if (auth.isChef) return const ChefHomeScreen();
     if (auth.isFinance) return const FinanceHomeScreen();
+
+    // Signed in but not on the employee list — a customer. Their hub is
+    // home the same way each role's screen is, so a restart lands there
+    // instead of asking "Customer or Resto?" again. CustomerHomeScreen
+    // decides for itself whether to show the hub, the chooser, or the
+    // menu, based on whether a resto session is active.
+    if (auth.isLoggedIn) return const CustomerHomeScreen();
 
     final session = context.watch<TableSessionProvider>();
     if (!session.loaded) {

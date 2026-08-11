@@ -22,6 +22,20 @@ class ExpenseGlAccountRepository {
     });
   }
 
+  /// How many expenses are already booked against this GL code. The
+  /// database refuses the delete outright (FK ON DELETE RESTRICT — see
+  /// supabase/journal_integrity.sql); this just lets the UI explain why
+  /// before the user commits to it, instead of surfacing a raw
+  /// constraint-violation error.
+  Future<int> usageCount(String restoId, String glCode) async {
+    final rows = await _client
+        .from('expenses')
+        .select('id')
+        .eq('resto_id', restoId)
+        .eq('gl_code', glCode);
+    return rows.length;
+  }
+
   Future<void> delete(String id) async {
     await _client.from('expense_gl_accounts').delete().eq('id', id);
   }

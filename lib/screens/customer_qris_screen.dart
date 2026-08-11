@@ -4,6 +4,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../db/order_repository.dart';
+import '../utils/qris_image.dart';
 
 /// QR payment screen shown right after a customer places a self-order.
 /// The order already exists in Supabase with status "pending" (visible
@@ -28,6 +29,22 @@ class CustomerQrisScreen extends StatefulWidget {
 class _CustomerQrisScreenState extends State<CustomerQrisScreen> {
   final _orderRepo = OrderRepository();
   bool _confirming = false;
+  bool _downloading = false;
+
+  Future<void> _downloadQr({
+    required String qrData,
+    required String merchantName,
+  }) async {
+    setState(() => _downloading = true);
+    await saveQrisToGallery(
+      context,
+      qrData: qrData,
+      merchantName: merchantName,
+      amount: widget.amount,
+      orderId: widget.orderId,
+    );
+    if (mounted) setState(() => _downloading = false);
+  }
 
   Future<void> _confirmPaid() async {
     setState(() => _confirming = true);
@@ -106,7 +123,22 @@ class _CustomerQrisScreenState extends State<CustomerQrisScreen> {
                   textAlign: TextAlign.center,
                   style: TextStyle(color: Colors.grey, fontSize: 12),
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 24),
+                // Paying usually means switching to a banking app, which
+                // takes this screen out of view — so let them keep a copy.
+                OutlinedButton.icon(
+                  onPressed: _downloading
+                      ? null
+                      : () => _downloadQr(qrData: qrData, merchantName: merchantName),
+                  icon: _downloading
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Icon(Icons.download_outlined),
+                  label: const Text('Simpan QR ke Galeri'),
+                ),
+                const SizedBox(height: 12),
                 FilledButton(
                   onPressed: _confirming ? null : _confirmPaid,
                   child: _confirming

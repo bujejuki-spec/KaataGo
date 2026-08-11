@@ -5,23 +5,33 @@ import 'package:intl/intl.dart';
 
 import '../models/product.dart';
 import '../theme.dart';
+import '../utils/tax_calculator.dart';
 
 /// One product tile in the ordering grid — used by Kasir/Admin and
-/// Customer alike. Always has a visible light-grey outline (so it
-/// doesn't look washed-out/transparent against the page background),
-/// and switches to a solid brand-colored outline + tint + quantity badge
-/// once it's selected in the cart. Shows the product photo on top when
-/// one's been uploaded.
+/// Customer alike. The photo is the hero: it fills the whole upper half
+/// of a portrait-shaped card, with the name/price block sized to its own
+/// content underneath so it can never overflow no matter how tall the
+/// grid cell ends up.
+///
+/// Products with no photo get a branded placeholder rather than a blank
+/// gap, and sold-out ones are dimmed with an explicit badge instead of
+/// only turning one line of text red — which was far too easy to miss.
 class ProductGridCard extends StatelessWidget {
   final Product product;
   final int quantityInCart;
   final VoidCallback? onTap;
+
+  /// Resto's PPN rate. Menu prices are shown inclusive of it, so this is
+  /// what turns the product's stored original price into the figure the
+  /// customer is quoted.
+  final double ppnPercent;
 
   const ProductGridCard({
     super.key,
     required this.product,
     required this.quantityInCart,
     required this.onTap,
+    this.ppnPercent = 0,
   });
 
   @override
@@ -33,92 +43,224 @@ class ProductGridCard extends StatelessWidget {
     );
     final selected = quantityInCart > 0;
     final inStock = product.stock > 0;
-    final hasPhoto = product.photoBase64 != null;
+    final lowStock = inStock && product.stock <= 5;
 
-    return Card(
-      color: selected ? KaataTheme.brand.withOpacity(0.06) : Colors.white,
-      clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-        side: BorderSide(
-          color: selected ? KaataTheme.brand : Colors.grey.shade300,
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: selected ? KaataTheme.brand : Colors.grey.shade200,
           width: selected ? 2 : 1,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: selected
+                ? KaataTheme.brand.withOpacity(0.18)
+                : Colors.black.withOpacity(0.05),
+            blurRadius: selected ? 12 : 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
-      child: Stack(
-        children: [
-          InkWell(
-            onTap: inStock ? onTap : null,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // The photo takes whatever space is left over — the text
-                // block below is sized to its own content (mainAxisSize.min)
-                // instead of a fixed flex share, so it can never overflow
-                // regardless of how tall the grid cell ends up being.
-                if (hasPhoto)
-                  Expanded(
-                    child: Image.memory(
-                      base64Decode(product.photoBase64!),
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                Padding(
-                  padding: const EdgeInsets.all(10),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        product.name,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        currency.format(product.price),
-                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        inStock ? 'Stok: ${product.stock}' : 'Stok habis',
-                        style: TextStyle(
-                          color: inStock ? Colors.grey.shade600 : Colors.red,
-                          fontSize: 11,
+      clipBehavior: Clip.antiAlias,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: inStock ? onTap : null,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    _ProductPhoto(product: product, dimmed: !inStock),
+                    if (!inStock)
+                      Center(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.65),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Text(
+                            'STOK HABIS',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 11,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
                         ),
                       ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (selected)
-            Positioned(
-              top: 6,
-              right: 6,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: const BoxDecoration(
-                  color: KaataTheme.brand,
-                  shape: BoxShape.circle,
-                ),
-                constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
-                child: Text(
-                  '$quantityInCart',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
-                  ),
+                    // Tap affordance — without it the tile reads as a
+                    // static picture rather than something orderable.
+                    if (inStock && !selected)
+                      Positioned(
+                        right: 6,
+                        bottom: 6,
+                        child: Container(
+                          padding: const EdgeInsets.all(5),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.18),
+                                blurRadius: 5,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(Icons.add, size: 16, color: KaataTheme.brand),
+                        ),
+                      ),
+                    if (selected)
+                      Positioned(
+                        right: 6,
+                        top: 6,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                          constraints: const BoxConstraints(minWidth: 26),
+                          decoration: BoxDecoration(
+                            color: KaataTheme.brand,
+                            borderRadius: BorderRadius.circular(13),
+                            boxShadow: [
+                              BoxShadow(
+                                color: KaataTheme.brand.withOpacity(0.45),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Text(
+                            '$quantityInCart',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
-            ),
-        ],
+              Padding(
+                padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      product.name,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13.5,
+                        height: 1.15,
+                        color: inStock ? Colors.black87 : Colors.grey,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 3),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            currency.format(menuPrice(product.price,
+                                ppnPercent: ppnPercent, ppnExempt: product.ppnExempt)),
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color: inStock ? KaataTheme.brand : Colors.grey,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (inStock)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: lowStock
+                                  ? Colors.orange.withOpacity(0.12)
+                                  : Colors.grey.withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              '${product.stock}',
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.bold,
+                                color: lowStock ? Colors.orange.shade800 : Colors.grey.shade700,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProductPhoto extends StatelessWidget {
+  final Product product;
+  final bool dimmed;
+
+  const _ProductPhoto({required this.product, required this.dimmed});
+
+  @override
+  Widget build(BuildContext context) {
+    final photo = product.photoBase64;
+
+    final Widget image = photo != null
+        ? Image.memory(
+            base64Decode(photo),
+            width: double.infinity,
+            fit: BoxFit.cover,
+            // A corrupt/truncated base64 payload would otherwise throw
+            // during paint and blank out the whole grid.
+            errorBuilder: (_, __, ___) => const _PhotoPlaceholder(),
+          )
+        : const _PhotoPlaceholder();
+
+    if (!dimmed) return image;
+    return Opacity(opacity: 0.4, child: image);
+  }
+}
+
+class _PhotoPlaceholder extends StatelessWidget {
+  const _PhotoPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            KaataTheme.brand.withOpacity(0.09),
+            KaataTheme.brand.withOpacity(0.02),
+          ],
+        ),
+      ),
+      child: Center(
+        child: Icon(
+          Icons.restaurant_menu,
+          size: 34,
+          color: KaataTheme.brand.withOpacity(0.30),
+        ),
       ),
     );
   }

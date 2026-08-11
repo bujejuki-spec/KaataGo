@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../db/restaurant_repository.dart';
 import '../models/restaurant.dart';
+import '../widgets/resto_logo_avatar.dart';
 import '../providers/table_session_provider.dart';
 
 /// Lets a customer browse the menu of any registered restaurant without
@@ -62,7 +63,7 @@ class _RestaurantListScreenState extends State<RestaurantListScreen> {
                     return Card(
                       clipBehavior: Clip.antiAlias,
                       child: ListTile(
-                        leading: const CircleAvatar(child: Icon(Icons.storefront_outlined)),
+                        leading: RestoLogoAvatar(logoBase64: resto.logoBase64),
                         title: Text(resto.name, style: const TextStyle(fontWeight: FontWeight.bold)),
                         subtitle: Text(
                           resto.address.isEmpty ? 'Alamat belum diisi' : resto.address,

@@ -50,6 +50,37 @@ class OrderRepository {
         .map((rows) => rows.map((r) => CustomerOrder.fromMap(r)).toList());
   }
 
+  /// Hands this device's guest orders over to the email that just logged
+  /// in, and reports how many were taken. Returns 0 — claiming nothing —
+  /// when that email already has orders of its own, which is how the two
+  /// histories stay unmerged for a returning customer.
+  ///
+  /// Goes through the `claim_guest_orders` RPC because customers can't
+  /// UPDATE `orders` directly under RLS; the RPC reads the target email
+  /// from the caller's own session rather than trusting an argument.
+  Future<int> claimGuestOrders(List<String> orderIds) async {
+    if (orderIds.isEmpty) return 0;
+    final result = await _client.rpc(
+      'claim_guest_orders',
+      params: {'p_order_ids': orderIds},
+    );
+    return (result as num?)?.toInt() ?? 0;
+  }
+
+  /// One-shot fetch of specific orders by id, newest first — backs a
+  /// guest's history, where the ids come from device-local storage (see
+  /// [GuestOrderStore]) rather than an account. Not a stream: Supabase
+  /// realtime only filters streams by equality, and this needs `in`.
+  Future<List<CustomerOrder>> getByIds(List<String> ids) async {
+    if (ids.isEmpty) return [];
+    final rows = await _client
+        .from('orders')
+        .select()
+        .inFilter('id', ids)
+        .order('created_at', ascending: false);
+    return rows.map((r) => CustomerOrder.fromMap(r)).toList();
+  }
+
   /// Live stream of every order ever placed under this email — across
   /// every restaurant/table/session. Used by a logged-in customer's
   /// "Riwayat Saya" screen, since login (not device-local storage) is

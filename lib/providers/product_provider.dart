@@ -25,6 +25,24 @@ class ProductProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Points this provider at a restaurant and brings the local catalog in
+  /// line with the server: load what's cached, pull down stock and any
+  /// products this device hasn't seen, then push up anything only it
+  /// knows about.
+  ///
+  /// Every screen that shows or edits products must call this, not just
+  /// the cashier screen. Two things break otherwise, and both fail
+  /// quietly: a device with an empty local database shows no products at
+  /// all, and — because [restoId] gates the mirror — products created
+  /// there never reach the server, so nobody else ever sees them.
+  Future<void> syncWithResto(String? restoId) async {
+    this.restoId = restoId;
+    await load();
+    await pullStockFromFirestore();
+    await pullNewProductsFromFirestore();
+    await syncAllToFirestore();
+  }
+
   /// One-time (per app open) backfill: pushes every locally-known product
   /// to Firestore. Needed because products created before the customer
   /// self-order feature existed were never mirrored — without this the
@@ -95,6 +113,8 @@ class ProductProvider extends ChangeNotifier {
     String? photoBase64,
     List<String> levelGroups = const [],
     Map<String, Map<String, int>> levelPrices = const {},
+    bool ppnExempt = false,
+    bool serviceExempt = false,
   }) async {
     final product = Product(
       id: _uuid.v4(),
@@ -106,6 +126,8 @@ class ProductProvider extends ChangeNotifier {
       photoBase64: photoBase64,
       levelGroups: levelGroups,
       levelPrices: levelPrices,
+      ppnExempt: ppnExempt,
+      serviceExempt: serviceExempt,
     );
     await _repo.insert(product);
     _mirrorToFirestore(product);

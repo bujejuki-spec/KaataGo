@@ -66,22 +66,22 @@ class HubMenuTile extends StatelessWidget {
 }
 
 /// A soft gradient hero header used at the top of hub home screens —
-/// shows the app mark, a role label ("Finance" / "Super Admin"), and an
-/// optional detail line (e.g. the logged-in email).
+/// shows the app mark, the employee's name in large text, and a smaller
+/// "Role • email" line underneath it.
 class HubHeader extends StatelessWidget {
   final Widget logo;
-  final String roleLabel;
-  final String? detail;
+  final String title;
+  final String? subtitle;
   final Color colorA;
   final Color colorB;
 
   const HubHeader({
     super.key,
     required this.logo,
-    required this.roleLabel,
+    required this.title,
     required this.colorA,
     required this.colorB,
-    this.detail,
+    this.subtitle,
   });
 
   @override
@@ -103,7 +103,7 @@ class HubHeader extends StatelessWidget {
           logo,
           const SizedBox(height: 16),
           Text(
-            roleLabel,
+            title,
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: Colors.white,
@@ -112,10 +112,10 @@ class HubHeader extends StatelessWidget {
               letterSpacing: 0.2,
             ),
           ),
-          if (detail != null) ...[
+          if (subtitle != null) ...[
             const SizedBox(height: 8),
             Text(
-              detail!,
+              subtitle!,
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 12.5),
             ),

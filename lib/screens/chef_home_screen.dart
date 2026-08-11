@@ -4,7 +4,8 @@ import 'package:provider/provider.dart';
 import '../db/order_repository.dart';
 import '../models/customer_order.dart';
 import '../providers/auth_provider.dart';
-import '../widgets/order_card.dart';
+import '../utils/logout_confirm.dart';
+import '../widgets/grouped_order_list.dart';
 
 /// Chef's entire app: a live, tabbed feed of incoming orders — from both
 /// Employee Kasir sales and customer self-orders — with full item detail.
@@ -29,18 +30,37 @@ class _ChefHomeScreenState extends State<ChefHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final restoId = context.watch<AuthProvider>().restoId!;
+    final auth = context.watch<AuthProvider>();
+    final restoId = auth.restoId!;
+    final employeeName = auth.employeeName?.isNotEmpty == true ? auth.employeeName! : 'Chef';
+
     return DefaultTabController(
       length: _tabs.length,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Pesanan Masuk (Dapur)'),
+          toolbarHeight: 60,
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(employeeName, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              Text(
+                '${auth.roleLabel ?? 'Chef'} • ${auth.user?.email ?? ''}',
+                style: const TextStyle(fontSize: 11, color: Colors.white70),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
           bottom: TabBar(tabs: _tabs.map((t) => Tab(text: t.$2)).toList()),
           actions: [
             IconButton(
               icon: const Icon(Icons.logout),
               tooltip: 'Keluar',
-              onPressed: () => context.read<AuthProvider>().signOut(),
+              onPressed: () async {
+                if (!await confirmLogout(context)) return;
+                if (!context.mounted) return;
+                await context.read<AuthProvider>().signOut();
+              },
             ),
           ],
         ),
@@ -65,17 +85,7 @@ class _ChefHomeScreenState extends State<ChefHomeScreen> {
                 if (orders.isEmpty) {
                   return Center(child: Text('Tidak ada pesanan "${tab.$2}".'));
                 }
-                return ListView.builder(
-                  padding: const EdgeInsets.all(12),
-                  itemCount: orders.length,
-                  itemBuilder: (context, index) {
-                    final order = orders[index];
-                    return OrderCard(
-                      order: order,
-                      actions: _buildActions(order),
-                    );
-                  },
-                );
+                return GroupedOrderList(orders: orders, actionsFor: _buildActions);
               }).toList(),
             );
           },

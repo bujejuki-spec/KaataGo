@@ -7,6 +7,7 @@ import '../providers/category_provider.dart';
 import '../providers/product_provider.dart';
 import 'category_management_screen.dart';
 import 'product_form_screen.dart';
+import '../widgets/dialog_actions.dart';
 
 class ProductListScreen extends StatefulWidget {
   const ProductListScreen({super.key});
@@ -20,11 +21,21 @@ class _ProductListScreenState extends State<ProductListScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final restoId = context.read<AuthProvider>().restoId;
+
       final categories = context.read<CategoryProvider>();
-      categories.restoId = context.read<AuthProvider>().restoId;
+      categories.restoId = restoId;
       await categories.load();
       await categories.pullNewFromSupabase();
       await categories.syncAllToSupabase();
+
+      if (!mounted) return;
+      // Products used to be synced only by the cashier screen. Now that
+      // Kelola Produk is its own menu entry on the Admin hub, it can be
+      // opened without ever going there — which left this list showing
+      // whatever happened to be in the local database, i.e. nothing at
+      // all on a freshly installed device.
+      await context.read<ProductProvider>().syncWithResto(restoId);
     });
   }
 
@@ -91,15 +102,13 @@ class _ProductTab extends StatelessWidget {
                       title: const Text('Hapus produk?'),
                       content: Text('Hapus "${p.name}"?'),
                       actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, false),
-                          child: const Text('Batal'),
-                        ),
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, true),
-                          child: const Text('Hapus'),
+                        DialogActions(
+                          confirmLabel: 'Hapus',
+                          destructive: true,
+                          onConfirm: () => Navigator.pop(context, true),
                         ),
                       ],
+                      actionsAlignment: MainAxisAlignment.center,
                     ),
                   );
                   if (confirm == true) {

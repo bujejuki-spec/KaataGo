@@ -31,7 +31,11 @@ import '../db/session_repository.dart';
 /// cache), always starts a brand-new session.
 class TableSessionProvider extends ChangeNotifier {
   static const _kRestoId = 'table_session_resto_id';
-  static const _kTableNumber = 'table_session_number';
+  // Deliberately a different key from the int-typed one older builds
+  // wrote: SharedPreferences would throw reading that back as a String.
+  // The old key is cleaned up in [load].
+  static const _kTableNumber = 'table_session_label';
+  static const _kLegacyTableNumberInt = 'table_session_number';
   static const _kSessionId = 'table_session_id';
   static const _kSessionActive = 'table_session_active';
   static const _kEnteredViaQr = 'table_session_entered_via_qr';
@@ -39,7 +43,10 @@ class TableSessionProvider extends ChangeNotifier {
   final _sessionRepo = SessionRepository();
 
   String? restoId;
-  int? tableNumber;
+
+  /// Free-form label, not a number — restaurants use things like "A01"
+  /// or "VIP-2" as often as "7".
+  String? tableNumber;
   String? sessionId;
   bool sessionActive = false;
   bool loaded = false;
@@ -64,7 +71,14 @@ class TableSessionProvider extends ChangeNotifier {
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
     restoId = prefs.getString(_kRestoId);
-    tableNumber = prefs.getInt(_kTableNumber);
+    tableNumber = prefs.getString(_kTableNumber);
+    if (tableNumber == null && prefs.containsKey(_kLegacyTableNumberInt)) {
+      // Upgrading from a build that stored this as an int — carry the
+      // value over once, then drop the old key.
+      tableNumber = prefs.getInt(_kLegacyTableNumberInt)?.toString();
+      if (tableNumber != null) await prefs.setString(_kTableNumber, tableNumber!);
+      await prefs.remove(_kLegacyTableNumberInt);
+    }
     sessionId = prefs.getString(_kSessionId);
     sessionActive = prefs.getBool(_kSessionActive) ?? false;
     enteredViaQr = prefs.getBool(_kEnteredViaQr) ?? false;
@@ -79,7 +93,7 @@ class TableSessionProvider extends ChangeNotifier {
   /// same sessionId, so their order history is still there. Otherwise
   /// (different table, or nothing cached yet) a brand-new session id is
   /// generated.
-  Future<void> setTable(String restoId, int table) async {
+  Future<void> setTable(String restoId, String table) async {
     final prefs = await SharedPreferences.getInstance();
 
     final isSameDeviceSameTable =
@@ -92,7 +106,7 @@ class TableSessionProvider extends ChangeNotifier {
     enteredViaQr = true;
 
     await prefs.setString(_kRestoId, restoId);
-    await prefs.setInt(_kTableNumber, table);
+    await prefs.setString(_kTableNumber, table);
     await prefs.setString(_kSessionId, sessionId!);
     await prefs.setBool(_kSessionActive, true);
     await prefs.setBool(_kEnteredViaQr, true);
@@ -138,10 +152,10 @@ class TableSessionProvider extends ChangeNotifier {
   /// (picked from the restaurant list) — mandatory at checkout, entered
   /// once and then greyed out/read-only from then on, same as a QR-scan
   /// session.
-  Future<void> setTableNumber(int table) async {
+  Future<void> setTableNumber(String table) async {
     final prefs = await SharedPreferences.getInstance();
     tableNumber = table;
-    await prefs.setInt(_kTableNumber, table);
+    await prefs.setString(_kTableNumber, table);
     notifyListeners();
 
     if (sessionId != null) {

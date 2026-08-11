@@ -17,6 +17,14 @@ const _roleDbValues = {
   EmployeeRole.finance: 'finance',
 };
 
+const _roleDisplayLabels = {
+  EmployeeRole.superAdmin: 'Super Admin',
+  EmployeeRole.admin: 'Admin',
+  EmployeeRole.kasir: 'Kasir',
+  EmployeeRole.chef: 'Chef',
+  EmployeeRole.finance: 'Finance',
+};
+
 /// Handles Google Sign-In (via Supabase Auth) and figures out the
 /// signed-in account's role AND which restaurant they work at, both
 /// checked against the `employees` table in Postgres (keyed by
@@ -36,6 +44,7 @@ class AuthProvider extends ChangeNotifier {
   User? user;
   EmployeeRole? role;
   String? restoId;
+  String? employeeName;
   bool isCheckingRole = false;
   bool isInitializing = true;
   String? lastError;
@@ -47,6 +56,10 @@ class AuthProvider extends ChangeNotifier {
   bool get isKasir => role == EmployeeRole.kasir;
   bool get isChef => role == EmployeeRole.chef;
   bool get isFinance => role == EmployeeRole.finance;
+
+  /// Human-readable role label ("Admin", "Super Admin", ...) for display
+  /// on each role's home screen header, or null if not an employee.
+  String? get roleLabel => role == null ? null : _roleDisplayLabels[role];
 
   AuthProvider() {
     _bootstrap();
@@ -149,20 +162,24 @@ class AuthProvider extends ChangeNotifier {
                     orElse: () => throw StateError('Unknown role: $roleStr'))
                 .key;
             restoId = restoIdValue;
+            employeeName = row['name'] as String?;
           }
         } else {
           role = null;
           restoId = null;
+          employeeName = null;
         }
       } else {
         role = null;
         restoId = null;
+        employeeName = null;
       }
     } catch (e) {
       debugPrint('[Auth] ERROR checking employee role: $e');
       lastError = 'Gagal cek status karyawan: $e';
       role = null;
       restoId = null;
+      employeeName = null;
     }
 
     isCheckingRole = false;
@@ -184,6 +201,7 @@ class AuthProvider extends ChangeNotifier {
     user = null;
     role = null;
     restoId = null;
+    employeeName = null;
     notifyListeners();
   }
 }

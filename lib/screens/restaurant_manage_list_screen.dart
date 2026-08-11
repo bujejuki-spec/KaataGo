@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../db/restaurant_repository.dart';
 import '../models/restaurant.dart';
+import '../widgets/resto_logo_avatar.dart';
 import 'restaurant_create_screen.dart';
+import '../widgets/dialog_actions.dart';
 
 /// Super Admin's "List Resto" — every registered restaurant, tap one to
 /// edit its name/address/category, and a switch to activate/deactivate
@@ -55,11 +57,12 @@ class _RestaurantManageListScreenState extends State<RestaurantManageListScreen>
             '${resto.name} akan hilang dari daftar "Pilih Resto" customer, dan '
             'karyawan resto ini tidak akan bisa login sampai diaktifkan lagi.',
           ),
+          actionsAlignment: MainAxisAlignment.center,
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Batal')),
-            FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Nonaktifkan'),
+            DialogActions(
+              confirmLabel: 'Nonaktifkan',
+              destructive: true,
+              onConfirm: () => Navigator.pop(context, true),
             ),
           ],
         ),
@@ -106,9 +109,9 @@ class _RestaurantManageListScreenState extends State<RestaurantManageListScreen>
                       return Card(
                         clipBehavior: Clip.antiAlias,
                         child: ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: resto.active ? null : Colors.grey.shade300,
-                            child: const Icon(Icons.storefront_outlined),
+                          leading: RestoLogoAvatar(
+                            logoBase64: resto.logoBase64,
+                            active: resto.active,
                           ),
                           title: Text(resto.name, style: const TextStyle(fontWeight: FontWeight.bold)),
                           subtitle: Text(

@@ -1,10 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../db/customer_profile_repository.dart';
 import '../db/firestore_product_repository.dart';
+import '../db/guest_order_store.dart';
 import '../db/order_repository.dart';
 import '../db/restaurant_repository.dart';
 import '../db/session_repository.dart';
@@ -15,6 +17,12 @@ import '../providers/auth_provider.dart';
 import '../providers/customer_cart_provider.dart';
 import '../providers/table_session_provider.dart';
 import '../utils/customer_login_flow.dart';
+import '../utils/logout_confirm.dart';
+import '../theme.dart';
+import '../widgets/cart_bottom_bar.dart';
+import '../widgets/hub_menu_tile.dart';
+import '../widgets/kaata_logo.dart';
+import '../widgets/loading_overlay.dart';
 import '../widgets/product_category_list.dart';
 import '../widgets/quantity_dialog.dart';
 import 'customer_cart_screen.dart';
@@ -23,6 +31,7 @@ import 'customer_order_status_screen.dart';
 import 'customer_profile_screen.dart';
 import 'restaurant_list_screen.dart';
 import 'scan_table_screen.dart';
+import '../widgets/dialog_actions.dart';
 
 /// Self-order browsing screen for customers. Reads the product catalog
 /// live from Firestore (mirrored by the employee app), so stock/prices
@@ -52,6 +61,21 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
   String? _watchedSessionId;
   Timer? _autoEndTimer;
 
+  /// Drives whether the chooser offers "Riwayat Pesanan" to a guest —
+  /// there's no point showing the entry when the device has never placed
+  /// an order, since it'd only ever open an empty screen.
+  bool _hasGuestHistory = false;
+
+  /// Logged-in customers land on a hub (Pesan / Profil / Riwayat /
+  /// Logout) like every employee role does; the Scan-or-Pick chooser is
+  /// one step in from there. Guests skip the hub — there'd be almost
+  /// nothing on it for them — and go straight to the chooser.
+  bool _showChooser = false;
+
+  /// Name from their saved profile, for the greeting. Falls back to the
+  /// email's local part while it loads or if no profile exists yet.
+  String? _profileName;
+
   @override
   void initState() {
     super.initState();
@@ -59,7 +83,47 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
       final session = context.read<TableSessionProvider>();
       if (!session.loaded) await session.load();
       _syncOrderWatch();
+      _refreshGuestHistoryFlag();
+      _loadProfileName();
+      _loadRates(session.restoId);
     });
+  }
+
+  /// Menu prices are shown inclusive of the resto's PPN, so the cart has
+  /// to know the rates before it can price anything.
+  Future<void> _loadRates(String? restoId) async {
+    if (restoId == null) return;
+    try {
+      final resto = await RestaurantRepository().getOnce(restoId);
+      if (!mounted || resto == null) return;
+      context.read<CustomerCartProvider>()
+          .setRates(ppn: resto.ppnPercent, service: resto.servicePercent);
+    } catch (_) {
+      // Offline — prices fall back to the stored originals.
+    }
+  }
+
+  Future<void> _loadProfileName() async {
+    final email = context.read<AuthProvider>().user?.email;
+    if (email == null) return;
+    try {
+      final profile = await CustomerProfileRepository().getOnce(email);
+      if (!mounted || profile == null || profile.name.trim().isEmpty) return;
+      setState(() => _profileName = profile.name.trim());
+    } catch (_) {
+      // Offline — the greeting falls back to the email's local part.
+    }
+  }
+
+  /// Re-run from the per-build post-frame callback as well as initState,
+  /// so the entry appears as soon as a guest's first order lands without
+  /// needing this screen to be rebuilt from scratch. Only calls setState
+  /// on an actual change — otherwise it would loop, since the callback
+  /// fires on every build.
+  Future<void> _refreshGuestHistoryFlag() async {
+    final ids = await GuestOrderStore().ids();
+    if (!mounted || ids.isNotEmpty == _hasGuestHistory) return;
+    setState(() => _hasGuestHistory = ids.isNotEmpty);
   }
 
   /// (Re)subscribes to this session's orders so the auto-end timer stays
@@ -86,10 +150,9 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
 
     // Local fallback: while this screen is open, end the session 5 minutes
     // after everything's done — instant, no round trip needed.
-    _orderWatch =
-        OrderRepository().watchBySession(session.sessionId!).listen((orders) {
-      final allDone = orders.isNotEmpty &&
-          orders.every((o) => o.kitchenStatus == KitchenStatus.done);
+    _orderWatch = OrderRepository().watchBySession(session.sessionId!).listen((orders) {
+      final allDone =
+          orders.isNotEmpty && orders.every((o) => o.kitchenStatus == KitchenStatus.done);
       _autoEndTimer?.cancel();
       if (allDone) {
         _autoEndTimer = Timer(_autoEndDelay, () {
@@ -101,8 +164,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
     // Backend backstop: the Cloud Function can end this session even if
     // the app was closed the whole time — this listener just makes sure
     // the UI catches up once we're back online/foregrounded.
-    _remoteActiveWatch =
-        SessionRepository().watchActive(session.sessionId!).listen((active) {
+    _remoteActiveWatch = SessionRepository().watchActive(session.sessionId!).listen((active) {
       if (!active && mounted) {
         context.read<TableSessionProvider>().applyRemoteEnded();
       }
@@ -121,21 +183,46 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
 
   Future<void> _loginWithEmail() async {
     final auth = context.read<AuthProvider>();
+    // This screen is only ever reached as a pushed route while browsing
+    // as a guest. Once the login lands, RootScreen renders its own
+    // CustomerHomeScreen underneath — so these survive the teardown and
+    // let us clear the now-duplicate copy off the stack afterwards.
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+
     setState(() => _loggingIn = true);
-    await auth.signInWithGoogle();
-    if (!mounted) return;
-    setState(() => _loggingIn = false);
+    var claimed = 0;
+    await withLoadingOverlay(context, () async {
+      await auth.signInWithGoogle();
+      if (auth.isLoggedIn && !auth.isEmployee) {
+        claimed = await claimGuestOrdersForLogin();
+      }
+    });
+
     if (auth.lastError != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(auth.lastError!)),
-      );
-    } else if (auth.isLoggedIn && !auth.isEmployee) {
-      await ensureCustomerProfile(context, auth.user!.email!);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Login sebagai ${auth.user?.email}')),
-      );
+      if (mounted) setState(() => _loggingIn = false);
+      messenger.showSnackBar(SnackBar(content: Text(auth.lastError!)));
+      return;
     }
+
+    if (auth.isLoggedIn && !auth.isEmployee) {
+      await ensureCustomerProfile(navigator, auth.user!.email!);
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            claimed > 0
+                ? 'Login sebagai ${auth.user?.email}. $claimed riwayat pesanan dipindahkan ke akun ini.'
+                : 'Login sebagai ${auth.user?.email}',
+          ),
+        ),
+      );
+      // Drop this pushed copy so the one RootScreen now renders — the
+      // customer hub — is what's actually on screen.
+      if (navigator.mounted) navigator.popUntil((r) => r.isFirst);
+      return;
+    }
+
+    if (mounted) setState(() => _loggingIn = false);
     // If it turns out this email IS a registered employee, RootScreen
     // will notice the role change and switch to the staff screens on its
     // own — nothing else to do here.
@@ -174,9 +261,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
         IconButton(
           icon: _loggingIn
               ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2))
+                  width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
               : const Icon(Icons.login),
           tooltip: 'Login dengan Email',
           onPressed: _loggingIn ? null : _loginWithEmail,
@@ -186,6 +271,8 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
           icon: const Icon(Icons.logout),
           tooltip: 'Logout (${auth.user?.email})',
           onPressed: () async {
+            if (!await confirmLogout(context)) return;
+            if (!context.mounted) return;
             await auth.signOut();
             if (!context.mounted) return;
             // Logging out also ends the table session — resuming after
@@ -196,6 +283,47 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
           },
         ),
     ];
+  }
+
+  /// Returns to the "Scan QR Meja / Pilih Resto" chooser. That chooser is
+  /// this same route rendered in its no-active-resto state, so getting
+  /// back to it means dropping the resto session rather than popping.
+  ///
+  /// Confirms first when the cart has something in it — the cart is
+  /// scoped to the current resto, so leaving necessarily discards it, and
+  /// a stray back swipe shouldn't silently wipe an order in progress.
+  Future<void> _backToChooser(BuildContext context) async {
+    final cart = context.read<CustomerCartProvider>();
+
+    if (cart.items.isNotEmpty) {
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (_) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          icon: const Icon(Icons.remove_shopping_cart_outlined, size: 40, color: Colors.orange),
+          title: const Text('Keluar dari resto ini?'),
+          content: const Text(
+            'Keranjang belanja kamu akan dikosongkan.',
+            textAlign: TextAlign.center,
+          ),
+          actionsAlignment: MainAxisAlignment.center,
+          actions: [
+            DialogActions(
+              confirmLabel: 'Keluar',
+              destructive: true,
+              onConfirm: () => Navigator.pop(context, true),
+            ),
+          ],
+        ),
+      );
+      if (confirm != true || !context.mounted) return;
+    }
+
+    cart.clear();
+    // Land on the chooser, not all the way back at the hub — the nesting
+    // is hub → chooser → ordering, so one back step is one level up.
+    if (mounted) setState(() => _showChooser = true);
+    await context.read<TableSessionProvider>().clear();
   }
 
   /// Only offered when this session started via "Pilih Resto" (not a QR
@@ -209,9 +337,12 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
       builder: (_) => AlertDialog(
         title: const Text('Ganti Resto?'),
         content: const Text('Keranjang belanja kamu saat ini akan dikosongkan.'),
+        actionsAlignment: MainAxisAlignment.center,
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Batal')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Ganti Resto')),
+          DialogActions(
+            confirmLabel: 'Ganti Resto',
+            onConfirm: () => Navigator.pop(context, true),
+          ),
         ],
       ),
     );
@@ -225,34 +356,149 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
     );
   }
 
+  /// Always adds a *new* line rather than editing what's already in the
+  /// cart — the same dish ordered two different ways stays two lines.
+  /// Editing happens from the cart screen.
   Future<void> _openQuantityDialog(
-      BuildContext context, CustomerCartProvider cart, Product product) async {
-    final currentQty = cart.quantityOf(product.id);
+    BuildContext context,
+    CustomerCartProvider cart,
+    Product product,
+  ) async {
     final result = await showDialog<QuantityDialogResult>(
       context: context,
       builder: (_) => QuantityDialog(
         product: product,
-        initialQuantity: currentQty > 0 ? currentQty : 1,
-        initialLevels: cart.selectedLevelsOf(product.id),
-        initialNotes: cart.notesOf(product.id),
+        ppnPercent: cart.ppnPercent,
       ),
     );
     if (result == null) return;
-    cart.setQuantity(
+    cart.addLine(
       product,
-      result.quantity,
+      quantity: result.quantity,
       selectedLevels: result.selectedLevels,
       notes: result.notes,
     );
   }
 
+  /// Rotates through a few casual openers so the hub doesn't read the
+  /// same every single time — picked from the day of the year rather
+  /// than randomly, so it stays put while the screen is open instead of
+  /// changing on every rebuild.
+  static const _greetings = [
+    'Lagi pengen makan apa hari ini?',
+    'Perut udah bunyi belum?',
+    'Yuk, cari yang enak-enak!',
+    'Siap-siap kenyang hari ini 😋',
+    'Mau yang pedes atau yang manis?',
+    'Laper? Gas pesan sekarang!',
+    'Waktunya makan enak nih.',
+  ];
+
+  String get _displayName {
+    if (_profileName != null && _profileName!.isNotEmpty) return _profileName!;
+    // No name saved yet (or still loading) — a warm stand-in reads far
+    // better here than the email's local part, which is often something
+    // like "abdul.p92" and makes the greeting feel machine-generated.
+    return 'Sahabat KaataGo';
+  }
+
+  Widget _hubView(BuildContext context) {
+    final greeting = _greetings[
+        DateTime.now().difference(DateTime(DateTime.now().year)).inDays % _greetings.length];
+
+    // This hub is a logged-in customer's home, the same way each role's
+    // hub is for employees — so back exits the app rather than dropping
+    // them onto the "Customer or Resto?" screen they've already moved
+    // past. Employee hubs get this for free by being the root route;
+    // this one is pushed, so it has to say so explicitly.
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) SystemNavigator.pop();
+      },
+      child: Scaffold(
+        backgroundColor: KaataTheme.backgroundTint,
+        // Header stays put; only the menu scrolls — matching the
+        // employee hubs.
+        body: Column(
+          children: [
+            HubHeader(
+              logo: const KaataLogo(size: 64),
+              title: 'Hi, $_displayName!',
+              subtitle: greeting,
+              colorA: KaataTheme.brand,
+              colorB: KaataTheme.brandDark,
+            ),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.all(20),
+                children: [
+                  const Text('Menu',
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.grey)),
+                  const SizedBox(height: 10),
+                  HubMenuTile(
+                    icon: Icons.restaurant_menu,
+                    title: 'Pesan',
+                    subtitle: 'Scan QR meja atau pilih resto',
+                    color: const Color(0xFF10B981),
+                    onTap: () => setState(() => _showChooser = true),
+                  ),
+                  const SizedBox(height: 12),
+                  HubMenuTile(
+                    icon: Icons.account_circle_outlined,
+                    title: 'Profil',
+                    subtitle: 'Nama, nomor HP, dan foto kamu',
+                    color: const Color(0xFF6366F1),
+                    onTap: () async {
+                      final email = context.read<AuthProvider>().user!.email!;
+                      await Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => CustomerProfileScreen(email: email),
+                        ),
+                      );
+                      // They may have just changed their name — refresh so
+                      // the greeting doesn't keep showing the old one.
+                      _loadProfileName();
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  HubMenuTile(
+                    icon: Icons.receipt_long_outlined,
+                    title: 'Riwayat',
+                    subtitle: 'Semua pesanan kamu sebelumnya',
+                    color: const Color(0xFFF59E0B),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const CustomerHistoryScreen()),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  HubMenuTile(
+                    icon: Icons.logout,
+                    title: 'Keluar',
+                    subtitle: context.read<AuthProvider>().user?.email ?? '',
+                    color: const Color(0xFFEF4444),
+                    onTap: () async {
+                      if (!await confirmLogout(context)) return;
+                      if (!context.mounted) return;
+                      await context.read<AuthProvider>().signOut();
+                      if (!context.mounted) return;
+                      await context.read<TableSessionProvider>().clear();
+                      if (!context.mounted) return;
+                      Navigator.of(context).popUntil((r) => r.isFirst);
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final currency = NumberFormat.currency(
-      locale: 'id_ID',
-      symbol: 'Rp ',
-      decimalDigits: 0,
-    );
     final repo = FirestoreProductRepository();
     final restoRepo = RestaurantRepository();
     final session = context.watch<TableSessionProvider>();
@@ -268,24 +514,42 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
 
     // Keep the auto-end watcher in sync with whichever session is active
     // right now (a no-op if it's already watching this sessionId).
-    WidgetsBinding.instance.addPostFrameCallback((_) => _syncOrderWatch());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _syncOrderWatch();
+      _refreshGuestHistoryFlag();
+    });
+
+    // Logged-in customers get the same hub treatment as every employee
+    // role; the chooser sits one level in, behind "Pesan".
+    if (!session.hasActiveResto && loggedInAsCustomer && !_showChooser) {
+      return _hubView(context);
+    }
 
     if (!session.hasActiveResto) {
       return PopScope(
+        // Coming from the hub, back returns there rather than leaving.
         canPop: !loggedInAsCustomer,
+        onPopInvokedWithResult: (didPop, _) {
+          if (!didPop && loggedInAsCustomer) setState(() => _showChooser = false);
+        },
         child: Scaffold(
           appBar: AppBar(
-            automaticallyImplyLeading: !loggedInAsCustomer,
-            title: const Text('KaataGo (Customer)'),
-            actions: _customerAppBarActions(context),
+            leading: loggedInAsCustomer
+                ? IconButton(
+                    icon: const Icon(Icons.arrow_back),
+                    tooltip: 'Kembali',
+                    onPressed: () => setState(() => _showChooser = false),
+                  )
+                : null,
+            title: Text(loggedInAsCustomer ? 'Mau Pesan Di Mana?' : 'KaataGo (Customer)'),
+            actions: loggedInAsCustomer ? null : _customerAppBarActions(context),
           ),
           body: Padding(
             padding: const EdgeInsets.all(24),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.qr_code_scanner,
-                    size: 72, color: Colors.indigo),
+                const Icon(Icons.qr_code_scanner, size: 72, color: Colors.indigo),
                 const SizedBox(height: 16),
                 const Text(
                   'Scan QR code di meja kamu, atau pilih resto dulu untuk mulai pesan.',
@@ -308,6 +572,20 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                   icon: const Icon(Icons.storefront_outlined),
                   label: const Text('Pilih Resto'),
                 ),
+                // Guests can only reach their history from here — once
+                // they're inside a resto the app bar's history action is
+                // login-only, and this chooser is the one screen that
+                // exists before any resto is picked.
+                if (!loggedInAsCustomer && _hasGuestHistory) ...[
+                  const SizedBox(height: 12),
+                  TextButton.icon(
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const CustomerHistoryScreen()),
+                    ),
+                    icon: const Icon(Icons.receipt_long_outlined, size: 18),
+                    label: const Text('Riwayat Pesanan Saya'),
+                  ),
+                ],
               ],
             ),
           ),
@@ -315,15 +593,24 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
       );
     }
 
+    // The chooser and this menu are the same route — which one shows
+    // depends on hasActiveResto — so "back" here can't pop to the chooser,
+    // it has to drop the resto session and let this screen rebuild into
+    // it. Same for guests and logged-in customers alike.
     return PopScope(
-      canPop: !loggedInAsCustomer,
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _backToChooser(context);
+      },
       child: Scaffold(
         appBar: AppBar(
-          automaticallyImplyLeading: !loggedInAsCustomer,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            tooltip: 'Kembali',
+            onPressed: () => _backToChooser(context),
+          ),
           title: Text(
-            session.tableNumber != null
-                ? 'Meja ${session.tableNumber}'
-                : 'KaataGo (Customer)',
+            session.tableNumber != null ? 'Meja ${session.tableNumber}' : 'KaataGo (Customer)',
           ),
           actions: [
             if (!session.enteredViaQr)
@@ -336,11 +623,14 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
               icon: const Icon(Icons.receipt_long_outlined),
               tooltip: 'Pesanan Saya',
               onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                    builder: (_) => const CustomerOrderStatusScreen()),
+                MaterialPageRoute(builder: (_) => const CustomerOrderStatusScreen()),
               ),
             ),
-            ..._customerAppBarActions(context),
+            // Profil, Riwayat and Logout deliberately aren't here: for a
+            // logged-in customer they already sit on the hub this screen
+            // was opened from, and repeating them crowded the bar. Guests
+            // still get the login button, which has no other home.
+            if (!loggedInAsCustomer) ..._customerAppBarActions(context),
           ],
         ),
         body: Column(
@@ -353,18 +643,15 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                 return Container(
                   width: double.infinity,
                   color: Colors.indigo.shade50,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(resto.name,
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 15)),
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                       if (resto.address.isNotEmpty)
                         Text(resto.address,
-                            style: const TextStyle(
-                                fontSize: 12, color: Colors.grey)),
+                            style: const TextStyle(fontSize: 12, color: Colors.grey)),
                     ],
                   ),
                 );
@@ -385,14 +672,14 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                   }
                   final products = snapshot.data ?? [];
                   if (products.isEmpty) {
-                    return const Center(
-                        child: Text('Belum ada produk tersedia.'));
+                    return const Center(child: Text('Belum ada produk tersedia.'));
                   }
                   return Consumer<CustomerCartProvider>(
                     builder: (context, cart, _) {
                       return ProductCategoryList(
                         products: products,
                         quantityOf: cart.quantityOf,
+                        ppnPercent: cart.ppnPercent,
                         onTapProduct: (p) => _openQuantityDialog(context, cart, p),
                       );
                     },
@@ -404,23 +691,16 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
         ),
         bottomNavigationBar: Consumer<CustomerCartProvider>(
           builder: (context, cart, _) {
-            return SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: FilledButton(
-                  onPressed: cart.items.isEmpty
-                      ? null
-                      : () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                                builder: (_) => const CustomerCartScreen()),
-                          ),
-                  child: Text(
-                    cart.items.isEmpty
-                        ? 'Keranjang kosong'
-                        : 'Lihat Keranjang (${cart.itemCount}) • ${currency.format(cart.total)}',
-                  ),
-                ),
-              ),
+            return CartBottomBar(
+              itemCount: cart.itemCount,
+              total: cart.total,
+              actionLabel: 'Keranjang',
+              actionIcon: Icons.shopping_cart_outlined,
+              onPressed: cart.items.isEmpty
+                  ? null
+                  : () => Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const CustomerCartScreen()),
+                      ),
             );
           },
         ),

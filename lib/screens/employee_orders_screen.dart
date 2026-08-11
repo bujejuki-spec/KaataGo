@@ -4,12 +4,14 @@ import 'package:provider/provider.dart';
 import '../db/order_repository.dart';
 import '../models/customer_order.dart';
 import '../providers/auth_provider.dart';
-import '../widgets/order_card.dart';
+import '../widgets/grouped_order_list.dart';
 
 /// Live list of incoming orders for this Admin's restaurant — from both
 /// Employee Kasir sales and customer self-orders — with their payment
-/// status. Reachable by Admin via the app bar icon on the main POS
-/// screen.
+/// status. Grouped by date (newest first), then by Dine In / Take Away
+/// within each date, so a busy day doesn't turn into one long
+/// undifferentiated list. Reachable by Admin via the app bar icon on the
+/// main POS screen.
 class EmployeeOrdersScreen extends StatelessWidget {
   const EmployeeOrdersScreen({super.key});
 
@@ -36,11 +38,7 @@ class EmployeeOrdersScreen extends StatelessWidget {
           if (orders.isEmpty) {
             return const Center(child: Text('Belum ada pesanan masuk.'));
           }
-          return ListView.builder(
-            padding: const EdgeInsets.all(12),
-            itemCount: orders.length,
-            itemBuilder: (context, index) => OrderCard(order: orders[index]),
-          );
+          return GroupedOrderList(orders: orders);
         },
       ),
     );

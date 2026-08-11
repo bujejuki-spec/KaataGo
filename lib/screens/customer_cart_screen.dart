@@ -3,11 +3,18 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../db/customer_profile_repository.dart';
+import '../db/restaurant_repository.dart';
+import '../models/restaurant.dart';
+import '../db/guest_order_store.dart';
 import '../models/order_type.dart';
 import '../providers/auth_provider.dart';
 import '../providers/customer_cart_provider.dart';
 import '../providers/table_session_provider.dart';
 import 'customer_qris_screen.dart';
+import '../widgets/charge_summary.dart';
+import '../widgets/quantity_dialog.dart';
+import '../widgets/cart_line_tile.dart';
+import '../models/cart_item.dart';
 
 /// Checkout screen. Lets the customer pick Dine In or Take Away first —
 /// for Take Away no table is needed at all, so the table-number field is
@@ -32,13 +39,34 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
   final _nameCtrl = TextEditingController();
   OrderType _orderType = OrderType.dineIn;
   bool _placing = false;
+  Restaurant? _resto;
+
+  double get _ppnPercent => _resto?.ppnPercent ?? 0;
+  double get _servicePercent => _resto?.servicePercent ?? 0;
+
+  Future<void> _loadResto() async {
+    final restoId = context.read<TableSessionProvider>().restoId;
+    if (restoId == null) return;
+    try {
+      final resto = await RestaurantRepository().getOnce(restoId);
+      if (!mounted) return;
+      setState(() => _resto = resto);
+      context.read<CustomerCartProvider>().setRates(
+            ppn: resto?.ppnPercent ?? 0,
+            service: resto?.servicePercent ?? 0,
+          );
+    } catch (_) {
+      // Offline — fall back to no charges rather than guessing a rate.
+    }
+  }
 
   @override
   void initState() {
     super.initState();
     final known = context.read<TableSessionProvider>().tableNumber;
-    _tableCtrl = TextEditingController(text: known?.toString() ?? '');
+    _tableCtrl = TextEditingController(text: known ?? '');
     _prefillNameFromProfile();
+    _loadResto();
   }
 
   /// If logged in, use their saved profile name as a starting point —
@@ -68,11 +96,11 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
     final auth = context.read<AuthProvider>();
     final isDineIn = _orderType == OrderType.dineIn;
 
-    int? tableNumber;
+    String? tableNumber;
     if (isDineIn) {
       // Table came in via QR scan already — nothing new to save.
       // Otherwise this is the first time it's known, so persist it.
-      tableNumber = session.tableNumber ?? int.parse(_tableCtrl.text.trim());
+      tableNumber = session.tableNumber ?? _tableCtrl.text.trim();
       if (session.tableNumber == null) {
         await session.setTableNumber(tableNumber);
       }
@@ -89,6 +117,11 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
       orderType: _orderType,
       customerName: isDineIn ? null : _nameCtrl.text.trim(),
     );
+    // A logged-in customer's history comes from their email, so this is
+    // only needed for guests — it's the only record they'd otherwise have.
+    if (auth.user?.email == null) {
+      await GuestOrderStore().add(orderId);
+    }
     if (!mounted) return;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
@@ -98,6 +131,29 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
           restoId: session.restoId!,
         ),
       ),
+    );
+  }
+
+  /// Reopens the options popup on an existing line, so a wrong spice
+  /// level or a mistaken add can be fixed without clearing the cart.
+  Future<void> _editLine(BuildContext context, CustomerCartProvider cart, CartItem item) async {
+    final result = await showDialog<QuantityDialogResult>(
+      context: context,
+      builder: (_) => QuantityDialog(
+        product: item.product,
+        initialQuantity: item.quantity,
+        initialLevels: item.selectedLevels,
+        initialNotes: item.notes,
+        ppnPercent: cart.ppnPercent,
+        editing: true,
+      ),
+    );
+    if (result == null) return;
+    cart.updateLine(
+      item.lineId,
+      quantity: result.quantity,
+      selectedLevels: result.selectedLevels,
+      notes: result.notes,
     );
   }
 
@@ -127,16 +183,15 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
                     itemCount: cart.items.length,
                     itemBuilder: (context, index) {
                       final item = cart.items[index];
-                      final note = item.noteSummary;
-                      return ListTile(
-                        title: Text(item.product.name),
-                        subtitle: Text(
-                          note == null
-                              ? '${item.quantity} x ${currency.format(item.product.price)}'
-                              : '${item.quantity} x ${currency.format(item.product.price)}\n$note',
-                        ),
-                        isThreeLine: note != null,
-                        trailing: Text(currency.format(item.subtotal)),
+                      return CartLineTile(
+                        item: item,
+                        unitPrice: cart.menuSubtotalOf(item) ~/ item.quantity,
+                        lineTotal: cart.menuSubtotalOf(item),
+                        currency: currency,
+                        onIncrement: () => cart.incrementLine(item.lineId),
+                        onDecrement: () => cart.decrementLine(item.lineId),
+                        onDelete: () => cart.removeLine(item.lineId),
+                        onEdit: () => _editLine(context, cart, item),
                       );
                     },
                   ),
@@ -167,7 +222,7 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
                         TextFormField(
                           controller: _tableCtrl,
                           enabled: !tableKnown,
-                          keyboardType: TextInputType.number,
+                          textCapitalization: TextCapitalization.characters,
                           decoration: InputDecoration(
                             labelText: 'Nomor Meja',
                             helperText: tableKnown
@@ -179,7 +234,6 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
                           validator: (v) {
                             if (tableKnown) return null;
                             if (v == null || v.trim().isEmpty) return 'Wajib diisi';
-                            if (int.tryParse(v.trim()) == null) return 'Harus angka';
                             return null;
                           },
                         )
@@ -190,20 +244,16 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
                             labelText: 'Nama Customer',
                             helperText: 'Wajib diisi — nama yang akan dipanggil saat pesanan siap',
                           ),
-                          validator: (v) =>
-                              (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null,
+                          validator: (v) => (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null,
                         ),
                       const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text('Total', style: TextStyle(fontSize: 18)),
-                          Text(
-                            currency.format(cart.total),
-                            style: const TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold),
-                          ),
-                        ],
+                      ChargeSummary(
+                        charges: cart.chargesFor(_orderType),
+                        menuSubtotal: cart.total,
+                        ppnPercent: _ppnPercent,
+                        servicePercent: _servicePercent,
+                        serviceApplies: isDineIn,
+                        currency: currency,
                       ),
                       const SizedBox(height: 4),
                       const Text(

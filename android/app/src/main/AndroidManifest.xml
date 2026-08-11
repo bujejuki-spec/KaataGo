@@ -1,6 +1,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <!-- Saving the receipt PNG to the gallery (gal). Android 10+ writes
+         via MediaStore and needs no permission, but minSdk here is 23 so
+         older devices still do. -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="29" />
     <application
         android:label="KaataGo"
         android:name="${applicationName}"

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
 import '../theme.dart';
+import '../utils/logout_confirm.dart';
 import '../widgets/hub_menu_tile.dart';
 import '../widgets/kaata_logo.dart';
 import 'employee_management_screen.dart';
@@ -17,6 +18,8 @@ class SuperAdminHomeScreen extends StatelessWidget {
   const SuperAdminHomeScreen({super.key});
 
   Future<void> _logout(BuildContext context) async {
+    if (!await confirmLogout(context)) return;
+    if (!context.mounted) return;
     await context.read<AuthProvider>().signOut();
     if (!context.mounted) return;
     Navigator.of(context).popUntil((r) => r.isFirst);
@@ -24,40 +27,31 @@ class SuperAdminHomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final email = context.watch<AuthProvider>().user?.email;
+    final auth = context.watch<AuthProvider>();
+    final name = auth.employeeName?.isNotEmpty == true ? auth.employeeName! : 'Super Admin';
+    final email = auth.user?.email;
 
     return Scaffold(
       backgroundColor: KaataTheme.backgroundTint,
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            pinned: true,
-            backgroundColor: KaataTheme.brandDark,
-            automaticallyImplyLeading: false,
-            expandedHeight: 200,
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.logout),
-                tooltip: 'Keluar',
-                onPressed: () => _logout(context),
-              ),
-            ],
-            flexibleSpace: FlexibleSpaceBar(
-              background: HubHeader(
-                logo: const KaataLogo(size: 64),
-                roleLabel: 'Super Admin',
-                detail: email,
-                colorA: KaataTheme.brand,
-                colorB: KaataTheme.brandDark,
-              ),
-            ),
+      // Fixed header + scrolling menu, rather than a SliverAppBar: with
+      // enough entries to scroll, a collapsing app bar took the logo,
+      // name and email away with it. Only the menu should move.
+      body: Column(
+        children: [
+          HubHeader(
+            logo: const KaataLogo(size: 64),
+            title: name,
+            subtitle: email == null ? 'Super Admin' : 'Super Admin • $email',
+            colorA: KaataTheme.brand,
+            colorB: KaataTheme.brandDark,
           ),
-          SliverPadding(
-            padding: const EdgeInsets.all(20),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate([
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.all(20),
+              children: [
                 const Text('Menu',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.grey)),
+                    style:
+                        TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.grey)),
                 const SizedBox(height: 10),
                 HubMenuTile(
                   icon: Icons.badge_outlined,
@@ -78,7 +72,15 @@ class SuperAdminHomeScreen extends StatelessWidget {
                     MaterialPageRoute(builder: (_) => const RestaurantManageListScreen()),
                   ),
                 ),
-              ]),
+                const SizedBox(height: 12),
+                HubMenuTile(
+                  icon: Icons.logout,
+                  title: 'Keluar',
+                  subtitle: 'Logout dari akun ini',
+                  color: const Color(0xFFEF4444),
+                  onTap: () => _logout(context),
+                ),
+              ],
             ),
           ),
         ],

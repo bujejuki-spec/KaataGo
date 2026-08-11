@@ -2,14 +2,21 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../models/level_option.dart';
 import '../models/product.dart';
 import '../providers/category_provider.dart';
+import '../widgets/edit_action_bar.dart';
 import '../providers/product_provider.dart';
 import 'category_management_screen.dart';
+import '../utils/rupiah_input.dart';
+import '../utils/tax_calculator.dart';
+import '../theme.dart';
+import '../db/restaurant_repository.dart';
+import '../providers/auth_provider.dart';
 
 class ProductFormScreen extends StatefulWidget {
   final Product? existing;
@@ -32,6 +39,23 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   File? _pickedPhoto;
   bool _photoRemoved = false;
   late Set<String> _selectedLevelGroups;
+  /// Resto's PPN rate, loaded once so the form can preview the selling
+  /// price. Nothing is stored with the product — only the original price
+  /// is persisted, and PPN is applied wherever the price is shown.
+  double _ppnPercent = 0;
+
+  late bool _ppnExempt;
+  late bool _serviceExempt;
+
+  /// Adding a brand-new product has nothing to accidentally overwrite,
+  /// so it starts directly editable. Editing an existing one opens
+  /// view-only (all fields greyed) until "Edit" is tapped.
+  late bool _editing;
+  bool _saving = false;
+
+  /// Everything Batal has to put back. Only populated for an existing
+  /// product — for a new one, Batal just abandons the screen instead.
+  Map<String, dynamic> _snapshot = const {};
 
   /// One price-delta controller per (group, option) — e.g. "Ukuran" →
   /// "Large" → "5000" means picking Large adds Rp 5.000 on top of the
@@ -45,18 +69,35 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     final p = widget.existing;
     _nameCtrl = TextEditingController(text: p?.name ?? '');
     _descriptionCtrl = TextEditingController(text: p?.description ?? '');
-    _priceCtrl = TextEditingController(text: p?.price.toString() ?? '');
+    _priceCtrl = TextEditingController(text: formatRupiahInput(p?.price));
     _stockCtrl = TextEditingController(text: p?.stock.toString() ?? '');
     _selectedCategory = p?.category;
     _existingPhotoBase64 = p?.photoBase64;
     _selectedLevelGroups = (p?.levelGroups ?? const []).toSet();
+    _ppnExempt = p?.ppnExempt ?? false;
+    _serviceExempt = p?.serviceExempt ?? false;
+    _editing = widget.existing == null;
     for (final entry in kLevelGroups.entries) {
       _priceDeltaCtrls[entry.key] = {
         for (final option in entry.value)
           option: TextEditingController(
-            text: '${p?.priceDeltaFor(entry.key, option) ?? 0}',
+            text: formatRupiahInput(p?.priceDeltaFor(entry.key, option) ?? 0),
           ),
       };
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadPpnRate());
+  }
+
+  Future<void> _loadPpnRate() async {
+    final restoId = context.read<AuthProvider>().restoId;
+    if (restoId == null) return;
+    try {
+      final resto = await RestaurantRepository().getOnce(restoId);
+      if (!mounted || resto == null) return;
+      setState(() => _ppnPercent = resto.ppnPercent);
+    } catch (_) {
+      // Offline — the preview just mirrors the original price.
     }
   }
 
@@ -97,14 +138,67 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     });
   }
 
+  bool get _isEditingExisting => widget.existing != null;
+
+  void _startEdit() {
+    _snapshot = {
+      'name': _nameCtrl.text,
+      'description': _descriptionCtrl.text,
+      'price': _priceCtrl.text,
+      'stock': _stockCtrl.text,
+      'category': _selectedCategory,
+      'levelGroups': {..._selectedLevelGroups},
+      'ppnExempt': _ppnExempt,
+      'serviceExempt': _serviceExempt,
+      'existingPhoto': _existingPhotoBase64,
+      'pickedPhoto': _pickedPhoto,
+      'photoRemoved': _photoRemoved,
+      'deltas': {
+        for (final g in _priceDeltaCtrls.entries)
+          g.key: {for (final o in g.value.entries) o.key: o.value.text},
+      },
+    };
+    setState(() => _editing = true);
+  }
+
+  void _cancelEdit() {
+    // Creating a new product has no previous state to return to, so
+    // cancelling means leaving the form entirely.
+    if (!_isEditingExisting) {
+      Navigator.of(context).pop();
+      return;
+    }
+
+    _nameCtrl.text = _snapshot['name'] as String? ?? '';
+    _descriptionCtrl.text = _snapshot['description'] as String? ?? '';
+    _priceCtrl.text = _snapshot['price'] as String? ?? '';
+    _stockCtrl.text = _snapshot['stock'] as String? ?? '';
+    _selectedCategory = _snapshot['category'] as String?;
+    _selectedLevelGroups = {...(_snapshot['levelGroups'] as Set<String>? ?? const {})};
+    _ppnExempt = _snapshot['ppnExempt'] as bool? ?? false;
+    _serviceExempt = _snapshot['serviceExempt'] as bool? ?? false;
+    _existingPhotoBase64 = _snapshot['existingPhoto'] as String?;
+    _pickedPhoto = _snapshot['pickedPhoto'] as File?;
+    _photoRemoved = _snapshot['photoRemoved'] as bool? ?? false;
+    final deltas = _snapshot['deltas'] as Map<String, Map<String, String>>? ?? const {};
+    for (final g in _priceDeltaCtrls.entries) {
+      for (final o in g.value.entries) {
+        o.value.text = deltas[g.key]?[o.key] ?? '';
+      }
+    }
+    _formKey.currentState?.reset();
+    setState(() => _editing = false);
+  }
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
+    setState(() => _saving = true);
     final provider = context.read<ProductProvider>();
     final name = _nameCtrl.text.trim();
     final description = _descriptionCtrl.text.trim();
     final category = _selectedCategory!;
-    final price = int.parse(_priceCtrl.text.trim());
+    final price = parseRupiah(_priceCtrl.text)!;
     final stock = int.parse(_stockCtrl.text.trim());
 
     String? photoBase64 = _existingPhotoBase64;
@@ -119,7 +213,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
       for (final group in _selectedLevelGroups)
         group: {
           for (final entry in _priceDeltaCtrls[group]!.entries)
-            entry.key: int.tryParse(entry.value.text.trim()) ?? 0,
+            entry.key: parseRupiah(entry.value.text) ?? 0,
         },
     };
 
@@ -133,6 +227,8 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
         photoBase64: photoBase64,
         levelGroups: _selectedLevelGroups.toList(),
         levelPrices: levelPrices,
+        ppnExempt: _ppnExempt,
+        serviceExempt: _serviceExempt,
       );
     } else {
       await provider.updateProduct(widget.existing!.copyWith(
@@ -144,10 +240,23 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
         photoBase64: photoBase64,
         levelGroups: _selectedLevelGroups.toList(),
         levelPrices: levelPrices,
+        ppnExempt: _ppnExempt,
+        serviceExempt: _serviceExempt,
       ));
     }
 
-    if (mounted) Navigator.of(context).pop();
+    if (!mounted) return;
+    if (widget.existing != null) {
+      setState(() {
+        _editing = false;
+        _saving = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Produk disimpan')),
+      );
+    } else {
+      Navigator.of(context).pop();
+    }
   }
 
   @override
@@ -170,7 +279,17 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text(isEditing ? 'Edit Produk' : 'Tambah Produk')),
+      appBar: AppBar(
+        title: Text(isEditing ? 'Edit Produk' : 'Tambah Produk'),
+        actions: [
+          if (isEditing && !_editing)
+            IconButton(
+              icon: const Icon(Icons.edit_outlined),
+              tooltip: 'Edit',
+              onPressed: _startEdit,
+            ),
+        ],
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -180,7 +299,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
               Stack(
                 children: [
                   GestureDetector(
-                    onTap: _pickPhoto,
+                    onTap: _editing ? _pickPhoto : null,
                     child: Container(
                       height: 160,
                       width: double.infinity,
@@ -217,7 +336,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                             ),
                     ),
                   ),
-                  if (photoPreview != null)
+                  if (photoPreview != null && _editing)
                     Positioned(
                       top: 8,
                       right: 8,
@@ -236,18 +355,45 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                 ],
               ),
               const SizedBox(height: 16),
+              SwitchListTile(
+                value: !_ppnExempt,
+                onChanged: _editing ? (v) => setState(() => _ppnExempt = !v) : null,
+                title: const Text('Kena PPN'),
+                subtitle: const Text('Matikan kalau produk ini dibebaskan PPN',
+                    style: TextStyle(fontSize: 12)),
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+              ),
+              SwitchListTile(
+                value: !_serviceExempt,
+                onChanged: _editing ? (v) => setState(() => _serviceExempt = !v) : null,
+                title: const Text('Kena Biaya Service'),
+                subtitle: const Text('Hanya berlaku untuk pesanan Dine In',
+                    style: TextStyle(fontSize: 12)),
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+              ),
+              const SizedBox(height: 8),
               TextFormField(
                 controller: _nameCtrl,
-                decoration: const InputDecoration(labelText: 'Nama produk'),
+                enabled: _editing,
+                decoration: InputDecoration(
+                  labelText: 'Nama produk',
+                  filled: !_editing,
+                  fillColor: _editing ? null : const Color(0xFFEEEEEE),
+                ),
                 validator: (v) =>
                     (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _descriptionCtrl,
-                decoration: const InputDecoration(
+                enabled: _editing,
+                decoration: InputDecoration(
                   labelText: 'Deskripsi (opsional)',
                   alignLabelWithHint: true,
+                  filled: !_editing,
+                  fillColor: _editing ? null : const Color(0xFFEEEEEE),
                 ),
                 maxLines: 3,
               ),
@@ -276,28 +422,50 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
               else
                 DropdownButtonFormField<String>(
                   value: _selectedCategory,
-                  decoration: const InputDecoration(labelText: 'Kategori'),
+                  decoration: InputDecoration(
+                    labelText: 'Kategori',
+                    filled: !_editing,
+                    fillColor: _editing ? null : const Color(0xFFEEEEEE),
+                  ),
                   items: categoryNames
                       .map((name) => DropdownMenuItem(value: name, child: Text(name)))
                       .toList(),
-                  onChanged: (value) => setState(() => _selectedCategory = value),
+                  onChanged: _editing ? (value) => setState(() => _selectedCategory = value) : null,
                   validator: (v) => v == null ? 'Wajib dipilih' : null,
                 ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _priceCtrl,
-                decoration: const InputDecoration(labelText: 'Harga (Rp)'),
+                enabled: _editing,
+                onChanged: (_) => setState(() {}),
+                decoration: InputDecoration(
+                  labelText: 'Harga Original (Rp)',
+                  helperText: 'Harga bersih, belum termasuk PPN',
+                  filled: !_editing,
+                  fillColor: _editing ? null : const Color(0xFFEEEEEE),
+                ),
                 keyboardType: TextInputType.number,
+                inputFormatters: [ThousandsInputFormatter()],
                 validator: (v) {
-                  if (v == null || v.trim().isEmpty) return 'Wajib diisi';
-                  if (int.tryParse(v.trim()) == null) return 'Harus angka';
+                  if (parseRupiah(v ?? '') == null) return 'Wajib diisi, angka';
                   return null;
                 },
               ),
               const SizedBox(height: 12),
+              _SellingPricePreview(
+                basePrice: parseRupiah(_priceCtrl.text) ?? 0,
+                ppnPercent: _ppnPercent,
+                ppnExempt: _ppnExempt,
+              ),
+              const SizedBox(height: 12),
               TextFormField(
                 controller: _stockCtrl,
-                decoration: const InputDecoration(labelText: 'Stok'),
+                enabled: _editing,
+                decoration: InputDecoration(
+                  labelText: 'Stok',
+                  filled: !_editing,
+                  fillColor: _editing ? null : const Color(0xFFEEEEEE),
+                ),
                 keyboardType: TextInputType.number,
                 validator: (v) {
                   if (v == null || v.trim().isEmpty) return 'Wajib diisi';
@@ -322,13 +490,15 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                   return FilterChip(
                     label: Text(group),
                     selected: selected,
-                    onSelected: (value) => setState(() {
-                      if (value) {
-                        _selectedLevelGroups.add(group);
-                      } else {
-                        _selectedLevelGroups.remove(group);
-                      }
-                    }),
+                    onSelected: !_editing
+                        ? null
+                        : (value) => setState(() {
+                              if (value) {
+                                _selectedLevelGroups.add(group);
+                              } else {
+                                _selectedLevelGroups.remove(group);
+                              }
+                            }),
                   );
                 }).toList(),
               ),
@@ -359,13 +529,17 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                                   width: 110,
                                   child: TextFormField(
                                     controller: _priceDeltaCtrls[group]![option],
-                                    keyboardType: const TextInputType.numberWithOptions(signed: true),
-                                    decoration: const InputDecoration(
+                                    enabled: _editing,
+                                    keyboardType: TextInputType.number,
+                                    inputFormatters: [ThousandsInputFormatter()],
+                                    decoration: InputDecoration(
                                       isDense: true,
                                       prefixText: 'Rp ',
-                                      border: OutlineInputBorder(),
+                                      border: const OutlineInputBorder(),
                                       contentPadding:
-                                          EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                          const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                      filled: !_editing,
+                                      fillColor: _editing ? null : const Color(0xFFEEEEEE),
                                     ),
                                   ),
                                 ),
@@ -378,13 +552,87 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                 ),
               ],
               const SizedBox(height: 24),
-              FilledButton(
-                onPressed: categoryNames.isEmpty ? null : _save,
-                child: const Text('Simpan'),
-              ),
+              if (_editing)
+                EditActionBar(
+                  onCancel: _cancelEdit,
+                  onSave: categoryNames.isEmpty ? null : _save,
+                  saving: _saving,
+                ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// The second price: what the customer actually sees on the menu.
+///
+/// Read-only on purpose — it's derived from the original price and the
+/// resto's PPN rate, so letting it be edited would just create two
+/// sources of truth that drift apart.
+class _SellingPricePreview extends StatelessWidget {
+  final int basePrice;
+  final double ppnPercent;
+  final bool ppnExempt;
+
+  const _SellingPricePreview({
+    required this.basePrice,
+    required this.ppnPercent,
+    required this.ppnExempt,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final currency = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+    final selling = menuPrice(basePrice, ppnPercent: ppnPercent, ppnExempt: ppnExempt);
+    final ppn = selling - basePrice;
+
+    final String note;
+    if (ppnExempt) {
+      note = 'Produk ini dibebaskan PPN';
+    } else if (ppnPercent <= 0) {
+      note = 'Resto belum mengatur PPN';
+    } else {
+      note = 'Termasuk PPN ${formatPercent(ppnPercent)} (${currency.format(ppn)})';
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: KaataTheme.brand.withOpacity(0.07),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: KaataTheme.brand.withOpacity(0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Harga Jual ke Customer',
+                style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+              ),
+              Text(
+                currency.format(selling),
+                style: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
+                  color: KaataTheme.brandDark,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 3),
+          Text(note, style: TextStyle(fontSize: 11.5, color: Colors.grey.shade700)),
+          const SizedBox(height: 2),
+          Text(
+            'Biaya service ditambahkan saat checkout untuk pesanan Dine In.',
+            style: TextStyle(fontSize: 11.5, color: Colors.grey.shade700),
+          ),
+        ],
       ),
     );
   }

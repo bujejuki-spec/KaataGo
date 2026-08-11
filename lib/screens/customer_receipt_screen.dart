@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../db/mail_request_repository.dart';
+import '../db/restaurant_repository.dart';
 import '../models/customer_order.dart';
 import '../models/order_type.dart';
+import '../models/receipt_data.dart';
+import '../models/restaurant.dart';
+import '../utils/id_time.dart';
+import '../utils/receipt_image.dart';
+import '../widgets/receipt_view.dart';
 
-/// Itemized receipt for one customer order, with an option to have it
-/// emailed. Reachable from "Pesanan Saya" (order status screen).
+/// Itemized receipt for one customer order, which can be saved to the
+/// gallery or shared out through the phone's own share sheet. Reachable
+/// from "Pesanan Saya" and the customer's own order history.
 class CustomerReceiptScreen extends StatefulWidget {
   final CustomerOrder order;
 
@@ -17,50 +23,24 @@ class CustomerReceiptScreen extends StatefulWidget {
 }
 
 class _CustomerReceiptScreenState extends State<CustomerReceiptScreen> {
-  final _mailRepo = MailRequestRepository();
-  bool _sending = false;
+  final _restoRepo = RestaurantRepository();
+  Restaurant? _resto;
+  bool _sharing = false;
+  bool _downloading = false;
 
-  Future<void> _sendToEmail() async {
-    final controller = TextEditingController();
-    final email = await showDialog<String>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Kirim Struk ke Email'),
-        content: TextField(
-          controller: controller,
-          keyboardType: TextInputType.emailAddress,
-          decoration: const InputDecoration(labelText: 'Alamat Email'),
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Batal'),
-          ),
-          FilledButton(
-            onPressed: () {
-              final value = controller.text.trim();
-              final valid = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(value);
-              Navigator.pop(context, valid ? value : null);
-            },
-            child: const Text('Kirim'),
-          ),
-        ],
-      ),
-    );
-    if (email == null || !mounted) return;
+  @override
+  void initState() {
+    super.initState();
+    _loadResto();
+  }
 
-    setState(() => _sending = true);
-    await _mailRepo.requestReceiptEmail(
-      toEmail: email,
-      orderId: widget.order.id,
-      restoId: widget.order.restoId,
-    );
-    if (!mounted) return;
-    setState(() => _sending = false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Struk akan dikirim ke $email')),
-    );
+  Future<void> _loadResto() async {
+    try {
+      final resto = await _restoRepo.getOnce(widget.order.restoId);
+      if (mounted) setState(() => _resto = resto);
+    } catch (_) {
+      // Offline — the receipt still prints, just without shop details.
+    }
   }
 
   String _paymentLabel(CustomerOrder order) {
@@ -68,101 +48,114 @@ class _CustomerReceiptScreenState extends State<CustomerReceiptScreen> {
     return 'QRIS';
   }
 
+  ReceiptData get _data {
+    final order = widget.order;
+    final dateFmt = DateFormat('dd MMM yyyy, HH:mm', 'id_ID');
+    final paidAt = order.createdAt.toWib();
+
+    return ReceiptData(
+      restoName: _resto?.name ?? 'Resto',
+      restoAddress: _resto?.address,
+      restoPhone: _resto?.phone,
+      restoLogoBase64: _resto?.logoBase64,
+      reference: '#${order.id.substring(0, 8).toUpperCase()}',
+      dateTime: paidAt,
+      headerRows: [
+        ('No.', '#${order.id.substring(0, 8).toUpperCase()}'),
+        if (order.cashierName != null && order.cashierName!.isNotEmpty)
+          ('Diinput oleh', order.cashierName!),
+        (
+          'Tipe',
+          order.tableNumber != null
+              ? '${kOrderTypeLabels[order.orderType]!} · Meja ${order.tableNumber}'
+              : kOrderTypeLabels[order.orderType]!
+        ),
+        if (order.customerName != null && order.customerName!.isNotEmpty)
+          ('Nama', order.customerName!),
+      ],
+      lines: order.items
+          .map((i) => ReceiptLine(
+                name: i.productName,
+                quantity: i.quantity,
+                unitPrice: i.price,
+                subtotal: i.subtotal,
+                note: i.notes,
+              ))
+          .toList(),
+      total: order.total,
+      serviceAmount: order.serviceAmount,
+      ppnAmount: order.ppnAmount,
+      footerRows: [
+        ('Metode', _paymentLabel(order)),
+        ('Dibayar', dateFmt.format(paidAt)),
+      ],
+      paid: order.paymentStatus == OrderPaymentStatus.paid,
+    );
+  }
+
+  Future<void> _downloadToGallery() async {
+    setState(() => _downloading = true);
+    await saveReceiptToGallery(context, _data);
+    if (mounted) setState(() => _downloading = false);
+  }
+
+  Future<void> _share() async {
+    setState(() => _sharing = true);
+    await shareReceipt(context, _data);
+    if (mounted) setState(() => _sharing = false);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final order = widget.order;
-    final currency = NumberFormat.currency(
-      locale: 'id_ID',
-      symbol: 'Rp ',
-      decimalDigits: 0,
-    );
-    final dateFmt = DateFormat('dd MMM yyyy, HH:mm', 'id_ID');
-
     return Scaffold(
       appBar: AppBar(title: const Text('Struk Pembayaran')),
       body: Column(
         children: [
-          const SizedBox(height: 8),
-          Text('Pesanan #${order.id.substring(0, 6).toUpperCase()}',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-          Text(dateFmt.format(order.createdAt),
-              style: const TextStyle(color: Colors.grey)),
-          const SizedBox(height: 4),
-          Text(kOrderTypeLabels[order.orderType]!,
-              style: TextStyle(color: Colors.grey.shade700, fontWeight: FontWeight.w600, fontSize: 13)),
-          if (order.customerName != null && order.customerName!.isNotEmpty)
-            Text('a.n. ${order.customerName}',
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
-          const SizedBox(height: 16),
-          const Divider(),
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              itemCount: order.items.length,
-              itemBuilder: (context, index) {
-                final item = order.items[index];
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 6),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(child: Text('${item.productName} x${item.quantity}')),
-                          Text(currency.format(item.subtotal)),
-                        ],
-                      ),
-                      if (item.notes != null && item.notes!.isNotEmpty)
-                        Text(
-                          item.notes!,
-                          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                        ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
-          const Divider(),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text('Metode Bayar'),
-                    Text(_paymentLabel(order)),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text('Total',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                    Text(
-                      currency.format(order.total),
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(6),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.10),
+                      blurRadius: 12,
+                      offset: const Offset(0, 3),
                     ),
                   ],
                 ),
-              ],
+                clipBehavior: Clip.antiAlias,
+                child: ReceiptView(data: _data),
+              ),
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(16),
-            child: SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                icon: _sending
-                    ? const SizedBox(
-                        width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Icon(Icons.email_outlined),
-                label: const Text('Kirim ke Email'),
-                onPressed: _sending ? null : _sendToEmail,
-              ),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    icon: _downloading
+                        ? const SizedBox(
+                            width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                        : const Icon(Icons.download_outlined),
+                    label: const Text('Simpan'),
+                    onPressed: _downloading ? null : _downloadToGallery,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    icon: _sharing
+                        ? const SizedBox(
+                            width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                        : const Icon(Icons.share_outlined),
+                    label: const Text('Bagikan'),
+                    onPressed: _sharing ? null : _share,
+                  ),
+                ),
+              ],
             ),
           ),
         ],

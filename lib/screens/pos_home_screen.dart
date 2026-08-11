@@ -1,26 +1,23 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../db/restaurant_repository.dart';
 import '../models/product.dart';
 import '../providers/auth_provider.dart';
 import '../providers/cart_provider.dart';
 import '../providers/product_provider.dart';
+import '../widgets/cart_bottom_bar.dart';
 import '../widgets/product_category_list.dart';
 import '../widgets/quantity_dialog.dart';
 import 'checkout_screen.dart';
-import 'employee_orders_screen.dart';
-import 'product_list_screen.dart';
-import 'settings_menu_screen.dart';
-import 'transaction_history_screen.dart';
 
-/// Main cashier screen: tap products to add to cart, then go to checkout.
-/// Used by both Admin (full access) and Kasir (input pesanan + riwayat
-/// only) — [isAdmin] toggles the extra management icons in the app bar.
+/// The actual ordering screen: tap products to add to cart, then go to
+/// checkout. Reached via a menu tile on [AdminHomeScreen] or
+/// [KasirHomeScreen] — both hub screens are where Riwayat Transaksi,
+/// other menus, and Logout live instead, keeping this screen's app bar
+/// uncluttered. The back button returns to whichever hub opened it.
 class PosHomeScreen extends StatefulWidget {
-  final bool isAdmin;
-
-  const PosHomeScreen({super.key, this.isAdmin = true});
+  const PosHomeScreen({super.key});
 
   @override
   State<PosHomeScreen> createState() => _PosHomeScreenState();
@@ -31,34 +28,43 @@ class _PosHomeScreenState extends State<PosHomeScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final provider = context.read<ProductProvider>();
-      provider.restoId = context.read<AuthProvider>().restoId;
-      await provider.load();
-      // Pull first so any stock customers already bought (or any product
-      // seeded directly in Supabase) is reflected, then push so any
-      // product only known locally reaches Firestore too.
-      await provider.pullStockFromFirestore();
-      await provider.pullNewProductsFromFirestore();
-      await provider.syncAllToFirestore();
+      final restoId = context.read<AuthProvider>().restoId;
+      await context.read<ProductProvider>().syncWithResto(restoId);
+      await _loadRates(restoId);
     });
   }
 
+  /// Menu prices are shown inclusive of the resto's PPN, so the cart has
+  /// to know the rates before it can price anything.
+  Future<void> _loadRates(String? restoId) async {
+    if (restoId == null) return;
+    try {
+      final resto = await RestaurantRepository().getOnce(restoId);
+      if (!mounted || resto == null) return;
+      context.read<CartProvider>()
+          .setRates(ppn: resto.ppnPercent, service: resto.servicePercent);
+    } catch (_) {
+      // Offline — prices fall back to the stored originals.
+    }
+  }
+
+  /// Always adds a *new* line rather than editing whatever's already in
+  /// the cart: one nasi goreng pedas and one tidak pedas are two
+  /// different things, and the old behaviour overwrote the first with
+  /// the second. Editing an existing line happens from the cart itself.
   Future<void> _openQuantityDialog(BuildContext context, Product product) async {
     final cart = context.read<CartProvider>();
-    final currentQty = cart.quantityOf(product.id);
     final result = await showDialog<QuantityDialogResult>(
       context: context,
       builder: (_) => QuantityDialog(
         product: product,
-        initialQuantity: currentQty > 0 ? currentQty : 1,
-        initialLevels: cart.selectedLevelsOf(product.id),
-        initialNotes: cart.notesOf(product.id),
+        ppnPercent: cart.ppnPercent,
       ),
     );
     if (result == null) return;
-    cart.setQuantity(
+    cart.addLine(
       product,
-      result.quantity,
+      quantity: result.quantity,
       selectedLevels: result.selectedLevels,
       notes: result.notes,
     );
@@ -66,94 +72,54 @@ class _PosHomeScreenState extends State<PosHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final currency = NumberFormat.currency(
-      locale: 'id_ID',
-      symbol: 'Rp ',
-      decimalDigits: 0,
-    );
+    final auth = context.watch<AuthProvider>();
+    final employeeName = auth.employeeName?.isNotEmpty == true ? auth.employeeName! : 'Kasir';
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.isAdmin ? 'KaataGo (Admin)' : 'KaataGo (Kasir)'),
-        actions: [
-          if (widget.isAdmin)
-            IconButton(
-              icon: const Icon(Icons.inventory_2_outlined),
-              tooltip: 'Kelola Produk',
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const ProductListScreen()),
-              ),
+        toolbarHeight: 60,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(employeeName, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            Text(
+              '${auth.roleLabel ?? 'Kasir'} • ${auth.user?.email ?? ''}',
+              style: const TextStyle(fontSize: 11, color: Colors.white70),
+              overflow: TextOverflow.ellipsis,
             ),
-          IconButton(
-            icon: const Icon(Icons.receipt_long_outlined),
-            tooltip: 'Riwayat Transaksi',
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                  builder: (_) => const TransactionHistoryScreen()),
-            ),
-          ),
-          if (widget.isAdmin)
-            IconButton(
-              icon: const Icon(Icons.list_alt_outlined),
-              tooltip: 'Pesanan Masuk',
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const EmployeeOrdersScreen()),
-              ),
-            ),
-          if (widget.isAdmin)
-            IconButton(
-              icon: const Icon(Icons.settings_outlined),
-              tooltip: 'Pengaturan',
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const SettingsMenuScreen()),
-              ),
-            ),
-          if (!widget.isAdmin)
-            IconButton(
-              icon: const Icon(Icons.logout),
-              tooltip: 'Keluar',
-              onPressed: () async {
-                await context.read<AuthProvider>().signOut();
-                if (!context.mounted) return;
-                Navigator.of(context).popUntil((r) => r.isFirst);
-              },
-            ),
-        ],
+          ],
+        ),
       ),
       body: Consumer2<ProductProvider, CartProvider>(
         builder: (context, provider, cart, _) {
           final products = provider.products;
           if (products.isEmpty) {
             return const Center(
-              child: Text('Belum ada produk.\nTambah dulu lewat ikon rak di atas.',
+              child: Text('Belum ada produk.\nTambah dulu lewat menu Kelola Produk.',
                   textAlign: TextAlign.center),
             );
           }
           return ProductCategoryList(
             products: products,
             quantityOf: cart.quantityOf,
+            ppnPercent: cart.ppnPercent,
             onTapProduct: (p) => _openQuantityDialog(context, p),
           );
         },
       ),
       bottomNavigationBar: Consumer<CartProvider>(
         builder: (context, cart, _) {
-          return SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: FilledButton(
-                onPressed: cart.items.isEmpty
-                    ? null
-                    : () => Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => const CheckoutScreen()),
-                        ),
-                child: Text(
-                  cart.items.isEmpty
-                      ? 'Keranjang kosong'
-                      : 'Bayar (${cart.itemCount}) • ${currency.format(cart.total)}',
-                ),
-              ),
-            ),
+          return CartBottomBar(
+            itemCount: cart.itemCount,
+            total: cart.total,
+            actionLabel: 'Bayar',
+            actionIcon: Icons.point_of_sale_outlined,
+            onPressed: cart.items.isEmpty
+                ? null
+                : () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const CheckoutScreen()),
+                    ),
           );
         },
       ),

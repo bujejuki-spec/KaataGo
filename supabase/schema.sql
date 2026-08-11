@@ -36,7 +36,7 @@ create table if not exists orders (
   id uuid primary key default gen_random_uuid(),
   resto_id text not null references restaurants(id),
   session_id text,
-  table_number integer,
+  table_number text,
   source text not null check (source in ('customer', 'kasir')),
   payment_status text not null check (payment_status in ('pending', 'paid')),
   payment_method text,
@@ -56,7 +56,7 @@ create index if not exists idx_orders_customer_label on orders(customer_label);
 create table if not exists sessions (
   id text primary key,
   resto_id text not null references restaurants(id),
-  table_number integer not null,
+  table_number text not null,
   active boolean not null default true,
   last_order_at timestamptz,
   updated_at timestamptz not null default now()

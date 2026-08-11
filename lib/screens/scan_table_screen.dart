@@ -3,6 +3,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/table_session_provider.dart';
+import '../widgets/dialog_actions.dart';
 
 /// Required before a customer can order: scan the QR code printed/shown
 /// at their table. The dummy QR codes encode "RESTO:<restoId>|TABLE:<n>"
@@ -30,7 +31,9 @@ class _ScanTableScreenState extends State<ScanTableScreen> {
     final raw = capture.barcodes.firstOrNull?.rawValue;
     if (raw == null) return;
 
-    final match = RegExp(r'^RESTO:([^|]+)\|TABLE:(\d+)$').firstMatch(raw.trim());
+    // Table labels are free-form ("A01", "VIP-2"), not just digits — but
+    // stickers printed back when they had to be numeric still match.
+    final match = RegExp(r'^RESTO:([^|]+)\|TABLE:(.+)$').firstMatch(raw.trim());
     if (match == null) {
       setState(() => _error = 'QR tidak dikenali: "$raw"');
       return;
@@ -38,7 +41,7 @@ class _ScanTableScreenState extends State<ScanTableScreen> {
 
     _handled = true;
     final restoId = match.group(1)!;
-    final table = int.parse(match.group(2)!);
+    final table = match.group(2)!.trim();
     await context.read<TableSessionProvider>().setTable(restoId, table);
     if (!mounted) return;
     Navigator.of(context).pop();
@@ -47,7 +50,7 @@ class _ScanTableScreenState extends State<ScanTableScreen> {
   Future<void> _enterManually() async {
     final restoCtrl = TextEditingController();
     final tableCtrl = TextEditingController();
-    final result = await showDialog<(String, int)>(
+    final result = await showDialog<(String, String)>(
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Input Manual'),
@@ -62,27 +65,28 @@ class _ScanTableScreenState extends State<ScanTableScreen> {
             const SizedBox(height: 12),
             TextField(
               controller: tableCtrl,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Nomor Meja'),
+              textCapitalization: TextCapitalization.characters,
+              decoration: const InputDecoration(
+                labelText: 'Nomor Meja',
+                hintText: 'Contoh: 7 atau A01',
+              ),
             ),
           ],
         ),
+        actionsAlignment: MainAxisAlignment.center,
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Batal'),
-          ),
-          FilledButton(
-            onPressed: () {
+          DialogActions(
+            confirmLabel: 'OK',
+            onCancel: () => Navigator.pop(context),
+            onConfirm: () {
               final resto = restoCtrl.text.trim();
-              final n = int.tryParse(tableCtrl.text.trim());
-              if (resto.isEmpty || n == null) {
+              final table = tableCtrl.text.trim();
+              if (resto.isEmpty || table.isEmpty) {
                 Navigator.pop(context);
                 return;
               }
-              Navigator.pop(context, (resto, n));
+              Navigator.pop(context, (resto, table));
             },
-            child: const Text('OK'),
           ),
         ],
       ),

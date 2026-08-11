@@ -1,0 +1,183 @@
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+
+import '../models/cart_item.dart';
+
+/// One line in the cart, shared by the Kasir/Admin checkout and the
+/// customer's cart so both behave identically.
+///
+/// A line is a *configuration*, not a product: the options that make it
+/// distinct are shown as chips right under the name, because with the
+/// same dish appearing twice at different spice levels the options are
+/// the only thing telling the two rows apart.
+///
+/// Deleting is its own button rather than counting the quantity down to
+/// zero — adding something by mistake is common enough that removing it
+/// shouldn't take four taps.
+class CartLineTile extends StatelessWidget {
+  final CartItem item;
+
+  /// Menu price for one unit (original + PPN), so the row matches what
+  /// was shown on the product grid.
+  final int unitPrice;
+  final int lineTotal;
+
+  final VoidCallback onIncrement;
+  final VoidCallback onDecrement;
+  final VoidCallback onDelete;
+
+  /// Opens the options editor. Null hides the affordance entirely.
+  final VoidCallback? onEdit;
+
+  final NumberFormat currency;
+
+  const CartLineTile({
+    super.key,
+    required this.item,
+    required this.unitPrice,
+    required this.lineTotal,
+    required this.onIncrement,
+    required this.onDecrement,
+    required this.onDelete,
+    required this.currency,
+    this.onEdit,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final options = [
+      for (final e in item.selectedLevels.entries) '${e.key}: ${e.value}',
+    ];
+    final note = item.notes?.trim() ?? '';
+
+    return InkWell(
+      onTap: onEdit,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          item.product.name,
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5),
+                        ),
+                      ),
+                      if (onEdit != null)
+                        Icon(Icons.edit_outlined, size: 15, color: Colors.grey.shade500),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${currency.format(unitPrice)} / item',
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  ),
+                  if (options.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      children: [
+                        for (final option in options)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade100,
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(color: Colors.grey.shade300),
+                            ),
+                            child: Text(option, style: const TextStyle(fontSize: 11)),
+                          ),
+                      ],
+                    ),
+                  ],
+                  if (note.isNotEmpty) ...[
+                    const SizedBox(height: 5),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(Icons.sticky_note_2_outlined, size: 13, color: Colors.grey.shade600),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            note,
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontStyle: FontStyle.italic,
+                              color: Colors.grey.shade700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      _StepButton(icon: Icons.remove, onPressed: onDecrement),
+                      Container(
+                        constraints: const BoxConstraints(minWidth: 34),
+                        alignment: Alignment.center,
+                        child: Text(
+                          '${item.quantity}',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                        ),
+                      ),
+                      _StepButton(icon: Icons.add, onPressed: onIncrement),
+                      const SizedBox(width: 4),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline, size: 20),
+                        color: Colors.red.shade400,
+                        tooltip: 'Hapus',
+                        visualDensity: VisualDensity.compact,
+                        onPressed: onDelete,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Padding(
+              padding: const EdgeInsets.only(top: 2, right: 8),
+              child: Text(
+                currency.format(lineTotal),
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StepButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onPressed;
+
+  const _StepButton({required this.icon, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onPressed,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        width: 30,
+        height: 30,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey.shade300),
+        ),
+        child: Icon(icon, size: 17),
+      ),
+    );
+  }
+}

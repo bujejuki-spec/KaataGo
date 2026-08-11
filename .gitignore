@@ -54,3 +54,6 @@ app.*.map.json
 
 # Claude Code internal state — not part of the app
 .claude/
+
+# Renamed release APKs (build artifacts, not source)
+/KaataGo Realase/

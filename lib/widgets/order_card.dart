@@ -3,6 +3,15 @@ import 'package:intl/intl.dart';
 
 import '../models/customer_order.dart';
 import '../models/order_type.dart';
+import '../utils/id_time.dart';
+
+const _paymentMethodDisplayLabels = {'cash': 'Tunai', 'qris': 'QRIS', 'transfer': 'Transfer'};
+
+/// Kasir sales store `payment_method` as the lowercase gl_accounts key
+/// ('cash'/'qris'/'transfer') going forward, but orders recorded before
+/// that change still have the old display label ('Tunai'/'QRIS'/
+/// 'Transfer') — shown as-is since it already reads fine.
+String _paymentMethodLabel(String raw) => _paymentMethodDisplayLabels[raw] ?? raw;
 
 /// Shared order-detail card used by both the Admin's and Chef's
 /// "Pesanan Masuk" views: customer/kasir label, table number, payment
@@ -72,7 +81,7 @@ class OrderCard extends StatelessWidget {
                       ],
                       Flexible(
                         child: Text(
-                          order.customerLabel,
+                          '#${order.id.substring(0, 8).toUpperCase()}',
                           style: const TextStyle(fontWeight: FontWeight.bold),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -110,7 +119,7 @@ class OrderCard extends StatelessWidget {
                   ),
                   child: Text(
                     order.source == OrderSource.kasir
-                        ? 'Kasir${order.paymentMethod != null ? ' • ${order.paymentMethod}' : ''}'
+                        ? 'Kasir${order.paymentMethod != null ? ' • ${_paymentMethodLabel(order.paymentMethod!)}' : ''}'
                         : 'Pesanan Mandiri',
                     style: TextStyle(
                       fontSize: 11,
@@ -155,7 +164,7 @@ class OrderCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                Text(dateFmt.format(order.createdAt),
+                Text(dateFmt.format(order.createdAt.toWib()),
                     style: const TextStyle(color: Colors.grey, fontSize: 12)),
               ],
             ),
