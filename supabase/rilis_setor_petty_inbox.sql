@@ -17,6 +17,16 @@
 -- bukan memutuskan — persetujuan atas permintaan sendiri tidak berarti
 -- apa-apa.
 
+-- ARAH JURNAL. Aplikasi ini memakai satu kesepakatan di seluruh
+-- layarnya: **kredit = uang masuk ke akun itu, debit = uang keluar**.
+-- Penjualan mengkredit akun pemasukan, dan panah di layar Jurnal GL
+-- mengikuti aturan yang sama.
+--
+-- Kesepakatan akuntansi aset yang biasa (aset bertambah = debit) adalah
+-- kebalikannya, dan sempat terpakai di sini — akibatnya setoran tunai
+-- menambah sisi yang sama dengan penjualan alih-alih menguranginya, dan
+-- di layar terbaca seolah GL Suspense yang mengeluarkan uang.
+
 begin;
 
 
@@ -39,11 +49,11 @@ update cash_deposits set status = 'approved' where status = 'pending' and create
 create index if not exists idx_cash_deposits_status on cash_deposits(resto_id, status);
 
 -- ── 2. GL Suspense ───────────────────────────────────────────────────
-alter table gl_accounts drop constraint if exists gl_accounts_payment_method_check;
-alter table gl_accounts add constraint gl_accounts_payment_method_check
-  check (payment_method in
-    ('cash', 'qris', 'transfer', 'petty_cash', 'income_aggregate', 'total_balance',
-     'ppn', 'service', 'suspense'));
+-- Batasan payment_method dipasang sekali saja, di bagian GL Suspense
+-- Petty Cash di bawah — daftarnya sudah memuat 'suspense' sekaligus
+-- 'suspense_petty'. Memasang daftar yang lebih pendek lebih dulu membuat
+-- file ini menolak dirinya sendiri saat dijalankan ulang, karena baris
+-- 'suspense_petty' yang dibuatnya sudah ada.
 
 -- ── 3. Jurnal saat setoran diajukan ──────────────────────────────────
 -- Uang meninggalkan laci, tapi berhenti dulu di Suspense.
@@ -68,7 +78,7 @@ begin
     ) values (
       new.resto_id, v_date, v_time,
       v_cash_gl.gl_code, v_cash_gl.gl_name, 'cash_deposit', new.id::text,
-      new.amount, 'credit', 'Setor tunai #' || v_ref || ' (menunggu approval)'
+      new.amount, 'debit', 'Setor tunai #' || v_ref || ' (menunggu approval)'
     );
   end if;
 
@@ -80,7 +90,7 @@ begin
     ) values (
       new.resto_id, v_date, v_time,
       v_suspense_gl.gl_code, v_suspense_gl.gl_name, 'cash_deposit', new.id::text,
-      new.amount, 'debit', 'Titipan setoran #' || v_ref
+      new.amount, 'credit', 'Titipan setoran #' || v_ref
     );
   end if;
 
@@ -118,7 +128,7 @@ begin
     ) values (
       new.resto_id, v_date, v_time,
       v_suspense_gl.gl_code, v_suspense_gl.gl_name, 'cash_deposit', new.id::text,
-      new.amount, 'credit', 'Titipan setoran #' || v_ref || ' dilepas'
+      new.amount, 'debit', 'Titipan setoran #' || v_ref || ' dilepas'
     );
   end if;
 
@@ -139,7 +149,7 @@ begin
     ) values (
       new.resto_id, v_date, v_time,
       v_target_gl.gl_code, v_target_gl.gl_name, 'cash_deposit', new.id::text,
-      new.amount, 'debit', v_note
+      new.amount, 'credit', v_note
     );
   end if;
 
@@ -256,7 +266,7 @@ begin
       ) values (
         new.resto_id, v_date, v_time,
         v_source_gl.gl_code, v_source_gl.gl_name, 'petty_cash', new.id::text,
-        new.amount, 'credit', 'Dipindah ke Petty Cash #' || v_ref
+        new.amount, 'debit', 'Dipindah ke Petty Cash #' || v_ref
       );
     end if;
   end if;
@@ -271,7 +281,7 @@ begin
       ) values (
         new.resto_id, v_date, v_time,
         v_suspense_gl.gl_code, v_suspense_gl.gl_name, 'petty_cash', new.id::text,
-        new.amount, 'debit', 'Titipan top up petty cash #' || v_ref
+        new.amount, 'credit', 'Titipan top up petty cash #' || v_ref
       );
     end if;
   else
@@ -284,7 +294,7 @@ begin
       ) values (
         new.resto_id, v_date, v_time,
         v_petty_gl.gl_code, v_petty_gl.gl_name, 'petty_cash', new.id::text,
-        new.amount, 'debit',
+        new.amount, 'credit',
         coalesce('Top Up Petty Cash dari ' || v_label, 'Top Up Petty Cash (Manual)')
       );
     end if;
@@ -321,7 +331,7 @@ begin
     ) values (
       new.resto_id, v_date, v_time,
       v_suspense_gl.gl_code, v_suspense_gl.gl_name, 'petty_cash', new.id::text,
-      new.amount, 'credit', 'Titipan top up #' || v_ref || ' dilepas'
+      new.amount, 'debit', 'Titipan top up #' || v_ref || ' dilepas'
     );
   end if;
 
@@ -342,7 +352,7 @@ begin
     ) values (
       new.resto_id, v_date, v_time,
       v_target_gl.gl_code, v_target_gl.gl_name, 'petty_cash', new.id::text,
-      new.amount, 'debit', v_note
+      new.amount, 'credit', v_note
     );
   end if;
 
@@ -420,5 +430,32 @@ create policy "inbox_states: own rows" on inbox_states
 -- no. 4") tanpa merusak titik petanya.
 alter table restaurants add column if not exists latitude double precision;
 alter table restaurants add column if not exists longitude double precision;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- 7. Membetulkan baris jurnal yang terlanjur terbalik
+-- ─────────────────────────────────────────────────────────────────────
+-- Setoran dan top up petty cash yang sudah tercatat sebelum perbaikan di
+-- atas memakai arah yang salah. Barisnya tidak dihapus — riwayat jurnal
+-- tidak boleh hilang — hanya arahnya yang dibalik.
+--
+-- Dijaga supaya hanya berjalan sekali. Menjalankannya dua kali akan
+-- mengembalikan keadaan yang justru sedang diperbaiki, dan file ini
+-- memang dirancang untuk boleh dijalankan berulang kali.
+create table if not exists applied_migrations (
+  name text primary key,
+  applied_at timestamptz not null default now()
+);
+
+do $$
+begin
+  if not exists (select 1 from applied_migrations where name = 'flip_transfer_journal_direction') then
+    update gl_journal_entries
+       set entry_type = case entry_type when 'debit' then 'credit' else 'debit' end
+     where reference_type in ('cash_deposit', 'petty_cash');
+
+    insert into applied_migrations (name) values ('flip_transfer_journal_direction');
+  end if;
+end $$;
+
 
 commit;

@@ -136,21 +136,29 @@ class _FinanceJournalScreenState extends State<FinanceJournalScreen> {
             e.referenceType == 'expense' && e.entryType == JournalEntryType.debit)
         .fold(0, (sum, e) => sum + e.amount);
 
-    // A withdrawal books both legs (Petty Cash up, income down) — our own
-    // money changing pockets, so it nets to nothing. A manual top-up
-    // books only the debit: that's capital from outside, and it does
-    // raise the balance.
-    final withdrawalRefs = effective
-        .where((e) =>
-            e.referenceType == 'petty_cash' && e.entryType == JournalEntryType.credit)
-        .map((e) => e.referenceId)
-        .toSet();
-    final manualTopUps = effective
-        .where((e) =>
-            e.referenceType == 'petty_cash' &&
-            e.entryType == JournalEntryType.debit &&
-            !withdrawalRefs.contains(e.referenceId))
-        .fold(0, (sum, e) => sum + e.amount);
+    // Pemindahan antar kantong sendiri membukukan dua kaki sekaligus —
+    // satu keluar, satu masuk — jadi bersihnya nol dan tidak menambah
+    // saldo. Top up manual hanya punya satu kaki: itu modal dari luar,
+    // dan memang menaikkan saldo.
+    //
+    // Dikenali dari jumlah kakinya, bukan dari arahnya. Bergantung pada
+    // "ada debit tanpa kredit" membuat perhitungan ini ikut salah begitu
+    // arah jurnalnya diperbaiki — dan itu sudah pernah terjadi.
+    final legsByRef = <String, List<GlJournalEntry>>{};
+    for (final e in effective.where((e) => e.referenceType == 'petty_cash')) {
+      legsByRef.putIfAbsent(e.referenceId, () => []).add(e);
+    }
+
+    var manualTopUps = 0;
+    for (final legs in legsByRef.values) {
+      final hasIn = legs.any((e) => e.entryType == JournalEntryType.credit);
+      final hasOut = legs.any((e) => e.entryType == JournalEntryType.debit);
+      if (hasIn && hasOut) continue; // pindah kantong, bersihnya nol
+      for (final leg in legs) {
+        manualTopUps +=
+            leg.entryType == JournalEntryType.credit ? leg.amount : -leg.amount;
+      }
+    }
 
     return income - expenses + manualTopUps;
   }
