@@ -20,6 +20,7 @@ import '../providers/auth_provider.dart';
 import '../utils/id_time.dart';
 import '../utils/photo_picker.dart';
 import '../widgets/dialog_actions.dart';
+import '../widgets/journal_detail_dialog.dart';
 import '../utils/rupiah_input.dart';
 
 /// Saldo Total = Saldo Penghasilan + Saldo Petty Cash − Saldo Pengeluaran.
@@ -70,7 +71,22 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
   /// stay with Finance/Admin, and the database enforces it as well (see
   /// supabase/kasir_balance_access.sql), so hiding the controls here
   /// just avoids offering something that would fail.
-  bool get _canManageFunds => !context.read<AuthProvider>().isKasir;
+  /// Menyetujui, mengonfirmasi, dan menghapus tetap milik Finance (dan
+  /// Owner, yang memang memegang semuanya). Admin disamakan dengan
+  /// kasir: keduanya mengajukan, bukan memutuskan — persetujuan atas
+  /// permintaan sendiri tidak berarti apa-apa.
+  bool get _canManageFunds {
+    final auth = context.read<AuthProvider>();
+    return !auth.isKasir && !auth.isAdmin;
+  }
+
+  /// Kasir memegang uang lacinya dan sering kehabisan kembalian di tengah
+  /// shift; memintanya menunggu Finance datang hanya membuat pencatatan
+  /// dilewati. Yang dijaga bukan haknya mengajukan, tapi persetujuannya.
+  bool get _needsApproval {
+    final auth = context.read<AuthProvider>();
+    return auth.isKasir || auth.isAdmin;
+  }
 
   @override
   void initState() {
@@ -129,14 +145,27 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
 
   int get _expenseBalance => _expenses.fold(0, (sum, e) => sum + e.amount);
 
+  /// Pengajuan yang ditolak tidak dihitung: uangnya dikembalikan ke
+  /// sumbernya. Yang masih menunggu tetap dihitung, karena sejak
+  /// diajukan uangnya memang sudah diambil dari sana.
   int _pettyCashFrom(PettyCashSource source) => _pettyCashEntries
-      .where((e) => e.source == source)
+      .where((e) => e.source == source && e.status != PettyCashStatus.rejected)
       .fold(0, (sum, e) => sum + e.amount);
 
-  /// Uang tunai yang sudah disetor ke rekening. Berpindah tempat, bukan
-  /// hilang — karena itu ia dikurangkan dari Saldo Cash tapi tidak dari
-  /// Saldo Total.
-  int get _depositedTotal => _deposits.fold(0, (sum, d) => sum + d.amount);
+  /// Uang tunai yang sudah keluar dari laci lewat setoran. Berpindah
+  /// tempat, bukan hilang — karena itu ia dikurangkan dari Saldo Cash
+  /// tapi tidak dari Saldo Total.
+  ///
+  /// Setoran yang ditolak tidak dihitung: uangnya dikembalikan menjadi
+  /// tanggung jawab laci kasir. Yang masih menunggu persetujuan tetap
+  /// dihitung, karena fisiknya memang sudah tidak ada di laci.
+  int get _depositedTotal => _deposits
+      .where((d) => d.status != DepositStatus.rejected)
+      .fold(0, (sum, d) => sum + d.amount);
+
+  /// Bagian dari setoran yang masih mengendap di GL Suspense.
+  int get _pendingDeposits =>
+      _deposits.where((d) => d.isPending).fold(0, (sum, d) => sum + d.amount);
 
   /// Yang seharusnya masih ada di laci kasir sekarang.
   int get _cashBalance =>
@@ -145,7 +174,16 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
   int get _nonCashBalance =>
       _nonCashIncome - _pettyCashFrom(PettyCashSource.incomeWithdrawal);
 
-  int get _pettyCashToppedUp => _pettyCashEntries.fold(0, (sum, e) => sum + e.amount);
+  /// Hanya yang sudah disetujui yang dihitung sebagai saldo petty cash.
+  /// Pengajuan yang masih menunggu nilainya mengendap di GL Suspense
+  /// Petty Cash — uangnya sudah keluar dari sumbernya, tapi belum boleh
+  /// dibelanjakan.
+  int get _pettyCashToppedUp => _pettyCashEntries
+      .where((e) => e.isApproved)
+      .fold(0, (sum, e) => sum + e.amount);
+
+  int get _pettyCashPending =>
+      _pettyCashEntries.where((e) => e.isPending).fold(0, (sum, e) => sum + e.amount);
 
   /// Penghasilan yang belum berpindah ke mana-mana: tunai yang masih di
   /// laci ditambah non-tunai yang masih utuh.
@@ -219,6 +257,92 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
     _load();
   }
 
+  /// Menyetujui atau menolak pengajuan top up dari kasir.
+  Future<void> _reviewPettyCash(PettyCashEntry e, PettyCashStatus status) async {
+    final approving = status == PettyCashStatus.approved;
+    final currency = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+    final reviewer = context.read<AuthProvider>().user?.email ?? 'Finance';
+    final noteCtrl = TextEditingController();
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        icon: Icon(approving ? Icons.verified_outlined : Icons.block,
+            size: 38, color: approving ? const Color(0xFF10B981) : Colors.red),
+        title: Text(approving ? 'Konfirmasi top up?' : 'Tolak top up?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (approving) ...[
+              Container(
+                padding: const EdgeInsets.all(11),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF59E0B).withOpacity(0.10),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFFF59E0B).withOpacity(0.35)),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.warning_amber_rounded, size: 18, color: Color(0xFFB45309)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Pastikan uang tunainya benar-benar sudah diterima kas kecil '
+                        'sebesar ${currency.format(e.amount)}.',
+                        style: const TextStyle(fontSize: 12.5, color: Color(0xFF92400E)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+            Text(
+              approving
+                  ? 'Setelah dikonfirmasi, ${currency.format(e.amount)} dipindah dari '
+                      'GL Suspense Petty Cash ke GL Petty Cash dan statusnya menjadi '
+                      'Completed.'
+                  : '${currency.format(e.amount)} akan dikembalikan ke sumbernya '
+                      '(${kPettyCashSourceLabels[e.source]!.replaceFirst('Withdraw dari ', '')}).',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 13),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: noteCtrl,
+              decoration: InputDecoration(
+                labelText: approving ? 'Catatan (opsional)' : 'Alasan penolakan',
+                isDense: true,
+              ),
+              maxLines: 2,
+            ),
+          ],
+        ),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          DialogActions(
+            confirmLabel: approving ? 'Ya, Konfirmasi' : 'Tolak',
+            destructive: !approving,
+            onConfirm: () => Navigator.pop(dialogContext, true),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+
+    try {
+      await _pettyCashRepo.review(e.id,
+          status: status, reviewedBy: reviewer, note: noteCtrl.text);
+      _load();
+    } catch (err) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Gagal memproses: $err')));
+    }
+  }
+
   Future<void> _addPettyCash() async {
     final saved = await showDialog<bool>(
       context: context,
@@ -226,6 +350,7 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
         restoId: _restoId,
         availableCash: _cashBalance,
         availableNonCash: _nonCashBalance,
+        needsApproval: _needsApproval,
       ),
     );
     if (saved == true) _load();
@@ -345,6 +470,7 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
                         cashBalance: _cashBalance,
                         nonCashBalance: _nonCashBalance,
                         deposited: _depositedTotal,
+                        pending: _pendingDeposits,
                         currency: currency,
                       ),
                       const SizedBox(height: 8),
@@ -362,7 +488,9 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
                           Expanded(
                             child: _BalanceMiniCard(
                               icon: Icons.savings_outlined,
-                              label: 'Petty Cash',
+                              label: _pettyCashPending > 0
+                                  ? 'Petty Cash (${currency.format(_pettyCashPending)} pending)'
+                                  : 'Petty Cash',
                               value: currency.format(_pettyCashBalance),
                               color: const Color(0xFF6366F1),
                             ),
@@ -405,13 +533,16 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           const Text('Petty Cash', style: TextStyle(fontWeight: FontWeight.bold)),
-                          if (_canManageFunds)
-                            _PillButton(
-                              icon: Icons.add_circle_outline,
-                              label: 'Top Up',
-                              color: const Color(0xFF6366F1),
-                              onTap: _addPettyCash,
-                            ),
+                          _PillButton(
+                            icon: Icons.add_circle_outline,
+                            // Kasir mengajukan, Finance menambahkan
+                            // langsung — labelnya menyebutkan bedanya
+                            // supaya kasir tidak mengira saldonya sudah
+                            // bertambah.
+                            label: _needsApproval ? 'Ajukan Top Up' : 'Top Up',
+                            color: const Color(0xFF6366F1),
+                            onTap: _addPettyCash,
+                          ),
                         ],
                       ),
                       const SizedBox(height: 8),
@@ -432,10 +563,24 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
                                   style: const TextStyle(color: Color(0xFF6366F1), fontWeight: FontWeight.w600)),
                               childrenPadding: const EdgeInsets.only(bottom: 4),
                               children: group.items
-                                  .map((e) => ListTile(
+                                  .map((e) => Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          ListTile(
                                         dense: true,
                                         leading: const Icon(Icons.savings_outlined),
-                                        title: Text(kPettyCashSourceLabels[e.source]!),
+                                        title: Row(
+                                          children: [
+                                            Flexible(
+                                              child: Text(kPettyCashSourceLabels[e.source]!,
+                                                  overflow: TextOverflow.ellipsis),
+                                            ),
+                                            if (!e.isApproved) ...[
+                                              const SizedBox(width: 6),
+                                              _StatusChip(status: e.status),
+                                            ],
+                                          ],
+                                        ),
                                         subtitle: Text(
                                           '${DateFormat('HH:mm').format(e.createdAt.toWib())} • ${e.createdBy}'
                                           '${e.description != null && e.description!.isNotEmpty ? ' • ${e.description}' : ''}',
@@ -443,8 +588,58 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
                                         trailing: Text('+ ${currency.format(e.amount)}',
                                             style: const TextStyle(
                                                 color: Color(0xFF6366F1), fontWeight: FontWeight.w600)),
+                                        // Ketuk membuka pembukuan di balik
+                                        // baris ini. "Petty cash bertambah"
+                                        // saja tidak bisa dijawab kalau ada
+                                        // yang bertanya dari akun mana.
+                                        onTap: () => showJournalDetail(
+                                          context,
+                                          restoId: _restoId,
+                                          referenceId: e.id,
+                                          title: kPettyCashSourceLabels[e.source]!,
+                                          subtitle: currency.format(e.amount),
+                                        ),
                                         onLongPress:
                                             _canManageFunds ? () => _deletePettyCashEntry(e) : null,
+                                          ),
+                                          if (e.isPending && _canManageFunds)
+                                            Padding(
+                                              padding:
+                                                  const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                                              child: Row(
+                                                children: [
+                                                  Expanded(
+                                                    child: FilledButton.icon(
+                                                      icon: const Icon(
+                                                          Icons.verified_outlined,
+                                                          size: 16),
+                                                      label: const Text('Konfirmasi'),
+                                                      style: FilledButton.styleFrom(
+                                                        backgroundColor: const Color(0xFF10B981),
+                                                        minimumSize: const Size.fromHeight(36),
+                                                      ),
+                                                      onPressed: () => _reviewPettyCash(
+                                                          e, PettyCashStatus.approved),
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  Expanded(
+                                                    child: OutlinedButton.icon(
+                                                      icon: const Icon(Icons.close, size: 16),
+                                                      label: const Text('Tolak'),
+                                                      style: OutlinedButton.styleFrom(
+                                                        foregroundColor: Colors.red,
+                                                        side: const BorderSide(color: Colors.red),
+                                                        minimumSize: const Size.fromHeight(36),
+                                                      ),
+                                                      onPressed: () => _reviewPettyCash(
+                                                          e, PettyCashStatus.rejected),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                        ],
                                       ))
                                   .toList(),
                             ),
@@ -486,7 +681,17 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
                                   .map((e) => ListTile(
                                         dense: true,
                                         leading: e.receiptBase64 != null
-                                            ? _ReceiptThumb(base64Image: e.receiptBase64!)
+                                            ? GestureDetector(
+                                                onTap: () => Navigator.of(context).push(
+                                                  MaterialPageRoute(
+                                                    builder: (_) => _ReceiptViewer(
+                                                      base64Image: e.receiptBase64!,
+                                                      description: e.description,
+                                                    ),
+                                                  ),
+                                                ),
+                                                child: _ReceiptThumb(base64Image: e.receiptBase64!),
+                                              )
                                             : const Icon(Icons.receipt_long_outlined),
                                         title: Text(e.description),
                                         subtitle: Text(
@@ -496,19 +701,19 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
                                         ),
                                         trailing: Text('- ${currency.format(e.amount)}',
                                             style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w600)),
-                                        // Tapping opens the receipt when there
-                                        // is one; deleting stays on long-press
-                                        // either way.
-                                        onTap: e.receiptBase64 == null
-                                            ? null
-                                            : () => Navigator.of(context).push(
-                                                  MaterialPageRoute(
-                                                    builder: (_) => _ReceiptViewer(
-                                                      base64Image: e.receiptBase64!,
-                                                      description: e.description,
-                                                    ),
-                                                  ),
-                                                ),
+                                        // Ketuk membuka jurnal GL-nya; foto
+                                        // notanya dibuka lewat thumbnail di
+                                        // kiri. Sebelumnya ketukan hanya
+                                        // berfungsi kalau kebetulan ada foto,
+                                        // yang membuat separuh baris terasa
+                                        // mati.
+                                        onTap: () => showJournalDetail(
+                                          context,
+                                          restoId: _restoId,
+                                          referenceId: e.id,
+                                          title: e.description,
+                                          subtitle: currency.format(e.amount),
+                                        ),
                                         onLongPress:
                                             _canManageFunds ? () => _deleteExpense(e) : null,
                                       ))
@@ -972,10 +1177,15 @@ class _AddPettyCashDialog extends StatefulWidget {
   final int availableCash;
   final int availableNonCash;
 
+  /// Diajukan oleh kasir: tersimpan sebagai permintaan, belum menambah
+  /// saldo petty cash sampai Finance menyetujuinya.
+  final bool needsApproval;
+
   const _AddPettyCashDialog({
     required this.restoId,
     required this.availableCash,
     required this.availableNonCash,
+    this.needsApproval = false,
   });
 
   @override
@@ -1010,6 +1220,7 @@ class _AddPettyCashDialogState extends State<_AddPettyCashDialog> {
         description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
         createdBy: auth.user?.email ?? 'Finance',
         createdAt: DateTime.now(),
+        status: widget.needsApproval ? PettyCashStatus.pending : PettyCashStatus.approved,
       ));
       if (!mounted) return;
       Navigator.of(context).pop(true);
@@ -1052,14 +1263,17 @@ class _AddPettyCashDialogState extends State<_AddPettyCashDialog> {
                       child: const Icon(Icons.savings_outlined, color: Color(0xFF6366F1)),
                     ),
                     const SizedBox(width: 12),
-                    const Expanded(
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Top Up Petty Cash',
+                          const Text('Top Up Petty Cash',
                               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
-                          Text('Tambah saldo kas kecil',
-                              style: TextStyle(fontSize: 12, color: Colors.grey)),
+                          Text(
+                              widget.needsApproval
+                                  ? 'Diajukan dulu, menunggu approval Finance'
+                                  : 'Tambah saldo kas kecil',
+                              style: const TextStyle(fontSize: 12, color: Colors.grey)),
                         ],
                       ),
                     ),
@@ -1256,12 +1470,14 @@ class _IncomeSplitCard extends StatelessWidget {
   final int cashBalance;
   final int nonCashBalance;
   final int deposited;
+  final int pending;
   final NumberFormat currency;
 
   const _IncomeSplitCard({
     required this.cashBalance,
     required this.nonCashBalance,
     required this.deposited,
+    required this.pending,
     required this.currency,
   });
 
@@ -1317,6 +1533,26 @@ class _IncomeSplitCard extends StatelessWidget {
                 ),
               ],
             ),
+            if (pending > 0) ...[
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  const Icon(Icons.pending_actions, size: 15, color: Color(0xFFB45309)),
+                  const SizedBox(width: 7),
+                  const Expanded(
+                    child: Text(
+                      'Menunggu approval (GL Suspense)',
+                      style: TextStyle(fontSize: 12, color: Color(0xFFB45309)),
+                    ),
+                  ),
+                  Text(
+                    currency.format(pending),
+                    style: const TextStyle(
+                        fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFFB45309)),
+                  ),
+                ],
+              ),
+            ],
           ],
         ],
       ),
@@ -1355,6 +1591,36 @@ class _IncomeSplitCard extends StatelessWidget {
           ),
           Text(hint, style: TextStyle(fontSize: 10.5, color: Colors.grey.shade500)),
         ],
+      ),
+    );
+  }
+}
+
+/// Penanda status persetujuan pada baris top up petty cash.
+class _StatusChip extends StatelessWidget {
+  final PettyCashStatus status;
+
+  const _StatusChip({required this.status});
+
+  static const _colors = {
+    PettyCashStatus.pending: Color(0xFFF59E0B),
+    PettyCashStatus.approved: Color(0xFF10B981),
+    PettyCashStatus.rejected: Color(0xFFEF4444),
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _colors[status]!;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Text(
+        kPettyCashStatusLabels[status]!,
+        style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: color),
       ),
     );
   }

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../db/order_repository.dart';
 import '../models/customer_order.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/notification_test_tile.dart';
 import '../widgets/kitchen_checklist_dialog.dart';
 import '../utils/logout_confirm.dart';
 import '../widgets/grouped_order_list.dart';
@@ -55,14 +56,24 @@ class _ChefHomeScreenState extends State<ChefHomeScreen> {
           bottom: TabBar(tabs: _tabs.map((t) => Tab(text: t.$2)).toList()),
           actions: [
             IconButton(
-              icon: const Icon(Icons.logout),
-              tooltip: 'Keluar',
-              onPressed: () async {
-                if (!await confirmLogout(context)) return;
-                if (!context.mounted) return;
-                await context.read<AuthProvider>().signOut();
-              },
+              icon: const Icon(Icons.notifications_active_outlined),
+              tooltip: 'Tes Notifikasi',
+              onPressed: () => showNotificationTest(context),
             ),
+            // Owner membuka layar ini dari hub-nya, dan hub itu sudah
+            // punya menu Keluar sendiri. Tombol logout di sini akan
+            // mengeluarkannya dari aplikasi hanya karena dia mengintip
+            // dapur — sesuatu yang tidak pernah dia maksud.
+            if (!auth.isOwner)
+              IconButton(
+                icon: const Icon(Icons.logout),
+                tooltip: 'Keluar',
+                onPressed: () async {
+                  if (!await confirmLogout(context)) return;
+                  if (!context.mounted) return;
+                  await context.read<AuthProvider>().signOut();
+                },
+              ),
           ],
         ),
         body: StreamBuilder<List<CustomerOrder>>(

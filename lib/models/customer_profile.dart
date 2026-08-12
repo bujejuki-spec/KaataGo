@@ -20,7 +20,10 @@ class CustomerProfile {
         'email': email,
         'name': name,
         if (phone != null && phone!.isNotEmpty) 'phone': phone,
-        if (photoBase64 != null) 'photo_base64': photoBase64,
+        // Selalu dikirim, termasuk saat null: upsert yang menghilangkan
+        // kuncinya akan mempertahankan foto lama, sehingga menghapus foto
+        // jadi mustahil.
+        'photo_base64': photoBase64,
       };
 
   factory CustomerProfile.fromMap(String email, Map<String, dynamic> map) {

@@ -10,6 +10,11 @@
          Android 13; tanpa izin ini notifikasinya terkirim tapi tidak
          pernah terlihat. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Mengambil titik lokasi resto sekali saat didaftarkan. Tidak ada
+         pelacakan di latar belakang: izinnya hanya diminta saat tombol
+         "Lokasi Saya" ditekan di layar Info Resto. -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <application
         android:label="KaataGo"
         android:name="${applicationName}"

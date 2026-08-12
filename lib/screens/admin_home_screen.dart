@@ -5,6 +5,8 @@ import '../providers/auth_provider.dart';
 import '../theme.dart';
 import '../utils/logout_confirm.dart';
 import '../widgets/hub_menu_tile.dart';
+import '../widgets/inbox_tile.dart';
+import '../widgets/responsive.dart';
 import '../widgets/resto_switcher.dart';
 import '../widgets/kaata_logo.dart';
 import 'employee_orders_screen.dart';
@@ -12,6 +14,8 @@ import 'pos_home_screen.dart';
 import 'product_list_screen.dart';
 import 'settings_menu_screen.dart';
 import 'transaction_history_screen.dart';
+import 'cash_deposit_screen.dart';
+import 'finance_balance_screen.dart';
 
 /// Home screen for the 'admin' role — styled the same as Finance/Super
 /// Admin's hub (gradient header + colorful menu cards) instead of
@@ -51,13 +55,14 @@ class AdminHomeScreen extends StatelessWidget {
             trailing: const RestoSwitcher(),
           ),
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(20),
-              children: [
-                const Text('Menu',
+            child: HubMenuLayout(
+              header: const [
+                Text('Menu',
                     style:
                         TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.grey)),
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
+              ],
+              tiles: [
                 HubMenuTile(
                   icon: Icons.point_of_sale_outlined,
                   title: 'Kasir / Input Pesanan',
@@ -67,7 +72,6 @@ class AdminHomeScreen extends StatelessWidget {
                     MaterialPageRoute(builder: (_) => const PosHomeScreen()),
                   ),
                 ),
-                const SizedBox(height: 12),
                 HubMenuTile(
                   icon: Icons.inventory_2_outlined,
                   title: 'Kelola Produk',
@@ -77,7 +81,6 @@ class AdminHomeScreen extends StatelessWidget {
                     MaterialPageRoute(builder: (_) => const ProductListScreen()),
                   ),
                 ),
-                const SizedBox(height: 12),
                 HubMenuTile(
                   icon: Icons.list_alt_outlined,
                   title: 'Pesanan Masuk',
@@ -87,7 +90,6 @@ class AdminHomeScreen extends StatelessWidget {
                     MaterialPageRoute(builder: (_) => const EmployeeOrdersScreen()),
                   ),
                 ),
-                const SizedBox(height: 12),
                 HubMenuTile(
                   icon: Icons.receipt_long_outlined,
                   title: 'Riwayat Transaksi',
@@ -97,7 +99,6 @@ class AdminHomeScreen extends StatelessWidget {
                     MaterialPageRoute(builder: (_) => const TransactionHistoryScreen()),
                   ),
                 ),
-                const SizedBox(height: 12),
                 HubMenuTile(
                   icon: Icons.settings_outlined,
                   title: 'Pengaturan',
@@ -107,7 +108,25 @@ class AdminHomeScreen extends StatelessWidget {
                     MaterialPageRoute(builder: (_) => const SettingsMenuScreen()),
                   ),
                 ),
-                const SizedBox(height: 12),
+                HubMenuTile(
+                  icon: Icons.account_balance_wallet_outlined,
+                  title: 'Saldo & Pengeluaran',
+                  subtitle: 'Lihat saldo, catat pengeluaran dari Petty Cash',
+                  color: const Color(0xFF6366F1),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const FinanceBalanceScreen()),
+                  ),
+                ),
+                HubMenuTile(
+                  icon: Icons.account_balance_outlined,
+                  title: 'Setor Saldo Cash',
+                  subtitle: 'Setor tunai di laci ke rekening resto',
+                  color: const Color(0xFF0EA5E9),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const CashDepositScreen()),
+                  ),
+                ),
+                const InboxTile(),
                 HubMenuTile(
                   icon: Icons.logout,
                   title: 'Keluar',

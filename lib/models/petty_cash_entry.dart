@@ -28,6 +28,35 @@ extension PettyCashSourceDb on PettyCashSource {
   }
 }
 
+/// Tahap persetujuan sebuah top up.
+///
+/// Kasir kini boleh mengajukan, tapi uangnya belum diakui masuk petty
+/// cash sampai Finance menyetujui. Top up yang dibuat Finance sendiri
+/// langsung berstatus disetujui — tidak ada gunanya menyetujui
+/// permintaan sendiri.
+enum PettyCashStatus { pending, approved, rejected }
+
+const _statusDbValues = {
+  PettyCashStatus.pending: 'pending',
+  PettyCashStatus.approved: 'approved',
+  PettyCashStatus.rejected: 'rejected',
+};
+
+const kPettyCashStatusLabels = {
+  PettyCashStatus.pending: 'Pending',
+  PettyCashStatus.approved: 'Completed',
+  PettyCashStatus.rejected: 'Ditolak',
+};
+
+extension PettyCashStatusDb on PettyCashStatus {
+  String get dbValue => _statusDbValues[this]!;
+
+  static PettyCashStatus fromDb(String? value) => _statusDbValues.entries
+      .firstWhere((e) => e.value == value,
+          orElse: () => const MapEntry(PettyCashStatus.approved, 'approved'))
+      .key;
+}
+
 /// A single top-up into the Petty Cash float — either a manual entry
 /// (day-one cash before any income has come in) or a withdrawal moving
 /// money out of Saldo Penghasilan. Never negative: there's no "usage"
@@ -42,6 +71,11 @@ class PettyCashEntry {
   final String createdBy;
   final DateTime createdAt;
 
+  final PettyCashStatus status;
+  final String? reviewedBy;
+  final DateTime? reviewedAt;
+  final String? reviewNote;
+
   PettyCashEntry({
     required this.id,
     required this.restoId,
@@ -50,7 +84,14 @@ class PettyCashEntry {
     this.description,
     required this.createdBy,
     required this.createdAt,
+    this.status = PettyCashStatus.approved,
+    this.reviewedBy,
+    this.reviewedAt,
+    this.reviewNote,
   });
+
+  bool get isPending => status == PettyCashStatus.pending;
+  bool get isApproved => status == PettyCashStatus.approved;
 
   Map<String, dynamic> toMap() => {
         'resto_id': restoId,
@@ -58,6 +99,7 @@ class PettyCashEntry {
         'source': source.dbValue,
         if (description != null) 'description': description,
         'created_by': createdBy,
+        'status': status.dbValue,
       };
 
   factory PettyCashEntry.fromMap(Map<String, dynamic> map) {
@@ -69,6 +111,12 @@ class PettyCashEntry {
       description: map['description'] as String?,
       createdBy: map['created_by'] as String,
       createdAt: DateTime.parse(map['created_at'] as String),
+      status: PettyCashStatusDb.fromDb(map['status'] as String?),
+      reviewedBy: map['reviewed_by'] as String?,
+      reviewedAt: map['reviewed_at'] == null
+          ? null
+          : DateTime.parse(map['reviewed_at'] as String).toUtc(),
+      reviewNote: map['review_note'] as String?,
     );
   }
 }

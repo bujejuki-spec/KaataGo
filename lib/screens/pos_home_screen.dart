@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../db/restaurant_repository.dart';
+import 'package:intl/intl.dart';
+import '../theme.dart';
+import '../widgets/cart_line_tile.dart';
+import '../widgets/responsive.dart';
 import '../models/cart_item.dart';
 import '../models/product.dart';
 import '../providers/auth_provider.dart';
@@ -43,8 +47,7 @@ class _PosHomeScreenState extends State<PosHomeScreen> {
     try {
       final resto = await RestaurantRepository().getOnce(restoId);
       if (!mounted || resto == null) return;
-      context.read<CartProvider>()
-          .setRates(ppn: resto.ppnPercent, service: resto.servicePercent);
+      context.read<CartProvider>().setRates(ppn: resto.ppnPercent, service: resto.servicePercent);
     } catch (_) {
       // Offline — prices fall back to the stored originals.
     }
@@ -168,29 +171,160 @@ class _PosHomeScreenState extends State<PosHomeScreen> {
                   textAlign: TextAlign.center),
             );
           }
-          return ProductCategoryList(
+
+          final grid = ProductCategoryList(
             products: products,
             quantityOf: cart.quantityOf,
             ppnPercent: cart.ppnPercent,
             onTapProduct: (p) => _onTapProduct(context, p),
           );
-        },
-      ),
-      bottomNavigationBar: Consumer<CartProvider>(
-        builder: (context, cart, _) {
-          return CartBottomBar(
-            itemCount: cart.itemCount,
-            total: cart.total,
-            actionLabel: 'Bayar',
-            actionIcon: Icons.point_of_sale_outlined,
-            onPressed: cart.items.isEmpty
-                ? null
-                : () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const CheckoutScreen()),
-                    ),
+
+          // Di monitor kasir, keranjang jadi panel tetap di kanan. Bar
+          // bawah memaksa kasir membuka layar terpisah untuk memeriksa
+          // pesanan yang sedang dibacakan pelanggan — padahal ruangnya
+          // ada. Di HP tata letaknya tidak berubah sama sekali.
+          if (!Breakpoints.isWide(context)) return grid;
+
+          return Row(
+            children: [
+              Expanded(child: grid),
+              const VerticalDivider(width: 1),
+              SizedBox(
+                width: 360,
+                child: _CartPanel(
+                  onEditLine: (line) => _editLine(context, line),
+                  onCheckout: cart.items.isEmpty
+                      ? null
+                      : () => Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const CheckoutScreen()),
+                          ),
+                ),
+              ),
+            ],
           );
         },
       ),
+      bottomNavigationBar: Breakpoints.isWide(context)
+          ? null
+          : Consumer<CartProvider>(
+              builder: (context, cart, _) {
+                return CartBottomBar(
+                  itemCount: cart.itemCount,
+                  total: cart.total,
+                  actionLabel: 'Bayar',
+                  actionIcon: Icons.point_of_sale_outlined,
+                  onPressed: cart.items.isEmpty
+                      ? null
+                      : () => Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const CheckoutScreen()),
+                          ),
+                );
+              },
+            ),
+    );
+  }
+}
+
+/// Keranjang sebagai panel tetap, untuk layar kasir yang lebar.
+///
+/// Isinya sama dengan layar keranjang biasa — baris yang bisa diubah dan
+/// dihapus, ringkasan, tombol bayar — hanya saja selalu terlihat, jadi
+/// kasir bisa mencocokkan pesanan sambil pelanggan masih membacakannya.
+class _CartPanel extends StatelessWidget {
+  final void Function(CartItem line) onEditLine;
+  final VoidCallback? onCheckout;
+
+  const _CartPanel({required this.onEditLine, required this.onCheckout});
+
+  @override
+  Widget build(BuildContext context) {
+    final currency = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+
+    return Consumer<CartProvider>(
+      builder: (context, cart, _) {
+        return Column(
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+              color: KaataTheme.backgroundTint,
+              child: Row(
+                children: [
+                  const Icon(Icons.shopping_cart_outlined, size: 18, color: KaataTheme.brandDark),
+                  const SizedBox(width: 8),
+                  const Text('Keranjang',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                  const Spacer(),
+                  if (cart.items.isNotEmpty)
+                    TextButton(
+                      onPressed: cart.clear,
+                      style: TextButton.styleFrom(foregroundColor: Colors.red),
+                      child: const Text('Kosongkan'),
+                    ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            Expanded(
+              child: cart.items.isEmpty
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Text(
+                          'Belum ada item.\nPilih menu di sebelah kiri.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Colors.grey.shade500),
+                        ),
+                      ),
+                    )
+                  : ListView.builder(
+                      itemCount: cart.items.length,
+                      itemBuilder: (context, index) {
+                        final item = cart.items[index];
+                        return CartLineTile(
+                          item: item,
+                          unitPrice: cart.menuSubtotalOf(item) ~/ item.quantity,
+                          lineTotal: cart.menuSubtotalOf(item),
+                          currency: currency,
+                          onIncrement: () => cart.incrementLine(item.lineId),
+                          onDecrement: () => cart.decrementLine(item.lineId),
+                          onDelete: () => cart.removeLine(item.lineId),
+                          onEdit: () => onEditLine(item),
+                        );
+                      },
+                    ),
+            ),
+            const Divider(height: 1),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('${cart.itemCount} item', style: TextStyle(color: Colors.grey.shade600)),
+                      Text(
+                        currency.format(cart.total),
+                        style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      icon: const Icon(Icons.point_of_sale_outlined),
+                      label: const Text('Bayar'),
+                      style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(50)),
+                      onPressed: onCheckout,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

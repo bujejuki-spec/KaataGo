@@ -39,6 +39,11 @@ class Restaurant {
   /// Tax and service rates as percentages — 11 means 11%. Menu prices
   /// are shown tax-inclusive, so these are what the receipt unwinds the
   /// displayed price with. Zero means the charge doesn't apply.
+  /// Titik lokasi resto, dipakai customer untuk membukanya di peta.
+  /// Null berarti belum diatur — tombol petanya tidak ditampilkan.
+  final double? latitude;
+  final double? longitude;
+
   final double ppnPercent;
   final double servicePercent;
 
@@ -54,6 +59,8 @@ class Restaurant {
     this.active = true,
     this.logoBase64,
     this.phone,
+    this.latitude,
+    this.longitude,
     this.ppnPercent = 0,
     this.servicePercent = 0,
   });
@@ -68,6 +75,11 @@ class Restaurant {
         'logo_base64': logoBase64,
         // Always sent so clearing it actually clears it.
         'phone': phone,
+        // Selalu dikirim supaya menghapus titik lokasi benar-benar
+        // menghapusnya — kunci yang dilewatkan pada upsert akan
+        // mempertahankan nilai lama.
+        'latitude': latitude,
+        'longitude': longitude,
         'ppn_percent': ppnPercent,
         'service_percent': servicePercent,
       };
@@ -81,8 +93,12 @@ class Restaurant {
       active: map['active'] as bool? ?? true,
       logoBase64: map['logo_base64'] as String?,
       phone: map['phone'] as String?,
+      latitude: (map['latitude'] as num?)?.toDouble(),
+      longitude: (map['longitude'] as num?)?.toDouble(),
       ppnPercent: (map['ppn_percent'] as num?)?.toDouble() ?? 0,
       servicePercent: (map['service_percent'] as num?)?.toDouble() ?? 0,
     );
   }
+
+  bool get hasLocation => latitude != null && longitude != null;
 }

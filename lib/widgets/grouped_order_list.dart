@@ -17,7 +17,17 @@ class GroupedOrderList extends StatelessWidget {
   final List<CustomerOrder> orders;
   final Widget? Function(CustomerOrder order)? actionsFor;
 
-  const GroupedOrderList({super.key, required this.orders, this.actionsFor});
+  /// Layar dapur membiarkan rincian terbuka — isinya justru yang harus
+  /// dimasak. Layar Pesanan Masuk memulainya tertutup, karena di sana
+  /// orang menelusuri puluhan pesanan untuk mencari satu.
+  final bool expandItems;
+
+  const GroupedOrderList({
+    super.key,
+    required this.orders,
+    this.actionsFor,
+    this.expandItems = true,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -55,12 +65,20 @@ class GroupedOrderList extends StatelessWidget {
               ),
               if (dineIn.isNotEmpty) ...[
                 _TypeHeader(icon: Icons.restaurant_outlined, label: 'Dine In', count: dineIn.length),
-                ...dineIn.map((o) => OrderCard(order: o, actions: actionsFor?.call(o))),
+                ...dineIn.map((o) => OrderCard(
+                      order: o,
+                      actions: actionsFor?.call(o),
+                      initiallyExpanded: expandItems,
+                    )),
               ],
               if (takeAway.isNotEmpty) ...[
                 _TypeHeader(
                     icon: Icons.shopping_bag_outlined, label: 'Take Away', count: takeAway.length),
-                ...takeAway.map((o) => OrderCard(order: o, actions: actionsFor?.call(o))),
+                ...takeAway.map((o) => OrderCard(
+                      order: o,
+                      actions: actionsFor?.call(o),
+                      initiallyExpanded: expandItems,
+                    )),
               ],
             ],
           ),

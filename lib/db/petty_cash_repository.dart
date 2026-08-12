@@ -21,4 +21,23 @@ class PettyCashRepository {
   Future<void> delete(String id) async {
     await _client.from('petty_cash_entries').delete().eq('id', id);
   }
+
+  /// Menyetujui atau menolak satu pengajuan top up.
+  ///
+  /// Hanya baris ini yang disentuh, dan trigger jurnalnya pun bekerja per
+  /// baris — jadi menyetujui satu pengajuan tidak akan ikut melepas
+  /// pengajuan lain yang masih menunggu.
+  Future<void> review(
+    String id, {
+    required PettyCashStatus status,
+    required String reviewedBy,
+    String? note,
+  }) async {
+    await _client.from('petty_cash_entries').update({
+      'status': status.dbValue,
+      'reviewed_by': reviewedBy,
+      'reviewed_at': DateTime.now().toUtc().toIso8601String(),
+      if (note != null && note.trim().isNotEmpty) 'review_note': note.trim(),
+    }).eq('id', id);
+  }
 }

@@ -16,7 +16,16 @@ import '../widgets/receipt_view.dart';
 class CustomerReceiptScreen extends StatefulWidget {
   final CustomerOrder order;
 
-  const CustomerReceiptScreen({super.key, required this.order});
+  /// Dibuka dari Riwayat Transaksi oleh kasir/admin, bukan oleh
+  /// customer. Yang mereka butuhkan mencetak ulang, bukan menyimpan
+  /// struk orang lain ke galeri HP-nya sendiri.
+  final bool forStaff;
+
+  const CustomerReceiptScreen({
+    super.key,
+    required this.order,
+    this.forStaff = false,
+  });
 
   @override
   State<CustomerReceiptScreen> createState() => _CustomerReceiptScreenState();
@@ -93,6 +102,14 @@ class _CustomerReceiptScreenState extends State<CustomerReceiptScreen> {
     );
   }
 
+  bool _printing = false;
+
+  Future<void> _print() async {
+    setState(() => _printing = true);
+    await printReceipt(context, _data);
+    if (mounted) setState(() => _printing = false);
+  }
+
   Future<void> _downloadToGallery() async {
     setState(() => _downloading = true);
     await saveReceiptToGallery(context, _data);
@@ -108,7 +125,9 @@ class _CustomerReceiptScreenState extends State<CustomerReceiptScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Struk Pembayaran')),
+      appBar: AppBar(
+        title: Text(widget.forStaff ? 'Cetak Ulang Struk' : 'Struk Pembayaran'),
+      ),
       body: Column(
         children: [
           Expanded(
@@ -132,7 +151,21 @@ class _CustomerReceiptScreenState extends State<CustomerReceiptScreen> {
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-            child: Row(
+            child: widget.forStaff
+                ? SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      icon: _printing
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2))
+                          : const Icon(Icons.print_outlined),
+                      label: const Text('Cetak Ulang Struk'),
+                      onPressed: _printing ? null : _print,
+                    ),
+                  )
+                : Row(
               children: [
                 Expanded(
                   child: OutlinedButton.icon(

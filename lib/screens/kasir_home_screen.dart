@@ -5,6 +5,8 @@ import '../providers/auth_provider.dart';
 import '../theme.dart';
 import '../utils/logout_confirm.dart';
 import '../widgets/hub_menu_tile.dart';
+import '../widgets/inbox_tile.dart';
+import '../widgets/responsive.dart';
 import '../widgets/kaata_logo.dart';
 import 'cash_deposit_screen.dart';
 import 'finance_balance_screen.dart';
@@ -48,13 +50,14 @@ class KasirHomeScreen extends StatelessWidget {
             colorB: KaataTheme.brandDark,
           ),
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(20),
-              children: [
-                const Text('Menu',
+            child: HubMenuLayout(
+              header: const [
+                Text('Menu',
                     style:
                         TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.grey)),
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
+              ],
+              tiles: [
                 HubMenuTile(
                   icon: Icons.point_of_sale_outlined,
                   title: 'Kasir / Input Pesanan',
@@ -64,7 +67,6 @@ class KasirHomeScreen extends StatelessWidget {
                     MaterialPageRoute(builder: (_) => const PosHomeScreen()),
                   ),
                 ),
-                const SizedBox(height: 12),
                 HubMenuTile(
                   icon: Icons.receipt_long_outlined,
                   title: 'Riwayat Transaksi',
@@ -74,7 +76,6 @@ class KasirHomeScreen extends StatelessWidget {
                     MaterialPageRoute(builder: (_) => const TransactionHistoryScreen()),
                   ),
                 ),
-                const SizedBox(height: 12),
                 HubMenuTile(
                   icon: Icons.account_balance_wallet_outlined,
                   title: 'Saldo & Pengeluaran',
@@ -84,7 +85,6 @@ class KasirHomeScreen extends StatelessWidget {
                     MaterialPageRoute(builder: (_) => const FinanceBalanceScreen()),
                   ),
                 ),
-                const SizedBox(height: 12),
                 HubMenuTile(
                   icon: Icons.account_balance_outlined,
                   title: 'Setor Saldo Cash',
@@ -94,7 +94,7 @@ class KasirHomeScreen extends StatelessWidget {
                     MaterialPageRoute(builder: (_) => const CashDepositScreen()),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const InboxTile(),
                 HubMenuTile(
                   icon: Icons.logout,
                   title: 'Keluar',

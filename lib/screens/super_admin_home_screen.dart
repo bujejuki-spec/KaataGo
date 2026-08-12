@@ -5,9 +5,12 @@ import '../providers/auth_provider.dart';
 import '../theme.dart';
 import '../utils/logout_confirm.dart';
 import '../widgets/hub_menu_tile.dart';
+import '../widgets/inbox_tile.dart';
+import '../widgets/responsive.dart';
 import '../widgets/kaata_logo.dart';
 import 'employee_management_screen.dart';
 import 'restaurant_manage_list_screen.dart';
+import 'publish_announcement_screen.dart';
 
 /// Home screen for the 'super_admin' role — not scoped to any single
 /// restaurant. Two jobs: manage employees across every resto (the app
@@ -46,13 +49,14 @@ class SuperAdminHomeScreen extends StatelessWidget {
             colorB: KaataTheme.brandDark,
           ),
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(20),
-              children: [
-                const Text('Menu',
+            child: HubMenuLayout(
+              header: const [
+                Text('Menu',
                     style:
                         TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.grey)),
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
+              ],
+              tiles: [
                 HubMenuTile(
                   icon: Icons.badge_outlined,
                   title: 'Kelola Karyawan',
@@ -62,7 +66,6 @@ class SuperAdminHomeScreen extends StatelessWidget {
                     MaterialPageRoute(builder: (_) => const EmployeeManagementScreen()),
                   ),
                 ),
-                const SizedBox(height: 12),
                 HubMenuTile(
                   icon: Icons.storefront_outlined,
                   title: 'List Resto',
@@ -72,7 +75,16 @@ class SuperAdminHomeScreen extends StatelessWidget {
                     MaterialPageRoute(builder: (_) => const RestaurantManageListScreen()),
                   ),
                 ),
-                const SizedBox(height: 12),
+                HubMenuTile(
+                  icon: Icons.campaign_outlined,
+                  title: 'Kirim Pengumuman',
+                  subtitle: 'Blast info versi baru ke semua kotak masuk',
+                  color: const Color(0xFFF59E0B),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const PublishAnnouncementScreen()),
+                  ),
+                ),
+                const InboxTile(),
                 HubMenuTile(
                   icon: Icons.logout,
                   title: 'Keluar',

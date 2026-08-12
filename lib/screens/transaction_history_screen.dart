@@ -6,6 +6,7 @@ import '../db/order_repository.dart';
 import '../models/customer_order.dart';
 import '../providers/auth_provider.dart';
 import '../utils/id_time.dart';
+import 'customer_receipt_screen.dart';
 
 /// Normalises an order's payment into 'cash' | 'qris' | 'transfer'.
 /// Orders written before the payment-method keys were lowercased still
@@ -149,7 +150,24 @@ class TransactionHistoryScreen extends StatelessWidget {
                         '${hasCashier ? '\nOleh ${o.cashierName}' : ''}',
                       ),
                       isThreeLine: hasCashier,
-                      trailing: Text('${o.items.length} item'),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text('${o.items.length} item',
+                              style: TextStyle(color: Colors.grey.shade600, fontSize: 12.5)),
+                          const SizedBox(width: 4),
+                          Icon(Icons.print_outlined, size: 18, color: Colors.grey.shade500),
+                        ],
+                      ),
+                      // Struk hilang, printer macet, pelanggan minta
+                      // salinan untuk klaim kantor — semuanya berakhir di
+                      // sini, dan sebelumnya tidak ada jalan keluarnya
+                      // selain membuat transaksi palsu.
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => CustomerReceiptScreen(order: o, forStaff: true),
+                        ),
+                      ),
                     );
                   }).toList(),
                 ),

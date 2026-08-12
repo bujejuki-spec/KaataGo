@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../db/cash_deposit_repository.dart';
 import '../db/order_repository.dart';
@@ -17,6 +18,7 @@ import '../utils/id_time.dart';
 import '../utils/photo_picker.dart';
 import '../utils/rupiah_input.dart';
 import '../widgets/dialog_actions.dart';
+import '../widgets/responsive.dart';
 
 /// Menyetorkan uang tunai dari laci kasir ke rekening resto.
 ///
@@ -39,6 +41,10 @@ class _CashDepositScreenState extends State<CashDepositScreen> {
   final _orderRepo = OrderRepository();
   final _pettyCashRepo = PettyCashRepository();
 
+  String? _bankName;
+  String? _accountNumber;
+  String? _accountHolder;
+
   int _cashIncome = 0;
   int _pettyCashFromCash = 0;
   List<CashDeposit> _deposits = [];
@@ -51,9 +57,28 @@ class _CashDepositScreenState extends State<CashDepositScreen> {
   /// Finance/Admin — dan database menegakkannya juga (lihat
   /// supabase/cash_deposit.sql), sehingga menyembunyikannya di sini
   /// hanya menghindari menawarkan sesuatu yang pasti gagal.
-  bool get _canDelete => !context.read<AuthProvider>().isKasir;
+  bool get _canDelete {
+    final auth = context.read<AuthProvider>();
+    return !auth.isKasir && !auth.isAdmin;
+  }
 
-  int get _deposited => _deposits.fold(0, (sum, d) => sum + d.amount);
+  /// Menyetujui setoran adalah pemeriksaan atas pekerjaan kasir, jadi
+  /// kasir tidak boleh menyetujui setorannya sendiri — kalau bisa,
+  /// persetujuannya tidak berarti apa-apa. Database menegakkannya juga.
+  bool get _canReview {
+    final auth = context.read<AuthProvider>();
+    return !auth.isKasir && !auth.isAdmin;
+  }
+
+  /// Setoran yang sudah keluar dari laci — termasuk yang masih menunggu
+  /// persetujuan, karena uangnya memang sudah tidak ada di laci.
+  int get _deposited => _deposits
+      .where((d) => d.status != DepositStatus.rejected)
+      .fold(0, (sum, d) => sum + d.amount);
+
+  /// Masih mengendap di GL Suspense: sudah disetor, belum diakui masuk
+  /// kas resto.
+  int get _pendingTotal => _deposits.where((d) => d.isPending).fold(0, (sum, d) => sum + d.amount);
 
   /// Yang seharusnya masih ada di laci.
   int get _cashOnHand => _cashIncome - _deposited - _pettyCashFromCash;
@@ -75,15 +100,20 @@ class _CashDepositScreenState extends State<CashDepositScreen> {
         _orderRepo.watchAll(restoId).first,
         _depositRepo.getForResto(restoId),
         _pettyCashRepo.getForResto(restoId),
+        Supabase.instance.client.from('settings').select().eq('resto_id', restoId).limit(1),
       ]);
       if (!mounted) return;
       final orders = (results[0] as List<CustomerOrder>)
           .where((o) => o.paymentStatus == OrderPaymentStatus.paid);
       final pettyCash = results[2] as List<PettyCashEntry>;
+      final settingsRows = results[3] as List<Map<String, dynamic>>;
+      final settings = settingsRows.isNotEmpty ? settingsRows.first : null;
       setState(() {
-        _cashIncome = orders
-            .where((o) => o.paymentMethod == 'cash')
-            .fold(0, (sum, o) => sum + o.total);
+        _bankName = settings?['bank_name'] as String?;
+        _accountNumber = settings?['account_number'] as String?;
+        _accountHolder = settings?['account_holder'] as String?;
+        _cashIncome =
+            orders.where((o) => o.paymentMethod == 'cash').fold(0, (sum, o) => sum + o.total);
         _deposits = results[1] as List<CashDeposit>;
         _pettyCashFromCash = pettyCash
             .where((e) => e.source == PettyCashSource.cashWithdrawal)
@@ -102,9 +132,113 @@ class _CashDepositScreenState extends State<CashDepositScreen> {
   Future<void> _addDeposit() async {
     final saved = await showDialog<bool>(
       context: context,
-      builder: (_) => _AddDepositDialog(restoId: _restoId, cashOnHand: _cashOnHand),
+      builder: (_) => _AddDepositDialog(
+        restoId: _restoId,
+        cashOnHand: _cashOnHand,
+        bankName: _bankName,
+        accountNumber: _accountNumber,
+        accountHolder: _accountHolder,
+      ),
     );
     if (saved == true) _load();
+  }
+
+  /// Finance mengonfirmasi, bukan menyetujui: yang dia nyatakan adalah
+  /// uangnya sudah benar-benar terlihat di rekening, bukan bahwa kasir
+  /// boleh menyetor. Karena itu peringatannya menyebut saldo rekening —
+  /// kesalahan yang paling mahal di sini adalah mengonfirmasi transfer
+  /// yang nominalnya tidak sama.
+  Future<void> _review(CashDeposit d, DepositStatus status) async {
+    final approving = status == DepositStatus.approved;
+    // Diambil sebelum dialog dibuka: sesudahnya context sudah melewati
+    // await, dan pembacaan provider di titik itu tidak lagi terjamin.
+    final reviewer = context.read<AuthProvider>().user?.email ?? 'Finance';
+    final currency = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+    final noteCtrl = TextEditingController();
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        icon: Icon(
+          approving ? Icons.verified_outlined : Icons.block,
+          size: 38,
+          color: approving ? const Color(0xFF10B981) : Colors.red,
+        ),
+        title: Text(approving ? 'Konfirmasi setoran?' : 'Tolak setoran?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (approving) ...[
+              Container(
+                padding: const EdgeInsets.all(11),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF59E0B).withOpacity(0.10),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFFF59E0B).withOpacity(0.35)),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.warning_amber_rounded, size: 18, color: Color(0xFFB45309)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Pastikan nominal di Saldo Rekening kamu sudah sesuai '
+                        'dengan nominal yang ditransfer: '
+                        '${currency.format(d.amount)}.',
+                        style: const TextStyle(fontSize: 12.5, color: Color(0xFF92400E)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+            Text(
+              approving
+                  ? 'Setelah dikonfirmasi, ${currency.format(d.amount)} dipindah dari '
+                      'GL Suspense ke GL Total Saldo dan statusnya menjadi Completed.'
+                  : '${currency.format(d.amount)} akan dikembalikan dari GL Suspense '
+                      'ke GL Cash, dan dihitung lagi sebagai tunai di laci.',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 13),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: noteCtrl,
+              decoration: InputDecoration(
+                labelText: approving ? 'Catatan (opsional)' : 'Alasan penolakan',
+                isDense: true,
+              ),
+              maxLines: 2,
+            ),
+          ],
+        ),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          DialogActions(
+            confirmLabel: approving ? 'Ya, Konfirmasi' : 'Tolak',
+            destructive: !approving,
+            onConfirm: () => Navigator.pop(dialogContext, true),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+
+    try {
+      await _depositRepo.review(
+        d.id,
+        status: status,
+        reviewedBy: reviewer,
+        note: noteCtrl.text,
+      );
+      _load();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal memproses: $e')));
+    }
   }
 
   Future<void> _deleteDeposit(CashDeposit d) async {
@@ -134,8 +268,7 @@ class _CashDepositScreenState extends State<CashDepositScreen> {
       _load();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Gagal membatalkan: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal membatalkan: $e')));
     }
   }
 
@@ -152,67 +285,76 @@ class _CashDepositScreenState extends State<CashDepositScreen> {
               ? _ErrorState(message: _loadError!, onRetry: _load)
               : RefreshIndicator(
                   onRefresh: _load,
-                  child: ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
-                    children: [
-                      _CashOnHandCard(
-                        cashOnHand: _cashOnHand,
-                        cashIncome: _cashIncome,
-                        deposited: _deposited,
-                        toPettyCash: _pettyCashFromCash,
-                        currency: currency,
-                      ),
-                      const SizedBox(height: 14),
-                      SizedBox(
-                        width: double.infinity,
-                        child: FilledButton.icon(
-                          icon: const Icon(Icons.account_balance_outlined),
-                          label: const Text('Setor ke Rekening Resto'),
-                          style: FilledButton.styleFrom(
-                            minimumSize: const Size.fromHeight(50),
+                  child: ResponsiveCenter(
+                    child: ListView(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+                      children: [
+                        _CashOnHandCard(
+                          cashOnHand: _cashOnHand,
+                          cashIncome: _cashIncome,
+                          deposited: _deposited,
+                          toPettyCash: _pettyCashFromCash,
+                          pending: _pendingTotal,
+                          currency: currency,
+                        ),
+                        const SizedBox(height: 14),
+                        SizedBox(
+                          width: double.infinity,
+                          child: FilledButton.icon(
+                            icon: const Icon(Icons.account_balance_outlined),
+                            label: const Text('Setor ke Rekening Resto'),
+                            style: FilledButton.styleFrom(
+                              minimumSize: const Size.fromHeight(50),
+                            ),
+                            onPressed: _cashOnHand > 0 ? _addDeposit : null,
                           ),
-                          onPressed: _cashOnHand > 0 ? _addDeposit : null,
                         ),
-                      ),
-                      if (_cashOnHand <= 0) ...[
-                        const SizedBox(height: 7),
-                        Text(
-                          _cashIncome == 0
-                              ? 'Belum ada pembayaran tunai yang masuk.'
-                              : 'Semua uang tunai sudah disetor.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                        ),
-                      ],
-                      const SizedBox(height: 24),
-                      Row(
-                        children: [
-                          const Text('Riwayat Setoran',
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                          const Spacer(),
-                          Text('${_deposits.length} setoran',
-                              style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                        if (_cashOnHand <= 0) ...[
+                          const SizedBox(height: 7),
+                          Text(
+                            _cashIncome == 0
+                                ? 'Belum ada pembayaran tunai yang masuk.'
+                                : 'Semua uang tunai sudah disetor.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                          ),
                         ],
-                      ),
-                      const SizedBox(height: 10),
-                      if (_deposits.isEmpty)
-                        Container(
-                          padding: const EdgeInsets.symmetric(vertical: 30),
-                          alignment: Alignment.center,
-                          child: Text(
-                            'Belum ada setoran dicatat.',
-                            style: TextStyle(color: Colors.grey.shade500),
-                          ),
-                        )
-                      else
-                        for (final d in _deposits)
-                          _DepositTile(
-                            deposit: d,
-                            currency: currency,
-                            dateFmt: dateFmt,
-                            onDelete: _canDelete ? () => _deleteDeposit(d) : null,
-                          ),
-                    ],
+                        const SizedBox(height: 24),
+                        Row(
+                          children: [
+                            const Text('Riwayat Setoran',
+                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                            const Spacer(),
+                            Text('${_deposits.length} setoran',
+                                style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        if (_deposits.isEmpty)
+                          Container(
+                            padding: const EdgeInsets.symmetric(vertical: 30),
+                            alignment: Alignment.center,
+                            child: Text(
+                              'Belum ada setoran dicatat.',
+                              style: TextStyle(color: Colors.grey.shade500),
+                            ),
+                          )
+                        else
+                          for (final d in _deposits)
+                            _DepositTile(
+                              deposit: d,
+                              currency: currency,
+                              dateFmt: dateFmt,
+                              onDelete: _canDelete ? () => _deleteDeposit(d) : null,
+                              onApprove: _canReview && d.isPending
+                                  ? () => _review(d, DepositStatus.approved)
+                                  : null,
+                              onReject: _canReview && d.isPending
+                                  ? () => _review(d, DepositStatus.rejected)
+                                  : null,
+                            ),
+                      ],
+                    ),
                   ),
                 ),
     );
@@ -224,6 +366,7 @@ class _CashOnHandCard extends StatelessWidget {
   final int cashIncome;
   final int deposited;
   final int toPettyCash;
+  final int pending;
   final NumberFormat currency;
 
   const _CashOnHandCard({
@@ -231,6 +374,7 @@ class _CashOnHandCard extends StatelessWidget {
     required this.cashIncome,
     required this.deposited,
     required this.toPettyCash,
+    required this.pending,
     required this.currency,
   });
 
@@ -260,20 +404,22 @@ class _CashOnHandCard extends StatelessWidget {
             children: [
               Icon(Icons.payments_outlined, size: 18, color: Colors.white.withOpacity(0.85)),
               const SizedBox(width: 6),
-              Text('Tunai di Laci',
-                  style: TextStyle(color: Colors.white.withOpacity(0.85))),
+              Text('Tunai di Laci', style: TextStyle(color: Colors.white.withOpacity(0.85))),
             ],
           ),
           const SizedBox(height: 6),
           Text(
             currency.format(cashOnHand),
-            style: const TextStyle(
-                fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
+            style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
           ),
           Divider(height: 24, color: Colors.white.withOpacity(0.3)),
           _row('Pemasukan tunai', currency.format(cashIncome)),
           if (deposited > 0) _row('Sudah disetor', '- ${currency.format(deposited)}'),
           if (toPettyCash > 0) _row('Dipindah ke Petty Cash', '- ${currency.format(toPettyCash)}'),
+          if (pending > 0) ...[
+            const SizedBox(height: 4),
+            _row('⏳ Menunggu approval Finance', currency.format(pending)),
+          ],
         ],
       ),
     );
@@ -285,8 +431,8 @@ class _CashOnHandCard extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: Text(label,
-                style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 12.5)),
+            child:
+                Text(label, style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 12.5)),
           ),
           Text(value,
               style: TextStyle(
@@ -304,13 +450,23 @@ class _DepositTile extends StatelessWidget {
   final NumberFormat currency;
   final DateFormat dateFmt;
   final VoidCallback? onDelete;
+  final VoidCallback? onApprove;
+  final VoidCallback? onReject;
 
   const _DepositTile({
     required this.deposit,
     required this.currency,
     required this.dateFmt,
     this.onDelete,
+    this.onApprove,
+    this.onReject,
   });
+
+  static const _statusColors = {
+    DepositStatus.pending: Color(0xFFF59E0B),
+    DepositStatus.approved: Color(0xFF10B981),
+    DepositStatus.rejected: Color(0xFFEF4444),
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -329,20 +485,54 @@ class _DepositTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(currency.format(deposit.amount),
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15.5)),
+                Row(
+                  children: [
+                    Text(currency.format(deposit.amount),
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15.5)),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: _statusColors[deposit.status]!.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(7),
+                        border: Border.all(color: _statusColors[deposit.status]!.withOpacity(0.3)),
+                      ),
+                      child: Text(
+                        kDepositStatusLabels[deposit.status]!,
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.bold,
+                          color: _statusColors[deposit.status],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 2),
                 Text(dateFmt.format(deposit.createdAt.toWib()),
                     style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600)),
                 Text('Oleh ${deposit.createdBy}',
                     style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600)),
+                if (deposit.bankName != null)
+                  Text(
+                    '${deposit.bankName}'
+                    '${deposit.accountNumber != null ? ' · ${deposit.accountNumber}' : ''}'
+                    '${deposit.accountHolder != null ? ' · a.n. ${deposit.accountHolder}' : ''}',
+                    style: TextStyle(fontSize: 11.5, color: Colors.grey.shade700),
+                  ),
                 if (deposit.note != null && deposit.note!.trim().isNotEmpty) ...[
                   const SizedBox(height: 4),
                   Text(deposit.note!,
                       style: TextStyle(
-                          fontSize: 12,
-                          fontStyle: FontStyle.italic,
-                          color: Colors.grey.shade700)),
+                          fontSize: 12, fontStyle: FontStyle.italic, color: Colors.grey.shade700)),
+                ],
+                if (deposit.reviewedBy != null) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    '${deposit.isApproved ? 'Dikonfirmasi' : 'Ditolak'} oleh ${deposit.reviewedBy}'
+                    '${deposit.reviewNote != null ? ' · ${deposit.reviewNote}' : ''}',
+                    style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600),
+                  ),
                 ],
                 if (deposit.hasProof) ...[
                   const SizedBox(height: 8),
@@ -358,6 +548,39 @@ class _DepositTile extends StatelessWidget {
                         errorBuilder: (_, __, ___) => const SizedBox.shrink(),
                       ),
                     ),
+                  ),
+                ],
+                if (onApprove != null || onReject != null) ...[
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      if (onApprove != null)
+                        Expanded(
+                          child: FilledButton.icon(
+                            icon: const Icon(Icons.check, size: 17),
+                            label: const Text('Setujui'),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: const Color(0xFF10B981),
+                              minimumSize: const Size.fromHeight(40),
+                            ),
+                            onPressed: onApprove,
+                          ),
+                        ),
+                      if (onApprove != null && onReject != null) const SizedBox(width: 8),
+                      if (onReject != null)
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            icon: const Icon(Icons.close, size: 17),
+                            label: const Text('Tolak'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.red,
+                              side: const BorderSide(color: Colors.red),
+                              minimumSize: const Size.fromHeight(40),
+                            ),
+                            onPressed: onReject,
+                          ),
+                        ),
+                    ],
                   ),
                 ],
               ],
@@ -392,7 +615,22 @@ class _AddDepositDialog extends StatefulWidget {
   final String restoId;
   final int cashOnHand;
 
-  const _AddDepositDialog({required this.restoId, required this.cashOnHand});
+  /// Rekening resto dari Pengaturan Pembayaran, dipakai sebagai isian
+  /// awal. Kasir yang menyetor ke rekening lain tinggal menimpanya —
+  /// tapi yang paling sering terjadi adalah menyetor ke rekening yang
+  /// itu-itu juga, dan mengetiknya ulang tiap kali hanya mengundang
+  /// salah ketik nomor rekening.
+  final String? bankName;
+  final String? accountNumber;
+  final String? accountHolder;
+
+  const _AddDepositDialog({
+    required this.restoId,
+    required this.cashOnHand,
+    this.bankName,
+    this.accountNumber,
+    this.accountHolder,
+  });
 
   @override
   State<_AddDepositDialog> createState() => _AddDepositDialogState();
@@ -402,6 +640,9 @@ class _AddDepositDialogState extends State<_AddDepositDialog> {
   final _formKey = GlobalKey<FormState>();
   final _amountCtrl = TextEditingController();
   final _noteCtrl = TextEditingController();
+  late final _bankCtrl = TextEditingController(text: widget.bankName ?? '');
+  late final _accountCtrl = TextEditingController(text: widget.accountNumber ?? '');
+  late final _holderCtrl = TextEditingController(text: widget.accountHolder ?? '');
   final _repo = CashDepositRepository();
   File? _proof;
   bool _saving = false;
@@ -410,6 +651,9 @@ class _AddDepositDialogState extends State<_AddDepositDialog> {
   void dispose() {
     _amountCtrl.dispose();
     _noteCtrl.dispose();
+    _bankCtrl.dispose();
+    _accountCtrl.dispose();
+    _holderCtrl.dispose();
     super.dispose();
   }
 
@@ -425,6 +669,9 @@ class _AddDepositDialogState extends State<_AddDepositDialog> {
         amount: parseRupiah(_amountCtrl.text)!,
         proofBase64: proofBase64,
         note: _noteCtrl.text.trim().isEmpty ? null : _noteCtrl.text.trim(),
+        bankName: _bankCtrl.text.trim().isEmpty ? null : _bankCtrl.text.trim(),
+        accountNumber: _accountCtrl.text.trim().isEmpty ? null : _accountCtrl.text.trim(),
+        accountHolder: _holderCtrl.text.trim().isEmpty ? null : _holderCtrl.text.trim(),
         createdBy: auth.user?.email ?? 'Kasir',
         createdAt: DateTime.now(),
       ));
@@ -432,8 +679,7 @@ class _AddDepositDialogState extends State<_AddDepositDialog> {
       Navigator.of(context).pop(true);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Gagal menyimpan: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal menyimpan: $e')));
       setState(() => _saving = false);
     }
   }
@@ -524,12 +770,40 @@ class _AddDepositDialogState extends State<_AddDepositDialog> {
                     return null;
                   },
                 ),
+                const SizedBox(height: 14),
+                Text('Rekening Tujuan',
+                    style: TextStyle(
+                        fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey.shade700)),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _bankCtrl,
+                  decoration: const InputDecoration(labelText: 'Nama Bank', isDense: true),
+                  textCapitalization: TextCapitalization.characters,
+                  validator: (v) =>
+                      (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null,
+                ),
+                const SizedBox(height: 10),
+                TextFormField(
+                  controller: _accountCtrl,
+                  decoration: const InputDecoration(labelText: 'Nomor Rekening', isDense: true),
+                  keyboardType: TextInputType.number,
+                  validator: (v) =>
+                      (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null,
+                ),
+                const SizedBox(height: 10),
+                TextFormField(
+                  controller: _holderCtrl,
+                  decoration: const InputDecoration(labelText: 'Nama Pemilik Rekening', isDense: true),
+                  textCapitalization: TextCapitalization.words,
+                  validator: (v) =>
+                      (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null,
+                ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _noteCtrl,
                   decoration: const InputDecoration(
                     labelText: 'Catatan (opsional)',
-                    hintText: 'mis. setor ke BCA a.n. Kaata Resto',
+                    isDense: true,
                   ),
                   maxLines: 2,
                 ),
@@ -606,8 +880,7 @@ class _ErrorState extends StatelessWidget {
             Icon(Icons.cloud_off, size: 40, color: Colors.grey.shade400),
             const SizedBox(height: 12),
             Text('Gagal memuat data.\n$message',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey.shade600)),
+                textAlign: TextAlign.center, style: TextStyle(color: Colors.grey.shade600)),
             const SizedBox(height: 16),
             OutlinedButton.icon(
               onPressed: onRetry,

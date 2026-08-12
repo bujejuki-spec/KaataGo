@@ -5,6 +5,8 @@ import '../providers/auth_provider.dart';
 import '../theme.dart';
 import '../utils/logout_confirm.dart';
 import '../widgets/hub_menu_tile.dart';
+import '../widgets/inbox_tile.dart';
+import '../widgets/responsive.dart';
 import '../widgets/resto_switcher.dart';
 import '../widgets/kaata_logo.dart';
 import 'cash_deposit_screen.dart';
@@ -52,13 +54,14 @@ class FinanceHomeScreen extends StatelessWidget {
             trailing: const RestoSwitcher(),
           ),
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(20),
-              children: [
-                const Text('Menu',
+            child: HubMenuLayout(
+              header: const [
+                Text('Menu',
                     style:
                         TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.grey)),
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
+              ],
+              tiles: [
                 HubMenuTile(
                   icon: Icons.trending_up,
                   title: 'Pemasukan',
@@ -68,7 +71,6 @@ class FinanceHomeScreen extends StatelessWidget {
                     MaterialPageRoute(builder: (_) => const FinanceIncomeScreen()),
                   ),
                 ),
-                const SizedBox(height: 12),
                 HubMenuTile(
                   icon: Icons.account_balance_wallet_outlined,
                   title: 'Saldo & Pengeluaran',
@@ -78,7 +80,6 @@ class FinanceHomeScreen extends StatelessWidget {
                     MaterialPageRoute(builder: (_) => const FinanceBalanceScreen()),
                   ),
                 ),
-                const SizedBox(height: 12),
                 HubMenuTile(
                   icon: Icons.account_balance_outlined,
                   title: 'Setor Saldo Cash',
@@ -88,7 +89,6 @@ class FinanceHomeScreen extends StatelessWidget {
                     MaterialPageRoute(builder: (_) => const CashDepositScreen()),
                   ),
                 ),
-                const SizedBox(height: 12),
                 HubMenuTile(
                   icon: Icons.numbers,
                   title: 'Mapping GL Account',
@@ -98,7 +98,6 @@ class FinanceHomeScreen extends StatelessWidget {
                     MaterialPageRoute(builder: (_) => const FinanceGlMappingScreen()),
                   ),
                 ),
-                const SizedBox(height: 12),
                 HubMenuTile(
                   icon: Icons.menu_book_outlined,
                   title: 'Jurnal GL',
@@ -108,7 +107,6 @@ class FinanceHomeScreen extends StatelessWidget {
                     MaterialPageRoute(builder: (_) => const FinanceJournalScreen()),
                   ),
                 ),
-                const SizedBox(height: 12),
                 HubMenuTile(
                   icon: Icons.receipt_long_outlined,
                   title: 'Laporan Transaksi',
@@ -118,7 +116,6 @@ class FinanceHomeScreen extends StatelessWidget {
                     MaterialPageRoute(builder: (_) => const FinanceReportScreen()),
                   ),
                 ),
-                const SizedBox(height: 12),
                 HubMenuTile(
                   icon: Icons.payments_outlined,
                   title: 'Pengaturan Pembayaran',
@@ -128,7 +125,7 @@ class FinanceHomeScreen extends StatelessWidget {
                     MaterialPageRoute(builder: (_) => const SettingsScreen()),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const InboxTile(),
                 HubMenuTile(
                   icon: Icons.logout,
                   title: 'Keluar',

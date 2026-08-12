@@ -20,10 +20,14 @@ import '../providers/customer_cart_provider.dart';
 import '../providers/table_session_provider.dart';
 import '../utils/customer_login_flow.dart';
 import '../utils/greeting.dart';
+import '../utils/resto_location.dart';
 import '../utils/logout_confirm.dart';
 import '../theme.dart';
 import '../widgets/cart_bottom_bar.dart';
 import '../widgets/hub_menu_tile.dart';
+import '../widgets/inbox_tile.dart';
+import '../widgets/update_banner.dart';
+import '../widgets/notification_test_tile.dart';
 import '../widgets/kaata_logo.dart';
 import '../widgets/loading_overlay.dart';
 import '../widgets/product_category_list.dart';
@@ -544,6 +548,10 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
+                  const InboxTile(),
+                  const SizedBox(height: 12),
+                  const NotificationTestTile(),
+                  const SizedBox(height: 12),
                   HubMenuTile(
                     icon: Icons.logout,
                     title: 'Keluar',
@@ -615,7 +623,16 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
             title: Text(loggedInAsCustomer ? 'Mau Pesan Di Mana?' : 'KaataGo (Customer)'),
             actions: loggedInAsCustomer ? null : _customerAppBarActions(context),
           ),
-          body: Padding(
+          body: Column(
+            children: [
+              // Tamu tidak punya kotak masuk, jadi inilah satu-satunya
+              // jalan pemberitahuan versi baru sampai ke mereka.
+              const Padding(
+                padding: EdgeInsets.only(top: 12),
+                child: UpdateBanner(),
+              ),
+              Expanded(
+                child: Padding(
             padding: const EdgeInsets.all(24),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -659,6 +676,9 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                 ],
               ],
             ),
+                ),
+              ),
+            ],
           ),
         ),
       );
@@ -723,6 +743,28 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                       if (resto.address.isNotEmpty)
                         Text(resto.address,
                             style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                      // Hanya muncul kalau restonya sudah menyimpan
+                      // titik lokasi — tombol peta yang membuka
+                      // koordinat kosong lebih buruk daripada tidak ada
+                      // tombol sama sekali.
+                      if (resto.hasLocation)
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: TextButton.icon(
+                            icon: const Icon(Icons.directions_outlined, size: 16),
+                            label: const Text('Buka di Google Maps'),
+                            style: TextButton.styleFrom(
+                              padding: EdgeInsets.zero,
+                              minimumSize: const Size(0, 28),
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            onPressed: () => openInMaps(
+                              resto.latitude!,
+                              resto.longitude!,
+                              label: resto.name,
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                 );

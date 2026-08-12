@@ -38,7 +38,7 @@ class EmployeeOrdersScreen extends StatelessWidget {
           if (orders.isEmpty) {
             return const Center(child: Text('Belum ada pesanan masuk.'));
           }
-          return GroupedOrderList(orders: orders);
+          return GroupedOrderList(orders: orders, expandItems: false);
         },
       ),
     );

@@ -31,6 +31,11 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
   String? _existingPhotoBase64;
   File? _pickedPhoto;
 
+  /// Dibedakan dari "belum pernah punya foto": tanpa penanda ini,
+  /// menghapus foto lalu menyimpan akan terbaca sebagai "tidak ada
+  /// perubahan" dan foto lamanya bertahan.
+  bool _photoRemoved = false;
+
   @override
   void initState() {
     super.initState();
@@ -66,14 +71,17 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
       imageQuality: 70,
     );
     if (picked == null) return;
-    setState(() => _pickedPhoto = File(picked.path));
+    setState(() {
+      _pickedPhoto = File(picked.path);
+      _photoRemoved = false;
+    });
   }
 
   Future<void> _save() async {
     if (!_canSave) return;
     setState(() => _saving = true);
 
-    String? photoBase64 = _existingPhotoBase64;
+    String? photoBase64 = _photoRemoved ? null : _existingPhotoBase64;
     if (_pickedPhoto != null) {
       final bytes = await _pickedPhoto!.readAsBytes();
       photoBase64 = base64Encode(bytes);
@@ -102,7 +110,7 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
     ImageProvider? avatarImage;
     if (_pickedPhoto != null) {
       avatarImage = FileImage(_pickedPhoto!);
-    } else if (_existingPhotoBase64 != null) {
+    } else if (_existingPhotoBase64 != null && !_photoRemoved) {
       avatarImage = MemoryImage(base64Decode(_existingPhotoBase64!));
     }
 
@@ -138,6 +146,25 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
                         child: const Icon(Icons.camera_alt, size: 16, color: Colors.white),
                       ),
                     ),
+                    if (avatarImage != null)
+                      Positioned(
+                        top: 0,
+                        right: 0,
+                        child: GestureDetector(
+                          onTap: () => setState(() {
+                            _pickedPhoto = null;
+                            _photoRemoved = true;
+                          }),
+                          child: Container(
+                            padding: const EdgeInsets.all(5),
+                            decoration: const BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.close, size: 14, color: Colors.white),
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),

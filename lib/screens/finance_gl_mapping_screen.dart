@@ -43,6 +43,19 @@ const _pettyCashIcons = {
 // row for every movement.
 const _totalBalanceMethod = 'total_balance';
 
+// Penampungan sementara setoran tunai yang belum disetujui Finance.
+// Uangnya sudah keluar dari laci kasir tapi belum diakui masuk kas resto,
+// dan tanpa akun sendiri ia akan menghilang dari pembukuan selama masa
+// tunggu itu.
+const _suspenseMethod = 'suspense';
+
+// Suspense untuk pengajuan top up petty cash. Sengaja terpisah dari
+// suspense setoran bank: keduanya menunggu persetujuan orang yang
+// berbeda dan menuju akun yang berbeda, jadi menyatukannya membuat
+// Finance harus memilah sendiri isi satu akun untuk tahu berapa yang
+// tertahan di masing-masing alur.
+const _suspensePettyMethod = 'suspense_petty';
+
 // PPN and service charge collected are money owed onward, not revenue,
 // so they're journaled to their own accounts instead of being folded
 // into the payment-method income mapping.
@@ -60,6 +73,8 @@ const _allMethods = [
   ..._pettyCashMethods,
   ..._taxMethods,
   _totalBalanceMethod,
+  _suspenseMethod,
+  _suspensePettyMethod,
 ];
 
 /// Drops a trailing ".0" so a rate of 11 shows as "11", not "11.00".
@@ -480,6 +495,33 @@ class _FinanceGlMappingScreenState extends State<FinanceGlMappingScreen> {
                             color: _totalColor,
                             codeCtrl: _codeCtrls[_totalBalanceMethod]!,
                             nameCtrl: _nameCtrls[_totalBalanceMethod]!,
+                            editing: _editing,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      _GlSectionCard(
+                        icon: Icons.pending_actions,
+                        color: const Color(0xFFF59E0B),
+                        title: 'GL Suspense',
+                        subtitle: 'Titipan yang belum disetujui Finance',
+                        children: [
+                          _GlAccountRow(
+                            icon: Icons.account_balance_outlined,
+                            label: 'GL Suspense Setoran',
+                            hint: 'Setoran tunai ke bank, menunggu approval',
+                            color: const Color(0xFFF59E0B),
+                            codeCtrl: _codeCtrls[_suspenseMethod]!,
+                            nameCtrl: _nameCtrls[_suspenseMethod]!,
+                            editing: _editing,
+                          ),
+                          _GlAccountRow(
+                            icon: Icons.savings_outlined,
+                            label: 'GL Suspense Petty Cash',
+                            hint: 'Pengajuan top up kasir, menunggu approval',
+                            color: const Color(0xFFF59E0B),
+                            codeCtrl: _codeCtrls[_suspensePettyMethod]!,
+                            nameCtrl: _nameCtrls[_suspensePettyMethod]!,
                             editing: _editing,
                           ),
                         ],

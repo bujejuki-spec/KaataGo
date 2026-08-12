@@ -44,9 +44,15 @@ class NotificationService {
   Future<void> init() async {
     if (_ready) return;
 
+    // 'ic_notification', bukan '@mipmap/ic_launcher'. Plugin mencari
+    // ikonnya dengan getIdentifier(name, "drawable", package) — hanya di
+    // folder drawable, dan tanpa memahami awalan '@mipmap/'. Nama yang
+    // tidak ketemu menghasilkan id 0, Android menolak notifikasi tanpa
+    // ikon kecil yang sah, dan kegagalannya tidak terlihat di mana pun
+    // kecuali log. Itulah sebabnya notifikasi sebelumnya diam total.
     await _plugin.initialize(
       const InitializationSettings(
-        android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+        android: AndroidInitializationSettings('ic_notification'),
         iOS: DarwinInitializationSettings(),
       ),
     );
@@ -119,6 +125,7 @@ class NotificationService {
             channelDescription: channel.description,
             importance: Importance.high,
             priority: Priority.high,
+            icon: 'ic_notification',
             sound: _sound,
             // Isi pesan bisa lebih panjang dari satu baris — tanpa ini
             // Android memotongnya diam-diam.
@@ -128,10 +135,43 @@ class NotificationService {
           iOS: const DarwinNotificationDetails(sound: 'kaata_notif.wav'),
         ),
       );
+      lastError = null;
     } catch (e) {
       // Notifikasi tidak pernah cukup penting untuk menjatuhkan alur yang
-      // sedang berjalan — pesanannya sendiri sudah tersimpan.
+      // sedang berjalan — pesanannya sendiri sudah tersimpan. Tapi
+      // penyebabnya disimpan, supaya layar Tes Notifikasi bisa
+      // menyebutkannya alih-alih membiarkan orang menebak.
+      lastError = '$e';
       debugPrint('[Notif] gagal menampilkan: $e');
     }
+  }
+
+  /// Alasan kegagalan terakhir, atau null kalau yang terakhir berhasil.
+  String? lastError;
+
+  /// Mengirim satu notifikasi contoh dan melaporkan hasilnya.
+  ///
+  /// Notifikasi gagal secara diam-diam karena banyak sebab di luar
+  /// aplikasi — izin ditolak, channel dibisukan pemakainya, mode fokus.
+  /// Tanpa cara mengujinya, "notifikasi tidak jalan" tidak bisa
+  /// dibedakan dari "belum ada pesanan baru".
+  Future<String> sendTest() async {
+    await init();
+    final granted = await requestPermission();
+    if (!granted) {
+      return 'Izin notifikasi belum diberikan. Aktifkan lewat Setelan HP > '
+          'Aplikasi > KaataGo > Notifikasi.';
+    }
+
+    lastError = null;
+    await showNewOrder(
+      id: 999999,
+      title: 'Tes Notifikasi KaataGo',
+      body: 'Kalau kamu melihat dan mendengar ini, notifikasi sudah aktif.',
+    );
+
+    if (lastError != null) return 'Gagal menampilkan notifikasi: $lastError';
+    return 'Notifikasi terkirim. Cek layar HP kamu — kalau tidak muncul, '
+        'periksa Setelan HP > Aplikasi > KaataGo > Notifikasi.';
   }
 }

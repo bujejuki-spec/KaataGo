@@ -5,6 +5,7 @@ import '../db/restaurant_repository.dart';
 import '../models/restaurant.dart';
 import '../widgets/resto_logo_avatar.dart';
 import '../providers/table_session_provider.dart';
+import '../utils/resto_location.dart';
 
 /// Lets a customer browse the menu of any registered restaurant without
 /// scanning a table QR code first — shown as an alternative to "Scan QR
@@ -68,7 +69,25 @@ class _RestaurantListScreenState extends State<RestaurantListScreen> {
                         subtitle: Text(
                           resto.address.isEmpty ? 'Alamat belum diisi' : resto.address,
                         ),
-                        trailing: const Icon(Icons.chevron_right),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Ikut ditawarkan di sini, bukan hanya setelah
+                            // masuk: memilih resto sering justru soal
+                            // "yang mana yang paling dekat".
+                            if (resto.hasLocation)
+                              IconButton(
+                                icon: const Icon(Icons.directions_outlined),
+                                tooltip: 'Buka di Google Maps',
+                                onPressed: () => openInMaps(
+                                  resto.latitude!,
+                                  resto.longitude!,
+                                  label: resto.name,
+                                ),
+                              ),
+                            const Icon(Icons.chevron_right),
+                          ],
+                        ),
                         onTap: () => _select(resto),
                       ),
                     );

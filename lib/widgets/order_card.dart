@@ -19,14 +19,34 @@ String _paymentMethodLabel(String raw) => _paymentMethodDisplayLabels[raw] ?? ra
 ///
 /// [actions], if provided, renders below the total — the Chef view uses
 /// this slot for its "Mulai Masak" / "Selesai" buttons.
-class OrderCard extends StatelessWidget {
+class OrderCard extends StatefulWidget {
   final CustomerOrder order;
   final Widget? actions;
 
-  const OrderCard({super.key, required this.order, this.actions});
+  /// Terbuka saat pertama digambar. Layar dapur membiarkannya terbuka —
+  /// isinya justru yang harus dibaca; layar Pesanan Masuk memulainya
+  /// tertutup karena di sana orang mencari satu pesanan di antara
+  /// puluhan.
+  final bool initiallyExpanded;
+
+  const OrderCard({
+    super.key,
+    required this.order,
+    this.actions,
+    this.initiallyExpanded = true,
+  });
+
+  @override
+  State<OrderCard> createState() => _OrderCardState();
+}
+
+class _OrderCardState extends State<OrderCard> {
+  late bool _expanded = widget.initiallyExpanded;
 
   @override
   Widget build(BuildContext context) {
+    final order = widget.order;
+    final actions = widget.actions;
     final currency = NumberFormat.currency(
       locale: 'id_ID',
       symbol: 'Rp ',
@@ -35,8 +55,24 @@ class OrderCard extends StatelessWidget {
     final dateFmt = DateFormat('dd MMM, HH:mm', 'id_ID');
     final paid = order.paymentStatus == OrderPaymentStatus.paid;
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 10),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        // Garis tepi, bukan sekadar bayangan: dengan banyak pesanan
+        // beruntun, bayangan tipis membuat batas antar kartu nyaris tak
+        // terlihat dan dua pesanan mudah terbaca sebagai satu.
+        border: Border.all(color: Colors.grey.shade300),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(
@@ -169,6 +205,34 @@ class OrderCard extends StatelessWidget {
               ],
             ),
             const Divider(height: 16),
+            InkWell(
+              onTap: () => setState(() => _expanded = !_expanded),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: Row(
+                  children: [
+                    Icon(_expanded ? Icons.expand_less : Icons.expand_more,
+                        size: 18, color: Colors.grey.shade600),
+                    const SizedBox(width: 6),
+                    Text(
+                      '${order.items.fold<int>(0, (sum, i) => sum + i.quantity)} item',
+                      style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey.shade700),
+                    ),
+                    const Spacer(),
+                    if (!_expanded)
+                      Text(
+                        'Lihat rincian',
+                        style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            if (_expanded) ...[
+            const SizedBox(height: 6),
             ...order.items.map(
               (item) => Padding(
                 padding: const EdgeInsets.symmetric(vertical: 2),
@@ -194,6 +258,7 @@ class OrderCard extends StatelessWidget {
                 ),
               ),
             ),
+            ],
             const Divider(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -205,7 +270,7 @@ class OrderCard extends StatelessWidget {
             ),
             if (actions != null) ...[
               const SizedBox(height: 12),
-              actions!,
+              actions,
             ],
           ],
         ),

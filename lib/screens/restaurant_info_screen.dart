@@ -7,6 +7,8 @@ import 'package:provider/provider.dart';
 import '../db/restaurant_repository.dart';
 import '../models/restaurant.dart';
 import '../providers/auth_provider.dart';
+import '../utils/resto_location.dart';
+import '../widgets/dialog_actions.dart';
 import '../widgets/edit_action_bar.dart';
 import '../widgets/logo_picker.dart';
 
@@ -36,13 +38,17 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
   bool _editing = false;
   /// Rates are Finance's to set (Mapping GL Account), not the Admin's —
   /// carried through unchanged so saving info here can't reset them.
+  double? _latitude;
+  double? _longitude;
+  bool _locating = false;
+
   double _ppnPercent = 0;
   double _servicePercent = 0;
 
   bool _saving = false;
 
   /// Captured when Edit is tapped so Batal can restore it verbatim.
-  Map<String, String?> _snapshot = const {};
+  Map<String, Object?> _snapshot = const {};
   String? _selectedCategory;
 
   /// The logo is a single shared column — an Admin can replace or remove
@@ -71,6 +77,8 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
     if (resto != null) {
       _nameCtrl.text = resto.name;
       _addressCtrl.text = resto.address;
+      _latitude = resto.latitude;
+      _longitude = resto.longitude;
       _ppnPercent = resto.ppnPercent;
       _servicePercent = resto.servicePercent;
       _phoneCtrl.text = resto.phone ?? '';
@@ -92,6 +100,8 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
   void _startEdit() {
     _snapshot = {
       'address': _addressCtrl.text,
+      'lat': _latitude,
+      'lng': _longitude,
       'phone': _phoneCtrl.text,
       'category': _selectedCategory,
     };
@@ -102,14 +112,109 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
   }
 
   void _cancelEdit() {
-    _addressCtrl.text = _snapshot['address'] ?? '';
-    _phoneCtrl.text = _snapshot['phone'] ?? '';
-    _selectedCategory = _snapshot['category'];
+    _addressCtrl.text = _snapshot['address'] as String? ?? '';
+    _latitude = _snapshot['lat'] as double?;
+    _longitude = _snapshot['lng'] as double?;
+    _phoneCtrl.text = _snapshot['phone'] as String? ?? '';
+    _selectedCategory = _snapshot['category'] as String?;
     _pickedLogo = _snapshotPickedLogo;
     _existingLogo = _snapshotExistingLogo;
     _logoRemoved = _snapshotLogoRemoved;
     _formKey.currentState?.reset();
     setState(() => _editing = false);
+  }
+
+  /// Mengambil titik dari GPS lalu mengisi alamatnya sekalian.
+  ///
+  /// Alamatnya hanya diisikan kalau kolomnya masih kosong: alamat hasil
+  /// pembacaan peta berhenti di tingkat jalan, sedangkan yang sudah
+  /// diketik biasanya memuat "ruko blok C nomor 4" — justru bagian yang
+  /// dicari orang yang mau datang, dan tidak boleh tertimpa.
+  Future<void> _useCurrentLocation() async {
+    setState(() => _locating = true);
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final position = await currentPosition();
+      final address = await addressOf(position.latitude, position.longitude);
+      if (!mounted) return;
+      setState(() {
+        _latitude = position.latitude;
+        _longitude = position.longitude;
+        if (address != null && _addressCtrl.text.trim().isEmpty) {
+          _addressCtrl.text = address;
+        }
+        _locating = false;
+      });
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(address == null
+              ? 'Lokasi tersimpan. Alamatnya silakan diisi manual.'
+              : 'Lokasi & alamat terisi. Silakan lengkapi detailnya.'),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _locating = false);
+      messenger.showSnackBar(SnackBar(content: Text('$e')));
+    }
+  }
+
+  /// Menerima koordinat atau tautan Google Maps yang ditempel.
+  ///
+  /// Berguna saat yang mengisi tidak sedang berada di restonya — mereka
+  /// tinggal meminta pemiliknya "share lokasi" lalu menempelkannya.
+  Future<void> _pasteCoordinates() async {
+    final ctrl = TextEditingController();
+    final result = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Tempel Koordinat'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Tempel koordinat (mis. -6.2088, 106.8456) atau tautan Google Maps '
+              'yang dibagikan.',
+              style: TextStyle(fontSize: 12.5),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: ctrl,
+              autofocus: true,
+              decoration: const InputDecoration(isDense: true, hintText: 'lat, lng'),
+              maxLines: 2,
+            ),
+          ],
+        ),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          DialogActions(
+            confirmLabel: 'Pakai Titik Ini',
+            onConfirm: () => Navigator.pop(dialogContext, ctrl.text),
+          ),
+        ],
+      ),
+    );
+    if (result == null) return;
+
+    final point = parseCoordinates(result);
+    if (!mounted) return;
+    if (point == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Koordinat tidak terbaca. Contoh: -6.2088, 106.8456')),
+      );
+      return;
+    }
+
+    setState(() {
+      _latitude = point.latitude;
+      _longitude = point.longitude;
+    });
+
+    final address = await addressOf(point.latitude, point.longitude);
+    if (!mounted || address == null || _addressCtrl.text.trim().isNotEmpty) return;
+    setState(() => _addressCtrl.text = address);
   }
 
   Future<void> _save() async {
@@ -129,6 +234,8 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
         name: _nameCtrl.text.trim(),
         address: _addressCtrl.text.trim(),
         phone: _phoneCtrl.text.trim().isEmpty ? null : _phoneCtrl.text.trim(),
+        latitude: _latitude,
+        longitude: _longitude,
         ppnPercent: _ppnPercent,
         servicePercent: _servicePercent,
         category: _selectedCategory,
@@ -229,6 +336,19 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
                         fillColor: _editing ? null : const Color(0xFFEEEEEE),
                       ),
                     ),
+                    const SizedBox(height: 16),
+                    _LocationField(
+                      latitude: _latitude,
+                      longitude: _longitude,
+                      enabled: _editing,
+                      busy: _locating,
+                      onUseCurrent: _useCurrentLocation,
+                      onPaste: _pasteCoordinates,
+                      onClear: () => setState(() {
+                        _latitude = null;
+                        _longitude = null;
+                      }),
+                    ),
                     const SizedBox(height: 20),
                     LogoPicker(
                       existingBase64: _existingLogo,
@@ -251,6 +371,114 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
                 ),
               ),
             ),
+    );
+  }
+}
+
+/// Titik lokasi resto pada layar Info Resto.
+class _LocationField extends StatelessWidget {
+  final double? latitude;
+  final double? longitude;
+  final bool enabled;
+  final bool busy;
+  final VoidCallback onUseCurrent;
+  final VoidCallback onPaste;
+  final VoidCallback onClear;
+
+  const _LocationField({
+    required this.latitude,
+    required this.longitude,
+    required this.enabled,
+    required this.busy,
+    required this.onUseCurrent,
+    required this.onPaste,
+    required this.onClear,
+  });
+
+  bool get _hasPoint => latitude != null && longitude != null;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      decoration: BoxDecoration(
+        color: enabled ? Colors.white : const Color(0xFFEEEEEE),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.place_outlined, size: 17, color: Colors.grey.shade700),
+              const SizedBox(width: 7),
+              const Text('Lokasi Resto',
+                  style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
+              const Spacer(),
+              if (_hasPoint)
+                TextButton.icon(
+                  icon: const Icon(Icons.map_outlined, size: 16),
+                  label: const Text('Lihat'),
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    minimumSize: const Size(0, 30),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  onPressed: () => openInMaps(latitude!, longitude!),
+                ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            _hasPoint
+                ? '${latitude!.toStringAsFixed(6)}, ${longitude!.toStringAsFixed(6)}'
+                : 'Belum diatur — customer belum bisa membuka lokasi resto di peta.',
+            style: TextStyle(
+              fontSize: 12.5,
+              fontWeight: _hasPoint ? FontWeight.w600 : FontWeight.normal,
+              color: _hasPoint ? Colors.black87 : Colors.grey.shade600,
+            ),
+          ),
+          if (enabled) ...[
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    icon: busy
+                        ? const SizedBox(
+                            width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+                        : const Icon(Icons.my_location, size: 16),
+                    label: const Text('Lokasi Saya'),
+                    style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(40)),
+                    onPressed: busy ? null : onUseCurrent,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.content_paste, size: 16),
+                    label: const Text('Tempel'),
+                    style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(40)),
+                    onPressed: busy ? null : onPaste,
+                  ),
+                ),
+                if (_hasPoint) ...[
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: const Icon(Icons.close, size: 18),
+                    color: Colors.red.shade400,
+                    tooltip: 'Hapus lokasi',
+                    onPressed: onClear,
+                  ),
+                ],
+              ],
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
