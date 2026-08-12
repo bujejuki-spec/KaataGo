@@ -270,7 +270,7 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         icon: Icon(approving ? Icons.verified_outlined : Icons.block,
             size: 38, color: approving ? const Color(0xFF10B981) : Colors.red),
-        title: Text(approving ? 'Konfirmasi top up?' : 'Tolak top up?'),
+        title: Text(approving ? 'Setujui top up?' : 'Tolak top up?'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -301,7 +301,7 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
             ],
             Text(
               approving
-                  ? 'Setelah dikonfirmasi, ${currency.format(e.amount)} dipindah dari '
+                  ? 'Setelah disetujui, ${currency.format(e.amount)} dipindah dari '
                       'GL Suspense Petty Cash ke GL Petty Cash dan statusnya menjadi '
                       'Completed.'
                   : '${currency.format(e.amount)} akan dikembalikan ke sumbernya '
@@ -323,7 +323,7 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
         actionsAlignment: MainAxisAlignment.center,
         actions: [
           DialogActions(
-            confirmLabel: approving ? 'Ya, Konfirmasi' : 'Tolak',
+            confirmLabel: approving ? 'Setuju' : 'Tolak',
             destructive: !approving,
             onConfirm: () => Navigator.pop(dialogContext, true),
           ),
@@ -610,10 +610,8 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
                                                 children: [
                                                   Expanded(
                                                     child: FilledButton.icon(
-                                                      icon: const Icon(
-                                                          Icons.verified_outlined,
-                                                          size: 16),
-                                                      label: const Text('Konfirmasi'),
+                                                      icon: const Icon(Icons.check, size: 16),
+                                                      label: const Text('Setuju'),
                                                       style: FilledButton.styleFrom(
                                                         backgroundColor: const Color(0xFF10B981),
                                                         minimumSize: const Size.fromHeight(36),
@@ -671,7 +669,7 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
                             margin: const EdgeInsets.only(bottom: 8),
                             clipBehavior: Clip.antiAlias,
                             child: ExpansionTile(
-                              initiallyExpanded: true,
+                              initiallyExpanded: false,
                               title: Text(DateFormat('EEEE, dd MMM yyyy', 'id_ID').format(group.day),
                                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                               subtitle: Text('- ${currency.format(group.total)}',

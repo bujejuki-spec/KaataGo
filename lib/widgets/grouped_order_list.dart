@@ -17,16 +17,24 @@ class GroupedOrderList extends StatelessWidget {
   final List<CustomerOrder> orders;
   final Widget? Function(CustomerOrder order)? actionsFor;
 
-  /// Layar dapur membiarkan rincian terbuka — isinya justru yang harus
-  /// dimasak. Layar Pesanan Masuk memulainya tertutup, karena di sana
-  /// orang menelusuri puluhan pesanan untuk mencari satu.
+  /// Layar dapur membiarkan rincian terbuka pada antrean yang sedang
+  /// dikerjakan — isinya justru yang harus dimasak. Di tempat lain
+  /// dimulai tertutup, karena orang sedang menelusuri banyak pesanan
+  /// untuk mencari satu.
   final bool expandItems;
+
+  /// Membungkus tiap tanggal jadi kelompok yang bisa dilipat. Dipakai
+  /// pada daftar yang isinya menumpuk tanpa batas — pesanan selesai
+  /// kemarin, minggu lalu, bulan lalu — di mana yang dicari hampir
+  /// selalu satu hari tertentu, bukan semuanya sekaligus.
+  final bool collapsibleDays;
 
   const GroupedOrderList({
     super.key,
     required this.orders,
     this.actionsFor,
     this.expandItems = true,
+    this.collapsibleDays = false,
   });
 
   @override
@@ -51,18 +59,7 @@ class GroupedOrderList extends StatelessWidget {
         final dineIn = dayOrders.where((o) => o.orderType == OrderType.dineIn).toList();
         final takeAway = dayOrders.where((o) => o.orderType == OrderType.takeAway).toList();
 
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8, top: 4),
-                child: Text(
-                  dateFmt.format(day),
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                ),
-              ),
+        final sections = <Widget>[
               if (dineIn.isNotEmpty) ...[
                 _TypeHeader(icon: Icons.restaurant_outlined, label: 'Dine In', count: dineIn.length),
                 ...dineIn.map((o) => OrderCard(
@@ -80,6 +77,51 @@ class GroupedOrderList extends StatelessWidget {
                       initiallyExpanded: expandItems,
                     )),
               ],
+        ];
+
+        if (collapsibleDays) {
+          return Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.grey.shade300),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Theme(
+              // Menghilangkan garis pemisah bawaan ExpansionTile, yang
+              // bertabrakan dengan garis tepi kartunya sendiri.
+              data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+              child: ExpansionTile(
+                initiallyExpanded: false,
+                title: Text(
+                  dateFmt.format(day),
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5),
+                ),
+                subtitle: Text(
+                  '${dayOrders.length} pesanan',
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                ),
+                childrenPadding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+                children: sections,
+              ),
+            ),
+          );
+        }
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8, top: 4),
+                child: Text(
+                  dateFmt.format(day),
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                ),
+              ),
+              ...sections,
             ],
           ),
         );

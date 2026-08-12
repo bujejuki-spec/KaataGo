@@ -372,7 +372,7 @@ class _FinanceJournalScreenState extends State<FinanceJournalScreen> {
                             margin: const EdgeInsets.only(bottom: 10),
                             clipBehavior: Clip.antiAlias,
                             child: ExpansionTile(
-                              initiallyExpanded: true,
+                              initiallyExpanded: false,
                               title: Text(
                                   DateFormat('EEEE, dd MMM yyyy', 'id_ID').format(group.day),
                                   style:

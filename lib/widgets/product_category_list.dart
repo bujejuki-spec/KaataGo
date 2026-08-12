@@ -51,7 +51,7 @@ class ProductCategoryList extends StatelessWidget {
               // above/below.
               data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
               child: ExpansionTile(
-                initiallyExpanded: true,
+                initiallyExpanded: false,
                 tilePadding: const EdgeInsets.symmetric(horizontal: 16),
                 title: Row(
                   children: [

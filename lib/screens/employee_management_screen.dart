@@ -122,7 +122,7 @@ class _EmployeeManagementScreenState extends State<EmployeeManagementScreen> {
                         margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         clipBehavior: Clip.antiAlias,
                         child: ExpansionTile(
-                          initiallyExpanded: true,
+                          initiallyExpanded: false,
                           leading: const Icon(Icons.storefront_outlined),
                           title: Text(group.key,
                               style: const TextStyle(fontWeight: FontWeight.bold)),

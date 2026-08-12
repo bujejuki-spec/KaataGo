@@ -143,7 +143,7 @@ class _FinanceIncomeScreenState extends State<FinanceIncomeScreen> {
                           return Card(
                             margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             child: ExpansionTile(
-                              initiallyExpanded: i == 0,
+                              initiallyExpanded: false,
                               title: Text(dayFmt.format(g.day),
                                   style: const TextStyle(fontWeight: FontWeight.bold)),
                               subtitle: Padding(

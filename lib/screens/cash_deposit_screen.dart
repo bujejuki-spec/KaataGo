@@ -218,7 +218,7 @@ class _CashDepositScreenState extends State<CashDepositScreen> {
         actionsAlignment: MainAxisAlignment.center,
         actions: [
           DialogActions(
-            confirmLabel: approving ? 'Ya, Konfirmasi' : 'Tolak',
+            confirmLabel: approving ? 'Konfirmasi' : 'Tolak',
             destructive: !approving,
             onConfirm: () => Navigator.pop(dialogContext, true),
           ),
@@ -557,8 +557,8 @@ class _DepositTile extends StatelessWidget {
                       if (onApprove != null)
                         Expanded(
                           child: FilledButton.icon(
-                            icon: const Icon(Icons.check, size: 17),
-                            label: const Text('Setujui'),
+                            icon: const Icon(Icons.verified_outlined, size: 17),
+                            label: const Text('Konfirmasi'),
                             style: FilledButton.styleFrom(
                               backgroundColor: const Color(0xFF10B981),
                               minimumSize: const Size.fromHeight(40),

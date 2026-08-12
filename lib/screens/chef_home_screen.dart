@@ -97,7 +97,17 @@ class _ChefHomeScreenState extends State<ChefHomeScreen> {
                 if (orders.isEmpty) {
                   return Center(child: Text('Tidak ada pesanan "${tab.$2}".'));
                 }
-                return GroupedOrderList(orders: orders, actionsFor: _buildActions);
+                // Tab Selesai menumpuk tanpa batas — pesanan kemarin,
+                // minggu lalu, bulan lalu — dan yang dicari hampir selalu
+                // satu hari tertentu. Dua tab lainnya adalah antrean
+                // kerja yang harus terbaca sekaligus.
+                final done = tab.$1 == KitchenStatus.done;
+                return GroupedOrderList(
+                  orders: orders,
+                  actionsFor: _buildActions,
+                  collapsibleDays: done,
+                  expandItems: !done,
+                );
               }).toList(),
             );
           },

@@ -112,7 +112,7 @@ class TransactionHistoryScreen extends StatelessWidget {
                 margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 clipBehavior: Clip.antiAlias,
                 child: ExpansionTile(
-                  initiallyExpanded: i == 0,
+                  initiallyExpanded: false,
                   title: Text(
                     dayFmt.format(group.day),
                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
