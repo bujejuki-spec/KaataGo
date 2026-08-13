@@ -23,6 +23,50 @@ class OrderRepository {
     await _client.rpc('mark_order_paid', params: {'p_order_id': orderId});
   }
 
+  /// Pesanan mandiri yang pelanggannya memilih bayar tunai di kasir dan
+  /// belum dilunasi — isi layar Pending Payment.
+  ///
+  /// Sengaja dibatasi ke `source = customer`: pesanan yang diinput kasir
+  /// sudah dibayar di tempat begitu dicatat, jadi kalau ada yang masih
+  /// pending di sana itu bukan antrean pembayaran melainkan data
+  /// setengah jadi yang tidak boleh ikut ditagihkan di sini.
+  Stream<List<CustomerOrder>> watchPendingCashPayments(String restoId) {
+    return _client
+        .from('orders')
+        .stream(primaryKey: ['id'])
+        .eq('resto_id', restoId)
+        .order('created_at', ascending: false)
+        .map((rows) => rows
+            .map((r) => CustomerOrder.fromMap(r))
+            .where((o) => o.isPendingCashPayment)
+            .toList());
+  }
+
+  /// Berapa pesanan yang menunggu dibayar di kasir — isi penanda merah
+  /// di kartu menunya.
+  Future<int> pendingCashPaymentCount(String restoId) async {
+    return await _client
+        .from('orders')
+        .count(CountOption.exact)
+        .eq('resto_id', restoId)
+        .eq('source', 'customer')
+        .eq('payment_status', 'pending')
+        .eq('payment_method', 'cash');
+  }
+
+  /// Melunasi pesanan tunai di meja kasir.
+  ///
+  /// Uang yang diterima ikut disimpan supaya struk yang dicetak ulang
+  /// nanti tetap bisa menyebut kembaliannya. Kembaliannya sendiri tidak
+  /// disimpan — selalu bisa dihitung ulang, dan dua angka yang saling
+  /// terikat hanya membuka peluang keduanya tidak lagi cocok.
+  Future<void> settleCashPayment(String orderId, {required int cashReceived}) async {
+    await _client.from('orders').update({
+      'payment_status': OrderPaymentStatus.paid.name,
+      'cash_received': cashReceived,
+    }).eq('id', orderId);
+  }
+
   Future<void> updateKitchenStatus(String orderId, KitchenStatus status) async {
     await _client.from('orders').update({'kitchen_status': status.name}).eq('id', orderId);
   }

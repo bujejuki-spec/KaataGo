@@ -97,6 +97,10 @@ class CustomerOrder {
   final int? serviceAmount;
   final int? ppnAmount;
 
+  /// Uang yang diserahkan pelanggan saat melunasi di meja kasir. Null
+  /// selama pesanannya belum dibayar tunai di sana.
+  final int? cashReceived;
+
   CustomerOrder({
     required this.id,
     required this.createdAt,
@@ -118,6 +122,7 @@ class CustomerOrder {
     this.baseAmount,
     this.serviceAmount,
     this.ppnAmount,
+    this.cashReceived,
   }) : itemsDone = itemsDone ?? const {};
 
   /// Maps to Postgres `orders` table columns (snake_case). `id` and
@@ -139,7 +144,21 @@ class CustomerOrder {
         if (baseAmount != null) 'base_amount': baseAmount,
         if (serviceAmount != null) 'service_amount': serviceAmount,
         if (ppnAmount != null) 'ppn_amount': ppnAmount,
+        if (cashReceived != null) 'cash_received': cashReceived,
       };
+
+  /// Pesanan yang dipesan sendiri dari HP, dipilih bayar tunai, dan
+  /// belum dilunasi di kasir — inilah yang mengisi layar Pending Payment
+  /// dan menyalakan penanda merahnya.
+  bool get isPendingCashPayment =>
+      source == OrderSource.customer &&
+      paymentStatus == OrderPaymentStatus.pending &&
+      paymentMethod == 'cash';
+
+  /// Kembalian yang harus diserahkan, atau null kalau uangnya belum
+  /// diterima. Dihitung, tidak disimpan — supaya tidak pernah ada
+  /// kembalian tersimpan yang tidak lagi cocok dengan totalnya.
+  int? get changeDue => cashReceived == null ? null : cashReceived! - total;
 
   factory CustomerOrder.fromMap(Map<String, dynamic> data) {
     return CustomerOrder(
@@ -177,6 +196,7 @@ class CustomerOrder {
       baseAmount: (data['base_amount'] as num?)?.toInt(),
       serviceAmount: (data['service_amount'] as num?)?.toInt(),
       ppnAmount: (data['ppn_amount'] as num?)?.toInt(),
+      cashReceived: (data['cash_received'] as num?)?.toInt(),
     );
   }
 }

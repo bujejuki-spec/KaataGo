@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../db/cash_deposit_repository.dart';
+import '../db/petty_cash_repository.dart';
 import '../providers/auth_provider.dart';
 import '../theme.dart';
 import '../utils/logout_confirm.dart';
+import '../widgets/badged_hub_tile.dart';
 import '../widgets/hub_menu_tile.dart';
 import '../widgets/inbox_tile.dart';
 import '../widgets/responsive.dart';
@@ -37,6 +40,7 @@ class FinanceHomeScreen extends StatelessWidget {
     final auth = context.watch<AuthProvider>();
     final name = auth.employeeName?.isNotEmpty == true ? auth.employeeName! : 'Finance';
     final email = auth.user?.email;
+    final restoId = auth.restoId;
 
     return Scaffold(
       backgroundColor: KaataTheme.backgroundTint,
@@ -71,23 +75,24 @@ class FinanceHomeScreen extends StatelessWidget {
                     MaterialPageRoute(builder: (_) => const FinanceIncomeScreen()),
                   ),
                 ),
-                HubMenuTile(
+                // Penandanya menghitung pengajuan yang menunggu, bukan
+                // sekadar "ada yang baru": yang membuat Finance harus
+                // ke sini adalah keputusan yang belum dia ambil.
+                BadgedHubTile(
                   icon: Icons.account_balance_wallet_outlined,
                   title: 'Saldo & Pengeluaran',
                   subtitle: 'Lihat saldo total, catat pengeluaran',
                   color: const Color(0xFF6366F1),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const FinanceBalanceScreen()),
-                  ),
+                  loadCount: () => restoId == null ? Future.value(0) : PettyCashRepository().pendingCount(restoId),
+                  destination: () => const FinanceBalanceScreen(),
                 ),
-                HubMenuTile(
+                BadgedHubTile(
                   icon: Icons.account_balance_outlined,
                   title: 'Setor Saldo Cash',
                   subtitle: 'Riwayat setoran tunai berikut buktinya',
                   color: const Color(0xFF0EA5E9),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const CashDepositScreen()),
-                  ),
+                  loadCount: () => restoId == null ? Future.value(0) : CashDepositRepository().pendingCount(restoId),
+                  destination: () => const CashDepositScreen(),
                 ),
                 HubMenuTile(
                   icon: Icons.numbers,

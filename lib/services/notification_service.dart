@@ -37,6 +37,11 @@ class NotificationService {
       name: 'Pesanan Baru',
       description: 'Pemberitahuan untuk dapur saat ada pesanan masuk',
     ),
+    (
+      id: 'kaata_fund_review',
+      name: 'Hasil Pengajuan',
+      description: 'Setoran tunai & top up petty cash yang sudah diputus Finance',
+    ),
   ];
 
   static const _sound = RawResourceAndroidNotificationSound('kaata_notif');
@@ -132,6 +137,18 @@ class NotificationService {
     required String body,
   }) =>
       _show(channel: _channels[1], id: id, title: title, body: body);
+
+  /// Kabar bahwa setoran atau top up yang diajukan sudah diputus Finance.
+  ///
+  /// Kanalnya sendiri, bukan menumpang kanal pesanan: kasir yang memilih
+  /// membisukan hiruk-pikuk pesanan tetap harus mendengar kabar soal
+  /// uang yang dia pertanggungjawabkan.
+  Future<void> showFundReview({
+    required int id,
+    required String title,
+    required String body,
+  }) =>
+      _show(channel: _channels[2], id: id, title: title, body: body);
 
   Future<void> _show({
     required ({String id, String name, String description}) channel,

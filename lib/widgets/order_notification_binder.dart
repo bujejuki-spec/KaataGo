@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/table_session_provider.dart';
 import '../services/notification_service.dart';
+import '../services/fund_request_notifier.dart';
 import '../services/order_notifier.dart';
 
 /// Menyalakan notifikasi pesanan sesuai siapa yang sedang memakai
@@ -24,6 +25,12 @@ class OrderNotificationBinder extends StatefulWidget {
 
 class _OrderNotificationBinderState extends State<OrderNotificationBinder> {
   OrderNotifier? _notifier;
+  FundRequestNotifier? _fundNotifier;
+
+  /// Penanda terpisah untuk kabar setoran/petty cash. Yang menentukannya
+  /// cuma "resto mana, email siapa", jadi berganti layar atau berganti
+  /// meja tidak boleh ikut membangun ulang aliran ini.
+  String? _activeFundKey;
 
   /// Penanda konfigurasi yang sedang berjalan. Dibandingkan setiap
   /// rebuild supaya stream-nya tidak dibangun ulang terus-menerus —
@@ -35,6 +42,7 @@ class _OrderNotificationBinderState extends State<OrderNotificationBinder> {
   @override
   void dispose() {
     _notifier?.stop();
+    _fundNotifier?.stop();
     super.dispose();
   }
 
@@ -65,6 +73,24 @@ class _OrderNotificationBinderState extends State<OrderNotificationBinder> {
     return null;
   }
 
+  /// Menyalakan kabar hasil pengajuan untuk yang mengajukan — kasir dan
+  /// admin. Finance dan Owner tidak ikut: merekalah yang memutuskan, dan
+  /// diberi tahu soal keputusannya sendiri hanya jadi gema.
+  void _syncFundNotifier(AuthProvider auth) {
+    final email = auth.user?.email;
+    final eligible =
+        (auth.isKasir || auth.isAdmin) && auth.restoId != null && email != null;
+    final nextKey = eligible ? '${auth.restoId}|$email' : null;
+    if (nextKey == _activeFundKey) return;
+
+    _activeFundKey = nextKey;
+    _fundNotifier?.stop();
+    _fundNotifier = nextKey == null
+        ? null
+        : FundRequestNotifier(restoId: auth.restoId!, employeeEmail: email!);
+    _fundNotifier?.start();
+  }
+
   String? _keyFor(OrderNotifier? n) => n == null
       ? null
       : '${n.role}|${n.restoId}|${n.customerEmail}|${n.sessionId}|${n.cashierEmail}';
@@ -93,6 +119,8 @@ class _OrderNotificationBinderState extends State<OrderNotificationBinder> {
         next.start();
       }
     }
+
+    _syncFundNotifier(auth);
 
     return widget.child;
   }

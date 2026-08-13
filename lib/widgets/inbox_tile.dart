@@ -45,9 +45,16 @@ class _InboxTileState extends State<InboxTile> {
   Widget build(BuildContext context) {
     return HubMenuTile(
       icon: Icons.inbox_outlined,
-      title: _unread > 0 ? 'Kotak Masuk ($_unread baru)' : 'Kotak Masuk',
-      subtitle: 'Pengumuman & info versi terbaru KaataGo',
+      title: 'Kotak Masuk',
+      subtitle: _unread > 0
+          ? '$_unread pesan belum dibaca'
+          : 'Pengumuman & info versi terbaru KaataGo',
       color: const Color(0xFF0EA5E9),
+      // Angkanya pindah dari judul ke penanda merah. Sebagai tulisan
+      // "(3 baru)" ia terbaca sebagai bagian dari nama menunya dan ikut
+      // luput bersama seluruh baris; sebagai bulatan merah ia satu-
+      // satunya benda berwarna itu di layar.
+      badgeCount: _unread,
       onTap: () async {
         await Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => const InboxScreen()),

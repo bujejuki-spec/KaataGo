@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../db/cash_deposit_repository.dart';
+import '../db/order_repository.dart';
+import '../db/petty_cash_repository.dart';
 import '../providers/auth_provider.dart';
 import '../theme.dart';
 import '../utils/logout_confirm.dart';
+import '../widgets/badged_hub_tile.dart';
 import '../widgets/hub_menu_tile.dart';
 import '../widgets/inbox_tile.dart';
 import '../widgets/responsive.dart';
 import '../widgets/kaata_logo.dart';
 import 'cash_deposit_screen.dart';
 import 'finance_balance_screen.dart';
+import 'pending_payment_screen.dart';
 import 'pos_home_screen.dart';
 import 'transaction_history_screen.dart';
 
@@ -34,6 +39,7 @@ class KasirHomeScreen extends StatelessWidget {
     final auth = context.watch<AuthProvider>();
     final name = auth.employeeName?.isNotEmpty == true ? auth.employeeName! : 'Kasir';
     final email = auth.user?.email;
+    final restoId = auth.restoId;
 
     return Scaffold(
       backgroundColor: KaataTheme.backgroundTint,
@@ -67,6 +73,16 @@ class KasirHomeScreen extends StatelessWidget {
                     MaterialPageRoute(builder: (_) => const PosHomeScreen()),
                   ),
                 ),
+                BadgedHubTile(
+                  icon: Icons.pending_actions_outlined,
+                  title: 'Pending Payment',
+                  subtitle: 'Pesanan dari HP customer yang bayar tunai di kasir',
+                  color: const Color(0xFFF59E0B),
+                  loadCount: () => restoId == null
+                      ? Future.value(0)
+                      : OrderRepository().pendingCashPaymentCount(restoId),
+                  destination: () => const PendingPaymentScreen(),
+                ),
                 HubMenuTile(
                   icon: Icons.receipt_long_outlined,
                   title: 'Riwayat Transaksi',
@@ -76,23 +92,25 @@ class KasirHomeScreen extends StatelessWidget {
                     MaterialPageRoute(builder: (_) => const TransactionHistoryScreen()),
                   ),
                 ),
-                HubMenuTile(
+                BadgedHubTile(
                   icon: Icons.account_balance_wallet_outlined,
                   title: 'Saldo & Pengeluaran',
                   subtitle: 'Lihat saldo, catat pengeluaran dari Petty Cash',
                   color: const Color(0xFF6366F1),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const FinanceBalanceScreen()),
-                  ),
+                  loadCount: () => restoId == null
+                      ? Future.value(0)
+                      : PettyCashRepository().pendingCount(restoId),
+                  destination: () => const FinanceBalanceScreen(),
                 ),
-                HubMenuTile(
+                BadgedHubTile(
                   icon: Icons.account_balance_outlined,
                   title: 'Setor Saldo Cash',
                   subtitle: 'Setor tunai di laci ke rekening resto',
                   color: const Color(0xFF0EA5E9),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const CashDepositScreen()),
-                  ),
+                  loadCount: () => restoId == null
+                      ? Future.value(0)
+                      : CashDepositRepository().pendingCount(restoId),
+                  destination: () => const CashDepositScreen(),
                 ),
                 const InboxTile(),
                 HubMenuTile(

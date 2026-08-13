@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'count_badge.dart';
+
 /// A colorful menu row used on "hub" home screens (Super Admin, Finance)
 /// — an icon in a soft gradient badge, title/subtitle, and a chevron.
 /// Nicer than a plain ListTile-in-a-Card, and each entry can carry its
@@ -11,6 +13,11 @@ class HubMenuTile extends StatelessWidget {
   final Color color;
   final VoidCallback onTap;
 
+  /// Jumlah hal yang menunggu di balik menu ini. Nol atau null berarti
+  /// tidak ada penanda sama sekali — bulatan berisi "0" justru menarik
+  /// perhatian ke tempat yang tidak perlu didatangi.
+  final int badgeCount;
+
   const HubMenuTile({
     super.key,
     required this.icon,
@@ -18,6 +25,7 @@ class HubMenuTile extends StatelessWidget {
     required this.subtitle,
     required this.color,
     required this.onTap,
+    this.badgeCount = 0,
   });
 
   @override
@@ -30,18 +38,33 @@ class HubMenuTile extends StatelessWidget {
           padding: const EdgeInsets.all(14),
           child: Row(
             children: [
-              Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [color, Color.lerp(color, Colors.black, 0.18)!],
+              // Penandanya menempel di ikon, bukan di ujung kanan baris.
+              // Di ujung kanan ia akan berbaris rapi dengan tanda panah
+              // milik setiap kartu dan larut jadi satu kolom seragam; di
+              // sini ia justru memotong bentuk yang sudah dikenal mata.
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [color, Color.lerp(color, Colors.black, 0.18)!],
+                      ),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Icon(icon, color: Colors.white, size: 26),
                   ),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Icon(icon, color: Colors.white, size: 26),
+                  if (badgeCount > 0)
+                    Positioned(
+                      top: -5,
+                      right: -6,
+                      child: CountBadge(count: badgeCount),
+                    ),
+                ],
               ),
               const SizedBox(width: 14),
               Expanded(

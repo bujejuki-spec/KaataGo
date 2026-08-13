@@ -23,6 +23,7 @@ import '../widgets/dialog_actions.dart';
 import '../widgets/journal_detail_dialog.dart';
 import '../utils/rupiah_input.dart';
 import '../widgets/app_toast.dart';
+import '../widgets/count_badge.dart';
 
 /// Saldo Total = Saldo Penghasilan + Saldo Petty Cash − Saldo Pengeluaran.
 ///
@@ -553,13 +554,38 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
                         )
                       else
                         ..._groupPettyCashByDay().map((group) {
+                          final pendingInDay =
+                              group.items.where((e) => e.isPending).length;
                           return Card(
                             margin: const EdgeInsets.only(bottom: 8),
                             clipBehavior: Clip.antiAlias,
                             child: ExpansionTile(
-                              title: Text(DateFormat('EEEE, dd MMM yyyy', 'id_ID').format(group.day),
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                              subtitle: Text('+ ${currency.format(group.total)}',
+                              // Hari yang menyimpan pengajuan terbuka
+                              // sendiri. Aturan "semua tertutup" ada
+                              // supaya daftar panjang tidak jadi dinding
+                              // teks; hari yang menunggu keputusan bukan
+                              // daftar yang sedang dibaca, tapi pekerjaan
+                              // yang sedang dicari.
+                              initiallyExpanded: pendingInDay > 0,
+                              title: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                        DateFormat('EEEE, dd MMM yyyy', 'id_ID')
+                                            .format(group.day),
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.bold, fontSize: 14)),
+                                  ),
+                                  if (pendingInDay > 0) ...[
+                                    const SizedBox(width: 8),
+                                    CountBadge(count: pendingInDay),
+                                  ],
+                                ],
+                              ),
+                              subtitle: Text(
+                                  pendingInDay > 0
+                                      ? '+ ${currency.format(group.total)} · $pendingInDay menunggu persetujuan'
+                                      : '+ ${currency.format(group.total)}',
                                   style: const TextStyle(color: Color(0xFF6366F1), fontWeight: FontWeight.w600)),
                               childrenPadding: const EdgeInsets.only(bottom: 4),
                               children: group.items

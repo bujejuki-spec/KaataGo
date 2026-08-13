@@ -7,11 +7,10 @@ import '../models/transaction.dart';
 import '../providers/auth_provider.dart';
 import '../providers/cart_provider.dart';
 import '../providers/product_provider.dart';
-import '../widgets/dialog_actions.dart';
 import 'payment_qris_screen.dart';
 import 'payment_transfer_screen.dart';
 import 'receipt_screen.dart';
-import '../utils/rupiah_input.dart';
+import '../widgets/cash_payment_dialog.dart';
 import '../db/restaurant_repository.dart';
 import '../models/restaurant.dart';
 import '../widgets/charge_summary.dart';
@@ -259,7 +258,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     if (method == PaymentMethod.cash) {
       cashReceived = await showDialog<int>(
         context: context,
-        builder: (_) => _CashPaymentDialog(total: cart.total),
+        builder: (_) => CashPaymentDialog(total: cart.total),
       );
       if (cashReceived == null || !context.mounted) return;
     }
@@ -311,160 +310,3 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 /// Quick-pick chips cover what a cashier reaches for most — exact money,
 /// then the next round notes up from the total — because typing the full
 /// amount on every sale is the slowest part of taking cash.
-class _CashPaymentDialog extends StatefulWidget {
-  final int total;
-
-  const _CashPaymentDialog({required this.total});
-
-  @override
-  State<_CashPaymentDialog> createState() => _CashPaymentDialogState();
-}
-
-class _CashPaymentDialogState extends State<_CashPaymentDialog> {
-  final _ctrl = TextEditingController();
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  int? get _received {
-    final n = parseRupiah(_ctrl.text);
-    return (n != null && n > 0) ? n : null;
-  }
-
-  int? get _change {
-    final r = _received;
-    return r == null ? null : r - widget.total;
-  }
-
-  bool get _enough => _change != null && _change! >= 0;
-
-  /// Exact money, then the next few round notes above the total —
-  /// duplicates dropped so "uang pas" never repeats a suggestion.
-  List<int> get _suggestions {
-    final out = <int>{widget.total};
-    for (final note in [5000, 10000, 20000, 50000, 100000]) {
-      final rounded = ((widget.total / note).ceil()) * note;
-      if (rounded > widget.total) out.add(rounded);
-    }
-    return out.toList()..sort();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final currency = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
-
-    return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF10B981).withOpacity(0.12),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.payments_outlined, color: Color(0xFF10B981)),
-                  ),
-                  const SizedBox(width: 12),
-                  const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Pembayaran Tunai',
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
-                        Text('Masukkan uang yang diterima',
-                            style: TextStyle(fontSize: 12, color: Colors.grey)),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 18),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF4F5FB),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text('Total', style: TextStyle(fontWeight: FontWeight.w600)),
-                    Text(currency.format(widget.total),
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 14),
-              TextField(
-                controller: _ctrl,
-                keyboardType: TextInputType.number,
-                inputFormatters: [ThousandsInputFormatter()],
-                autofocus: true,
-                decoration: const InputDecoration(labelText: 'Uang Diterima', prefixText: 'Rp '),
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
-                onChanged: (_) => setState(() {}),
-              ),
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final amount in _suggestions)
-                    ActionChip(
-                      label: Text(amount == widget.total ? 'Uang pas' : currency.format(amount)),
-                      onPressed: () => setState(() => _ctrl.text = formatRupiahInput(amount)),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                decoration: BoxDecoration(
-                  color: (_enough ? const Color(0xFF10B981) : Colors.orange).withOpacity(0.10),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(_enough ? 'Kembalian' : 'Kurang',
-                        style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: _enough ? const Color(0xFF0F766E) : Colors.orange.shade900)),
-                    Text(
-                      _change == null ? '-' : currency.format(_change!.abs()),
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20,
-                        color: _enough ? const Color(0xFF0F766E) : Colors.orange.shade900,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-              DialogActions(
-                confirmLabel: 'Terima Pembayaran',
-                onConfirm: _enough ? () => Navigator.pop(context, _received) : null,
-                onCancel: () => Navigator.pop(context),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}

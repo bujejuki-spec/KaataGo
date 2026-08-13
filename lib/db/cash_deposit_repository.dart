@@ -14,6 +14,32 @@ class CashDepositRepository {
     return rows.map((r) => CashDeposit.fromMap(r)).toList();
   }
 
+  /// Aliran langsung setoran resto ini, terbaru di atas.
+  ///
+  /// Dipakai penanda jumlah pengajuan yang menunggu dan pemberitahuan
+  /// hasilnya — keduanya harus berubah tanpa layarnya dibuka ulang.
+  Stream<List<CashDeposit>> watchForResto(String restoId) {
+    return _client
+        .from('cash_deposits')
+        .stream(primaryKey: ['id'])
+        .eq('resto_id', restoId)
+        .order('created_at', ascending: false)
+        .map((rows) => rows.map((r) => CashDeposit.fromMap(r)).toList());
+  }
+
+  /// Berapa setoran yang masih menunggu keputusan Finance.
+  ///
+  /// Dihitung di server dengan `count`, bukan dengan mengambil semua
+  /// barisnya lalu menyaring di HP: yang dibutuhkan cuma satu angka,
+  /// sedangkan tiap baris setoran membawa foto bukti dalam base64.
+  Future<int> pendingCount(String restoId) async {
+    return await _client
+        .from('cash_deposits')
+        .count(CountOption.exact)
+        .eq('resto_id', restoId)
+        .eq('status', 'pending');
+  }
+
   Future<void> create(CashDeposit deposit) async {
     await _client.from('cash_deposits').insert(deposit.toMap());
   }

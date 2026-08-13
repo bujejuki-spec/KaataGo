@@ -42,7 +42,6 @@ class _DayIncome {
 /// capitalized labels ('QRIS'/'Transfer'/'Tunai') so orders recorded
 /// before that change still group correctly.
 String _methodKey(CustomerOrder o) {
-  if (o.source == OrderSource.customer) return 'qris';
   switch (o.paymentMethod) {
     case 'QRIS':
     case 'qris':
@@ -52,9 +51,14 @@ String _methodKey(CustomerOrder o) {
       return 'transfer';
     case 'Tunai':
     case 'cash':
-    default:
       return 'cash';
   }
+  // Pesanan mandiri lama tidak pernah mengisi payment_method, dan saat
+  // itu QRIS memang satu-satunya pilihannya. Tebakan ini hanya berlaku
+  // untuk baris yang benar-benar bungkam — pesanan mandiri yang menyebut
+  // 'cash' sekarang berarti dibayar di meja kasir, dan menghitungnya
+  // sebagai QRIS akan membuat Finance mencari mutasi yang tidak ada.
+  return o.source == OrderSource.customer ? 'qris' : 'cash';
 }
 
 class _FinanceIncomeScreenState extends State<FinanceIncomeScreen> {

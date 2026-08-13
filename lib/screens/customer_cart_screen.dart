@@ -10,6 +10,7 @@ import '../models/order_type.dart';
 import '../providers/auth_provider.dart';
 import '../providers/customer_cart_provider.dart';
 import '../providers/table_session_provider.dart';
+import 'customer_cash_pending_screen.dart';
 import 'customer_qris_screen.dart';
 import '../widgets/charge_summary.dart';
 import '../widgets/quantity_dialog.dart';
@@ -39,6 +40,17 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
   late final TextEditingController _tableCtrl;
   final _nameCtrl = TextEditingController();
   OrderType _orderType = OrderType.dineIn;
+
+  /// Cara bayar yang dipilih, memakai kunci yang sama dengan
+  /// `gl_accounts` — 'qris' atau 'cash'.
+  ///
+  /// QRIS tetap yang terpilih di awal: itu yang menyelesaikan pesanan
+  /// tanpa siapa pun harus beranjak, dan justru itulah gunanya memesan
+  /// dari HP sendiri.
+  String _paymentMethod = 'qris';
+
+  bool get _payAtCashier => _paymentMethod == 'cash';
+
   bool _placing = false;
   Restaurant? _resto;
 
@@ -121,6 +133,7 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
       // dipanggil kalau mejanya berisi beberapa orang yang memesan
       // sendiri-sendiri.
       customerName: _nameCtrl.text.trim(),
+      paymentMethod: _paymentMethod,
     );
     // A logged-in customer's history comes from their email, so this is
     // only needed for guests — it's the only record they'd otherwise have.
@@ -130,11 +143,17 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
     if (!mounted) return;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
-        builder: (_) => CustomerQrisScreen(
-          orderId: orderId,
-          amount: amount,
-          restoId: session.restoId!,
-        ),
+        builder: (_) => _payAtCashier
+            // Tidak ada layar bayar untuk tunai: yang menerima uangnya
+            // kasir, dan pesanannya sudah tercatat lengkap sejak baris
+            // di atas. Yang tersisa cuma memberi tahu ke mana harus
+            // melangkah.
+            ? CustomerCashPendingScreen(orderId: orderId, amount: amount)
+            : CustomerQrisScreen(
+                orderId: orderId,
+                amount: amount,
+                restoId: session.restoId!,
+              ),
       ),
     );
   }
@@ -265,10 +284,39 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
                         serviceApplies: isDineIn,
                         currency: currency,
                       ),
-                      const SizedBox(height: 4),
-                      const Text(
-                        'Pembayaran hanya lewat QRIS untuk pesanan mandiri.',
-                        style: TextStyle(color: Colors.grey, fontSize: 12),
+                      const SizedBox(height: 14),
+                      const Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text('Cara Bayar',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                      ),
+                      const SizedBox(height: 8),
+                      SegmentedButton<String>(
+                        segments: const [
+                          ButtonSegment(
+                            value: 'qris',
+                            label: Text('QRIS'),
+                            icon: Icon(Icons.qr_code_2),
+                          ),
+                          ButtonSegment(
+                            value: 'cash',
+                            label: Text('Tunai'),
+                            icon: Icon(Icons.payments_outlined),
+                          ),
+                        ],
+                        selected: {_paymentMethod},
+                        onSelectionChanged: _placing
+                            ? null
+                            : (v) => setState(() => _paymentMethod = v.first),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _payAtCashier
+                            ? 'Pesanan langsung masuk ke dapur. Pembayaran '
+                                'diselesaikan di kasir — statusnya menunggu '
+                                'pembayaran sampai kasir menerima uangnya.'
+                            : 'Bayar sekarang lewat QRIS, tanpa perlu ke kasir.',
+                        style: const TextStyle(color: Colors.grey, fontSize: 12),
                       ),
                       const SizedBox(height: 16),
                       SizedBox(
@@ -280,7 +328,9 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
                                   width: 20,
                                   height: 20,
                                   child: CircularProgressIndicator(strokeWidth: 2))
-                              : const Text('Pesan & Bayar dengan QRIS'),
+                              : Text(_payAtCashier
+                                  ? 'Pesan & Bayar di Kasir'
+                                  : 'Pesan & Bayar dengan QRIS'),
                         ),
                       ),
                     ],

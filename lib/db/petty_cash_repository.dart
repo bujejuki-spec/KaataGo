@@ -14,6 +14,25 @@ class PettyCashRepository {
     return rows.map((r) => PettyCashEntry.fromMap(r)).toList();
   }
 
+  /// Aliran langsung top up petty cash resto ini, terbaru di atas.
+  Stream<List<PettyCashEntry>> watchForResto(String restoId) {
+    return _client
+        .from('petty_cash_entries')
+        .stream(primaryKey: ['id'])
+        .eq('resto_id', restoId)
+        .order('created_at', ascending: false)
+        .map((rows) => rows.map((r) => PettyCashEntry.fromMap(r)).toList());
+  }
+
+  /// Berapa pengajuan top up yang masih menunggu keputusan Finance.
+  Future<int> pendingCount(String restoId) async {
+    return await _client
+        .from('petty_cash_entries')
+        .count(CountOption.exact)
+        .eq('resto_id', restoId)
+        .eq('status', 'pending');
+  }
+
   Future<void> create(PettyCashEntry entry) async {
     await _client.from('petty_cash_entries').insert(entry.toMap());
   }

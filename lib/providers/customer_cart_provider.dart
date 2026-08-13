@@ -179,6 +179,7 @@ class CustomerCartProvider extends ChangeNotifier {
     required String restoId,
     OrderType orderType = OrderType.dineIn,
     String? customerName,
+    String paymentMethod = 'qris',
   }) async {
     final tax = chargesFor(orderType);
 
@@ -197,10 +198,11 @@ class CustomerCartProvider extends ChangeNotifier {
       total: tax.total,
       paymentStatus: OrderPaymentStatus.pending,
       customerLabel: customerLabel,
-      // Customer self-orders are always paid via QRIS — set explicitly
-      // (rather than left null) so it relates directly to gl_accounts
-      // the same way a Kasir sale's payment_method does.
-      paymentMethod: 'qris',
+      // Selalu diisi, tidak pernah dibiarkan kosong, supaya kolomnya
+      // berhubungan langsung dengan gl_accounts persis seperti penjualan
+      // lewat kasir. 'cash' berarti pelanggan memilih membayar di meja
+      // kasir: pesanannya tetap masuk sekarang, uangnya menyusul.
+      paymentMethod: paymentMethod,
       tableNumber: tableNumber,
       sessionId: sessionId,
       restoId: restoId,
