@@ -48,9 +48,15 @@ class _DayGroup {
 /// Reads the shared `orders` table rather than this device's local
 /// database: a shift close has to show every sale the resto took, not
 /// just the ones typed on one phone, and it has to survive a phone being
-/// replaced. Customer self-orders are deliberately excluded — they never
-/// pass through a cashier's drawer, so they'd only distort the figure
-/// being reconciled.
+/// replaced.
+///
+/// Yang menentukan sebuah pesanan masuk ke sini bukan siapa yang
+/// mengetiknya, tapi apakah uangnya lewat laci kasir. Pesanan mandiri
+/// yang dibayar QRIS tetap tidak ikut — uangnya langsung ke rekening,
+/// dan memasukkannya hanya akan membuat angka yang sedang dicocokkan
+/// tidak lagi cocok dengan isi laci. Tapi pesanan mandiri yang dibayar
+/// tunai di meja kasir justru sebaliknya: uangnya ada di laci, jadi
+/// meninggalkannya di luar akan membuat lacinya terlihat kelebihan.
 class TransactionHistoryScreen extends StatelessWidget {
   const TransactionHistoryScreen({super.key});
 
@@ -95,7 +101,7 @@ class TransactionHistoryScreen extends StatelessWidget {
           }
 
           final orders = (snapshot.data ?? [])
-              .where((o) => o.source == OrderSource.kasir)
+              .where((o) => o.source == OrderSource.kasir || o.settledAtCounter)
               .toList();
           if (orders.isEmpty) {
             return const Center(child: Text('Belum ada transaksi kasir.'));

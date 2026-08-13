@@ -153,4 +153,57 @@ void main() {
       expect(map.containsKey('cash_received'), isFalse);
     });
   });
+
+  group('settledAtCounter', () {
+    test('pesanan mandiri tunai yang sudah dibayar masuk riwayat kasir', () {
+      // Uangnya lewat laci, jadi harus ikut dihitung saat tutup shift.
+      expect(
+        _order(
+          source: OrderSource.customer,
+          status: OrderPaymentStatus.paid,
+          method: 'cash',
+        ).settledAtCounter,
+        isTrue,
+      );
+    });
+
+    test('pesanan mandiri QRIS tidak ikut, walau sudah dibayar', () {
+      // Uangnya langsung ke rekening; memasukkannya akan membuat laci
+      // terlihat kurang sebanyak nominal itu.
+      expect(
+        _order(
+          source: OrderSource.customer,
+          status: OrderPaymentStatus.paid,
+          method: 'qris',
+        ).settledAtCounter,
+        isFalse,
+      );
+    });
+
+    test('yang belum dibayar belum masuk riwayat', () {
+      expect(
+        _order(
+          source: OrderSource.customer,
+          status: OrderPaymentStatus.pending,
+          method: 'cash',
+        ).settledAtCounter,
+        isFalse,
+      );
+    });
+
+    test('satu pesanan tidak bisa menunggu dan selesai sekaligus', () {
+      // Dua daftar ini saling mengisi: apa yang hilang dari Pending
+      // Payment harus muncul di Riwayat Transaksi, tidak boleh ada di
+      // keduanya dan tidak boleh lenyap dari keduanya.
+      for (final status in OrderPaymentStatus.values) {
+        final order = _order(
+          source: OrderSource.customer,
+          status: status,
+          method: 'cash',
+        );
+        expect(order.isPendingCashPayment && order.settledAtCounter, isFalse);
+        expect(order.isPendingCashPayment || order.settledAtCounter, isTrue);
+      }
+    });
+  });
 }

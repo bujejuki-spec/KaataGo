@@ -155,6 +155,16 @@ class CustomerOrder {
       paymentStatus == OrderPaymentStatus.pending &&
       paymentMethod == 'cash';
 
+  /// Pesanan mandiri yang uangnya diterima di meja kasir.
+  ///
+  /// Ini yang membuatnya berhak masuk Riwayat Transaksi walau bukan
+  /// pesanan yang diinput kasir: uangnya benar-benar lewat laci, jadi
+  /// harus ikut dihitung saat tutup shift.
+  bool get settledAtCounter =>
+      source == OrderSource.customer &&
+      paymentStatus == OrderPaymentStatus.paid &&
+      paymentMethod == 'cash';
+
   /// Kembalian yang harus diserahkan, atau null kalau uangnya belum
   /// diterima. Dihitung, tidak disimpan — supaya tidak pernah ada
   /// kembalian tersimpan yang tidak lagi cocok dengan totalnya.
