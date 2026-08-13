@@ -20,16 +20,10 @@ Future<bool> savePngToGallery(
 }) async {
   final toast = AppToast.of(context);
 
-  try {
-    if (!await Gal.hasAccess()) {
-      final granted = await Gal.requestAccess();
-      if (!granted) {
-        toast.show('Izin galeri ditolak, gambar tidak bisa disimpan.', isError: true);
-        return false;
-      }
-    }
+  if (!await ensureGalleryAccess(context)) return false;
 
-    await Gal.putImageBytes(bytes, album: 'KaataGo');
+  try {
+    await putPngInGallery(bytes);
     toast.show(successMessage);
     return true;
   } catch (e) {
@@ -37,3 +31,28 @@ Future<bool> savePngToGallery(
     return false;
   }
 }
+
+/// Memastikan aplikasi boleh menulis ke galeri, meminta izinnya kalau
+/// belum.
+///
+/// Dipisah dari [savePngToGallery] supaya penyimpanan berjumlah banyak
+/// bisa meminta izinnya sekali di depan: kalau tiap gambar mengurus
+/// dirinya sendiri, menyimpan 40 QR meja berarti 40 kali pemeriksaan
+/// izin yang jawabannya sudah pasti sama.
+Future<bool> ensureGalleryAccess(BuildContext context) async {
+  final toast = AppToast.of(context);
+  try {
+    if (await Gal.hasAccess()) return true;
+    if (await Gal.requestAccess()) return true;
+    toast.show('Izin galeri ditolak, gambar tidak bisa disimpan.', isError: true);
+    return false;
+  } catch (e) {
+    toast.show('Gagal memeriksa izin galeri: $e', isError: true);
+    return false;
+  }
+}
+
+/// Menaruh satu PNG di album KaataGo. Melempar kalau gagal — pemanggilnya
+/// yang memutuskan cara melaporkannya.
+Future<void> putPngInGallery(Uint8List bytes) =>
+    Gal.putImageBytes(bytes, album: 'KaataGo');

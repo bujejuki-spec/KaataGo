@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../db/restaurant_repository.dart';
 import '../providers/auth_provider.dart';
 import '../theme.dart';
+import '../utils/table_qr_image.dart';
+import '../widgets/kaata_logo.dart';
+import '../widgets/responsive.dart';
 
 /// Builds the QR sticker a customer scans at their table. The Resto ID is
 /// taken from the logged-in employee's own account and shown read-only —
@@ -26,8 +27,17 @@ class TableQrGeneratorScreen extends StatefulWidget {
 
 class _TableQrGeneratorScreenState extends State<TableQrGeneratorScreen> {
   final _tableCtrl = TextEditingController();
+  final _prefixCtrl = TextEditingController();
+  final _fromCtrl = TextEditingController(text: '1');
+  final _toCtrl = TextEditingController(text: '10');
   final _restoRepo = RestaurantRepository();
+
   String _restoName = '';
+  bool _bulkMode = false;
+
+  /// Berapa kartu yang sudah selesai disimpan, atau null saat tidak ada
+  /// penyimpanan yang berjalan.
+  int? _savedSoFar;
 
   @override
   void initState() {
@@ -51,72 +61,81 @@ class _TableQrGeneratorScreenState extends State<TableQrGeneratorScreen> {
   @override
   void dispose() {
     _tableCtrl.dispose();
+    _prefixCtrl.dispose();
+    _fromCtrl.dispose();
+    _toCtrl.dispose();
     super.dispose();
-  }
-
-  /// Null until a table label has actually been typed — drives both the
-  /// preview and whether printing is offered. Free-form on purpose:
-  /// "A01" and "VIP-2" are as common as "7".
-  String? get _tableNumber {
-    final raw = _tableCtrl.text.trim();
-    return raw.isEmpty ? null : raw;
   }
 
   String _payloadFor(String table, String restoId) => 'RESTO:$restoId|TABLE:$table';
 
-  Future<void> _printQr(String restoId, String table) async {
-    final regularFont = await PdfGoogleFonts.notoSansRegular();
-    final boldFont = await PdfGoogleFonts.notoSansBold();
-    final doc = pw.Document();
+  /// Daftar meja yang sedang dipilih — satu isinya di mode tunggal,
+  /// serentetan di mode banyak.
+  ///
+  /// Kosong berarti isian layarnya belum sah, dan itu pula yang mematikan
+  /// tombol-tombolnya; jadi tidak ada jalan mengekspor sesuatu yang belum
+  /// bisa dilihat di layar.
+  List<String> get _tables {
+    if (!_bulkMode) {
+      final raw = _tableCtrl.text.trim();
+      return raw.isEmpty ? const [] : [raw];
+    }
 
-    doc.addPage(
-      pw.Page(
-        pageFormat: PdfPageFormat.a4,
-        theme: pw.ThemeData.withFont(base: regularFont, bold: boldFont),
-        build: (context) => pw.Center(
-          child: pw.Container(
-            width: 380,
-            padding: const pw.EdgeInsets.all(28),
-            decoration: pw.BoxDecoration(
-              border: pw.Border.all(color: PdfColors.grey400, width: 1.5),
-              borderRadius: pw.BorderRadius.circular(16),
-            ),
-            child: pw.Column(
-              mainAxisSize: pw.MainAxisSize.min,
-              children: [
-                pw.Text(_restoName.isEmpty ? restoId : _restoName,
-                    style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold),
-                    textAlign: pw.TextAlign.center),
-                pw.SizedBox(height: 4),
-                pw.Text('Scan untuk pesan dari meja ini',
-                    style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey700)),
-                pw.SizedBox(height: 18),
-                pw.BarcodeWidget(
-                  barcode: pw.Barcode.qrCode(),
-                  data: _payloadFor(table, restoId),
-                  width: 240,
-                  height: 240,
-                ),
-                pw.SizedBox(height: 18),
-                pw.Container(
-                  padding: const pw.EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                  decoration: pw.BoxDecoration(
-                    color: PdfColors.grey200,
-                    borderRadius: pw.BorderRadius.circular(20),
-                  ),
-                  child: pw.Text('MEJA $table',
-                      style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold)),
-                ),
-                pw.SizedBox(height: 14),
-                pw.Text('KaataGo', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
-              ],
-            ),
+    final from = int.tryParse(_fromCtrl.text.trim());
+    final to = int.tryParse(_toCtrl.text.trim());
+    if (from == null || to == null) return const [];
+    return tableLabelRange(prefix: _prefixCtrl.text.trim(), from: from, to: to);
+  }
+
+  /// Keterangan kenapa mode banyak belum bisa dijalankan, atau null kalau
+  /// isiannya sudah sah.
+  String? get _bulkProblem {
+    if (!_bulkMode) return null;
+    final from = int.tryParse(_fromCtrl.text.trim());
+    final to = int.tryParse(_toCtrl.text.trim());
+    if (from == null || to == null) return 'Isi nomor awal dan nomor akhir.';
+    if (from < 1) return 'Nomor awal minimal 1.';
+    if (to < from) return 'Nomor akhir harus lebih besar dari nomor awal.';
+    if (to - from + 1 > kMaxTableBatch) {
+      return 'Maksimal $kMaxTableBatch meja sekali buat.';
+    }
+    return null;
+  }
+
+  List<TableQrCard> _cardsFor(String restoId) => [
+        for (final table in _tables)
+          TableQrCard(
+            restoName: _restoName.isEmpty ? restoId : _restoName,
+            table: table,
+            payload: _payloadFor(table, restoId),
           ),
-        ),
-      ),
-    );
+      ];
 
-    await Printing.layoutPdf(onLayout: (format) async => doc.save());
+  Future<void> _save(String restoId) async {
+    final cards = _cardsFor(restoId);
+    if (cards.isEmpty) return;
+
+    if (cards.length == 1) {
+      await saveTableQrToGallery(context, cards.first);
+      return;
+    }
+
+    // Tombolnya berubah jadi penghitung selama proses ini — itu juga yang
+    // menghalangi tombolnya ditekan dua kali, karena menyimpan puluhan
+    // gambar butuh belasan detik dan diam saja selama itu mengundang
+    // orang menekannya lagi.
+    setState(() => _savedSoFar = 0);
+    try {
+      await saveTableQrBatchToGallery(
+        context,
+        cards,
+        onProgress: (done) {
+          if (mounted) setState(() => _savedSoFar = done);
+        },
+      );
+    } finally {
+      if (mounted) setState(() => _savedSoFar = null);
+    }
   }
 
   @override
@@ -130,7 +149,9 @@ class _TableQrGeneratorScreenState extends State<TableQrGeneratorScreen> {
       );
     }
 
-    final table = _tableNumber;
+    final tables = _tables;
+    final busy = _savedSoFar != null;
+    final restoName = _restoName.isEmpty ? restoId : _restoName;
 
     return Scaffold(
       backgroundColor: KaataTheme.backgroundTint,
@@ -138,70 +159,301 @@ class _TableQrGeneratorScreenState extends State<TableQrGeneratorScreen> {
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-          child: FilledButton.icon(
-            onPressed: table == null ? null : () => _printQr(restoId, table),
-            icon: const Icon(Icons.print_outlined),
-            label: const Text('Cetak / Bagikan QR'),
+          child: ResponsiveCenter(
+            child: Row(
+              children: [
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: tables.isEmpty || busy ? null : () => _save(restoId),
+                    icon: busy
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Icon(Icons.download_outlined),
+                    label: Text(
+                      busy
+                          ? 'Menyimpan $_savedSoFar/${tables.length}...'
+                          : tables.length > 1
+                              ? 'Download Semua (${tables.length})'
+                              : 'Simpan ke Galeri',
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton.filledTonal(
+                  onPressed: tables.isEmpty || busy
+                      ? null
+                      : () => shareTableQrs(context, _cardsFor(restoId)),
+                  icon: const Icon(Icons.share_outlined),
+                  tooltip: 'Bagikan',
+                ),
+                const SizedBox(width: 4),
+                IconButton.filledTonal(
+                  onPressed: tables.isEmpty || busy
+                      ? null
+                      : () => printTableQrs(context, _cardsFor(restoId)),
+                  icon: const Icon(Icons.print_outlined),
+                  tooltip: 'Cetak',
+                ),
+              ],
+            ),
           ),
         ),
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-        children: [
-          _Card(
-            icon: Icons.storefront_outlined,
-            color: KaataTheme.brand,
-            title: 'Data Resto',
-            subtitle: 'Otomatis dari akun yang sedang login',
-            children: [
-              // Resto ID sengaja tidak ditampilkan di sini. Itu kunci
-              // internal yang tidak berarti apa-apa bagi admin, dan
-              // memajangnya cuma mengundang orang menyalin lalu
-              // mengetikkannya di tempat yang salah. Namanya sudah cukup
-              // untuk memastikan QR ini milik resto yang benar.
-              if (_restoName.isNotEmpty) ...[
-                TextFormField(
-                  key: ValueKey(_restoName),
-                  initialValue: _restoName,
-                  enabled: false,
-                  decoration: const InputDecoration(
-                    labelText: 'Nama Resto',
-                    filled: true,
-                    fillColor: Color(0xFFEEEEEE),
+      body: ResponsiveCenter(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          children: [
+            _Card(
+              icon: Icons.storefront_outlined,
+              color: KaataTheme.brand,
+              title: 'Data Resto',
+              subtitle: 'Otomatis dari akun yang sedang login',
+              children: [
+                // Resto ID sengaja tidak ditampilkan di sini. Itu kunci
+                // internal yang tidak berarti apa-apa bagi admin, dan
+                // memajangnya cuma mengundang orang menyalin lalu
+                // mengetikkannya di tempat yang salah. Namanya sudah cukup
+                // untuk memastikan QR ini milik resto yang benar.
+                if (_restoName.isNotEmpty) ...[
+                  TextFormField(
+                    key: ValueKey(_restoName),
+                    initialValue: _restoName,
+                    enabled: false,
+                    decoration: const InputDecoration(
+                      labelText: 'Nama Resto',
+                      filled: true,
+                      fillColor: Color(0xFFEEEEEE),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            const SizedBox(height: 14),
+            _Card(
+              icon: Icons.table_restaurant_outlined,
+              color: KaataTheme.accent,
+              title: 'Nomor Meja',
+              subtitle: _bulkMode
+                  ? 'Buat sederet meja sekaligus'
+                  : 'QR akan langsung berubah saat diketik',
+              children: [
+                SegmentedButton<bool>(
+                  segments: const [
+                    ButtonSegment(
+                      value: false,
+                      icon: Icon(Icons.looks_one_outlined, size: 18),
+                      label: Text('Satu Meja'),
+                    ),
+                    ButtonSegment(
+                      value: true,
+                      icon: Icon(Icons.grid_view_outlined, size: 18),
+                      label: Text('Banyak Meja'),
+                    ),
+                  ],
+                  selected: {_bulkMode},
+                  onSelectionChanged: busy
+                      ? null
+                      : (value) => setState(() => _bulkMode = value.first),
+                ),
+                const SizedBox(height: 14),
+                if (!_bulkMode)
+                  TextFormField(
+                    controller: _tableCtrl,
+                    autofocus: true,
+                    textCapitalization: TextCapitalization.characters,
+                    decoration: const InputDecoration(
+                      labelText: 'Nomor Meja',
+                      hintText: 'Contoh: 7, A01, VIP-2',
+                      prefixIcon: Icon(Icons.tag),
+                    ),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    onChanged: (_) => setState(() {}),
+                  )
+                else
+                  _BulkFields(
+                    prefixCtrl: _prefixCtrl,
+                    fromCtrl: _fromCtrl,
+                    toCtrl: _toCtrl,
+                    problem: _bulkProblem,
+                    tables: tables,
+                    onChanged: () => setState(() {}),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            if (tables.isEmpty)
+              const _EmptyPreview()
+            else ...[
+              Padding(
+                padding: const EdgeInsets.only(left: 4, bottom: 8),
+                child: Text(
+                  tables.length == 1 ? 'Pratinjau' : 'Pratinjau · ${tables.length} meja',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                    color: Colors.grey.shade700,
                   ),
                 ),
+              ),
+              // Di mode banyak hanya meja pertama yang digambar penuh.
+              // Empat puluh QR hidup sekaligus berarti empat puluh kali
+              // perhitungan matriks tiap kali satu huruf awalan diketik,
+              // dan yang ingin dilihat orangnya cuma "bentuknya sudah
+              // benar belum" — bukan keempat puluhnya satu per satu.
+              _QrPreview(
+                restoName: restoName,
+                table: tables.first,
+                payload: _payloadFor(tables.first, restoId),
+              ),
+              if (tables.length > 1) ...[
+                const SizedBox(height: 12),
+                _TableChips(tables: tables),
               ],
             ],
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BulkFields extends StatelessWidget {
+  final TextEditingController prefixCtrl;
+  final TextEditingController fromCtrl;
+  final TextEditingController toCtrl;
+  final String? problem;
+  final List<String> tables;
+  final VoidCallback onChanged;
+
+  const _BulkFields({
+    required this.prefixCtrl,
+    required this.fromCtrl,
+    required this.toCtrl,
+    required this.problem,
+    required this.tables,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextFormField(
+          controller: prefixCtrl,
+          textCapitalization: TextCapitalization.characters,
+          maxLength: 6,
+          decoration: const InputDecoration(
+            labelText: 'Awalan (opsional)',
+            hintText: 'Contoh: A, VIP-',
+            prefixIcon: Icon(Icons.text_fields),
+            counterText: '',
+            helperText: 'Kosongkan kalau mejanya cuma bernomor',
           ),
-          const SizedBox(height: 14),
-          _Card(
-            icon: Icons.table_restaurant_outlined,
-            color: const Color(0xFFF59E0B),
-            title: 'Nomor Meja',
-            subtitle: 'QR akan langsung berubah saat diketik',
-            children: [
-              TextFormField(
-                controller: _tableCtrl,
-                autofocus: true,
-                textCapitalization: TextCapitalization.characters,
+          onChanged: (_) => onChanged(),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: fromCtrl,
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                maxLength: 4,
                 decoration: const InputDecoration(
-                  labelText: 'Nomor Meja',
-                  hintText: 'Contoh: 7, A01, VIP-2',
-                  prefixIcon: Icon(Icons.tag),
+                  labelText: 'Dari nomor',
+                  counterText: '',
                 ),
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                onChanged: (_) => setState(() {}),
+                onChanged: (_) => onChanged(),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: TextFormField(
+                controller: toCtrl,
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                maxLength: 4,
+                decoration: const InputDecoration(
+                  labelText: 'Sampai nomor',
+                  counterText: '',
+                ),
+                onChanged: (_) => onChanged(),
+              ),
+            ),
+          ],
+        ),
+        if (problem != null) ...[
+          const SizedBox(height: 10),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.info_outline, size: 16, color: Colors.redAccent),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  problem!,
+                  style: const TextStyle(fontSize: 12, color: Colors.redAccent),
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 14),
-          if (table == null)
-            _EmptyPreview()
-          else
-            _QrPreview(
-              restoName: _restoName.isEmpty ? restoId : _restoName,
-              table: table,
-              payload: _payloadFor(table, restoId),
+        ] else if (tables.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          Text(
+            '${tables.length} QR akan dibuat: ${tables.first} sampai ${tables.last}',
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// Daftar ringkas nomor meja yang ikut dibuat.
+///
+/// Pratinjaunya hanya menggambar meja pertama, jadi tanpa daftar ini
+/// tidak ada cara memastikan rentangnya benar-benar berhenti di tempat
+/// yang dimaksud sebelum puluhan gambar telanjur masuk galeri.
+class _TableChips extends StatelessWidget {
+  final List<String> tables;
+
+  const _TableChips({required this.tables});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Wrap(
+        spacing: 6,
+        runSpacing: 6,
+        children: [
+          for (final table in tables)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: KaataTheme.brand.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                table,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: KaataTheme.brandDark,
+                ),
+              ),
             ),
         ],
       ),
@@ -209,6 +461,9 @@ class _TableQrGeneratorScreenState extends State<TableQrGeneratorScreen> {
   }
 }
 
+/// Pratinjau kartu QR — bentuknya sengaja dibuat sama dengan yang
+/// dirender [renderTableQrPng] ke galeri, supaya yang dilihat di layar
+/// itulah yang tersimpan.
 class _QrPreview extends StatelessWidget {
   final String restoName;
   final String table;
@@ -218,64 +473,166 @@ class _QrPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return AspectRatio(
+      // 384x512, sama dengan kartu PDF-nya.
+      aspectRatio: 384 / 512,
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [KaataTheme.brand, KaataTheme.brandDark],
+          ),
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: KaataTheme.brand.withOpacity(0.25),
+              blurRadius: 18,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // Semua ukurannya diturunkan dari lebar kartu PDF-nya, jadi
+            // pratinjau di HP sempit dan di tablet tetap satu bentuk.
+            final k = constraints.maxWidth / 384;
+            return Stack(
+              children: [
+                ..._corners(k),
+                Padding(
+                  padding: EdgeInsets.all(26 * k),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          KaataLogo(size: 22 * k, showBadgeBackground: false),
+                          SizedBox(width: 7 * k),
+                          Text(
+                            'KaataGo',
+                            style: TextStyle(
+                              fontSize: 17 * k,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 4 * k),
+                      Text(
+                        'PESAN SENDIRI DARI MEJA',
+                        style: TextStyle(
+                          fontSize: 7.5 * k,
+                          color: KaataTheme.accent,
+                          letterSpacing: 1.8 * k,
+                        ),
+                      ),
+                      SizedBox(height: 16 * k),
+                      Expanded(child: _inner(k)),
+                      SizedBox(height: 12 * k),
+                      Text(
+                        'Arahkan kamera HP ke kode di atas',
+                        style: TextStyle(fontSize: 8.5 * k, color: Colors.white),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _inner(double k) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(horizontal: 20 * k, vertical: 18 * k),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(20 * k),
       ),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(restoName,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
-              textAlign: TextAlign.center),
-          const SizedBox(height: 2),
-          Text('Scan untuk pesan dari meja ini',
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-          const SizedBox(height: 18),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade200),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: QrImageView(
-              data: payload,
-              version: QrVersions.auto,
-              size: 200,
-            ),
-          ),
-          const SizedBox(height: 18),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 8),
-            decoration: BoxDecoration(
-              color: KaataTheme.brand,
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: Text('MEJA $table',
-                style: const TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
-          ),
-          const SizedBox(height: 14),
-          SelectableText(
-            payload,
-            style: TextStyle(fontSize: 10.5, color: Colors.grey.shade500),
+          Text(
+            restoName,
             textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 15 * k, fontWeight: FontWeight.bold),
+          ),
+          SizedBox(height: 3 * k),
+          Text(
+            'Scan untuk pesan dari meja ini',
+            style: TextStyle(fontSize: 8.5 * k, color: Colors.grey.shade600),
+          ),
+          SizedBox(height: 14 * k),
+          QrImageView(
+            data: payload,
+            version: QrVersions.auto,
+            size: 196 * k,
+            padding: EdgeInsets.zero,
+            eyeStyle: const QrEyeStyle(
+              eyeShape: QrEyeShape.square,
+              color: KaataTheme.brandDark,
+            ),
+            dataModuleStyle: const QrDataModuleStyle(
+              dataModuleShape: QrDataModuleShape.square,
+              color: KaataTheme.brandDark,
+            ),
+          ),
+          SizedBox(height: 14 * k),
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 22 * k, vertical: 7 * k),
+            decoration: BoxDecoration(
+              color: KaataTheme.accent,
+              borderRadius: BorderRadius.circular(22 * k),
+            ),
+            child: Text(
+              'MEJA $table',
+              style: TextStyle(
+                fontSize: 19 * k,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
           ),
         ],
       ),
     );
   }
+
+  List<Widget> _corners(double k) {
+    Widget bar(double w, double h) => Container(
+          width: w * k,
+          height: h * k,
+          decoration: BoxDecoration(
+            color: KaataTheme.accent,
+            borderRadius: BorderRadius.circular(1.5 * k),
+          ),
+        );
+
+    final inset = 12.0 * k;
+    return [
+      Positioned(left: inset, top: inset, child: bar(34, 3)),
+      Positioned(left: inset, top: inset, child: bar(3, 34)),
+      Positioned(right: inset, top: inset, child: bar(34, 3)),
+      Positioned(right: inset, top: inset, child: bar(3, 34)),
+      Positioned(left: inset, bottom: inset, child: bar(34, 3)),
+      Positioned(left: inset, bottom: inset, child: bar(3, 34)),
+      Positioned(right: inset, bottom: inset, child: bar(34, 3)),
+      Positioned(right: inset, bottom: inset, child: bar(3, 34)),
+    ];
+  }
 }
 
 class _EmptyPreview extends StatelessWidget {
+  const _EmptyPreview();
+
   @override
   Widget build(BuildContext context) {
     return Container(
