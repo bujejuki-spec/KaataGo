@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../db/order_repository.dart';
 import '../utils/qris_image.dart';
+import '../widgets/app_toast.dart';
 
 /// QR payment screen shown right after a customer places a self-order.
 /// The order already exists in Supabase with status "pending" (visible
@@ -59,9 +60,7 @@ class _CustomerQrisScreenState extends State<CustomerQrisScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal konfirmasi pembayaran: $e')),
-      );
+      showAppToast(context, 'Gagal konfirmasi pembayaran: $e', isError: true);
       setState(() => _confirming = false);
     }
   }

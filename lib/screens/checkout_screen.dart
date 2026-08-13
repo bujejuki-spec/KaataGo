@@ -18,6 +18,7 @@ import '../widgets/charge_summary.dart';
 import '../widgets/quantity_dialog.dart';
 import '../widgets/cart_line_tile.dart';
 import '../models/cart_item.dart';
+import '../utils/field_rules.dart';
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});
@@ -176,11 +177,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     else
                       TextField(
                         controller: _customerNameCtrl,
+                        inputFormatters: nameFormatters,
+                        textCapitalization: TextCapitalization.words,
+                        maxLength: kNameMaxLength,
                         decoration: const InputDecoration(
                           labelText: 'Nama Customer',
                           prefixIcon: Icon(Icons.person_outline),
                           border: OutlineInputBorder(),
                           helperText: 'Wajib diisi — dipanggil saat pesanan siap diambil',
+                          counterText: '',
                         ),
                         onChanged: (_) => setState(() {}),
                       ),

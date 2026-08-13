@@ -5,6 +5,7 @@ import '../models/restaurant.dart';
 import '../widgets/resto_logo_avatar.dart';
 import 'restaurant_create_screen.dart';
 import '../widgets/dialog_actions.dart';
+import '../widgets/responsive.dart';
 
 /// Super Admin's "List Resto" — every registered restaurant, tap one to
 /// edit its name/address/category, and a switch to activate/deactivate
@@ -101,7 +102,7 @@ class _RestaurantManageListScreenState extends State<RestaurantManageListScreen>
               : RefreshIndicator(
                   onRefresh: _load,
                   child: ListView.separated(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.fromLTRB(12, 12, 12, kFabSafeBottom),
                     itemCount: _restaurants.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 8),
                     itemBuilder: (context, i) {

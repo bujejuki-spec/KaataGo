@@ -8,6 +8,7 @@ import '../widgets/notification_test_tile.dart';
 import '../widgets/kitchen_checklist_dialog.dart';
 import '../utils/logout_confirm.dart';
 import '../widgets/grouped_order_list.dart';
+import '../widgets/app_toast.dart';
 
 /// Chef's entire app: a live, tabbed feed of incoming orders — from both
 /// Employee Kasir sales and customer self-orders — with full item detail.
@@ -138,8 +139,7 @@ class _ChefHomeScreenState extends State<ChefHomeScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Gagal menyimpan: $e')));
+      showAppToast(context, 'Gagal menyimpan: $e', isError: true);
     }
   }
 

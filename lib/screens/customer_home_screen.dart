@@ -32,6 +32,7 @@ import '../widgets/kaata_logo.dart';
 import '../widgets/loading_overlay.dart';
 import '../widgets/product_category_list.dart';
 import '../widgets/product_lines_sheet.dart';
+import '../widgets/promo_banner_carousel.dart';
 import '../widgets/quantity_dialog.dart';
 import 'customer_cart_screen.dart';
 import 'customer_history_screen.dart';
@@ -41,6 +42,7 @@ import 'restaurant_list_screen.dart';
 import 'scan_table_screen.dart';
 import '../widgets/dialog_actions.dart';
 import '../utils/id_time.dart';
+import '../widgets/app_toast.dart';
 
 /// Self-order browsing screen for customers. Reads the product catalog
 /// live from Firestore (mirrored by the employee app), so stock/prices
@@ -204,7 +206,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
     // CustomerHomeScreen underneath — so these survive the teardown and
     // let us clear the now-duplicate copy off the stack afterwards.
     final navigator = Navigator.of(context);
-    final messenger = ScaffoldMessenger.of(context);
+    final toast = AppToast.of(context);
 
     setState(() => _loggingIn = true);
     var claimed = 0;
@@ -217,21 +219,15 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
 
     if (auth.lastError != null) {
       if (mounted) setState(() => _loggingIn = false);
-      messenger.showSnackBar(SnackBar(content: Text(auth.lastError!)));
+      toast.show(auth.lastError!, isError: true);
       return;
     }
 
     if (auth.isLoggedIn && !auth.isEmployee) {
       await ensureCustomerProfile(navigator, auth.user!.email!);
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            claimed > 0
-                ? 'Login sebagai ${auth.user?.email}. $claimed riwayat pesanan dipindahkan ke akun ini.'
-                : 'Login sebagai ${auth.user?.email}',
-          ),
-        ),
-      );
+      toast.show(claimed > 0
+          ? 'Login sebagai ${auth.user?.email}. $claimed riwayat pesanan dipindahkan ke akun ini.'
+          : 'Login sebagai ${auth.user?.email}');
       // Drop this pushed copy so the one RootScreen now renders — the
       // customer hub — is what's actually on screen.
       if (navigator.mounted) navigator.popUntil((r) => r.isFirst);
@@ -770,6 +766,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                 );
               },
             ),
+            PromoBannerCarousel(restoId: session.restoId!),
             Expanded(
               child: StreamBuilder<List<Product>>(
                 stream: repo.watchAll(session.restoId!),

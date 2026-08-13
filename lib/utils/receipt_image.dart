@@ -12,6 +12,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../models/receipt_data.dart';
 import 'gallery_saver.dart';
+import '../widgets/app_toast.dart';
 
 /// Renders [data] as a receipt-roll shaped PNG and drops it in the photo
 /// gallery under a "KaataGo" album.
@@ -30,9 +31,7 @@ Future<bool> saveReceiptToGallery(BuildContext context, ReceiptData data) async 
     bytes = await _renderReceiptPng(data);
   } catch (e) {
     if (!context.mounted) return false;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Gagal membuat struk: $e')),
-    );
+    showAppToast(context, 'Gagal membuat struk: $e', isError: true);
     return false;
   }
 
@@ -61,9 +60,7 @@ Future<void> shareReceipt(BuildContext context, ReceiptData data) async {
     );
   } catch (e) {
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Gagal membagikan struk: $e')),
-    );
+    showAppToast(context, 'Gagal membagikan struk: $e', isError: true);
   }
 }
 
@@ -86,9 +83,7 @@ Future<void> printReceipt(BuildContext context, ReceiptData data) async {
     );
   } catch (e) {
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Gagal mencetak struk: $e')),
-    );
+    showAppToast(context, 'Gagal mencetak struk: $e', isError: true);
   }
 }
 

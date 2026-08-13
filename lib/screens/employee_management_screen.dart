@@ -5,6 +5,9 @@ import '../db/restaurant_repository.dart';
 import '../models/employee.dart';
 import '../models/restaurant.dart';
 import '../widgets/dialog_actions.dart';
+import '../utils/field_rules.dart';
+import '../widgets/app_toast.dart';
+import '../widgets/responsive.dart';
 
 const _roleLabels = {
   'super_admin': 'Super Admin',
@@ -96,7 +99,7 @@ class _EmployeeManagementScreenState extends State<EmployeeManagementScreen> {
       ),
     );
     if (confirm != true) return;
-    await _employeeRepo.delete(e.email, e.restoId);
+    await _employeeRepo.delete(e.id);
     _load();
   }
 
@@ -116,7 +119,7 @@ class _EmployeeManagementScreenState extends State<EmployeeManagementScreen> {
               : RefreshIndicator(
                   onRefresh: _load,
                   child: ListView(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    padding: const EdgeInsets.fromLTRB(0, 8, 0, kFabSafeBottom),
                     children: _groupByResto().entries.map((group) {
                       return Card(
                         margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -278,15 +281,16 @@ class _EmployeeFormDialogState extends State<_EmployeeFormDialog> {
     if (!_formKey.currentState!.validate()) return;
     // super_admin isn't scoped to a resto — every other role requires one.
     if (_role != 'super_admin' && _restoId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pilih resto untuk role ini.')),
-      );
+      showAppToast(context, 'Pilih resto untuk role ini.');
       return;
     }
 
     setState(() => _saving = true);
     try {
       await _repo.upsert(Employee(
+        // Baris yang sudah ada dikenali dari id-nya, jadi emailnya boleh
+        // ikut berubah tanpa membuat orang baru.
+        id: widget.existing?.id ?? '',
         email: _emailCtrl.text.trim().toLowerCase(),
         name: _nameCtrl.text.trim(),
         nip: _nipCtrl.text.trim().isEmpty ? null : _nipCtrl.text.trim(),
@@ -298,9 +302,7 @@ class _EmployeeFormDialogState extends State<_EmployeeFormDialog> {
       Navigator.of(context).pop(true);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal menyimpan: $e')),
-      );
+      showAppToast(context, 'Gagal menyimpan: $e', isError: true);
       setState(() => _saving = false);
     }
   }
@@ -319,24 +321,30 @@ class _EmployeeFormDialogState extends State<_EmployeeFormDialog> {
               TextFormField(
                 controller: _nameCtrl,
                 decoration: const InputDecoration(labelText: 'Nama'),
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null,
+                inputFormatters: nameFormatters,
+                textCapitalization: TextCapitalization.words,
+                validator: (v) => validateName(v, label: 'Nama'),
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _nipCtrl,
                 decoration: const InputDecoration(labelText: 'NIP (opsional)'),
+                keyboardType: TextInputType.number,
+                inputFormatters: nipFormatters,
+                validator: validateNip,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _emailCtrl,
-                enabled: !isEditing, // email is the primary key — can't rename
-                decoration: const InputDecoration(labelText: 'Email Gmail'),
+                decoration: InputDecoration(
+                  labelText: 'Email Gmail',
+                  helperText: isEditing
+                      ? 'Mengubahnya juga mengubah akun yang bisa login'
+                      : 'Harus @gmail.com — login aplikasi lewat Google',
+                ),
                 keyboardType: TextInputType.emailAddress,
-                validator: (v) {
-                  if (v == null || v.trim().isEmpty) return 'Wajib diisi';
-                  if (!v.contains('@')) return 'Email tidak valid';
-                  return null;
-                },
+                inputFormatters: emailFormatters,
+                validator: (v) => validateGmail(v),
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(

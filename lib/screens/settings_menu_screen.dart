@@ -8,6 +8,7 @@ import '../widgets/kaata_logo.dart';
 import 'restaurant_info_screen.dart';
 import 'payment_info_screen.dart';
 import 'table_qr_generator_screen.dart';
+import 'promo_banner_screen.dart';
 
 /// Admin's settings hub — groups the less-frequently-used screens
 /// (restaurant info, table QR codes, payment info) instead of cluttering
@@ -69,6 +70,16 @@ class SettingsMenuScreen extends StatelessWidget {
                   color: const Color(0xFF6366F1),
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => const RestaurantInfoScreen()),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                HubMenuTile(
+                  icon: Icons.campaign_outlined,
+                  title: 'Banner Promo',
+                  subtitle: 'Pasang promo di halaman menu customer',
+                  color: const Color(0xFFF59E0B),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const PromoBannerScreen()),
                   ),
                 ),
                 const SizedBox(height: 12),

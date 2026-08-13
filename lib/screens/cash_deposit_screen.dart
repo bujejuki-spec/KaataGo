@@ -19,6 +19,8 @@ import '../utils/photo_picker.dart';
 import '../utils/rupiah_input.dart';
 import '../widgets/dialog_actions.dart';
 import '../widgets/responsive.dart';
+import '../utils/field_rules.dart';
+import '../widgets/app_toast.dart';
 
 /// Menyetorkan uang tunai dari laci kasir ke rekening resto.
 ///
@@ -237,7 +239,7 @@ class _CashDepositScreenState extends State<CashDepositScreen> {
       _load();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal memproses: $e')));
+      showAppToast(context, 'Gagal memproses: $e', isError: true);
     }
   }
 
@@ -268,7 +270,7 @@ class _CashDepositScreenState extends State<CashDepositScreen> {
       _load();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal membatalkan: $e')));
+      showAppToast(context, 'Gagal membatalkan: $e', isError: true);
     }
   }
 
@@ -679,7 +681,7 @@ class _AddDepositDialogState extends State<_AddDepositDialog> {
       Navigator.of(context).pop(true);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal menyimpan: $e')));
+      showAppToast(context, 'Gagal menyimpan: $e', isError: true);
       setState(() => _saving = false);
     }
   }
@@ -779,24 +781,25 @@ class _AddDepositDialogState extends State<_AddDepositDialog> {
                   controller: _bankCtrl,
                   decoration: const InputDecoration(labelText: 'Nama Bank', isDense: true),
                   textCapitalization: TextCapitalization.characters,
-                  validator: (v) =>
-                      (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null,
+                  inputFormatters: nameFormatters,
+                  validator: (v) => validateName(v, label: 'Nama bank'),
                 ),
                 const SizedBox(height: 10),
                 TextFormField(
                   controller: _accountCtrl,
                   decoration: const InputDecoration(labelText: 'Nomor Rekening', isDense: true),
                   keyboardType: TextInputType.number,
-                  validator: (v) =>
-                      (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null,
+                  inputFormatters: accountNumberFormatters,
+                  validator: validateAccountNumber,
                 ),
                 const SizedBox(height: 10),
                 TextFormField(
                   controller: _holderCtrl,
-                  decoration: const InputDecoration(labelText: 'Nama Pemilik Rekening', isDense: true),
+                  decoration:
+                      const InputDecoration(labelText: 'Nama Pemilik Rekening', isDense: true),
                   textCapitalization: TextCapitalization.words,
-                  validator: (v) =>
-                      (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null,
+                  inputFormatters: nameFormatters,
+                  validator: (v) => validateName(v, label: 'Nama pemilik rekening'),
                 ),
                 const SizedBox(height: 12),
                 TextFormField(

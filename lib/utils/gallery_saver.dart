@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:gal/gal.dart';
+import '../widgets/app_toast.dart';
 
 /// Drops [bytes] (a PNG) into the device's photo gallery, under a
 /// "KaataGo" album, handling the permission prompt Android 9 and below
@@ -17,24 +18,22 @@ Future<bool> savePngToGallery(
   required String successMessage,
   String failurePrefix = 'Gagal menyimpan',
 }) async {
-  final messenger = ScaffoldMessenger.of(context);
+  final toast = AppToast.of(context);
 
   try {
     if (!await Gal.hasAccess()) {
       final granted = await Gal.requestAccess();
       if (!granted) {
-        messenger.showSnackBar(
-          const SnackBar(content: Text('Izin galeri ditolak, gambar tidak bisa disimpan.')),
-        );
+        toast.show('Izin galeri ditolak, gambar tidak bisa disimpan.', isError: true);
         return false;
       }
     }
 
     await Gal.putImageBytes(bytes, album: 'KaataGo');
-    messenger.showSnackBar(SnackBar(content: Text(successMessage)));
+    toast.show(successMessage);
     return true;
   } catch (e) {
-    messenger.showSnackBar(SnackBar(content: Text('$failurePrefix: $e')));
+    toast.show('$failurePrefix: $e');
     return false;
   }
 }

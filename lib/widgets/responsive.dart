@@ -18,6 +18,15 @@ class Breakpoints {
   static bool isWide(BuildContext c) => MediaQuery.sizeOf(c).width >= desktop;
 }
 
+/// Ruang kosong yang harus disisakan di dasar daftar bergulir pada layar
+/// yang punya tombol mengambang.
+///
+/// Tombol mengambang melayang di atas isi, jadi tanpa ruang ini baris
+/// terakhir selalu tertutup — dan justru baris terakhir yang paling
+/// sering baru saja ditambahkan orangnya. Ukurannya: tinggi tombol
+/// diperpanjang (56) + jarak amannya.
+const kFabSafeBottom = 96.0;
+
 /// Membatasi lebar isi lalu menaruhnya di tengah.
 ///
 /// Di monitor kasir, daftar dan formulir yang dibiarkan selebar layar

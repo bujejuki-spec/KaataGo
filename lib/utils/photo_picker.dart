@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import '../widgets/app_toast.dart';
+import '../widgets/dialog_actions.dart';
+
 /// Asks where the photo should come from, then returns it.
 ///
 /// Both places that attach proof to a money movement — nota pengeluaran
@@ -55,15 +58,39 @@ Future<File?> pickProofPhoto(BuildContext context) async {
     final status = await Permission.camera.request();
     if (!context.mounted) return null;
     if (!status.isGranted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text(
-              'Izin kamera ditolak. Pakai galeri, atau aktifkan lewat Pengaturan.'),
-          action: status.isPermanentlyDenied
-              ? const SnackBarAction(label: 'Pengaturan', onPressed: openAppSettings)
-              : null,
-        ),
-      );
+      if (status.isPermanentlyDenied) {
+        // Dialog, bukan pesan singkat: izin yang diblokir permanen hanya
+        // bisa dipulihkan lewat Setelan, jadi tombol pintasnya harus
+        // tetap ada — dan pemilih ini dipanggil dari dalam dialog, di
+        // mana pesan singkat berisi tombol akan tertutup.
+        await showDialog<void>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            icon: const Icon(Icons.no_photography_outlined, size: 38, color: Colors.orange),
+            title: const Text('Izin Kamera Diblokir'),
+            content: const Text(
+              'Aktifkan izin kamera lewat Setelan HP, atau pilih gambar dari '
+              'galeri saja.',
+              textAlign: TextAlign.center,
+            ),
+            actionsAlignment: MainAxisAlignment.center,
+            actions: [
+              DialogActions(
+                confirmLabel: 'Buka Setelan',
+                onConfirm: () {
+                  Navigator.pop(dialogContext);
+                  openAppSettings();
+                },
+                onCancel: () => Navigator.pop(dialogContext),
+                cancelLabel: 'Nanti',
+              ),
+            ],
+          ),
+        );
+      } else {
+        showAppToast(context, 'Izin kamera ditolak. Pakai galeri saja.', isError: true);
+      }
       return null;
     }
   }
@@ -77,9 +104,7 @@ Future<File?> pickProofPhoto(BuildContext context) async {
     return picked == null ? null : File(picked.path);
   } catch (e) {
     if (!context.mounted) return null;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Gagal mengambil gambar: $e')),
-    );
+    showAppToast(context, 'Gagal mengambil gambar: $e', isError: true);
     return null;
   }
 }

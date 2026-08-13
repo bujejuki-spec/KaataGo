@@ -5,6 +5,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../providers/auth_provider.dart';
 import '../providers/settings_provider.dart';
 import '../widgets/edit_action_bar.dart';
+import '../utils/field_rules.dart';
+import '../widgets/app_toast.dart';
 
 /// Payment settings (QRIS + bank transfer info) — Finance only, since
 /// they're the only role allowed to change these. Admin gets
@@ -122,15 +124,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _editing = false;
         _saving = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pengaturan disimpan')),
-      );
+      showAppToast(context, 'Pengaturan disimpan');
     } catch (e) {
       if (!mounted) return;
       setState(() => _saving = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal menyimpan: $e')),
-      );
+      showAppToast(context, 'Gagal menyimpan: $e', isError: true);
     }
   }
 
@@ -187,7 +185,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 controller: _merchantCtrl,
                 enabled: _editing,
                 decoration: _decoration('Nama Merchant'),
-                validator: _requiredValidator,
+                inputFormatters: nameFormatters,
+                textCapitalization: TextCapitalization.words,
+                validator: (v) =>
+                    _editing ? validateName(v, label: 'Nama merchant') : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
@@ -206,7 +207,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 controller: _bankNameCtrl,
                 enabled: _editing,
                 decoration: _decoration('Nama Bank'),
-                validator: _requiredValidator,
+                inputFormatters: nameFormatters,
+                textCapitalization: TextCapitalization.characters,
+                validator: (v) => _editing ? validateName(v, label: 'Nama bank') : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
@@ -214,14 +217,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 enabled: _editing,
                 decoration: _decoration('Nomor Rekening'),
                 keyboardType: TextInputType.number,
-                validator: _requiredValidator,
+                inputFormatters: accountNumberFormatters,
+                validator: (v) => _editing ? validateAccountNumber(v) : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _accountHolderCtrl,
                 enabled: _editing,
                 decoration: _decoration('Atas Nama (a.n. ...)'),
-                validator: _requiredValidator,
+                inputFormatters: nameFormatters,
+                textCapitalization: TextCapitalization.words,
+                validator: (v) =>
+                    _editing ? validateName(v, label: 'Nama pemilik rekening') : null,
               ),
               const SizedBox(height: 24),
               if (_editing)

@@ -11,6 +11,8 @@ import '../widgets/edit_action_bar.dart';
 import '../widgets/dialog_actions.dart';
 import '../models/restaurant.dart';
 import '../db/restaurant_repository.dart';
+import '../utils/field_rules.dart';
+import '../widgets/app_toast.dart';
 
 const _paymentMethods = ['cash', 'qris', 'transfer'];
 const _paymentLabels = {'cash': 'Tunai', 'qris': 'QRIS', 'transfer': 'Transfer'};
@@ -242,12 +244,10 @@ class _FinanceGlMappingScreenState extends State<FinanceGlMappingScreen> {
 
       if (!mounted) return;
       setState(() => _editing = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Mapping GL Account tersimpan.')),
-      );
+      showAppToast(context, 'Mapping GL Account tersimpan.');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal menyimpan: $e')));
+      showAppToast(context, 'Gagal menyimpan: $e', isError: true);
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -281,6 +281,7 @@ class _FinanceGlMappingScreenState extends State<FinanceGlMappingScreen> {
             TextField(
               controller: nameCtrl,
               decoration: const InputDecoration(labelText: 'Nama GL Account'),
+              inputFormatters: nameFormatters,
             ),
           ],
         ),
@@ -302,9 +303,7 @@ class _FinanceGlMappingScreenState extends State<FinanceGlMappingScreen> {
       _load();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal menambah: $e')),
-      );
+      showAppToast(context, 'Gagal menambah: $e', isError: true);
     }
   }
 
@@ -357,9 +356,7 @@ class _FinanceGlMappingScreenState extends State<FinanceGlMappingScreen> {
       _load();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal menghapus: $e')),
-      );
+      showAppToast(context, 'Gagal menghapus: $e', isError: true);
     }
   }
 
@@ -976,20 +973,17 @@ class _TaxRateRow extends StatelessWidget {
           TextFormField(
             controller: controller,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: rateFormatters,
             style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
             decoration: const InputDecoration(
               isDense: true,
               suffixText: '%',
               hintText: '0',
             ),
-            validator: (v) {
-              final raw = (v ?? '').trim();
-              if (raw.isEmpty) return null;
-              final parsed = double.tryParse(raw.replaceAll(',', '.'));
-              if (parsed == null) return 'Angka';
-              if (parsed < 0 || parsed > 100) return '0 - 100';
-              return null;
-            },
+            // Bentuk setengah jadi seperti "11." ditolak di sini: Dart
+            // membacanya sebagai 11, jadi mengandalkan tryParse saja
+            // membuatnya lolos dan tersimpan.
+            validator: (v) => validateRate(v, label: label),
           )
         else
           Text(

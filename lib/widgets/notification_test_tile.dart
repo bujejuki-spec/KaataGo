@@ -1,20 +1,41 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../services/notification_service.dart';
 import 'hub_menu_tile.dart';
+import 'app_toast.dart';
 
 /// Menjalankan tes notifikasi dan menampilkan hasilnya.
 ///
 /// Dipisah dari widgetnya supaya layar yang tidak berbentuk daftar menu
 /// — layar dapur, misalnya — bisa memanggilnya dari ikon di app bar.
 Future<void> showNotificationTest(BuildContext context) async {
-  final messenger = ScaffoldMessenger.of(context);
+  final toast = AppToast.of(context);
   final navigator = Navigator.of(context);
-  messenger.showSnackBar(
-    const SnackBar(content: Text('Mengirim notifikasi tes…'), duration: Duration(seconds: 1)),
-  );
+  toast.show('Mengirim notifikasi tes…');
 
-  final message = await NotificationService.instance.sendTest();
+  // Apa pun yang terjadi, harus ada jawabannya. Sebelumnya galat dari
+  // dalam plugin melompati seluruh sisa fungsi ini, jadi menekan Tes
+  // Notifikasi benar-benar tidak menghasilkan apa-apa — tidak berhasil,
+  // tidak juga memberi tahu kenapa.
+  //
+  // Batas waktunya ada karena permintaan izin bisa menggantung tanpa
+  // pernah kembali di sebagian perangkat; menggantung selamanya terlihat
+  // persis sama dengan tidak melakukan apa pun.
+  String message;
+  try {
+    message = await NotificationService.instance
+        .sendTest()
+        .timeout(const Duration(seconds: 12));
+  } on TimeoutException {
+    message = 'Tidak ada jawaban dari sistem notifikasi dalam 12 detik. '
+        'Coba buka Setelan HP > Aplikasi > KaataGo > Notifikasi dan pastikan '
+        'izinnya menyala.';
+  } catch (e) {
+    message = 'Notifikasi gagal dijalankan: $e';
+  }
+
   if (!navigator.mounted) return;
 
   showDialog<void>(

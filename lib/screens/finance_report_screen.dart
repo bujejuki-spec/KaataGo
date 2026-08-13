@@ -13,6 +13,7 @@ import '../models/expense.dart';
 import '../models/restaurant.dart';
 import '../providers/auth_provider.dart';
 import '../utils/id_time.dart';
+import '../widgets/responsive.dart';
 
 /// One line in the combined ledger — either a credit (income, from a
 /// paid order) or a debit (an expense), used to render both the
@@ -282,7 +283,7 @@ class _FinanceReportScreenState extends State<FinanceReportScreen> {
               children: [
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, kFabSafeBottom),
                   decoration: const BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,

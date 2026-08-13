@@ -11,6 +11,8 @@ import '../utils/resto_location.dart';
 import '../widgets/dialog_actions.dart';
 import '../widgets/edit_action_bar.dart';
 import '../widgets/logo_picker.dart';
+import '../utils/field_rules.dart';
+import '../widgets/app_toast.dart';
 
 /// Lets the Admin update this restaurant's category and address —
 /// shown to customers at the top of their self-order screen once they
@@ -132,7 +134,7 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
   /// dicari orang yang mau datang, dan tidak boleh tertimpa.
   Future<void> _useCurrentLocation() async {
     setState(() => _locating = true);
-    final messenger = ScaffoldMessenger.of(context);
+    final toast = AppToast.of(context);
     try {
       final position = await currentPosition();
       final address = await addressOf(position.latitude, position.longitude);
@@ -145,17 +147,13 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
         }
         _locating = false;
       });
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(address == null
+      toast.show(address == null
               ? 'Lokasi tersimpan. Alamatnya silakan diisi manual.'
-              : 'Lokasi & alamat terisi. Silakan lengkapi detailnya.'),
-        ),
-      );
+              : 'Lokasi & alamat terisi. Silakan lengkapi detailnya.');
     } catch (e) {
       if (!mounted) return;
       setState(() => _locating = false);
-      messenger.showSnackBar(SnackBar(content: Text('$e')));
+      toast.show('$e');
     }
   }
 
@@ -164,6 +162,7 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
   /// Berguna saat yang mengisi tidak sedang berada di restonya — mereka
   /// tinggal meminta pemiliknya "share lokasi" lalu menempelkannya.
   Future<void> _pasteCoordinates() async {
+    final toast = AppToast.of(context);
     final ctrl = TextEditingController();
     final result = await showDialog<String>(
       context: context,
@@ -201,9 +200,7 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
     final point = parseCoordinates(result);
     if (!mounted) return;
     if (point == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Koordinat tidak terbaca. Contoh: -6.2088, 106.8456')),
-      );
+      toast.show('Koordinat tidak terbaca. Contoh: -6.2088, 106.8456');
       return;
     }
 
@@ -219,6 +216,7 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+    final toast = AppToast.of(context);
     final restoId = context.read<AuthProvider>().restoId!;
     setState(() => _saving = true);
     try {
@@ -252,15 +250,11 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
         _editing = false;
         _saving = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Info resto disimpan')),
-      );
+      toast.show('Info resto disimpan');
     } catch (e) {
       if (!mounted) return;
       setState(() => _saving = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal menyimpan: $e')),
-      );
+      toast.show('Gagal menyimpan: $e', isError: true);
     }
   }
 
@@ -328,13 +322,15 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
                     TextFormField(
                       controller: _phoneCtrl,
                       enabled: _editing,
-                      keyboardType: TextInputType.phone,
                       decoration: InputDecoration(
                         labelText: 'Nomor HP (opsional)',
                         helperText: 'Ditampilkan di struk',
                         filled: !_editing,
                         fillColor: _editing ? null : const Color(0xFFEEEEEE),
                       ),
+                      keyboardType: TextInputType.phone,
+                      inputFormatters: phoneFormatters,
+                      validator: (v) => validatePhone(v, required: false),
                     ),
                     const SizedBox(height: 16),
                     _LocationField(

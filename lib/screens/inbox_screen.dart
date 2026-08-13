@@ -10,6 +10,7 @@ import '../theme.dart';
 import '../utils/id_time.dart';
 import '../widgets/dialog_actions.dart';
 import '../widgets/responsive.dart';
+import '../widgets/app_toast.dart';
 
 /// Kotak masuk pengumuman KaataGo, untuk semua peran yang login.
 ///
@@ -170,8 +171,7 @@ class _InboxScreenState extends State<InboxScreen> {
       _load();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Gagal menghapus: $e')));
+      showAppToast(context, 'Gagal menghapus: $e', isError: true);
     }
   }
 

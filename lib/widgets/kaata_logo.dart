@@ -2,13 +2,15 @@ import 'package:flutter/material.dart';
 
 import '../theme.dart';
 
-/// KaataGo's mark: a fork & spoon, drawn as vector shapes (no image asset
-/// needed) so it stays crisp at any size and can be reused for the splash
-/// badge, app bar, etc. Matches assets/icon/kaata_icon.png (the app's
-/// home-screen launcher icon) so the brand looks the same everywhere.
+/// Lambang KaataGo: huruf K yang lengan bawahnya melaju jadi anak panah.
 ///
-/// [size] is the outer square badge size — the cutlery scale with it
-/// automatically.
+/// Digambar sebagai bentuk vektor, bukan gambar — jadi tetap tajam di
+/// ukuran berapa pun dan bisa dipakai ulang untuk badge splash, app bar,
+/// dan header hub tanpa memuat aset. Bentuknya sama persis dengan
+/// `assets/icon/kaata_icon.png` (ikon peluncur aplikasi) dan
+/// `brand/kaatago-logo.svg`, supaya mereknya seragam di mana pun.
+///
+/// [size] adalah sisi badge luarnya; isinya ikut menyesuaikan.
 class KaataLogo extends StatelessWidget {
   final double size;
   final bool showBadgeBackground;
@@ -33,7 +35,7 @@ class KaataLogo extends StatelessWidget {
           end: Alignment.bottomRight,
           colors: [KaataTheme.brand, KaataTheme.brandDark],
         ),
-        borderRadius: BorderRadius.circular(size * 0.29),
+        borderRadius: BorderRadius.circular(size * 0.227),
         boxShadow: [
           BoxShadow(
             color: KaataTheme.brand.withOpacity(0.35),
@@ -48,54 +50,43 @@ class KaataLogo extends StatelessWidget {
 }
 
 class _KaataLogoPainter extends CustomPainter {
+  /// Warna anak panah — amber aksen KaataGo.
+  static const _amber = Color(0xFFF59E0B);
+
   @override
   void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final cx = w / 2;
+    // Koordinatnya disalin apa adanya dari kanvas 512x512 milik berkas
+    // SVG-nya, lalu diskalakan. Menuliskannya ulang dalam pecahan
+    // membuat kedua bentuk pelan-pelan melenceng satu sama lain setiap
+    // kali salah satunya disentuh.
+    final k = size.width / 512;
+    Offset p(double x, double y) => Offset(x * k, y * k);
+
     final white = Paint()..color = Colors.white;
+    final amber = Paint()..color = _amber;
 
-    void capLine(double x1, double y1, double x2, double y2, double width) {
-      final paint = Paint()
-        ..color = Colors.white
-        ..strokeWidth = width
-        ..strokeCap = StrokeCap.round;
-      canvas.drawLine(Offset(x1, y1), Offset(x2, y2), paint);
-    }
-
-    final top = w * 0.22;
-    final bottom = w * 0.78;
-    final handleWidth = w * 0.052;
-
-    // --- Fork (left) ---
-    final forkX = cx - w * 0.115;
-    final tineBottom = w * 0.42;
-    capLine(forkX, tineBottom, forkX, bottom, handleWidth);
-    for (final dx in [-0.05, 0.0, 0.05]) {
-      capLine(forkX + w * dx, top, forkX + w * dx, tineBottom + w * 0.015, w * 0.034);
-    }
+    // Batang tegak huruf K
     canvas.drawRRect(
       RRect.fromRectAndRadius(
-        Rect.fromLTRB(
-          forkX - w * 0.05 - handleWidth / 2,
-          tineBottom - w * 0.01,
-          forkX + w * 0.05 + handleWidth / 2,
-          tineBottom + w * 0.035,
-        ),
-        Radius.circular(w * 0.02),
+        Rect.fromLTWH(132 * k, 140 * k, 54 * k, 232 * k),
+        Radius.circular(14 * k),
       ),
       white,
     );
 
-    // --- Spoon (right) ---
-    final spoonX = cx + w * 0.115;
-    final bowlCenterY = top + w * 0.10;
-    final bowlW = w * 0.165;
-    final bowlH = w * 0.215;
-    canvas.drawOval(
-      Rect.fromCenter(center: Offset(spoonX, bowlCenterY), width: bowlW, height: bowlH),
-      white,
-    );
-    capLine(spoonX, bowlCenterY + bowlH / 2 - w * 0.01, spoonX, bottom, handleWidth);
+    void polygon(List<Offset> points, Paint paint) {
+      final path = Path()..moveTo(points.first.dx, points.first.dy);
+      for (final point in points.skip(1)) {
+        path.lineTo(point.dx, point.dy);
+      }
+      canvas.drawPath(path..close(), paint);
+    }
+
+    // Lengan atas
+    polygon([p(200, 256), p(318, 141), p(402, 141), p(284, 256)], white);
+    // Lengan bawah, diteruskan jadi anak panah
+    polygon([p(200, 256), p(284, 256), p(402, 371), p(318, 371)], amber);
+    polygon([p(362, 300), p(436, 256), p(436, 344)], amber);
   }
 
   @override

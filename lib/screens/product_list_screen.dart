@@ -8,6 +8,7 @@ import '../providers/product_provider.dart';
 import 'category_management_screen.dart';
 import 'product_form_screen.dart';
 import '../widgets/dialog_actions.dart';
+import '../widgets/responsive.dart';
 
 class ProductListScreen extends StatefulWidget {
   const ProductListScreen({super.key});
@@ -83,6 +84,7 @@ class _ProductTab extends StatelessWidget {
             return const Center(child: Text('Belum ada produk. Tambah dulu yuk.'));
           }
           return ListView.builder(
+            padding: const EdgeInsets.only(bottom: kFabSafeBottom),
             itemCount: products.length,
             itemBuilder: (context, index) {
               final p = products[index];

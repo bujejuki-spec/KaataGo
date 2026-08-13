@@ -12,6 +12,7 @@ import '../models/gl_account.dart';
 import '../models/gl_journal_entry.dart';
 import '../models/restaurant.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/responsive.dart';
 
 const _referenceTypeLabels = {
   'order': 'Pesanan',
@@ -352,7 +353,7 @@ class _FinanceJournalScreenState extends State<FinanceJournalScreen> {
                   child: ListView(
                     // Extra bottom room so the export FAB doesn't sit on
                     // top of the last journal row.
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, kFabSafeBottom),
                     children: [
                       _TotalBalanceCard(
                         glAccount: _totalBalanceGl,

@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/settings_provider.dart';
+import '../widgets/app_toast.dart';
 
 /// Dummy bank-transfer payment screen. Shows the merchant's configured
 /// account number (see Settings) so the cashier can "share" it with the
@@ -56,9 +57,7 @@ class PaymentTransferScreen extends StatelessWidget {
                           onPressed: () {
                             Clipboard.setData(ClipboardData(
                                 text: settings.accountNumber.replaceAll(' ', '')));
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Nomor rekening disalin')),
-                            );
+                            showAppToast(context, 'Nomor rekening disalin');
                           },
                         ),
                       ],

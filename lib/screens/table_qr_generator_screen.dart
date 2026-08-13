@@ -154,18 +154,12 @@ class _TableQrGeneratorScreenState extends State<TableQrGeneratorScreen> {
             title: 'Data Resto',
             subtitle: 'Otomatis dari akun yang sedang login',
             children: [
-              TextFormField(
-                initialValue: restoId,
-                enabled: false,
-                decoration: const InputDecoration(
-                  labelText: 'Resto ID',
-                  filled: true,
-                  fillColor: Color(0xFFEEEEEE),
-                ),
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
+              // Resto ID sengaja tidak ditampilkan di sini. Itu kunci
+              // internal yang tidak berarti apa-apa bagi admin, dan
+              // memajangnya cuma mengundang orang menyalin lalu
+              // mengetikkannya di tempat yang salah. Namanya sudah cukup
+              // untuk memastikan QR ini milik resto yang benar.
               if (_restoName.isNotEmpty) ...[
-                const SizedBox(height: 10),
                 TextFormField(
                   key: ValueKey(_restoName),
                   initialValue: _restoName,

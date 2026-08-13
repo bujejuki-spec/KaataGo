@@ -22,6 +22,7 @@ import '../utils/photo_picker.dart';
 import '../widgets/dialog_actions.dart';
 import '../widgets/journal_detail_dialog.dart';
 import '../utils/rupiah_input.dart';
+import '../widgets/app_toast.dart';
 
 /// Saldo Total = Saldo Penghasilan + Saldo Petty Cash − Saldo Pengeluaran.
 ///
@@ -338,8 +339,7 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
       _load();
     } catch (err) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Gagal memproses: $err')));
+      showAppToast(context, 'Gagal memproses: $err', isError: true);
     }
   }
 
@@ -963,7 +963,7 @@ class _AddExpenseDialogState extends State<_AddExpenseDialog> {
       Navigator.of(context).pop(true);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal menyimpan: $e')));
+      showAppToast(context, 'Gagal menyimpan: $e', isError: true);
       setState(() => _saving = false);
     }
   }
@@ -1224,7 +1224,7 @@ class _AddPettyCashDialogState extends State<_AddPettyCashDialog> {
       Navigator.of(context).pop(true);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal menyimpan: $e')));
+      showAppToast(context, 'Gagal menyimpan: $e', isError: true);
       setState(() => _saving = false);
     }
   }

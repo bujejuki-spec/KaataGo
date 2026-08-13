@@ -23,32 +23,26 @@ class EmployeeRepository {
     return rows.map((r) => Employee.fromMap(r)).toList();
   }
 
-  /// Menyimpan (atau memperbarui) keanggotaan seseorang pada satu resto.
+  /// Menyimpan karyawan baru, atau memperbarui yang sudah ada.
   ///
-  /// Target konfliknya disebut eksplisit karena tabel ini tidak lagi
-  /// punya kunci utama: yang unik adalah pasangan (email, resto_id),
-  /// dijaga oleh unique index — baris super_admin ber-resto_id NULL
-  /// membuat pasangan itu tidak bisa dijadikan kunci utama. Tanpa
-  /// onConflict, PostgREST akan mencari kunci utama yang sudah tidak ada
-  /// dan penyimpanan gagal.
+  /// Dibedakan lewat id barisnya, bukan emailnya. Kalau memakai email
+  /// sebagai acuan, mengubah email akan tersimpan sebagai orang baru dan
+  /// meninggalkan baris lamanya — dan itulah alasan kolomnya dulu
+  /// terkunci saat mengedit.
   Future<void> upsert(Employee employee) async {
-    await _client
-        .from('employees')
-        .upsert(employee.toMap(), onConflict: 'email,resto_id');
+    if (employee.id.isEmpty) {
+      await _client.from('employees').insert(employee.toMap());
+      return;
+    }
+    await _client.from('employees').update(employee.toMap()).eq('id', employee.id);
   }
 
-  /// Menghapus keanggotaan pada satu resto, bukan seluruh akunnya.
+  /// Menghapus satu baris keanggotaan — bukan seluruh akunnya.
   ///
-  /// Satu email kini bisa terdaftar di beberapa resto sekaligus, jadi
-  /// menghapus berdasarkan email saja akan mengeluarkan orang itu dari
-  /// semua cabang — termasuk yang tidak sedang diurus.
-  Future<void> delete(String email, String? restoId) async {
-    final query = _client.from('employees').delete().eq('email', email);
-    if (restoId != null) {
-      await query.eq('resto_id', restoId);
-    } else {
-      // super_admin tidak terikat resto; barisnya memang cuma satu.
-      await query;
-    }
+  /// Satu email bisa terdaftar di beberapa resto sekaligus, jadi
+  /// menghapus berdasarkan email akan mengeluarkan orang itu dari semua
+  /// cabang, termasuk yang tidak sedang diurus.
+  Future<void> delete(String id) async {
+    await _client.from('employees').delete().eq('id', id);
   }
 }

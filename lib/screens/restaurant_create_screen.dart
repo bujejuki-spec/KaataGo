@@ -7,6 +7,8 @@ import '../db/restaurant_repository.dart';
 import '../models/restaurant.dart';
 import '../widgets/edit_action_bar.dart';
 import '../widgets/logo_picker.dart';
+import '../utils/field_rules.dart';
+import '../widgets/app_toast.dart';
 
 /// Super Admin only: creates a brand-new restaurant row (a new tenant),
 /// or — when [existing] is passed — edits one (from the "List Resto"
@@ -136,9 +138,7 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
         final existing = await _repo.getOnce(id);
         if (existing != null) {
           if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('ID "$id" sudah dipakai resto lain, pakai ID lain.')),
-          );
+          showAppToast(context, 'ID "$id" sudah dipakai resto lain, pakai ID lain.');
           setState(() => _saving = false);
           return;
         }
@@ -167,9 +167,7 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
       ));
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_isEditing ? 'Resto "$id" diperbarui.' : 'Resto "$id" berhasil dibuat.')),
-      );
+      showAppToast(context, _isEditing ? 'Resto "$id" diperbarui.' : 'Resto "$id" berhasil dibuat.');
       if (_isEditing) {
         setState(() {
           _saving = false;
@@ -180,9 +178,7 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal menyimpan: $e')),
-      );
+      showAppToast(context, 'Gagal menyimpan: $e', isError: true);
       setState(() => _saving = false);
     }
   }
@@ -215,7 +211,9 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
                   filled: !_editing,
                   fillColor: _editing ? null : const Color(0xFFEEEEEE),
                 ),
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null,
+                inputFormatters: nameFormatters,
+                textCapitalization: TextCapitalization.words,
+                validator: (v) => validateName(v, label: 'Nama resto'),
                 onChanged: (v) {
                   if (_isEditing) return; // don't reshuffle an existing id
                   // Auto-fill a slug id from the name, but let the user
@@ -227,10 +225,14 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
               const SizedBox(height: 12),
               TextFormField(
                 controller: _idCtrl,
-                enabled: !_isEditing, // id is the primary key — can't change once created
+                // Selalu terkunci: nilainya dibangkitkan dari nama resto,
+                // dan sebagai kunci utama ia tidak boleh berubah setelah
+                // dibuat. Membiarkannya bisa diketik hanya membuka pintu
+                // untuk id yang bentrok atau salah ketik.
+                enabled: false,
                 decoration: const InputDecoration(
-                  labelText: 'ID resto (unik, dipakai internal)',
-                  helperText: 'Huruf kecil, angka, dan strip saja — misal: warung-bu-siti',
+                  labelText: 'ID resto (dibuat otomatis)',
+                  helperText: 'Mengikuti nama resto — dipakai internal, tidak bisa diubah',
                   filled: true,
                   fillColor: Color(0xFFEEEEEE),
                 ),
@@ -257,13 +259,15 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
               TextFormField(
                 controller: _phoneCtrl,
                 enabled: _editing,
-                keyboardType: TextInputType.phone,
                 decoration: InputDecoration(
                   labelText: 'Nomor HP (opsional)',
                   helperText: 'Ditampilkan di struk',
                   filled: !_editing,
                   fillColor: _editing ? null : const Color(0xFFEEEEEE),
                 ),
+                keyboardType: TextInputType.phone,
+                inputFormatters: phoneFormatters,
+                validator: (v) => validatePhone(v, required: false),
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
@@ -286,11 +290,13 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
                       controller: _ppnCtrl,
                       enabled: _editing,
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      inputFormatters: rateFormatters,
                       decoration: InputDecoration(
                         labelText: 'PPN (%)',
                         filled: !_editing,
                         fillColor: _editing ? null : const Color(0xFFEEEEEE),
                       ),
+                      validator: (v) => validateRate(v, label: 'PPN'),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -299,11 +305,13 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
                       controller: _serviceCtrl,
                       enabled: _editing,
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      inputFormatters: rateFormatters,
                       decoration: InputDecoration(
                         labelText: 'Service (%)',
                         filled: !_editing,
                         fillColor: _editing ? null : const Color(0xFFEEEEEE),
                       ),
+                      validator: (v) => validateRate(v, label: 'Biaya service'),
                     ),
                   ),
                 ],

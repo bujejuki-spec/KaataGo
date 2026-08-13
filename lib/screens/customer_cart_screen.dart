@@ -15,6 +15,7 @@ import '../widgets/charge_summary.dart';
 import '../widgets/quantity_dialog.dart';
 import '../widgets/cart_line_tile.dart';
 import '../models/cart_item.dart';
+import '../utils/field_rules.dart';
 
 /// Checkout screen. Lets the customer pick Dine In or Take Away first —
 /// for Take Away no table is needed at all, so the table-number field is
@@ -246,14 +247,14 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
                       TextFormField(
                         controller: _nameCtrl,
                         textCapitalization: TextCapitalization.words,
+                        inputFormatters: nameFormatters,
                         decoration: InputDecoration(
                           labelText: 'Nama Customer',
                           helperText: isDineIn
                               ? 'Wajib diisi — supaya pesananmu tidak tertukar dengan teman semeja'
                               : 'Wajib diisi — nama yang akan dipanggil saat pesanan siap',
                         ),
-                        validator: (v) =>
-                            (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null,
+                        validator: (v) => validateName(v, label: 'Nama customer'),
                       ),
                       const SizedBox(height: 16),
                       ChargeSummary(

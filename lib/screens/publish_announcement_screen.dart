@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../db/announcement_repository.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/responsive.dart';
+import '../widgets/app_toast.dart';
 
 /// Menerbitkan pengumuman ke kotak masuk semua orang sekaligus.
 ///
@@ -58,7 +59,7 @@ class _PublishAnnouncementScreenState extends State<PublishAnnouncementScreen> {
   Future<void> _publish() async {
     if (!_formKey.currentState!.validate()) return;
     final email = context.read<AuthProvider>().user?.email ?? 'Super Admin';
-    final messenger = ScaffoldMessenger.of(context);
+    final toast = AppToast.of(context);
     final navigator = Navigator.of(context);
 
     setState(() => _saving = true);
@@ -70,12 +71,10 @@ class _PublishAnnouncementScreenState extends State<PublishAnnouncementScreen> {
         downloadUrl: _urlCtrl.text.trim().isEmpty ? null : _urlCtrl.text.trim(),
         createdBy: email,
       );
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Pengumuman terkirim ke semua kotak masuk.')),
-      );
+      toast.show('Pengumuman terkirim ke semua kotak masuk.');
       navigator.pop();
     } catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text('Gagal mengirim: $e')));
+      toast.show('Gagal mengirim: $e', isError: true);
       if (mounted) setState(() => _saving = false);
     }
   }

@@ -41,6 +41,13 @@ class NotificationService {
 
   static const _sound = RawResourceAndroidNotificationSound('kaata_notif');
 
+  /// Turun jadi false kalau perangkat menolak nada dering khususnya.
+  bool _customSoundWorks = true;
+
+  /// Dicatat saat penyiapan gagal, supaya layar tes bisa menyebut
+  /// sebabnya alih-alih diam.
+  String? initError;
+
   Future<void> init() async {
     if (_ready) return;
 
@@ -65,20 +72,40 @@ class NotificationService {
     // Setelah channel terbentuk, keduanya tidak bisa diubah lagi dari
     // kode — pemakainya yang berkuasa lewat Setelan.
     for (final c in _channels) {
-      await android?.createNotificationChannel(
-        AndroidNotificationChannel(
-          c.id,
-          c.name,
-          description: c.description,
-          importance: Importance.high, // banner + bunyi
-          sound: _sound,
-          playSound: true,
-          enableVibration: true,
-        ),
-      );
+      try {
+        await android?.createNotificationChannel(
+          AndroidNotificationChannel(
+            c.id,
+            c.name,
+            description: c.description,
+            importance: Importance.high, // banner + bunyi
+            sound: _sound,
+            playSound: true,
+            enableVibration: true,
+          ),
+        );
+      } catch (e) {
+        // Nada dering khusus yang tidak bisa dibaca perangkat tidak boleh
+        // ikut menjatuhkan notifikasinya. Lebih baik berbunyi dengan nada
+        // bawaan daripada tidak muncul sama sekali.
+        debugPrint('[Notif] channel ${c.id} gagal dengan nada khusus: $e');
+        initError = '$e';
+        _customSoundWorks = false;
+        await android?.createNotificationChannel(
+          AndroidNotificationChannel(
+            c.id,
+            c.name,
+            description: c.description,
+            importance: Importance.high,
+            playSound: true,
+            enableVibration: true,
+          ),
+        );
+      }
     }
 
     _ready = true;
+    initError = null;
   }
 
   /// Android 13+ mewajibkan izin ini; tanpa itu notifikasinya terkirim
@@ -126,7 +153,7 @@ class NotificationService {
             importance: Importance.high,
             priority: Priority.high,
             icon: 'ic_notification',
-            sound: _sound,
+            sound: _customSoundWorks ? _sound : null,
             // Isi pesan bisa lebih panjang dari satu baris — tanpa ini
             // Android memotongnya diam-diam.
             styleInformation: BigTextStyleInformation(body),
@@ -156,8 +183,19 @@ class NotificationService {
   /// Tanpa cara mengujinya, "notifikasi tidak jalan" tidak bisa
   /// dibedakan dari "belum ada pesanan baru".
   Future<String> sendTest() async {
-    await init();
-    final granted = await requestPermission();
+    try {
+      await init();
+    } catch (e) {
+      return 'Sistem notifikasi gagal disiapkan: $e';
+    }
+
+    bool granted;
+    try {
+      granted = await requestPermission();
+    } catch (e) {
+      return 'Gagal meminta izin notifikasi: $e';
+    }
+
     if (!granted) {
       return 'Izin notifikasi belum diberikan. Aktifkan lewat Setelan HP > '
           'Aplikasi > KaataGo > Notifikasi.';
@@ -171,6 +209,10 @@ class NotificationService {
     );
 
     if (lastError != null) return 'Gagal menampilkan notifikasi: $lastError';
+    if (!_customSoundWorks) {
+      return 'Notifikasi terkirim, tapi memakai nada bawaan HP — nada khas '
+          'KaataGo ditolak perangkat ini.';
+    }
     return 'Notifikasi terkirim. Cek layar HP kamu — kalau tidak muncul, '
         'periksa Setelan HP > Aplikasi > KaataGo > Notifikasi.';
   }

@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../db/customer_profile_repository.dart';
 import '../models/customer_profile.dart';
+import '../utils/field_rules.dart';
 
 /// Customer's profile — shown once, right after their first successful
 /// email login (name required, phone optional, email locked), and
@@ -181,11 +182,15 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
             const SizedBox(height: 16),
             TextField(
               controller: _nameCtrl,
+              inputFormatters: nameFormatters,
+              textCapitalization: TextCapitalization.words,
               decoration: const InputDecoration(
                 labelText: 'Nama',
                 hintText: 'Nama lengkap kamu',
                 border: OutlineInputBorder(),
+                counterText: '',
               ),
+              maxLength: kNameMaxLength,
             ),
             const SizedBox(height: 16),
             TextField(
@@ -201,10 +206,13 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
             TextField(
               controller: _phoneCtrl,
               keyboardType: TextInputType.phone,
+              inputFormatters: phoneFormatters,
               decoration: const InputDecoration(
                 labelText: 'No. Telepon (opsional)',
                 border: OutlineInputBorder(),
+                counterText: '',
               ),
+              maxLength: kPhoneMaxLength,
             ),
             const SizedBox(height: 24),
             SizedBox(

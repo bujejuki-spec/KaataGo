@@ -7,6 +7,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
 import 'gallery_saver.dart';
+import '../widgets/app_toast.dart';
 
 /// Saves the payment QR a customer is looking at as a PNG in their photo
 /// gallery, so they can pay from their banking app — which means leaving
@@ -36,9 +37,7 @@ Future<bool> saveQrisToGallery(
     );
   } catch (e) {
     if (!context.mounted) return false;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Gagal membuat gambar QR: $e')),
-    );
+    showAppToast(context, 'Gagal membuat gambar QR: $e', isError: true);
     return false;
   }
 

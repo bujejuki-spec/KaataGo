@@ -17,6 +17,8 @@ import '../utils/tax_calculator.dart';
 import '../theme.dart';
 import '../db/restaurant_repository.dart';
 import '../providers/auth_provider.dart';
+import '../utils/field_rules.dart';
+import '../widgets/app_toast.dart';
 
 class ProductFormScreen extends StatefulWidget {
   final Product? existing;
@@ -251,9 +253,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
         _editing = false;
         _saving = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Produk disimpan')),
-      );
+      showAppToast(context, 'Produk disimpan');
     } else {
       Navigator.of(context).pop();
     }
@@ -382,8 +382,9 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                   filled: !_editing,
                   fillColor: _editing ? null : const Color(0xFFEEEEEE),
                 ),
-                validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null,
+                inputFormatters: nameFormatters,
+                textCapitalization: TextCapitalization.words,
+                validator: (v) => validateName(v, label: 'Nama produk'),
               ),
               const SizedBox(height: 12),
               TextFormField(

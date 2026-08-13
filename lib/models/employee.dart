@@ -2,6 +2,16 @@
 /// as staff (rather than falling through to the customer flow), scoped
 /// to one restaurant (except `super_admin`, which isn't scoped at all).
 class Employee {
+  /// Identitas baris, bukan identitas orangnya.
+  ///
+  /// Dulu emailnya sendiri yang menjadi kunci, sehingga memperbaiki
+  /// alamat yang salah ketik berarti membuat baris baru dan
+  /// meninggalkan yang lama. Dengan id tersendiri, email kembali
+  /// menjadi data biasa yang boleh diperbaiki.
+  ///
+  /// Kosong berarti barisnya belum pernah disimpan.
+  final String id;
+
   final String email;
   final String name;
   final String? nip; // Nomor Induk Pegawai — internal employee ID number
@@ -10,6 +20,7 @@ class Employee {
   final bool active;
 
   Employee({
+    this.id = '',
     required this.email,
     required this.name,
     this.nip,
@@ -29,6 +40,7 @@ class Employee {
 
   factory Employee.fromMap(Map<String, dynamic> map) {
     return Employee(
+      id: map['id'] as String? ?? '',
       email: map['email'] as String,
       name: map['name'] as String? ?? '',
       nip: map['nip'] as String?,

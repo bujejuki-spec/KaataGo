@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 
 import '../providers/category_provider.dart';
 import '../widgets/dialog_actions.dart';
+import '../utils/field_rules.dart';
+import '../widgets/responsive.dart';
 
 /// Tab content (inside Kelola Produk) for managing the list of product
 /// categories — added/deleted here, then picked from a dropdown on the
@@ -20,6 +22,8 @@ class CategoryManagementScreen extends StatelessWidget {
           controller: controller,
           autofocus: true,
           decoration: const InputDecoration(labelText: 'Nama Kategori'),
+              inputFormatters: nameFormatters,
+              textCapitalization: TextCapitalization.words,
         ),
         actionsAlignment: MainAxisAlignment.center,
         actions: [
@@ -51,6 +55,7 @@ class CategoryManagementScreen extends StatelessWidget {
             );
           }
           return ListView.builder(
+            padding: const EdgeInsets.only(bottom: kFabSafeBottom),
             itemCount: categories.length,
             itemBuilder: (context, index) {
               final c = categories[index];

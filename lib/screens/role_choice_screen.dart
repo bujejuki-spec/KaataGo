@@ -9,6 +9,7 @@ import '../widgets/kaata_logo.dart';
 import '../widgets/loading_overlay.dart';
 import 'about_screen.dart';
 import 'customer_home_screen.dart';
+import '../widgets/app_toast.dart';
 
 /// First screen shown to anyone who isn't already a recognized employee
 /// and hasn't scanned a table before. Picks the experience: browse/order
@@ -89,7 +90,7 @@ class _RoleChoiceScreenState extends State<RoleChoiceScreen> {
     // valid to show a dialog from; `this.context` is gone by then, and
     // guarding on `mounted` instead would silently skip them.
     final navigator = Navigator.of(context, rootNavigator: true);
-    final messenger = ScaffoldMessenger.of(context);
+    final toast = AppToast.of(context);
     final rootContext = navigator.context;
     final auth = context.read<AuthProvider>();
 
@@ -121,9 +122,7 @@ class _RoleChoiceScreenState extends State<RoleChoiceScreen> {
     if (!auth.isLoggedIn) return;
 
     if (claimed > 0) {
-      messenger.showSnackBar(
-        SnackBar(content: Text('$claimed riwayat pesanan dipindahkan ke akun ini.')),
-      );
+      toast.show('$claimed riwayat pesanan dipindahkan ke akun ini.');
     }
 
     await ensureCustomerProfile(navigator, auth.user!.email!);
