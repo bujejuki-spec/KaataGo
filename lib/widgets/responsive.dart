@@ -47,7 +47,21 @@ class ResponsiveCenter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
+    return Align(
+      // heightFactor: 1 — tingginya mengikuti isinya, bukan memakan
+      // seluruh ruang yang ditawarkan.
+      //
+      // `Center` biasa melebar ke ukuran terbesar yang diizinkan di
+      // kedua arah. Di badan layar itu tidak terasa, karena badan layar
+      // memberi ukuran yang sudah pasti. Tapi di bottomNavigationBar —
+      // yang batasnya longgar setinggi layar — Center akan tumbuh
+      // setinggi layar penuh, mendorong badan layarnya jadi nol, dan
+      // hasilnya sebuah layar yang isinya lenyap sama sekali sementara
+      // deretan tombolnya melayang di tengah.
+      //
+      // Di tempat yang batasnya sudah pasti, heightFactor ini tidak
+      // berpengaruh apa-apa: ukuran pasti tetap menang.
+      heightFactor: 1,
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: maxWidth),
         child: padding == null ? child : Padding(padding: padding!, child: child),
