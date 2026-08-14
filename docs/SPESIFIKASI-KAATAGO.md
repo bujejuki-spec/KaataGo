@@ -176,64 +176,23 @@ seluruh kebijakan.
 
 ### 4.1 Pelanggan pesan sendiri — bayar QRIS
 
-```mermaid
-flowchart TD
-    A[Buka aplikasi sebagai Customer] --> B{Punya QR meja?}
-    B -- Ya --> C[Scan QR: RESTO:id TABLE:no]
-    B -- Tidak --> D[Pilih resto dari daftar]
-    C --> E[Halaman menu resto]
-    D --> E
-    E --> F[Pilih produk + level/varian + catatan]
-    F --> G[Keranjang]
-    G --> H[Isi Dine In/Take Away, nomor meja, nama]
-    H --> I[Pilih cara bayar: QRIS]
-    I --> J[Pesanan dibuat — status Menunggu Pembayaran]
-    J --> K[Layar QRIS]
-    K --> L[Konfirmasi bayar → status Sudah Dibayar]
-    L --> M[Jurnal GL QRIS tercatat otomatis]
-    L --> N[Dapur menerima pesanan]
-```
+![Alur pesan sendiri — bayar QRIS](gambar/alur-01-qris.png)
 
 ### 4.2 Pelanggan pesan sendiri — bayar tunai di kasir *(baru di 1.34.0)*
 
-```mermaid
-flowchart TD
-    A[Keranjang] --> B[Pilih cara bayar: Tunai]
-    B --> C[Pesanan dibuat — payment_method = cash<br/>status Menunggu Pembayaran]
-    C --> D[Layar penutup: nomor pesanan + ajakan ke kasir]
-    C --> E[Dapur langsung menerima pesanannya]
-    D --> F[Pelanggan datang ke kasir]
-    F --> G[Kasir buka menu Pending Payment]
-    G --> H[Klik Detail — cek isi pesanan]
-    H --> I[Terima Pembayaran — input uang diterima]
-    I --> J{Uang cukup?}
-    J -- Tidak --> I
-    J -- Ya --> K[Simpan: status Sudah Dibayar + cash_received]
-    K --> L[Hilang dari Pending Payment]
-    K --> M[Muncul di Riwayat Transaksi]
-    K --> N[Jurnal GL Tunai tercatat otomatis]
-```
+![Alur pesan sendiri — bayar tunai di kasir](gambar/alur-02-tunai-kasir.png)
 
-**Titik uji paling penting:** setelah langkah K, pesanan **tidak boleh**
-ada di dua daftar sekaligus, dan **tidak boleh** hilang dari keduanya.
+**Titik uji paling penting:** setelah pembayaran disimpan, pesanan
+**tidak boleh** ada di dua daftar sekaligus, dan **tidak boleh** hilang
+dari keduanya.
 
 ### 4.3 Setor saldo tunai & persetujuannya
 
-```mermaid
-flowchart TD
-    A[Kasir/Admin: Setor Saldo Cash] --> B[Isi nominal, bank, no. rekening, foto bukti]
-    B --> C[Popup konfirmasi: pastikan nominal sesuai transfer]
-    C --> D[Tersimpan — status Pending]
-    D --> E[Uang pindah: Saldo Cash → GL Suspense]
-    E --> F[Penanda merah muncul di menu Setor Saldo Cash Finance]
-    F --> G{Keputusan Finance}
-    G -- Konfirmasi --> H[Status Completed<br/>GL Suspense → GL Total Saldo]
-    G -- Tolak --> I[Status Ditolak<br/>GL Suspense → kembali ke Saldo Cash]
-    H --> J[Notifikasi ke HP pengaju]
-    I --> J
-```
+![Alur setor saldo tunai dan persetujuannya](gambar/alur-03-setor.png)
 
 ### 4.4 Top up petty cash & persetujuannya
+
+![Alur top up petty cash dan persetujuannya](gambar/alur-04-petty.png)
 
 Alurnya sama dengan 4.3, dengan perbedaan:
 
@@ -245,12 +204,7 @@ Alurnya sama dengan 4.3, dengan perbedaan:
 
 ### 4.5 Dapur
 
-```mermaid
-flowchart LR
-    A[Baru] -->|centang sebagian item| B[Diproses]
-    A -->|centang semua item| C[Selesai]
-    B -->|centang sisa item| C
-```
+![Alur top up petty cash dan persetujuannya](gambar/alur-04-petty.png)
 
 Notifikasi berbunyi di HP pelanggan saat masuk **Diproses** dan
 **Selesai**; di HP kasir untuk pesanan yang dia input sendiri.
@@ -701,3 +655,19 @@ Prioritas untuk rilis 1.34.0.
 *Dokumen ini disusun dari kode versi 1.34.0. Setiap perbedaan antara
 dokumen dan aplikasi adalah temuan yang layak dilaporkan — bukan
 kesalahan pembacaan penguji.*
+
+---
+
+## Cara membangun ulang dokumen ini
+
+Berkas Word (`SPESIFIKASI-KAATAGO.docx`) **dihasilkan** dari berkas
+Markdown ini, bukan diketik terpisah. Setelah mengubah isinya:
+
+```
+python3 -m pip install --user python-docx      # sekali saja
+/usr/bin/python3 scripts/render_diagram_alur.py    # kalau diagramnya berubah
+/usr/bin/python3 scripts/spesifikasi_ke_docx.py
+```
+
+Daftar isi di Word memakai *field* — buka dokumennya, klik kanan pada
+daftar isi, lalu **Update Field** untuk memuat nomor halamannya.
