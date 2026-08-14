@@ -6,6 +6,7 @@ import '../providers/table_session_provider.dart';
 import '../services/notification_service.dart';
 import '../services/fund_request_notifier.dart';
 import '../services/order_notifier.dart';
+import '../services/push_service.dart';
 
 /// Menyalakan notifikasi pesanan sesuai siapa yang sedang memakai
 /// aplikasi, dan mematikannya begitu perannya berubah.
@@ -91,6 +92,32 @@ class _OrderNotificationBinderState extends State<OrderNotificationBinder> {
     _fundNotifier?.start();
   }
 
+  /// Mendaftarkan perangkat ini ke server supaya tetap bisa dikabari
+  /// walau aplikasinya ditutup.
+  ///
+  /// Ditaruh di sini, bukan di layar login, karena pemiliknya bisa
+  /// berganti tanpa login ulang: pelanggan tamu berpindah resto, owner
+  /// menukar cabang. Yang dicatat harus selalu keadaan sekarang, bukan
+  /// keadaan saat terakhir kali seseorang mengetuk tombol masuk.
+  void _syncPushToken(AuthProvider auth, TableSessionProvider session) {
+    if (auth.isEmployee && auth.restoId != null) {
+      PushService.instance.register(
+        email: auth.user?.email,
+        restoId: auth.restoId,
+        role: auth.role?.dbValue,
+      );
+      return;
+    }
+    if (!auth.isEmployee && session.hasActiveResto && session.restoId != null) {
+      PushService.instance.register(
+        email: auth.isLoggedIn ? auth.user?.email : null,
+        restoId: session.restoId,
+        role: 'customer',
+        sessionId: session.sessionId,
+      );
+    }
+  }
+
   String? _keyFor(OrderNotifier? n) => n == null
       ? null
       : '${n.role}|${n.restoId}|${n.customerEmail}|${n.sessionId}|${n.cashierEmail}';
@@ -121,6 +148,7 @@ class _OrderNotificationBinderState extends State<OrderNotificationBinder> {
     }
 
     _syncFundNotifier(auth);
+    _syncPushToken(auth, session);
 
     return widget.child;
   }

@@ -100,6 +100,8 @@ dependencies:
   url_launcher: ^6.3.1
   geolocator: ^13.0.4
   http: ^1.6.0
+  firebase_core: ^3.15.2
+  firebase_messaging: ^15.2.10
 
 dependency_overrides:
   # app_links 6.4.x's Android build.gradle references `flutter.compileSdkVersion`

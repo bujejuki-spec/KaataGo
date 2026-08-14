@@ -3,6 +3,8 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../services/push_service.dart';
+
 import '../supabase_config.dart';
 
 enum EmployeeRole { superAdmin, owner, admin, kasir, chef, finance }
@@ -27,6 +29,15 @@ const _roleDbValues = {
   EmployeeRole.chef: 'chef',
   EmployeeRole.finance: 'finance',
 };
+
+/// Nilai peran seperti yang tertulis di database.
+///
+/// Dipakai juga saat mendaftarkan perangkat untuk notifikasi push, yang
+/// mencocokkan peran sebagai teks — dan `EmployeeRole.name` diam-diam
+/// menghasilkan "superAdmin", bukan "super_admin".
+extension EmployeeRoleDb on EmployeeRole {
+  String get dbValue => _roleDbValues[this]!;
+}
 
 const _roleDisplayLabels = {
   EmployeeRole.superAdmin: 'Super Admin',
@@ -359,6 +370,11 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> signOut() async {
+    // Dilepas sebelum sesinya hilang: menghapus baris token butuh sesi
+    // yang masih sah. Kalau gagal pun tidak menghalangi logout — token
+    // yang tertinggal paling jauh berarti satu notifikasi nyasar, jauh
+    // lebih ringan daripada orang yang tidak bisa keluar dari akunnya.
+    await PushService.instance.unregister();
     await _googleSignIn.signOut();
     await _supabase.auth.signOut();
     user = null;

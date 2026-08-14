@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../services/notification_service.dart';
+import '../services/push_service.dart';
 import 'hub_menu_tile.dart';
 import 'app_toast.dart';
 
@@ -35,6 +36,21 @@ Future<void> showNotificationTest(BuildContext context) async {
   } catch (e) {
     message = 'Notifikasi gagal dijalankan: $e';
   }
+
+  // Keadaan push dilaporkan berbarengan. Keduanya sama-sama "notifikasi"
+  // bagi yang memakainya, tapi jalannya berbeda: yang satu dibangkitkan
+  // aplikasinya sendiri dan hanya hidup selama aplikasinya terbuka, yang
+  // satu lagi datang dari server dan tetap sampai walau tertutup.
+  // Melaporkan yang pertama saja membuat "sudah dites, bunyi" terasa
+  // seperti jaminan yang tidak pernah diberikan.
+  await PushService.instance.init();
+  final push = PushService.instance;
+  final pushLine = push.tokenPreview != null
+      ? '\n\nPush aktif — perangkat ini terdaftar (${push.tokenPreview}), '
+          'jadi notifikasi tetap masuk walau aplikasi ditutup.'
+      : '\n\nPush BELUM aktif${push.lastError != null ? ' (${push.lastError})' : ''}. '
+          'Notifikasi hanya masuk selama aplikasi masih terbuka.';
+  message = '$message$pushLine';
 
   if (!navigator.mounted) return;
 
