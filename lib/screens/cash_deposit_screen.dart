@@ -19,7 +19,6 @@ import '../utils/photo_picker.dart';
 import '../utils/rupiah_input.dart';
 import '../widgets/dialog_actions.dart';
 import '../widgets/responsive.dart';
-import '../utils/field_rules.dart';
 import '../widgets/app_toast.dart';
 
 /// Menyetorkan uang tunai dari laci kasir ke rekening resto.
@@ -617,11 +616,17 @@ class _AddDepositDialog extends StatefulWidget {
   final String restoId;
   final int cashOnHand;
 
-  /// Rekening resto dari Pengaturan Pembayaran, dipakai sebagai isian
-  /// awal. Kasir yang menyetor ke rekening lain tinggal menimpanya —
-  /// tapi yang paling sering terjadi adalah menyetor ke rekening yang
-  /// itu-itu juga, dan mengetiknya ulang tiap kali hanya mengundang
-  /// salah ketik nomor rekening.
+  /// Rekening resto dari Pengaturan Pembayaran — ditampilkan, tidak
+  /// bisa diubah di sini.
+  ///
+  /// Dulu ini isian biasa yang boleh ditimpa, dengan alasan kasir
+  /// mungkin menyetor ke rekening lain. Yang terjadi justru sebaliknya:
+  /// rekeningnya nyaris selalu itu-itu juga, dan yang berubah cuma
+  /// salah ketik nomornya. Setoran yang tercatat ke nomor yang keliru
+  /// tidak bisa dicocokkan Finance dengan mutasi bank mana pun, dan
+  /// kekeliruannya baru ketahuan berhari-hari kemudian.
+  ///
+  /// Satu tempat mengaturnya: Finance → Pengaturan Pembayaran.
   final String? bankName;
   final String? accountNumber;
   final String? accountHolder;
@@ -642,9 +647,6 @@ class _AddDepositDialogState extends State<_AddDepositDialog> {
   final _formKey = GlobalKey<FormState>();
   final _amountCtrl = TextEditingController();
   final _noteCtrl = TextEditingController();
-  late final _bankCtrl = TextEditingController(text: widget.bankName ?? '');
-  late final _accountCtrl = TextEditingController(text: widget.accountNumber ?? '');
-  late final _holderCtrl = TextEditingController(text: widget.accountHolder ?? '');
   final _repo = CashDepositRepository();
   File? _proof;
   bool _saving = false;
@@ -653,11 +655,14 @@ class _AddDepositDialogState extends State<_AddDepositDialog> {
   void dispose() {
     _amountCtrl.dispose();
     _noteCtrl.dispose();
-    _bankCtrl.dispose();
-    _accountCtrl.dispose();
-    _holderCtrl.dispose();
     super.dispose();
   }
+
+  /// Rekening tujuannya sudah lengkap di Pengaturan Pembayaran.
+  bool get _accountReady =>
+      (widget.bankName ?? '').trim().isNotEmpty &&
+      (widget.accountNumber ?? '').trim().isNotEmpty &&
+      (widget.accountHolder ?? '').trim().isNotEmpty;
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
@@ -671,9 +676,9 @@ class _AddDepositDialogState extends State<_AddDepositDialog> {
         amount: parseRupiah(_amountCtrl.text)!,
         proofBase64: proofBase64,
         note: _noteCtrl.text.trim().isEmpty ? null : _noteCtrl.text.trim(),
-        bankName: _bankCtrl.text.trim().isEmpty ? null : _bankCtrl.text.trim(),
-        accountNumber: _accountCtrl.text.trim().isEmpty ? null : _accountCtrl.text.trim(),
-        accountHolder: _holderCtrl.text.trim().isEmpty ? null : _holderCtrl.text.trim(),
+        bankName: widget.bankName,
+        accountNumber: widget.accountNumber,
+        accountHolder: widget.accountHolder,
         createdBy: auth.user?.email ?? 'Kasir',
         createdAt: DateTime.now(),
       ));
@@ -777,30 +782,29 @@ class _AddDepositDialogState extends State<_AddDepositDialog> {
                     style: TextStyle(
                         fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey.shade700)),
                 const SizedBox(height: 8),
-                TextFormField(
-                  controller: _bankCtrl,
-                  decoration: const InputDecoration(labelText: 'Nama Bank', isDense: true),
-                  textCapitalization: TextCapitalization.characters,
-                  inputFormatters: nameFormatters,
-                  validator: (v) => validateName(v, label: 'Nama bank'),
-                ),
+                _ReadOnlyField(label: 'Nama Bank', value: widget.bankName),
                 const SizedBox(height: 10),
-                TextFormField(
-                  controller: _accountCtrl,
-                  decoration: const InputDecoration(labelText: 'Nomor Rekening', isDense: true),
-                  keyboardType: TextInputType.number,
-                  inputFormatters: accountNumberFormatters,
-                  validator: validateAccountNumber,
-                ),
+                _ReadOnlyField(label: 'Nomor Rekening', value: widget.accountNumber),
                 const SizedBox(height: 10),
-                TextFormField(
-                  controller: _holderCtrl,
-                  decoration:
-                      const InputDecoration(labelText: 'Nama Pemilik Rekening', isDense: true),
-                  textCapitalization: TextCapitalization.words,
-                  inputFormatters: nameFormatters,
-                  validator: (v) => validateName(v, label: 'Nama pemilik rekening'),
-                ),
+                _ReadOnlyField(
+                    label: 'Nama Pemilik Rekening', value: widget.accountHolder),
+                if (!_accountReady) ...[
+                  const SizedBox(height: 8),
+                  const Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.info_outline, size: 16, color: Colors.redAccent),
+                      SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'Rekening resto belum diatur. Minta Finance mengisinya di '
+                          'Pengaturan Pembayaran sebelum menyetor.',
+                          style: TextStyle(fontSize: 11.5, color: Colors.redAccent),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _noteCtrl,
@@ -854,7 +858,12 @@ class _AddDepositDialogState extends State<_AddDepositDialog> {
                 DialogActions(
                   confirmLabel: 'Simpan Setoran',
                   busy: _saving,
-                  onConfirm: _save,
+                  // Setoran tanpa rekening tujuan tidak bisa dicocokkan
+                  // Finance dengan mutasi bank mana pun. Sebelumnya
+                  // ketiganya wajib diisi, jadi keadaan ini memang sudah
+                  // selalu tertahan — yang berubah cuma siapa yang bisa
+                  // memperbaikinya.
+                  onConfirm: _accountReady ? _save : null,
                   onCancel: () => Navigator.of(context).pop(false),
                 ),
               ],
@@ -893,6 +902,44 @@ class _ErrorState extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+
+/// Isian yang cuma menampilkan, tidak menerima ketikan.
+///
+/// Dibuat sebagai widget tersendiri supaya ketiga baris rekening tujuan
+/// tampil persis sama — abu-abu yang berbeda tipis antar baris terbaca
+/// sebagai "yang ini mungkin bisa diketik".
+class _ReadOnlyField extends StatelessWidget {
+  final String label;
+  final String? value;
+
+  const _ReadOnlyField({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    final text = (value ?? '').trim();
+    return TextFormField(
+      // key: nilainya datang belakangan dari Pengaturan Pembayaran, dan
+      // tanpa ini isian yang sudah terbangun akan tetap memegang teks
+      // kosong yang pertama.
+      key: ValueKey('$label:$text'),
+      initialValue: text.isEmpty ? '—' : text,
+      enabled: false,
+      decoration: InputDecoration(
+        labelText: label,
+        isDense: true,
+        filled: true,
+        fillColor: const Color(0xFFEEEEEE),
+        helperText: text.isEmpty ? null : 'Dari Pengaturan Pembayaran',
+        helperStyle: const TextStyle(fontSize: 10.5),
+      ),
+      style: TextStyle(
+        fontWeight: FontWeight.w600,
+        color: text.isEmpty ? Colors.grey.shade500 : Colors.black87,
       ),
     );
   }
