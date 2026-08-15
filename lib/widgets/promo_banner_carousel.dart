@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
@@ -134,8 +135,12 @@ class _PromoBannerCarouselState extends State<PromoBannerCarousel> {
     return Column(
       children: [
         const SizedBox(height: 10),
-        SizedBox(
-          height: 148,
+        AspectRatio(
+          // 16:9, bukan tinggi tetap. Banner promo hampir selalu dibuat
+          // dengan perbandingan itu, jadi gambarnya mengisi kotaknya
+          // hampir persis — dan tinggi tetap 148 memaksa gambar apa pun
+          // masuk ke kotak yang bukan bentuknya.
+          aspectRatio: 16 / 9,
           child: PageView.builder(
             controller: _controller,
             itemCount: _banners.length,
@@ -151,12 +156,32 @@ class _PromoBannerCarouselState extends State<PromoBannerCarousel> {
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
+                        // Latar: gambar yang sama, dipotong penuh lalu
+                        // dikaburkan. Yang tampil di depan harus utuh,
+                        // dan itu menyisakan pita kosong di sisi gambar
+                        // yang bentuknya tidak pas — pita abu-abu polos
+                        // terlihat seperti gambarnya gagal dimuat,
+                        // sedangkan latar kabur ini terbaca sebagai
+                        // bagian dari bannernya.
+                        ImageFiltered(
+                          imageFilter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+                          child: Image.memory(
+                            base64Decode(banner.imageBase64),
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) =>
+                                Container(color: Colors.grey.shade200),
+                          ),
+                        ),
                         Image.memory(
                           base64Decode(banner.imageBase64),
-                          fit: BoxFit.cover,
+                          // Utuh, tidak dipotong: yang terpotong biasanya
+                          // justru nominal diskon atau tanggal
+                          // berlakunya, yang ditaruh perancangnya di tepi
+                          // gambar.
+                          fit: BoxFit.contain,
                           // Satu banner rusak tidak boleh mengosongkan
                           // seluruh halaman menu.
-                          errorBuilder: (_, __, ___) => Container(color: Colors.grey.shade200),
+                          errorBuilder: (_, __, ___) => const SizedBox.shrink(),
                         ),
                         if (banner.title != null && banner.title!.isNotEmpty)
                           Positioned(

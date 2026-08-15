@@ -1,4 +1,26 @@
-/// Pengumuman dari KaataGo — untuk sekarang: pemberitahuan versi baru.
+/// Jenis pengumuman.
+///
+/// Dipisah karena yang dicari orang berbeda: pemberitahuan versi dibuka
+/// sekali lalu ditindaklanjuti, sedangkan pengumuman umum dibaca
+/// sekilas. Dicampur dalam satu daftar, kabar versi baru tenggelam di
+/// antara promo — dan justru itu satu-satunya pesan yang menuntut
+/// tindakan.
+enum AnnouncementCategory { update, general }
+
+const kAnnouncementCategoryLabels = {
+  AnnouncementCategory.update: 'Update Aplikasi',
+  AnnouncementCategory.general: 'General',
+};
+
+extension AnnouncementCategoryDb on AnnouncementCategory {
+  String get dbValue => name;
+
+  static AnnouncementCategory fromDb(String? value) =>
+      value == 'general' ? AnnouncementCategory.general : AnnouncementCategory.update;
+}
+
+/// Pengumuman dari KaataGo — pemberitahuan versi baru, atau kabar umum
+/// dari resto sendiri.
 ///
 /// Disimpan sekali, bukan disalin ke tiap penerima. Menyalin berarti
 /// orang yang mendaftar besok tidak akan pernah melihat pengumuman hari
@@ -15,6 +37,16 @@ class Announcement {
   final String? version;
 
   final String? downloadUrl;
+
+  final AnnouncementCategory category;
+
+  /// Null berarti untuk semua resto — pengumuman dari Super Admin.
+  /// Terisi berarti hanya untuk resto itu.
+  final String? restoId;
+
+  /// Gambar promo sebagai base64. Hanya dipakai pengumuman umum.
+  final String? imageBase64;
+
   final DateTime createdAt;
 
   /// Keadaan pembacanya, hasil gabungan dengan tabel inbox_states.
@@ -26,9 +58,24 @@ class Announcement {
     required this.body,
     this.version,
     this.downloadUrl,
+    this.category = AnnouncementCategory.update,
+    this.restoId,
+    this.imageBase64,
     required this.createdAt,
     this.read = false,
   });
+
+  bool get hasImage => imageBase64 != null && imageBase64!.isNotEmpty;
+
+  /// Pengumuman ini pantas muncul di kotak masuk orang yang restonya
+  /// [restoId].
+  ///
+  /// Yang tanpa resto berlaku untuk semua — itulah pengumuman dari Super
+  /// Admin, termasuk seluruh pemberitahuan versi. Yang punya resto hanya
+  /// untuk resto itu: promo cabang Dago tidak ada urusannya dengan
+  /// karyawan cabang sebelah, dan kotak masuk yang penuh kabar orang
+  /// lain akan berhenti dibaca.
+  bool visibleTo(String? restoId) => this.restoId == null || this.restoId == restoId;
 
   Announcement copyWith({bool? read}) => Announcement(
         id: id,
@@ -36,6 +83,9 @@ class Announcement {
         body: body,
         version: version,
         downloadUrl: downloadUrl,
+        category: category,
+        restoId: restoId,
+        imageBase64: imageBase64,
         createdAt: createdAt,
         read: read ?? this.read,
       );
@@ -47,6 +97,9 @@ class Announcement {
       body: map['body'] as String? ?? '',
       version: map['version'] as String?,
       downloadUrl: map['download_url'] as String?,
+      category: AnnouncementCategoryDb.fromDb(map['category'] as String?),
+      restoId: map['resto_id'] as String?,
+      imageBase64: map['image_base64'] as String?,
       createdAt: DateTime.parse(map['created_at'] as String).toUtc(),
       read: read,
     );

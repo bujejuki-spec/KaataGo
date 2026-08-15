@@ -16,6 +16,7 @@ import '../widgets/kaata_logo.dart';
 import 'employee_orders_screen.dart';
 import 'pending_payment_screen.dart';
 import 'pos_home_screen.dart';
+import 'publish_announcement_screen.dart';
 import 'product_list_screen.dart';
 import 'settings_menu_screen.dart';
 import 'transaction_history_screen.dart';
@@ -143,6 +144,15 @@ class AdminHomeScreen extends StatelessWidget {
                       ? Future.value(0)
                       : CashDepositRepository().pendingCount(restoId),
                   destination: () => const CashDepositScreen(),
+                ),
+                HubMenuTile(
+                  icon: Icons.campaign_outlined,
+                  title: 'Kirim Pengumuman',
+                  subtitle: 'Blast info & promo ke kotak masuk resto ini',
+                  color: const Color(0xFF8B5CF6),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const PublishAnnouncementScreen()),
+                  ),
                 ),
                 const InboxTile(),
                 HubMenuTile(

@@ -1,26 +1,78 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 
 import '../db/announcement_repository.dart';
+import '../models/announcement.dart';
 import '../providers/auth_provider.dart';
-import '../widgets/responsive.dart';
+import '../utils/photo_picker.dart';
 import '../widgets/app_toast.dart';
+import '../widgets/responsive.dart';
 
-/// Menerbitkan pengumuman ke kotak masuk semua orang sekaligus.
+/// Menerbitkan pengumuman ke kotak masuk.
 ///
-/// Untuk saat ini isinya pemberitahuan versi baru: setelah APK diunggah,
-/// pengumuman ini yang membuat penggunanya tahu ada yang perlu diunduh.
-/// Terbatas untuk Super Admin — pesan yang muncul di HP semua orang
-/// bukan sesuatu yang boleh dikirim siapa saja.
-class PublishAnnouncementScreen extends StatefulWidget {
+/// Dua jenis, dan yang boleh mengirimnya berbeda:
+///
+/// - **Update Aplikasi** — hanya Super Admin. Isinya menyangkut APK yang
+///   dia sendiri terbitkan, dan admin resto tidak punya cara mengetahui
+///   versi mana yang sebenarnya sudah rilis.
+/// - **General** — Super Admin (ke semua resto) dan Admin (ke restonya
+///   sendiri). Ini yang dipakai untuk promo, jadi boleh berisi gambar.
+///
+/// Batasnya juga ditegakkan RLS. Tab yang disembunyikan di sini cuma
+/// menghalangi orang yang memakai aplikasinya.
+class PublishAnnouncementScreen extends StatelessWidget {
   const PublishAnnouncementScreen({super.key});
 
   @override
-  State<PublishAnnouncementScreen> createState() => _PublishAnnouncementScreenState();
+  Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+    final canPublishUpdate = auth.isSuperAdmin;
+
+    if (!canPublishUpdate) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Kirim Pengumuman')),
+        body: const _AnnouncementForm(category: AnnouncementCategory.general),
+      );
+    }
+
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Kirim Pengumuman'),
+          bottom: const TabBar(
+            tabs: [
+              Tab(text: 'Update Aplikasi'),
+              Tab(text: 'General'),
+            ],
+          ),
+        ),
+        body: const TabBarView(
+          children: [
+            _AnnouncementForm(category: AnnouncementCategory.update),
+            _AnnouncementForm(category: AnnouncementCategory.general),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
-class _PublishAnnouncementScreenState extends State<PublishAnnouncementScreen> {
+class _AnnouncementForm extends StatefulWidget {
+  final AnnouncementCategory category;
+
+  const _AnnouncementForm({required this.category});
+
+  @override
+  State<_AnnouncementForm> createState() => _AnnouncementFormState();
+}
+
+class _AnnouncementFormState extends State<_AnnouncementForm>
+    with AutomaticKeepAliveClientMixin {
   static const _downloadUrl =
       'https://github.com/bujejuki-spec/KaataGo-LandingPage/releases/latest/download/KaataGo.apk';
 
@@ -29,11 +81,21 @@ class _PublishAnnouncementScreenState extends State<PublishAnnouncementScreen> {
   final _bodyCtrl = TextEditingController();
   final _versionCtrl = TextEditingController();
   final _urlCtrl = TextEditingController(text: _downloadUrl);
+  String? _imageBase64;
   bool _saving = false;
+
+  bool get _isUpdate => widget.category == AnnouncementCategory.update;
+
+  // Isian yang sudah diketik tidak boleh hilang saat berpindah tab lalu
+  // kembali — mengetik ulang seluruh pengumuman gara-gara melirik tab
+  // sebelah adalah cara tercepat membuat orang enggan memakainya.
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
     super.initState();
+    if (!_isUpdate) return;
     // Versi yang terpasang di HP ini dipakai sebagai isian awal: yang
     // menerbitkan pengumuman biasanya baru saja memasang APK barunya.
     PackageInfo.fromPlatform().then((info) {
@@ -56,22 +118,47 @@ class _PublishAnnouncementScreenState extends State<PublishAnnouncementScreen> {
     super.dispose();
   }
 
+  Future<void> _pickImage() async {
+    final file = await pickProofPhoto(context);
+    if (file == null || !mounted) return;
+    final bytes = await File(file.path).readAsBytes();
+    if (!mounted) return;
+    setState(() => _imageBase64 = base64Encode(bytes));
+  }
+
   Future<void> _publish() async {
     if (!_formKey.currentState!.validate()) return;
-    final email = context.read<AuthProvider>().user?.email ?? 'Super Admin';
+    final auth = context.read<AuthProvider>();
     final toast = AppToast.of(context);
     final navigator = Navigator.of(context);
+
+    // Pengumuman umum dari Super Admin berlaku untuk semua resto, jadi
+    // restonya sengaja dikosongkan. Dari Admin, selalu terikat restonya
+    // sendiri — dan RLS menolak kalau bukan.
+    final restoId = auth.isSuperAdmin ? null : auth.restoId;
+    if (!_isUpdate && restoId == null && !auth.isSuperAdmin) {
+      toast.show('Akun ini belum punya Resto ID.', isError: true);
+      return;
+    }
 
     setState(() => _saving = true);
     try {
       await AnnouncementRepository().publish(
         title: _titleCtrl.text.trim(),
         body: _bodyCtrl.text.trim(),
-        version: _versionCtrl.text.trim().isEmpty ? null : _versionCtrl.text.trim(),
-        downloadUrl: _urlCtrl.text.trim().isEmpty ? null : _urlCtrl.text.trim(),
-        createdBy: email,
+        category: widget.category,
+        version: _isUpdate && _versionCtrl.text.trim().isNotEmpty
+            ? _versionCtrl.text.trim()
+            : null,
+        downloadUrl:
+            _isUpdate && _urlCtrl.text.trim().isNotEmpty ? _urlCtrl.text.trim() : null,
+        restoId: _isUpdate ? null : restoId,
+        imageBase64: _isUpdate ? null : _imageBase64,
+        createdBy: auth.user?.email ?? 'KaataGo',
       );
-      toast.show('Pengumuman terkirim ke semua kotak masuk.');
+      toast.show(restoId == null
+          ? 'Pengumuman terkirim ke semua kotak masuk.'
+          : 'Pengumuman terkirim ke kotak masuk resto ini.');
       navigator.pop();
     } catch (e) {
       toast.show('Gagal mengirim: $e', isError: true);
@@ -81,43 +168,53 @@ class _PublishAnnouncementScreenState extends State<PublishAnnouncementScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Kirim Pengumuman')),
-      body: ResponsiveCenter(
-        maxWidth: 640,
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            padding: const EdgeInsets.all(20),
-            children: [
-              Container(
-                padding: const EdgeInsets.all(13),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0EA5E9).withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFF0EA5E9).withOpacity(0.25)),
-                ),
-                child: const Text(
-                  'Pengumuman ini muncul di kotak masuk semua pengguna yang '
-                  'login, dan sebagai banner di layar awal untuk yang memesan '
-                  'tanpa akun.',
-                  style: TextStyle(fontSize: 12.5, color: Color(0xFF075985)),
-                ),
+    super.build(context);
+    final auth = context.watch<AuthProvider>();
+    final toEveryone = _isUpdate || auth.isSuperAdmin;
+
+    return ResponsiveCenter(
+      maxWidth: 640,
+      child: Form(
+        key: _formKey,
+        child: ListView(
+          padding: const EdgeInsets.all(20),
+          children: [
+            Container(
+              padding: const EdgeInsets.all(13),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0EA5E9).withOpacity(0.08),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFF0EA5E9).withOpacity(0.25)),
               ),
-              const SizedBox(height: 18),
-              TextFormField(
-                controller: _titleCtrl,
-                decoration: const InputDecoration(labelText: 'Judul'),
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null,
+              child: Text(
+                _isUpdate
+                    ? 'Pemberitahuan versi baru. Muncul di tab "Update Aplikasi" '
+                        'pada kotak masuk semua pengguna, dan sebagai banner di '
+                        'layar awal untuk yang memesan tanpa akun.'
+                    : toEveryone
+                        ? 'Pengumuman umum ke seluruh resto. Muncul di tab '
+                            '"General" pada kotak masuk semua pengguna yang login.'
+                        : 'Pengumuman umum untuk resto ini saja. Muncul di tab '
+                            '"General" pada kotak masuk karyawan resto ini.',
+                style: const TextStyle(fontSize: 12.5, color: Color(0xFF075985)),
               ),
-              const SizedBox(height: 14),
-              TextFormField(
-                controller: _bodyCtrl,
-                decoration: const InputDecoration(labelText: 'Isi Pesan'),
-                maxLines: 4,
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null,
-              ),
-              const SizedBox(height: 14),
+            ),
+            const SizedBox(height: 18),
+            TextFormField(
+              controller: _titleCtrl,
+              decoration: const InputDecoration(labelText: 'Judul'),
+              maxLength: 80,
+              validator: (v) => (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null,
+            ),
+            const SizedBox(height: 6),
+            TextFormField(
+              controller: _bodyCtrl,
+              decoration: const InputDecoration(labelText: 'Isi Pesan'),
+              maxLines: 4,
+              validator: (v) => (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null,
+            ),
+            const SizedBox(height: 14),
+            if (_isUpdate) ...[
               TextFormField(
                 controller: _versionCtrl,
                 decoration: const InputDecoration(
@@ -130,23 +227,63 @@ class _PublishAnnouncementScreenState extends State<PublishAnnouncementScreen> {
                 controller: _urlCtrl,
                 decoration: const InputDecoration(labelText: 'Link Unduh'),
               ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  icon: _saving
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : const Icon(Icons.campaign_outlined),
-                  label: const Text('Kirim ke Semua'),
-                  style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
-                  onPressed: _saving ? null : _publish,
+            ] else ...[
+              const Text('Gambar Promo (opsional)',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+              const SizedBox(height: 8),
+              if (_imageBase64 == null)
+                OutlinedButton.icon(
+                  onPressed: _pickImage,
+                  icon: const Icon(Icons.add_photo_alternate_outlined, size: 18),
+                  label: const Text('Pilih Gambar'),
+                  style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+                )
+              else
+                Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.memory(
+                        base64Decode(_imageBase64!),
+                        width: double.infinity,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                    Positioned(
+                      top: 6,
+                      right: 6,
+                      child: Material(
+                        color: Colors.black54,
+                        shape: const CircleBorder(),
+                        child: InkWell(
+                          customBorder: const CircleBorder(),
+                          onTap: () => setState(() => _imageBase64 = null),
+                          child: const Padding(
+                            padding: EdgeInsets.all(6),
+                            child: Icon(Icons.close, color: Colors.white, size: 18),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
             ],
-          ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                icon: _saving
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Icon(Icons.campaign_outlined),
+                label: Text(toEveryone ? 'Kirim ke Semua' : 'Kirim ke Resto Ini'),
+                style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
+                onPressed: _saving ? null : _publish,
+              ),
+            ),
+          ],
         ),
       ),
     );

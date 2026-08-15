@@ -29,10 +29,12 @@ class _InboxTileState extends State<InboxTile> {
   }
 
   Future<void> _loadUnread() async {
-    final email = context.read<AuthProvider>().user?.email;
+    final auth = context.read<AuthProvider>();
+    final email = auth.user?.email;
     if (email == null) return;
     try {
-      final items = await AnnouncementRepository().inboxFor(email);
+      final items =
+          await AnnouncementRepository().inboxFor(email, restoId: auth.restoId);
       if (!mounted) return;
       setState(() => _unread = items.where((i) => !i.read).length);
     } catch (_) {

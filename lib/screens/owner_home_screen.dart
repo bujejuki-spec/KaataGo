@@ -23,6 +23,7 @@ import 'finance_journal_screen.dart';
 import 'finance_report_screen.dart';
 import 'pending_payment_screen.dart';
 import 'pos_home_screen.dart';
+import 'publish_announcement_screen.dart';
 import 'product_list_screen.dart';
 import 'settings_menu_screen.dart';
 import 'transaction_history_screen.dart';
@@ -187,6 +188,14 @@ class OwnerHomeScreen extends StatelessWidget {
                     subtitle: 'Info resto, karyawan, QR meja, pembayaran',
                     color: const Color(0xFF64748B),
                     onTap: () => _open(context, const SettingsMenuScreen()),
+                  ),
+                  const SizedBox(height: 12),
+                  HubMenuTile(
+                    icon: Icons.campaign_outlined,
+                    title: 'Kirim Pengumuman',
+                    subtitle: 'Blast info & promo ke kotak masuk resto ini',
+                    color: const Color(0xFF8B5CF6),
+                    onTap: () => _open(context, const PublishAnnouncementScreen()),
                   ),
                   const SizedBox(height: 12),
                   const InboxTile(),

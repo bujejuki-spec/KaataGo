@@ -10,7 +10,13 @@ class AnnouncementRepository {
   /// Penghapusan dicatat per orang, bukan dengan membuang pengumumannya —
   /// satu orang membersihkan inbox-nya tidak boleh menghilangkan
   /// pengumuman itu dari orang lain.
-  Future<List<Announcement>> inboxFor(String email) async {
+  ///
+  /// [restoId] menyaring pengumuman milik resto lain. Disaring di sini,
+  /// bukan di query, karena penyaringannya berupa "milik semua resto ATAU
+  /// milik resto saya" — dan baris untuk semua resto adalah yang
+  /// resto_id-nya kosong, yang paling mudah terlewat kalau ditulis
+  /// sebagai kondisi SQL.
+  Future<List<Announcement>> inboxFor(String email, {String? restoId}) async {
     final rows = await _client
         .from('app_announcements')
         .select()
@@ -32,6 +38,7 @@ class AnnouncementRepository {
     return rows
         .where((r) => !deleted.contains(r['id'] as String))
         .map((r) => Announcement.fromMap(r, read: read.contains(r['id'] as String)))
+        .where((a) => a.visibleTo(restoId))
         .toList();
   }
 
@@ -41,6 +48,8 @@ class AnnouncementRepository {
     final rows = await _client
         .from('app_announcements')
         .select()
+        .eq('category', 'update')
+        .isFilter('resto_id', null)
         .not('version', 'is', null)
         .order('created_at', ascending: false)
         .limit(1);
@@ -64,19 +73,30 @@ class AnnouncementRepository {
     ], onConflict: 'email,announcement_id');
   }
 
-  /// Menerbitkan pengumuman. Hanya super_admin yang diizinkan RLS.
+  /// Menerbitkan pengumuman.
+  ///
+  /// Pemberitahuan versi hanya boleh dari Super Admin; pengumuman umum
+  /// boleh juga dari Admin resto untuk restonya sendiri. Keduanya
+  /// ditegakkan RLS, bukan di sini — layar cuma menyembunyikan
+  /// tombolnya.
   Future<void> publish({
     required String title,
     required String body,
+    required AnnouncementCategory category,
     String? version,
     String? downloadUrl,
+    String? restoId,
+    String? imageBase64,
     required String createdBy,
   }) async {
     await _client.from('app_announcements').insert({
       'title': title,
       'body': body,
+      'category': category.dbValue,
       if (version != null) 'version': version,
       if (downloadUrl != null) 'download_url': downloadUrl,
+      if (restoId != null) 'resto_id': restoId,
+      if (imageBase64 != null) 'image_base64': imageBase64,
       'created_by': createdBy,
     });
   }
