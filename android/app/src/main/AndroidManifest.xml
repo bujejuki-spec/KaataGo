@@ -6,6 +6,11 @@
          older devices still do. -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="29" />
+    <!-- Memasang APK versi baru yang diunduh dari dalam aplikasi.
+         Tanpa izin ini Android menolak membuka layar pemasangnya, dan
+         kegagalannya terlihat seperti aplikasinya yang rusak: berkasnya
+         terunduh utuh lalu tidak terjadi apa-apa. -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <!-- Notifikasi status pesanan. Wajib diminta saat berjalan sejak
          Android 13; tanpa izin ini notifikasinya terkirim tapi tidak
          pernah terlihat. -->

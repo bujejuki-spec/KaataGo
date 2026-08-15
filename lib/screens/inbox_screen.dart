@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../db/announcement_repository.dart';
 import '../models/announcement.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/update_download_button.dart';
 import '../theme.dart';
 import '../utils/id_time.dart';
 import '../widgets/dialog_actions.dart';
@@ -110,17 +110,7 @@ class _InboxScreenState extends State<InboxScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (item.downloadUrl != null && item.downloadUrl!.isNotEmpty)
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.icon(
-                    icon: const Icon(Icons.download_outlined),
-                    label: const Text('Unduh Versi Terbaru'),
-                    onPressed: () => launchUrl(
-                      Uri.parse(item.downloadUrl!),
-                      mode: LaunchMode.externalApplication,
-                    ),
-                  ),
-                ),
+                UpdateDownloadButton(url: item.downloadUrl!),
               TextButton(
                 onPressed: () => Navigator.pop(dialogContext),
                 child: const Text('Tutup'),
