@@ -29,6 +29,7 @@ FILES=(
   customer_cash_payment.sql
   push_notifications.sql
   announcement_categories.sql
+  fix_device_tokens_rls.sql
 )
 
 {
