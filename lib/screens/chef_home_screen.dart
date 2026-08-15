@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../db/order_repository.dart';
 import '../models/customer_order.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/inbox_icon_button.dart';
 import '../widgets/notification_test_tile.dart';
 import '../widgets/kitchen_checklist_dialog.dart';
 import '../utils/logout_confirm.dart';
@@ -56,6 +57,9 @@ class _ChefHomeScreenState extends State<ChefHomeScreen> {
           ),
           bottom: TabBar(tabs: _tabs.map((t) => Tab(text: t.$2)).toList()),
           actions: [
+            // Owner membukanya dari hub-nya sendiri, yang sudah punya
+            // Kotak Masuk — sama alasannya dengan tombol Keluar di bawah.
+            if (!auth.isOwner) const InboxIconButton(),
             IconButton(
               icon: const Icon(Icons.notifications_active_outlined),
               tooltip: 'Tes Notifikasi',
