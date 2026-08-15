@@ -99,15 +99,25 @@ class PushService {
     _lastOwner = (email, restoId, role);
 
     try {
-      await _client.from('device_tokens').upsert({
-        'token': token,
-        'email': email,
-        'resto_id': restoId,
-        'role': role,
-        'session_id': sessionId,
-        'platform': Platform.isIOS ? 'ios' : 'android',
-        'updated_at': DateTime.now().toUtc().toIso8601String(),
-      }, onConflict: 'token');
+      // Lewat fungsi, bukan menulis langsung ke tabelnya.
+      //
+      // Menulis langsung berarti aplikasi butuh hak baca atas
+      // device_tokens — upsert mengharuskan Postgres membaca baris yang
+      // bentrok lebih dulu — dan hak baca itu membuka seluruh daftar
+      // token berikut email karyawan dan restonya kepada siapa pun yang
+      // punya anon key, yang memang tertanam di dalam APK.
+      //
+      // Dengan fungsi ini, tabelnya tertutup rapat: aplikasi tidak bisa
+      // membaca, mengubah, atau menghapus baris mana pun — hanya bisa
+      // menitipkan tokennya sendiri.
+      await _client.rpc('register_device_token', params: {
+        'p_token': token,
+        'p_email': email,
+        'p_resto_id': restoId,
+        'p_role': role,
+        'p_session_id': sessionId,
+        'p_platform': Platform.isIOS ? 'ios' : 'android',
+      });
       _lastRegistration = signature;
       lastError = null;
     } catch (e) {
@@ -127,7 +137,7 @@ class PushService {
     _lastOwner = null;
     if (token == null) return;
     try {
-      await _client.from('device_tokens').delete().eq('token', token);
+      await _client.rpc('unregister_device_token', params: {'p_token': token});
     } catch (e) {
       debugPrint('[Push] gagal melepas token: $e');
     }
