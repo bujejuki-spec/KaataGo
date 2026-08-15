@@ -1,6 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../providers/auth_provider.dart';
 
 import '../services/notification_service.dart';
 import '../services/push_service.dart';
@@ -14,6 +17,9 @@ import 'app_toast.dart';
 Future<void> showNotificationTest(BuildContext context) async {
   final toast = AppToast.of(context);
   final navigator = Navigator.of(context);
+  // Dibaca sebelum menunggu apa pun: sesudah await, context-nya mungkin
+  // sudah tidak menempel di pohon widget lagi.
+  final auth = context.read<AuthProvider>();
   toast.show('Mengirim notifikasi tes…');
 
   // Apa pun yang terjadi, harus ada jawabannya. Sebelumnya galat dari
@@ -43,13 +49,27 @@ Future<void> showNotificationTest(BuildContext context) async {
   // satu lagi datang dari server dan tetap sampai walau tertutup.
   // Melaporkan yang pertama saja membuat "sudah dites, bunyi" terasa
   // seperti jaminan yang tidak pernah diberikan.
-  await PushService.instance.init();
+  // Sekalian mencoba mendaftarkan ulang. Layar tes adalah satu-satunya
+  // tempat orang datang saat notifikasinya tidak bunyi, jadi di sinilah
+  // percobaan ulang paling mungkin berguna — daripada menunggu
+  // aplikasinya dibuka ulang entah kapan.
   final push = PushService.instance;
-  final pushLine = push.tokenPreview != null
-      ? '\n\nPush aktif — perangkat ini terdaftar (${push.tokenPreview}), '
-          'jadi notifikasi tetap masuk walau aplikasi ditutup.'
-      : '\n\nPush BELUM aktif${push.lastError != null ? ' (${push.lastError})' : ''}. '
-          'Notifikasi hanya masuk selama aplikasi masih terbuka.';
+  await push.register(
+    email: auth.user?.email,
+    restoId: auth.restoId,
+    role: auth.role?.dbValue,
+  );
+
+  final String pushLine;
+  if (push.lastError != null) {
+    pushLine = '\n\nPush BELUM aktif.\n${push.lastError}';
+  } else if (push.tokenPreview != null) {
+    pushLine = '\n\nPush aktif — perangkat ini terdaftar (${push.tokenPreview}), '
+        'jadi notifikasi tetap masuk walau aplikasi ditutup.';
+  } else {
+    pushLine = '\n\nPush BELUM aktif. Notifikasi hanya masuk selama '
+        'aplikasi masih terbuka.';
+  }
   message = '$message$pushLine';
 
   if (!navigator.mounted) return;

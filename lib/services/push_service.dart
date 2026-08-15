@@ -39,6 +39,13 @@ class PushService {
   /// Dicatat kalau penyiapannya gagal, supaya layar tes bisa menyebut
   /// sebabnya alih-alih diam — kegagalan push nyaris selalu tak terlihat
   /// sampai ada yang menunggu notifikasi yang tidak pernah datang.
+  ///
+  /// Disertai tahapnya, karena dua kegagalan yang sangat berbeda
+  /// bersembunyi di balik gejala yang sama persis ("tidak ada notifikasi
+  /// masuk"): Firebase yang gagal memberi token, dan token yang didapat
+  /// tapi gagal disimpan ke server. Yang pertama urusan setelan
+  /// perangkat, yang kedua urusan izin di database — dan tanpa
+  /// menyebutkan yang mana, keduanya akan dicari di tempat yang salah.
   String? lastError;
 
   Future<void> init() async {
@@ -61,7 +68,7 @@ class PushService {
       _ready = true;
       lastError = null;
     } catch (e) {
-      lastError = '$e';
+      lastError = 'Firebase gagal menyiapkan token — $e';
       debugPrint('[Push] gagal disiapkan: $e');
     }
   }
@@ -82,7 +89,10 @@ class PushService {
   }) async {
     await init();
     final token = _token;
-    if (token == null) return;
+    if (token == null) {
+      lastError ??= 'Firebase tidak memberi token untuk perangkat ini.';
+      return;
+    }
 
     final signature = '$token|$email|$restoId|$role|$sessionId';
     if (signature == _lastRegistration) return;
@@ -101,7 +111,7 @@ class PushService {
       _lastRegistration = signature;
       lastError = null;
     } catch (e) {
-      lastError = '$e';
+      lastError = 'Token didapat, tapi gagal disimpan ke server — $e';
       debugPrint('[Push] gagal mendaftarkan token: $e');
     }
   }
