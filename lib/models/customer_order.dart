@@ -40,7 +40,10 @@ class CustomerOrderItem {
   }
 }
 
-enum OrderPaymentStatus { pending, paid }
+/// [expired] — pesanan tunai dari HP pelanggan yang tidak pernah
+/// dilunasi di kasir sampai tenggangnya habis. Dibatalkan oleh database,
+/// bukan oleh siapa pun yang menekan tombol.
+enum OrderPaymentStatus { pending, paid, expired }
 
 /// Who placed the order — shown to the Chef so they know whether it came
 /// from a walk-in rung up by a cashier, or a customer's own phone.
@@ -154,6 +157,29 @@ class CustomerOrder {
       source == OrderSource.customer &&
       paymentStatus == OrderPaymentStatus.pending &&
       paymentMethod == 'cash';
+
+  /// Batas waktu melunasi pesanan tunai di kasir.
+  ///
+  /// Tanpa batas, pesanan yang orangnya berubah pikiran — atau tidak
+  /// pernah datang — menggantung selamanya di layar kasir dan di dapur,
+  /// dan tiap hari sisanya menumpuk sedikit lagi. Setengah jam cukup
+  /// panjang untuk berjalan ke kasir sambil mengantre, dan cukup pendek
+  /// supaya antrean layarnya tetap terbaca.
+  static const paymentWindow = Duration(minutes: 30);
+
+  /// Kapan pesanan ini hangus kalau belum dibayar juga.
+  DateTime get paymentDeadline => createdAt.add(paymentWindow);
+
+  /// Sisa waktu membayar. Negatif berarti tenggangnya sudah lewat dan
+  /// pembatalannya tinggal menunggu giliran tugas terjadwal berikutnya.
+  Duration get paymentRemaining => paymentDeadline.difference(DateTime.now());
+
+  /// Pesanan yang dibatalkan karena tidak dibayar.
+  ///
+  /// Diperiksa terpisah supaya tidak ikut terbawa ke layar dapur: sudah
+  /// tidak menunggu dibayar lagi, tapi juga bukan pesanan yang harus
+  /// dimasak.
+  bool get isExpired => paymentStatus == OrderPaymentStatus.expired;
 
   /// Pesanan mandiri yang uangnya diterima di meja kasir.
   ///

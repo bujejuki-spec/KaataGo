@@ -37,12 +37,32 @@ interface OrderRow {
 
 Deno.serve(async (req) => {
   try {
-    const { order_id, simulate } = await req.json();
-    if (!order_id) {
-      return json({ error: "order_id wajib diisi" }, 400);
+    const body0 = await req.json();
+    const { order_id, simulate, resto_id, amount } = body0;
+
+    if (simulate === true) {
+      return await simulatePayment(order_id, body0.reference_id);
     }
 
-    if (simulate === true) return await simulatePayment(order_id);
+    // Dua cara memanggil: menyebut pesanannya, atau — untuk pembayaran
+    // di meja kasir — menyebut restonya berikut nominalnya.
+    //
+    // Pesanan yang diinput kasir baru dibuat setelah pembayarannya
+    // diterima, jadi saat QR-nya harus terbit belum ada pesanan yang
+    // bisa disebut. Nominalnya di sini datang dari aplikasi, dan itu
+    // memang lebih longgar daripada jalur pelanggan — tapi yang
+    // memasukkannya adalah kasir resto itu sendiri, yang salah ketiknya
+    // merugikan restonya sendiri, bukan pelanggannya.
+    if (!order_id) {
+      if (!resto_id || !amount) {
+        return json({ error: "sebutkan order_id, atau resto_id dan amount" }, 400);
+      }
+      return await createCharge({
+        restoId: String(resto_id),
+        amount: Number(amount),
+        orderId: null,
+      });
+    }
 
     const { data: order, error: orderError } = await admin
       .from("orders")
@@ -56,6 +76,25 @@ Deno.serve(async (req) => {
       return json({ error: "pesanan ini sudah dibayar" }, 409);
     }
 
+    return await createCharge({
+      restoId: order.resto_id ?? "",
+      amount: order.total,
+      orderId: order.id,
+    });
+  } catch (e) {
+    return json({ error: e instanceof Error ? e.message : String(e) }, 500);
+  }
+});
+
+/// Menerbitkan (atau memakai ulang) satu tagihan QRIS.
+async function createCharge(
+  { restoId, amount, orderId }: {
+    restoId: string;
+    amount: number;
+    orderId: string | null;
+  },
+) {
+  try {
     // Tagihan yang masih hidup dipakai ulang, bukan dibuatkan yang baru.
     //
     // Pelanggan yang menutup layarnya lalu kembali akan memanggil fungsi
@@ -63,10 +102,12 @@ Deno.serve(async (req) => {
     // punya lima QR aktif sekaligus — dan kalau dua di antaranya
     // terbayar, yang kedua adalah uang pelanggan yang harus
     // dikembalikan.
-    const { data: existing } = await admin
+    const { data: existing } = orderId == null
+      ? { data: null }
+      : await admin
       .from("payment_charges")
       .select("reference_id, qr_string, amount, expires_at")
-      .eq("order_id", order.id)
+      .eq("order_id", orderId)
       .eq("status", "pending")
       .gt("expires_at", new Date().toISOString())
       .order("created_at", { ascending: false })
@@ -94,7 +135,7 @@ Deno.serve(async (req) => {
     const { data: account } = await admin
       .from("resto_payment_accounts")
       .select("account_id, active")
-      .eq("resto_id", order.resto_id ?? "")
+      .eq("resto_id", restoId)
       .maybeSingle();
 
     const subAccount =
@@ -123,6 +164,7 @@ Deno.serve(async (req) => {
 
     if (existing?.qr_string) {
       return json({
+        reference_id: existing.reference_id,
         qr_string: existing.qr_string,
         amount: existing.amount,
         expires_at: existing.expires_at,
@@ -134,7 +176,7 @@ Deno.serve(async (req) => {
     // Pengenal kita sendiri, bukan nomor pesanannya mentah-mentah: satu
     // pesanan bisa butuh QR kedua setelah yang pertama kedaluwarsa, dan
     // keduanya harus bisa dibedakan saat webhooknya datang.
-    const referenceId = `kaatago-${order.id}-${Date.now()}`;
+    const referenceId = `kaatago-${orderId ?? "counter"}-${Date.now()}`;
     const expiresAt = new Date(Date.now() + EXPIRY_MINUTES * 60_000);
 
     const res = await fetch("https://api.xendit.co/qr_codes", {
@@ -157,7 +199,7 @@ Deno.serve(async (req) => {
         reference_id: referenceId,
         type: "DYNAMIC",
         currency: "IDR",
-        amount: order.total,
+        amount: amount,
         expires_at: expiresAt.toISOString(),
       }),
     });
@@ -168,10 +210,10 @@ Deno.serve(async (req) => {
       // yang QR-nya tidak muncul akan bertanya, dan jawabannya harus ada
       // di suatu tempat.
       await admin.from("payment_charges").insert({
-        order_id: order.id,
-        resto_id: order.resto_id,
+        order_id: orderId,
+        resto_id: restoId,
         reference_id: referenceId,
-        amount: order.total,
+        amount: amount,
         status: "failed",
         raw: body,
       });
@@ -179,20 +221,21 @@ Deno.serve(async (req) => {
     }
 
     await admin.from("payment_charges").insert({
-      order_id: order.id,
-      resto_id: order.resto_id,
+      order_id: orderId,
+      resto_id: restoId,
       reference_id: referenceId,
       provider_charge_id: body.id ?? null,
       qr_string: body.qr_string ?? null,
-      amount: order.total,
+      amount: amount,
       status: "pending",
       expires_at: expiresAt.toISOString(),
       raw: body,
     });
 
     return json({
+      reference_id: referenceId,
       qr_string: body.qr_string,
-      amount: order.total,
+      amount: amount,
       expires_at: expiresAt.toISOString(),
       reused: false,
       test_mode: testMode,
@@ -203,7 +246,7 @@ Deno.serve(async (req) => {
   } catch (e) {
     return json({ error: e instanceof Error ? e.message : String(e) }, 500);
   }
-});
+}
 
 /// Memalsukan pembayaran, hanya untuk pengujian.
 ///
@@ -218,20 +261,22 @@ Deno.serve(async (req) => {
 /// benar-benar berpindah tidak boleh ada di lingkungan produksi, dan
 /// penjagaan yang mengandalkan "nanti diingat untuk dihapus" akan
 /// gagal pada rilis yang paling sibuk.
-async function simulatePayment(orderId: string) {
+async function simulatePayment(orderId?: string, referenceId?: string) {
   const secret = Deno.env.get("XENDIT_SECRET_KEY") ?? "";
   if (!secret.startsWith("xnd_development_")) {
     return json({ error: "simulasi hanya untuk kunci Test" }, 403);
   }
 
-  const { data: charge } = await admin
+  const query = admin
     .from("payment_charges")
     .select("provider_charge_id, reference_id, amount, status, resto_id")
-    .eq("order_id", orderId)
     .eq("status", "pending")
     .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .limit(1);
+
+  const { data: charge } = referenceId != null
+    ? await query.eq("reference_id", referenceId).maybeSingle()
+    : await query.eq("order_id", orderId ?? "").maybeSingle();
 
   if (!charge?.provider_charge_id) {
     return json({ error: "tidak ada tagihan menunggu untuk pesanan ini" }, 404);

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -237,6 +239,12 @@ class _PendingCard extends StatelessWidget {
                 style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                 overflow: TextOverflow.ellipsis,
               ),
+              const SizedBox(height: 6),
+              // Sisa waktu ikut terlihat di sisi kasir, bukan hanya di HP
+              // pelanggannya. Pesanan yang tinggal dua menit lagi adalah
+              // pesanan yang harus dipanggil sekarang, dan kasir tidak
+              // punya cara lain mengetahuinya.
+              _Countdown(deadline: order.paymentDeadline),
               const SizedBox(height: 10),
               Row(
                 children: [
@@ -271,6 +279,103 @@ class _PendingCard extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Sisa waktu pelunasan, berdetak sendiri.
+///
+/// Berdetak tiap sepuluh detik, bukan tiap detik: yang perlu diketahui
+/// kasir adalah "tinggal sebentar lagi", dan menggambar ulang seluruh
+/// daftar enam kali lebih sering tidak menambah apa pun selain kerja.
+class _Countdown extends StatefulWidget {
+  final DateTime deadline;
+
+  const _Countdown({required this.deadline});
+
+  @override
+  State<_Countdown> createState() => _CountdownState();
+}
+
+class _CountdownState extends State<_Countdown> {
+  Timer? _ticker;
+
+  @override
+  void initState() {
+    super.initState();
+    _ticker = Timer.periodic(const Duration(seconds: 10), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final left = widget.deadline.difference(DateTime.now());
+    if (left.isNegative) {
+      return const _Chip(
+        icon: Icons.timer_off_outlined,
+        text: 'Waktu habis — pesanan akan dibatalkan',
+        color: Color(0xFFB91C1C),
+        background: Color(0xFFFEE2E2),
+      );
+    }
+
+    // Sepuluh menit terakhir diberi warna. Sebelum itu semua pesanan
+    // sama mendesaknya, dan mewarnai semuanya sama saja dengan tidak
+    // mewarnai apa pun.
+    final urgent = left.inMinutes < 10;
+    final menit = left.inMinutes;
+    return _Chip(
+      icon: Icons.timer_outlined,
+      text: menit < 1
+          ? 'Kurang dari 1 menit lagi'
+          : 'Sisa waktu bayar $menit menit',
+      color: urgent ? const Color(0xFFB45309) : Colors.grey.shade700,
+      background: urgent ? const Color(0xFFFEF3C7) : Colors.grey.shade100,
+    );
+  }
+}
+
+class _Chip extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  final Color color;
+  final Color background;
+
+  const _Chip({
+    required this.icon,
+    required this.text,
+    required this.color,
+    required this.background,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+        decoration: BoxDecoration(
+          color: background,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 13, color: color),
+            const SizedBox(width: 5),
+            Text(text,
+                style: TextStyle(
+                    fontSize: 11.5, fontWeight: FontWeight.w600, color: color)),
+          ],
         ),
       ),
     );

@@ -16,6 +16,9 @@ class QrisCharge {
 
   final DateTime expiresAt;
 
+  /// Pengenal tagihannya di server, untuk menanyakan statusnya nanti.
+  final String referenceId;
+
   /// Penyedianya sedang memakai kunci uji.
   ///
   /// Ditentukan server, bukan aplikasi. Aplikasi tidak punya cara
@@ -30,6 +33,7 @@ class QrisCharge {
     required this.qrString,
     required this.amount,
     required this.expiresAt,
+    this.referenceId = '',
     this.testMode = false,
   });
 
@@ -65,18 +69,63 @@ class PaymentGatewayService {
         return null;
       }
 
-      return QrisCharge(
-        qrString: data['qr_string'] as String,
-        amount: (data['amount'] as num).toInt(),
-        expiresAt: DateTime.parse(data['expires_at'] as String).toLocal(),
-        testMode: data['test_mode'] == true,
-      );
+      return _parse(data);
     } catch (e) {
       // Termasuk saat kuncinya belum dipasang. Dicatat, tapi tidak
       // dilempar ke atas: layar pembayaran yang gagal terbuka jauh lebih
       // merugikan daripada layar pembayaran yang jatuh ke cara lama.
       debugPrint('[QRIS] gagal membuat tagihan: $e');
       return null;
+    }
+  }
+
+  /// Tagihan untuk pembayaran di meja kasir, tanpa pesanan.
+  ///
+  /// Pesanan yang diinput kasir baru dibuat setelah pembayarannya
+  /// diterima, jadi saat QR-nya harus terbit belum ada pesanan yang bisa
+  /// disebut. Yang menghubungkan keduanya nanti adalah transaksi yang
+  /// tercatat sesudahnya.
+  Future<QrisCharge?> createCounterQris({
+    required String restoId,
+    required int amount,
+  }) async {
+    try {
+      final res = await _client.functions.invoke(
+        'create-qris',
+        body: {'resto_id': restoId, 'amount': amount},
+      );
+      final data = res.data;
+      if (data is! Map || data['qr_string'] == null) return null;
+      return _parse(data);
+    } catch (e) {
+      debugPrint('[QRIS] gagal membuat tagihan kasir: $e');
+      return null;
+    }
+  }
+
+  QrisCharge _parse(Map data) => QrisCharge(
+        qrString: data['qr_string'] as String,
+        amount: (data['amount'] as num).toInt(),
+        expiresAt: DateTime.parse(data['expires_at'] as String).toLocal(),
+        referenceId: data['reference_id'] as String? ?? '',
+        testMode: data['test_mode'] == true,
+      );
+
+  /// Menanyakan apakah sebuah tagihan sudah dibayar.
+  ///
+  /// Dipakai layar kasir, yang tagihannya tidak menempel pada pesanan
+  /// mana pun — jadi tidak ada baris yang bisa dipantau realtime seperti
+  /// di jalur pelanggan.
+  Future<bool> isPaid(String referenceId) async {
+    if (referenceId.isEmpty) return false;
+    try {
+      final status = await _client.rpc(
+        'gateway_charge_status',
+        params: {'p_reference_id': referenceId},
+      );
+      return status == 'paid';
+    } catch (_) {
+      return false;
     }
   }
 
@@ -90,11 +139,15 @@ class PaymentGatewayService {
   /// uji memang mustahil karena kodenya bukan QRIS asli.
   ///
   /// Ditolak server kalau kuncinya bukan kunci uji.
-  Future<String?> simulatePayment(String orderId) async {
+  Future<String?> simulatePayment({String? orderId, String? referenceId}) async {
     try {
       final res = await _client.functions.invoke(
         'create-qris',
-        body: {'order_id': orderId, 'simulate': true},
+        body: {
+          if (orderId != null) 'order_id': orderId,
+          if (referenceId != null) 'reference_id': referenceId,
+          'simulate': true,
+        },
       );
       final data = res.data;
       if (data is Map && data['simulated'] == true) return null;

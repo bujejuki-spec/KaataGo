@@ -1,5 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+
+import '../models/customer_order.dart';
 
 /// Layar penutup untuk pesanan yang dipilih dibayar tunai di kasir.
 ///
@@ -12,18 +16,51 @@ import 'package:intl/intl.dart';
 /// disediakan sendiri oleh resto — yang perlu dibawa pulang pelanggan
 /// cuma dua hal: pesanannya sudah masuk, dan nomor pesanannya harus
 /// disebutkan di kasir.
-class CustomerCashPendingScreen extends StatelessWidget {
+class CustomerCashPendingScreen extends StatefulWidget {
   final String orderId;
   final int amount;
+
+  /// Kapan pesanannya dibuat — titik nol hitungan mundurnya. Boleh
+  /// kosong untuk pemanggil lama; dianggap baru saja dibuat.
+  final DateTime? createdAt;
 
   const CustomerCashPendingScreen({
     super.key,
     required this.orderId,
     required this.amount,
+    this.createdAt,
   });
 
   @override
+  State<CustomerCashPendingScreen> createState() =>
+      _CustomerCashPendingScreenState();
+}
+
+class _CustomerCashPendingScreenState extends State<CustomerCashPendingScreen> {
+  late final DateTime _deadline =
+      (widget.createdAt ?? DateTime.now()).add(CustomerOrder.paymentWindow);
+  Timer? _ticker;
+
+  @override
+  void initState() {
+    super.initState();
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final orderId = widget.orderId;
+    final amount = widget.amount;
+    final remaining = _deadline.difference(DateTime.now());
+    final habis = remaining.isNegative;
     final currency = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
     final ref = orderId.length >= 8
         ? orderId.substring(0, 8).toUpperCase()
@@ -103,7 +140,58 @@ class CustomerCashPendingScreen extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
+              // Hitungan mundurnya ditaruh persis di bawah nomor pesanan,
+              // bukan di sudut layar sebagai catatan kaki. Batas waktu
+              // yang baru terbaca setelah lewat sama saja dengan tidak
+              // pernah diberitahukan.
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: habis ? const Color(0xFFFEE2E2) : Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Column(
+                  children: [
+                    Icon(
+                      habis ? Icons.cancel_outlined : Icons.timer_outlined,
+                      size: 20,
+                      color: habis ? const Color(0xFFB91C1C) : Colors.grey.shade600,
+                    ),
+                    const SizedBox(height: 6),
+                    if (habis)
+                      const Text(
+                        'Batas waktu pembayaran sudah lewat.\n'
+                        'Pesanan ini dibatalkan — silakan pesan ulang.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFFB91C1C),
+                        ),
+                      )
+                    else ...[
+                      Text(
+                        'Bayar dalam ${_clock(remaining)}',
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        'Kalau belum dibayar sampai waktunya habis, pesanan '
+                        'ini otomatis dibatalkan.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
               Text(
                 'Pesanan kamu sudah diteruskan ke dapur. Sebutkan nomor pesanan '
                 'di atas saat membayar di kasir.',
@@ -123,5 +211,11 @@ class CustomerCashPendingScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _clock(Duration d) {
+    final m = d.inMinutes.toString().padLeft(2, '0');
+    final s = (d.inSeconds % 60).toString().padLeft(2, '0');
+    return '$m:$s';
   }
 }

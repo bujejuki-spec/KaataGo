@@ -26,11 +26,24 @@ class ChefHomeScreen extends StatefulWidget {
 class _ChefHomeScreenState extends State<ChefHomeScreen> {
   final _repo = OrderRepository();
 
-  static const _tabs = [
+  /// Status null berarti tab "Menunggu Pembayaran": isinya dipilih dari
+  /// status bayarnya, bukan status dapurnya.
+  static const _tabs = <(KitchenStatus?, String)>[
+    (null, 'Menunggu Bayar'),
     (KitchenStatus.waiting, 'Baru'),
     (KitchenStatus.onProgress, 'Diproses'),
     (KitchenStatus.done, 'Selesai'),
   ];
+
+  /// Pesanan yang uangnya belum diterima ditarik keluar dari tiga tab
+  /// kerja dan dikumpulkan di tab pertama.
+  ///
+  /// Dapur tetap boleh memasaknya — tombolnya ada di sana, dan banyak
+  /// resto memang memilih begitu supaya pelanggan tidak menunggu dua
+  /// kali. Yang dihindari cuma satu: pesanan belum dibayar duduk
+  /// bercampur di antrean "Baru" tanpa penanda apa pun, lalu keluar
+  /// dari dapur, lalu tidak ada yang ingat menagihnya.
+  bool _awaitingPayment(CustomerOrder o) => o.isPendingCashPayment;
 
   @override
   Widget build(BuildContext context) {
@@ -55,7 +68,14 @@ class _ChefHomeScreenState extends State<ChefHomeScreen> {
               ),
             ],
           ),
-          bottom: TabBar(tabs: _tabs.map((t) => Tab(text: t.$2)).toList()),
+          // Bisa digeser: empat tab dengan satu label dua kata tidak
+          // muat dibagi rata di layar HP, dan yang terpotong justru tab
+          // baru yang belum dikenali siapa pun.
+          bottom: TabBar(
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
+            tabs: _tabs.map((t) => Tab(text: t.$2)).toList(),
+          ),
           actions: [
             // Owner membukanya dari hub-nya sendiri, yang sudah punya
             // Kotak Masuk — sama alasannya dengan tombol Keluar di bawah.
@@ -93,14 +113,27 @@ class _ChefHomeScreenState extends State<ChefHomeScreen> {
                     textAlign: TextAlign.center),
               );
             }
-            final allOrders = snapshot.data ?? [];
+            // Pesanan yang hangus karena tidak dibayar tidak muncul di
+            // mana pun di dapur. Membiarkannya jatuh kembali ke "Baru"
+            // hanya karena status bayarnya bukan lagi 'pending' adalah
+            // cara paling pasti memasak pesanan yang sudah dibatalkan.
+            final allOrders =
+                (snapshot.data ?? []).where((o) => !o.isExpired).toList();
 
             return TabBarView(
               children: _tabs.map((tab) {
-                final orders =
-                    allOrders.where((o) => o.kitchenStatus == tab.$1).toList();
+                final orders = tab.$1 == null
+                    ? allOrders.where(_awaitingPayment).toList()
+                    : allOrders
+                        .where((o) =>
+                            o.kitchenStatus == tab.$1 && !_awaitingPayment(o))
+                        .toList();
                 if (orders.isEmpty) {
-                  return Center(child: Text('Tidak ada pesanan "${tab.$2}".'));
+                  return Center(
+                    child: Text(tab.$1 == null
+                        ? 'Tidak ada pesanan yang menunggu pembayaran.'
+                        : 'Tidak ada pesanan "${tab.$2}".'),
+                  );
                 }
                 // Tab Selesai menumpuk tanpa batas — pesanan kemarin,
                 // minggu lalu, bulan lalu — dan yang dicari hampir selalu

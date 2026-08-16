@@ -161,7 +161,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       onSelectionChanged: (v) => setState(() => _orderType = v.first),
                     ),
                     const SizedBox(height: 12),
-                    if (_isDineIn)
+                    if (_isDineIn) ...[
                       TextField(
                         controller: _tableCtrl,
                         textCapitalization: TextCapitalization.characters,
@@ -172,8 +172,33 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           border: OutlineInputBorder(),
                         ),
                         onChanged: (_) => setState(() {}),
-                      )
-                    else
+                      ),
+                      const SizedBox(height: 12),
+                      // Namanya opsional di Dine In, dan sengaja begitu.
+                      //
+                      // Yang mengantarkan makanannya sudah tahu ke meja
+                      // mana — nomor mejanya di atas sudah cukup. Nama di
+                      // sini gunanya untuk yang datang sesudahnya:
+                      // struk yang dicari, pesanan yang ditanyakan
+                      // ulang, atau meja yang isinya dua rombongan.
+                      // Mewajibkannya cuma menambah satu ketikan di
+                      // tiap transaksi untuk sesuatu yang tidak selalu
+                      // ditanyakan kasirnya.
+                      TextField(
+                        controller: _customerNameCtrl,
+                        inputFormatters: nameFormatters,
+                        textCapitalization: TextCapitalization.words,
+                        maxLength: kNameMaxLength,
+                        decoration: const InputDecoration(
+                          labelText: 'Nama Customer (opsional)',
+                          prefixIcon: Icon(Icons.person_outline),
+                          border: OutlineInputBorder(),
+                          helperText: 'Muncul di struk dan layar dapur',
+                          counterText: '',
+                        ),
+                        onChanged: (_) => setState(() {}),
+                      ),
+                    ] else
                       TextField(
                         controller: _customerNameCtrl,
                         inputFormatters: nameFormatters,
@@ -287,7 +312,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       tableNumber: tableNumber,
       restoId: auth.restoId!,
       orderType: _orderType,
-      customerName: _isDineIn ? null : _customerName,
+      customerName: _customerName.isEmpty ? null : _customerName,
       cashReceived: cashReceived,
     );
 

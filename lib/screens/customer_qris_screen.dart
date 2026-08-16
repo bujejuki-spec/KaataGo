@@ -186,7 +186,7 @@ class _CustomerQrisScreenState extends State<CustomerQrisScreen> {
   /// yang cuma ada saat pengujian.
   Future<void> _simulate() async {
     setState(() => _simulating = true);
-    final error = await _gateway.simulatePayment(widget.orderId);
+    final error = await _gateway.simulatePayment(orderId: widget.orderId);
     if (!mounted) return;
     setState(() => _simulating = false);
     if (error != null) showAppToast(context, error, isError: true);

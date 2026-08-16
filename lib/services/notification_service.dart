@@ -42,6 +42,11 @@ class NotificationService {
       name: 'Hasil Pengajuan',
       description: 'Setoran tunai & top up petty cash yang sudah diputus Finance',
     ),
+    (
+      id: 'kaata_announcement',
+      name: 'Pengumuman',
+      description: 'Kabar dari resto dan pemberitahuan versi baru aplikasi',
+    ),
   ];
 
   static const _sound = RawResourceAndroidNotificationSound('kaata_notif');

@@ -195,7 +195,11 @@ void main() {
       // Dua daftar ini saling mengisi: apa yang hilang dari Pending
       // Payment harus muncul di Riwayat Transaksi, tidak boleh ada di
       // keduanya dan tidak boleh lenyap dari keduanya.
-      for (final status in OrderPaymentStatus.values) {
+      //
+      // Kecuali yang hangus — itu memang tidak berada di keduanya, dan
+      // itulah maksudnya: uangnya tidak pernah berpindah, jadi tidak
+      // ada yang perlu ditagih dan tidak ada yang perlu dilaporkan.
+      for (final status in [OrderPaymentStatus.pending, OrderPaymentStatus.paid]) {
         final order = _order(
           source: OrderSource.customer,
           status: status,
@@ -204,6 +208,29 @@ void main() {
         expect(order.isPendingCashPayment && order.settledAtCounter, isFalse);
         expect(order.isPendingCashPayment || order.settledAtCounter, isTrue);
       }
+    });
+
+    test('pesanan hangus tidak masuk antrean kasir maupun riwayat', () {
+      final order = _order(
+        source: OrderSource.customer,
+        status: OrderPaymentStatus.expired,
+        method: 'cash',
+      );
+      expect(order.isExpired, isTrue);
+      expect(order.isPendingCashPayment, isFalse);
+      expect(order.settledAtCounter, isFalse);
+    });
+
+    test('tenggang bayarnya 30 menit sejak pesanannya dibuat', () {
+      final order = _order(
+        source: OrderSource.customer,
+        status: OrderPaymentStatus.pending,
+        method: 'cash',
+      );
+      expect(
+        order.paymentDeadline.difference(order.createdAt),
+        const Duration(minutes: 30),
+      );
     });
   });
 }

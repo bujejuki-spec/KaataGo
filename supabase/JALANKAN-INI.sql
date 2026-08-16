@@ -17,7 +17,7 @@
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 1 dari 11 — employee_surrogate_key.sql
+-- BAGIAN 1 dari 14 — employee_surrogate_key.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — email karyawan jadi bisa diubah.
@@ -68,7 +68,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 2 dari 11 — promo_banner.sql
+-- BAGIAN 2 dari 14 — promo_banner.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — banner promo per resto.
@@ -130,7 +130,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 3 dari 11 — rilis_setor_petty_inbox.sql
+-- BAGIAN 3 dari 14 — rilis_setor_petty_inbox.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — setoran & top up petty cash berjenjang, GL Suspense, dan
@@ -353,11 +353,26 @@ create policy "petty_cash_entries: staff read" on petty_cash_entries
 -- ─────────────────────────────────────────────────────────────────────
 -- 3. GL Suspense Petty Cash
 -- ─────────────────────────────────────────────────────────────────────
+-- Daftarnya sengaja sama persis di semua berkas yang menyentuh batasan
+-- ini, bukan hanya sepanjang yang dibutuhkan berkas ini sendiri.
+--
+-- Sebelumnya tiap berkas menuliskan daftar sepanjang zamannya, dan
+-- itu berjalan baik tepat satu kali — saat dijalankan berurutan pada
+-- database kosong. Menjalankan ulang berkas yang lebih tua sesudah
+-- yang lebih baru berarti menyempitkan daftarnya lagi, dan barisan
+-- akun yang terlanjur dibuat berkas yang lebih baru langsung
+-- melanggarnya:
+--
+--   check constraint "gl_accounts_payment_method_check" is violated
+--   by some row
+--
+-- Padahal tidak ada satu pun data yang salah. Yang salah adalah
+-- batasannya yang mundur. Satu daftar untuk semua menutup itu.
 alter table gl_accounts drop constraint if exists gl_accounts_payment_method_check;
 alter table gl_accounts add constraint gl_accounts_payment_method_check
   check (payment_method in
     ('cash', 'qris', 'transfer', 'petty_cash', 'income_aggregate', 'total_balance',
-     'ppn', 'service', 'suspense', 'suspense_petty'));
+     'ppn', 'service', 'suspense', 'suspense_petty', 'gateway_fee'));
 
 -- ─────────────────────────────────────────────────────────────────────
 -- 4. Jurnal petty cash mengikuti statusnya
@@ -597,7 +612,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 4 dari 11 — customer_cash_payment.sql
+-- BAGIAN 4 dari 14 — customer_cash_payment.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pelanggan boleh memilih bayar tunai di kasir.
@@ -667,7 +682,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 5 dari 11 — push_notifications.sql
+-- BAGIAN 5 dari 14 — push_notifications.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — notifikasi yang tetap sampai walau aplikasinya tertutup.
@@ -1015,7 +1030,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 6 dari 11 — announcement_categories.sql
+-- BAGIAN 6 dari 14 — announcement_categories.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pengumuman dibagi dua jenis, dan admin resto boleh mengirim.
@@ -1104,7 +1119,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 7 dari 11 — fix_device_tokens_rls.sql
+-- BAGIAN 7 dari 14 — fix_device_tokens_rls.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pendaftaran token push lewat fungsi, bukan tulis langsung.
@@ -1223,7 +1238,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 8 dari 11 — push_trigger_pg_net.sql
+-- BAGIAN 8 dari 14 — push_trigger_pg_net.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — panggil Edge Function langsung dari database, tanpa webhook.
@@ -1336,7 +1351,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 9 dari 11 — payment_gateway.sql
+-- BAGIAN 9 dari 14 — payment_gateway.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — QRIS sungguhan lewat Xendit.
@@ -1490,7 +1505,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 10 dari 11 — gateway_settlement.sql
+-- BAGIAN 10 dari 14 — gateway_settlement.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pencairan dana dari payment gateway.
@@ -1668,7 +1683,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 11 dari 11 — resto_payment_accounts.sql
+-- BAGIAN 11 dari 14 — resto_payment_accounts.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pencairan langsung ke rekening masing-masing resto.
@@ -1758,3 +1773,171 @@ commit;
 --   select r.name, a.account_id, a.active
 --   from restaurants r
 --   left join resto_payment_accounts a on a.resto_id = r.id;
+
+
+-- ═══════════════════════════════════════════════════════════════════
+-- BAGIAN 12 dari 14 — counter_charge.sql
+-- ═══════════════════════════════════════════════════════════════════
+
+-- KaataGo — tagihan QRIS di meja kasir.
+--
+-- Jalankan SETELAH payment_gateway.sql. Aman dijalankan berulang kali.
+--
+-- Pesanan yang diinput kasir baru dibuat SETELAH pembayarannya diterima,
+-- bukan sebelum — itu urutan yang sudah ada sejak awal, dan mengubahnya
+-- berarti membongkar alur checkout beserta pengurangan stoknya. Jadi
+-- tagihannya boleh berdiri tanpa pesanan: yang menghubungkannya nanti
+-- adalah transaksi yang tercatat sesudahnya.
+
+begin;
+
+alter table payment_charges alter column order_id drop not null;
+
+-- Status tagihan, untuk ditanyakan aplikasi kasir sambil menunggu.
+--
+-- Lewat fungsi, bukan membaca tabelnya langsung: tabel tagihan tetap
+-- tertutup rapat dari aplikasi. Yang boleh diketahui cuma satu kata —
+-- sudah dibayar atau belum — dan bukan seluruh isinya.
+create or replace function gateway_charge_status(p_reference_id text)
+returns text
+language sql
+security definer
+set search_path = public
+as $$
+  select status from payment_charges where reference_id = p_reference_id;
+$$;
+
+grant execute on function gateway_charge_status(text) to anon, authenticated;
+
+commit;
+
+
+-- ═══════════════════════════════════════════════════════════════════
+-- BAGIAN 13 dari 14 — announcement_push.sql
+-- ═══════════════════════════════════════════════════════════════════
+
+-- KaataGo — pengumuman ikut membunyikan HP.
+--
+-- Selama ini pengumuman hanya duduk di Kotak Masuk. Kotak Masuk baru
+-- dilihat orang kalau dia membuka aplikasinya, dan orang membuka
+-- aplikasinya kalau ada yang memanggil. Pengumuman yang menunggu
+-- dibuka adalah pengumuman yang dibaca seminggu kemudian — atau tidak
+-- sama sekali.
+--
+-- Jangkauannya mengikuti resto_id pengumuman itu sendiri, aturan yang
+-- sama dengan yang sudah dipakai saat menampilkannya:
+--   resto_id kosong  → dari Super Admin, kabar versi baru, untuk semua
+--   resto_id terisi  → dari admin resto itu, hanya perangkat restonya
+--                      — pelanggan maupun karyawan, apa pun perannya.
+--
+-- Jalankan di SQL Editor Supabase.
+
+begin;
+
+create or replace function queue_push_announcement()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into push_outbox (resto_id, event, payload) values (
+    new.resto_id, 'announcement',
+    jsonb_build_object(
+      'audience', 'all',
+      'title', new.title,
+      -- Isi pengumuman bisa sepanjang apa pun; baris notifikasi tidak.
+      -- Dipotong di sini supaya yang sampai di layar kunci adalah
+      -- kalimat pembuka yang utuh, bukan paragraf yang dipenggal
+      -- Android di tempat sembarang.
+      'body', case
+                when length(new.body) > 160
+                  then left(new.body, 157) || '...'
+                else new.body
+              end
+    )
+  );
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_queue_push_announcement on app_announcements;
+create trigger trg_queue_push_announcement
+  after insert on app_announcements
+  for each row execute function queue_push_announcement();
+
+commit;
+
+
+-- ═══════════════════════════════════════════════════════════════════
+-- BAGIAN 14 dari 14 — cash_payment_expiry.sql
+-- ═══════════════════════════════════════════════════════════════════
+
+-- KaataGo — pesanan tunai yang tidak dilunasi di kasir hangus sendiri.
+--
+-- Pelanggan yang memesan dari HP lalu memilih bayar tunai diarahkan ke
+-- meja kasir. Sebagian tidak pernah sampai ke sana: berubah pikiran,
+-- salah pencet, atau memang tidak berniat datang. Tanpa batas waktu,
+-- pesanan itu menetap selamanya di layar Pending Payment dan di dapur —
+-- dan tiap hari sisanya bertambah sedikit, sampai layarnya tidak lagi
+-- bisa dipakai membaca apa yang benar-benar sedang ditunggu.
+--
+-- Tiga puluh menit dihitung dari pesanannya dibuat. Angka yang sama
+-- ditulis di HP pelanggan (CustomerOrder.paymentWindow) — kalau salah
+-- satunya diubah, keduanya harus diubah.
+--
+-- Butuh pg_cron. Kalau belum aktif: Dashboard → Database → Extensions →
+-- cari "pg_cron" → Enable. Aman dijalankan berulang kali.
+
+begin;
+
+create extension if not exists pg_cron with schema extensions;
+
+-- 'expired' — dibatalkan karena tidak dibayar. Dibedakan dari 'pending'
+-- supaya hilang dari antrean kasir dan dapur, dan dibedakan dari 'paid'
+-- supaya tidak pernah ikut terhitung sebagai pendapatan.
+alter table orders drop constraint if exists orders_payment_status_check;
+alter table orders add constraint orders_payment_status_check
+  check (payment_status in ('pending', 'paid', 'expired'));
+
+create or replace function expire_unpaid_cash_orders()
+returns integer
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_count integer;
+begin
+  with hangus as (
+    update orders
+    set payment_status = 'expired'
+    where payment_status = 'pending'
+      and source = 'customer'
+      -- Hanya yang tunai. Pesanan QRIS punya tenggangnya sendiri di sisi
+      -- penyedia pembayaran, dan membatalkannya dari sini berarti
+      -- membatalkan pesanan yang uangnya mungkin sedang dalam perjalanan.
+      and _normalize_payment_method(source, payment_method) = 'cash'
+      and created_at <= now() - interval '30 minutes'
+    returning 1
+  )
+  select count(*) into v_count from hangus;
+  return v_count;
+end;
+$$;
+
+-- Tiap menit. Tenggangnya tetap 30 menit — yang diputuskan di sini cuma
+-- seberapa cepat pesanan yang sudah lewat tenggang benar-benar hilang
+-- dari layar, dan menitan sudah cukup rapat untuk itu.
+select cron.unschedule('expire-unpaid-cash-orders')
+where exists (
+  select 1 from cron.job where jobname = 'expire-unpaid-cash-orders'
+);
+
+select cron.schedule(
+  'expire-unpaid-cash-orders',
+  '* * * * *',
+  $$select expire_unpaid_cash_orders();$$
+);
+
+commit;

@@ -22,12 +22,44 @@ class TableQrCard {
   /// pembuatan satuan, yang tidak punya urutan apa pun.
   final int? sequence;
 
+  /// Tulisan-tulisan di kartunya. Nilai bawaannya adalah kartu meja,
+  /// yang jadi satu-satunya pemakai kartu ini sampai kasir ikut
+  /// mencetakkan QR pembayaran.
+  final String kicker; // di bawah tulisan KaataGo
+  final String caption; // di bawah nama resto, di dalam kartu putih
+  final String badgePrefix; // sebelum [table] di lencana amber
+  final String footer; // di bawah kartu putih
+
   const TableQrCard({
     required this.restoName,
     required this.table,
     required this.payload,
     this.sequence,
+    this.kicker = 'PESAN SENDIRI DARI MEJA',
+    this.caption = 'Scan untuk pesan dari meja ini',
+    this.badgePrefix = 'MEJA ',
+    this.footer = 'Arahkan kamera HP ke kode di atas',
   });
+
+  /// Kartu QRIS yang dicetak kasir lalu diserahkan ke pelanggan.
+  ///
+  /// Bingkainya sengaja sama persis dengan kartu meja. Pelanggan yang
+  /// menerima kertas ini sudah pernah melihat kartu yang berdiri di
+  /// mejanya, dan bentuk yang sama adalah cara tercepat meyakinkannya
+  /// bahwa kertas ini memang dari restonya — bukan tempelan QR asing
+  /// yang belakangan sering jadi berita.
+  ///
+  /// [amount] ditulis apa adanya, sudah diformat rupiah oleh pemanggil.
+  const TableQrCard.payment({
+    required this.restoName,
+    required String amount,
+    required this.payload,
+  })  : table = amount,
+        sequence = null,
+        kicker = 'BAYAR DENGAN QRIS',
+        caption = 'Scan pakai aplikasi bank atau e-wallet',
+        badgePrefix = '',
+        footer = 'Tunjukkan bukti bayarnya ke kasir';
 
   /// Nama berkas yang tetap enak dibaca di galeri dan di share sheet.
   ///
@@ -147,12 +179,17 @@ Future<int> saveTableQrBatchToGallery(
 }
 
 /// Mengirim kartu-kartunya ke dialog cetak — satu meja satu halaman.
-Future<void> printTableQrs(BuildContext context, List<TableQrCard> cards) async {
+Future<void> printTableQrs(
+  BuildContext context,
+  List<TableQrCard> cards, {
+  String? name,
+}) async {
   try {
     final doc = await _buildDoc(cards);
     await Printing.layoutPdf(
       onLayout: (_) => doc.save(),
-      name: cards.length == 1 ? 'qr-meja-${cards.first.table}' : 'qr-meja-semua',
+      name: name ??
+          (cards.length == 1 ? 'qr-meja-${cards.first.table}' : 'qr-meja-semua'),
     );
   } catch (e) {
     if (!context.mounted) return;
@@ -258,7 +295,7 @@ pw.Widget _card(TableQrCard card, pw.MemoryImage logo) {
               ),
               pw.SizedBox(height: 4),
               pw.Text(
-                'PESAN SENDIRI DARI MEJA',
+                card.kicker,
                 style: const pw.TextStyle(
                   fontSize: 7.5,
                   color: _accent,
@@ -269,7 +306,7 @@ pw.Widget _card(TableQrCard card, pw.MemoryImage logo) {
               pw.Expanded(child: _innerCard(card)),
               pw.SizedBox(height: 12),
               pw.Text(
-                'Arahkan kamera HP ke kode di atas',
+                card.footer,
                 style: const pw.TextStyle(fontSize: 8.5, color: PdfColors.white),
               ),
             ],
@@ -299,7 +336,7 @@ pw.Widget _innerCard(TableQrCard card) {
         ),
         pw.SizedBox(height: 3),
         pw.Text(
-          'Scan untuk pesan dari meja ini',
+          card.caption,
           style: const pw.TextStyle(fontSize: 8.5, color: PdfColors.grey700),
         ),
         pw.SizedBox(height: 14),
@@ -320,7 +357,7 @@ pw.Widget _innerCard(TableQrCard card) {
             borderRadius: pw.BorderRadius.circular(22),
           ),
           child: pw.Text(
-            'MEJA ${card.table}',
+            '${card.badgePrefix}${card.table}',
             style: pw.TextStyle(
               fontSize: 19,
               fontWeight: pw.FontWeight.bold,

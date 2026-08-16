@@ -218,11 +218,26 @@ create policy "petty_cash_entries: staff read" on petty_cash_entries
 -- ─────────────────────────────────────────────────────────────────────
 -- 3. GL Suspense Petty Cash
 -- ─────────────────────────────────────────────────────────────────────
+-- Daftarnya sengaja sama persis di semua berkas yang menyentuh batasan
+-- ini, bukan hanya sepanjang yang dibutuhkan berkas ini sendiri.
+--
+-- Sebelumnya tiap berkas menuliskan daftar sepanjang zamannya, dan
+-- itu berjalan baik tepat satu kali — saat dijalankan berurutan pada
+-- database kosong. Menjalankan ulang berkas yang lebih tua sesudah
+-- yang lebih baru berarti menyempitkan daftarnya lagi, dan barisan
+-- akun yang terlanjur dibuat berkas yang lebih baru langsung
+-- melanggarnya:
+--
+--   check constraint "gl_accounts_payment_method_check" is violated
+--   by some row
+--
+-- Padahal tidak ada satu pun data yang salah. Yang salah adalah
+-- batasannya yang mundur. Satu daftar untuk semua menutup itu.
 alter table gl_accounts drop constraint if exists gl_accounts_payment_method_check;
 alter table gl_accounts add constraint gl_accounts_payment_method_check
   check (payment_method in
     ('cash', 'qris', 'transfer', 'petty_cash', 'income_aggregate', 'total_balance',
-     'ppn', 'service', 'suspense', 'suspense_petty'));
+     'ppn', 'service', 'suspense', 'suspense_petty', 'gateway_fee'));
 
 -- ─────────────────────────────────────────────────────────────────────
 -- 4. Jurnal petty cash mengikuti statusnya

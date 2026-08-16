@@ -34,6 +34,7 @@ const CHANNELS: Record<string, string> = {
   deposit_reviewed: "kaata_fund_review",
   petty_pending: "kaata_fund_review",
   petty_reviewed: "kaata_fund_review",
+  announcement: "kaata_announcement",
 };
 
 interface OutboxRow {
@@ -41,7 +42,7 @@ interface OutboxRow {
   resto_id: string | null;
   event: string;
   payload: {
-    audience: "role" | "email" | "order_owner";
+    audience: "role" | "email" | "order_owner" | "all";
     roles?: string[];
     email?: string;
     session_id?: string;
@@ -145,6 +146,13 @@ async function resolveTokens(row: OutboxRow): Promise<string[]> {
   } else if (p.audience === "email") {
     if (!p.email) return [];
     q = q.eq("email", p.email);
+  } else if (p.audience === "all") {
+    // Pengumuman. Resto kosong berarti dari Super Admin — kabar versi
+    // baru menyangkut semua orang yang memasang aplikasinya. Resto
+    // terisi berarti dari admin resto itu, dan hanya perangkat yang
+    // terdaftar di restonya yang dikabari: pelanggan maupun karyawan,
+    // tanpa memandang perannya.
+    if (row.resto_id) q = q.eq("resto_id", row.resto_id);
   } else {
     // Pemilik pesanan TIDAK disaring restonya.
     //
@@ -193,7 +201,10 @@ async function send(token: string, row: OutboxRow, bearer: string) {
               channel_id: channel,
               // Notifikasi untuk kejadian yang sama saling menimpa alih-
               // alih menumpuk jadi lima baris untuk satu pesanan.
-              tag: row.event,
+              // Kecuali pengumuman: dua pengumuman berbeda adalah dua
+              // kabar berbeda, dan yang kedua tidak boleh menghapus yang
+              // pertama sebelum sempat dibaca.
+              tag: row.event === "announcement" ? row.id : row.event,
             },
           },
           data: { event: row.event },

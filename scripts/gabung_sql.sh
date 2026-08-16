@@ -34,6 +34,9 @@ FILES=(
   payment_gateway.sql
   gateway_settlement.sql
   resto_payment_accounts.sql
+  counter_charge.sql
+  announcement_push.sql
+  cash_payment_expiry.sql
 )
 
 {
