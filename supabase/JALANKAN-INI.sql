@@ -17,7 +17,7 @@
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 1 dari 10 — employee_surrogate_key.sql
+-- BAGIAN 1 dari 11 — employee_surrogate_key.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — email karyawan jadi bisa diubah.
@@ -68,7 +68,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 2 dari 10 — promo_banner.sql
+-- BAGIAN 2 dari 11 — promo_banner.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — banner promo per resto.
@@ -130,7 +130,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 3 dari 10 — rilis_setor_petty_inbox.sql
+-- BAGIAN 3 dari 11 — rilis_setor_petty_inbox.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — setoran & top up petty cash berjenjang, GL Suspense, dan
@@ -597,7 +597,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 4 dari 10 — customer_cash_payment.sql
+-- BAGIAN 4 dari 11 — customer_cash_payment.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pelanggan boleh memilih bayar tunai di kasir.
@@ -667,7 +667,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 5 dari 10 — push_notifications.sql
+-- BAGIAN 5 dari 11 — push_notifications.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — notifikasi yang tetap sampai walau aplikasinya tertutup.
@@ -1015,7 +1015,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 6 dari 10 — announcement_categories.sql
+-- BAGIAN 6 dari 11 — announcement_categories.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pengumuman dibagi dua jenis, dan admin resto boleh mengirim.
@@ -1104,7 +1104,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 7 dari 10 — fix_device_tokens_rls.sql
+-- BAGIAN 7 dari 11 — fix_device_tokens_rls.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pendaftaran token push lewat fungsi, bukan tulis langsung.
@@ -1223,7 +1223,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 8 dari 10 — push_trigger_pg_net.sql
+-- BAGIAN 8 dari 11 — push_trigger_pg_net.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — panggil Edge Function langsung dari database, tanpa webhook.
@@ -1336,7 +1336,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 9 dari 10 — payment_gateway.sql
+-- BAGIAN 9 dari 11 — payment_gateway.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — QRIS sungguhan lewat Xendit.
@@ -1490,7 +1490,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 10 dari 10 — gateway_settlement.sql
+-- BAGIAN 10 dari 11 — gateway_settlement.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pencairan dana dari payment gateway.
@@ -1665,3 +1665,96 @@ commit;
 --   from gl_journal_entries
 --   where reference_type = 'gateway_settlement'
 --   group by reference_id;
+
+
+-- ═══════════════════════════════════════════════════════════════════
+-- BAGIAN 11 dari 11 — resto_payment_accounts.sql
+-- ═══════════════════════════════════════════════════════════════════
+
+-- KaataGo — pencairan langsung ke rekening masing-masing resto.
+--
+-- Jalankan SETELAH payment_gateway.sql. Aman dijalankan berulang kali.
+--
+-- Sampai sekarang seluruh pembayaran QRIS masuk ke satu akun penyedia:
+-- yang kuncinya terpasang di server. Untuk resto milik sendiri itu tidak
+-- masalah. Untuk resto milik orang lain, itu berarti uang mereka mampir
+-- dulu ke rekening KaataGo — dan menampung lalu meneruskan dana milik
+-- pihak lain bukan sekadar urusan pembukuan.
+--
+-- Jalan keluarnya sub-akun: tiap resto punya akunnya sendiri di
+-- penyedia, dan pembayarannya dibuat atas nama akun itu. Dananya cair
+-- langsung ke rekening restonya, tanpa pernah lewat rekening KaataGo.
+--
+-- Yang disimpan di sini hanya PENGENAL sub-akunnya, bukan kuncinya.
+-- Menyimpan secret key milik resto lain berarti satu kebocoran database
+-- membuka seluruh akun penyedia mereka sekaligus — kerugian yang bukan
+-- milik kita tapi kita yang menyebabkannya.
+
+begin;
+
+create table if not exists resto_payment_accounts (
+  resto_id text primary key references restaurants (id) on delete cascade,
+
+  provider text not null default 'xendit',
+
+  -- Pengenal sub-akun di penyedia. Dikirim sebagai header saat membuat
+  -- tagihan, dan itu yang menentukan ke rekening siapa dananya cair.
+  account_id text not null,
+
+  -- Sekadar catatan supaya Finance tahu ini akun yang mana tanpa harus
+  -- membuka dashboard penyedia.
+  account_label text,
+
+  active boolean not null default true,
+  updated_by text,
+  updated_at timestamptz not null default now()
+);
+
+alter table resto_payment_accounts enable row level security;
+
+-- Tidak terbaca pelanggan. Tabel `settings` disiarkan realtime ke layar
+-- pembayaran pelanggan, jadi pengenal ini sengaja tidak dititipkan di
+-- sana — bukan karena rahasia, tapi karena tidak ada gunanya di HP
+-- pelanggan dan yang tidak berguna di sana sebaiknya tidak ada di sana.
+drop policy if exists "resto_payment_accounts: staff read" on resto_payment_accounts;
+create policy "resto_payment_accounts: staff read" on resto_payment_accounts
+  for select using (
+    is_super_admin() or is_resto_employee(resto_id, array['finance', 'admin'])
+  );
+
+drop policy if exists "resto_payment_accounts: staff write" on resto_payment_accounts;
+create policy "resto_payment_accounts: staff write" on resto_payment_accounts
+  for all using (
+    is_super_admin() or is_resto_employee(resto_id, array['finance'])
+  ) with check (
+    is_super_admin() or is_resto_employee(resto_id, array['finance'])
+  );
+
+commit;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- Setelah menjalankan ini
+-- ─────────────────────────────────────────────────────────────────────
+--
+-- 1. Aktifkan xenPlatform di akun Xendit KaataGo (butuh verifikasi
+--    badan usaha; di mode uji bisa langsung dicoba).
+--
+-- 2. Buat sub-akun untuk tiap resto — lewat Dashboard atau API:
+--
+--      curl -X POST https://api.xendit.co/v2/accounts \
+--        -u 'xnd_development_...:' -H 'Content-Type: application/json' \
+--        -d '{"email":"resto@contoh.com","type":"OWNED",
+--             "public_profile":{"business_name":"Kaata Resto Dago"}}'
+--
+--    Jawabannya memuat "id" berawalan angka/huruf — itu yang diisikan
+--    ke aplikasi lewat Finance → Pengaturan Pembayaran.
+--
+-- 3. Tiap resto melengkapi rekening banknya sendiri di sub-akun itu.
+--    Sampai itu selesai, dananya tertahan di saldo sub-akun — tidak
+--    hilang, tapi juga tidak cair.
+--
+-- Memeriksa resto mana yang sudah terpasang:
+--
+--   select r.name, a.account_id, a.active
+--   from restaurants r
+--   left join resto_payment_accounts a on a.resto_id = r.id;

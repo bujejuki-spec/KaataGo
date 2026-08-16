@@ -33,6 +33,7 @@ FILES=(
   push_trigger_pg_net.sql
   payment_gateway.sql
   gateway_settlement.sql
+  resto_payment_accounts.sql
 )
 
 {

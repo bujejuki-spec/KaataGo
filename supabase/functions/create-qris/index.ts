@@ -85,6 +85,32 @@ Deno.serve(async (req) => {
     // sudah cukup untuk melenyapkan seluruh perkakas ujinya.
     const testMode = secret.startsWith("xnd_development_");
 
+    // Sub-akun resto ini, kalau ada.
+    //
+    // Inilah yang menentukan dananya cair ke rekening siapa. Tanpa ini,
+    // pembayaran dibuat atas nama akun platform — dan uang milik resto
+    // orang lain mendarat di rekening KaataGo, yang justru ingin
+    // dihindari.
+    const { data: account } = await admin
+      .from("resto_payment_accounts")
+      .select("account_id, active")
+      .eq("resto_id", order.resto_id ?? "")
+      .maybeSingle();
+
+    // Resto yang belum punya sub-akun sengaja TIDAK dibuatkan tagihan.
+    //
+    // Menjatuhkannya ke akun platform akan "berhasil" — QR-nya terbit,
+    // pelanggannya membayar — dan uangnya masuk ke rekening yang salah
+    // tanpa satu pun tanda bahwa ada yang keliru. Kegagalan yang
+    // terlihat jauh lebih murah: aplikasinya kembali ke QR simulasi, dan
+    // restonya tahu pemasangannya belum selesai.
+    if (!account?.account_id || account.active === false) {
+      return json({
+        error: "resto ini belum punya akun pembayaran",
+        needs_setup: true,
+      }, 409);
+    }
+
     if (existing?.qr_string) {
       return json({
         qr_string: existing.qr_string,
@@ -109,6 +135,10 @@ Deno.serve(async (req) => {
         Authorization: `Basic ${btoa(secret + ":")}`,
         "Content-Type": "application/json",
         "api-version": "2022-07-31",
+        // Dibuat atas nama sub-akun restonya. Kuncinya tetap milik
+        // platform — yang berpindah cuma atas nama siapa tagihannya
+        // terbit, dan ke rekening siapa dananya nanti cair.
+        "for-user-id": account.account_id,
       },
       body: JSON.stringify({
         reference_id: referenceId,
@@ -180,7 +210,7 @@ async function simulatePayment(orderId: string) {
 
   const { data: charge } = await admin
     .from("payment_charges")
-    .select("provider_charge_id, reference_id, amount, status")
+    .select("provider_charge_id, reference_id, amount, status, resto_id")
     .eq("order_id", orderId)
     .eq("status", "pending")
     .order("created_at", { ascending: false })
@@ -191,6 +221,15 @@ async function simulatePayment(orderId: string) {
     return json({ error: "tidak ada tagihan menunggu untuk pesanan ini" }, 404);
   }
 
+  // Simulasinya pun harus atas nama sub-akun yang menerbitkan
+  // tagihannya. Dipanggil atas nama platform, Xendit tidak akan
+  // menemukan QR-nya sama sekali.
+  const { data: account } = await admin
+    .from("resto_payment_accounts")
+    .select("account_id")
+    .eq("resto_id", charge.resto_id ?? "")
+    .maybeSingle();
+
   const res = await fetch(
     `https://api.xendit.co/qr_codes/${charge.provider_charge_id}/payments/simulate`,
     {
@@ -199,6 +238,7 @@ async function simulatePayment(orderId: string) {
         Authorization: `Basic ${btoa(secret + ":")}`,
         "Content-Type": "application/json",
         "api-version": "2022-07-31",
+        ...(account?.account_id ? { "for-user-id": account.account_id } : {}),
       },
       body: JSON.stringify({ amount: charge.amount }),
     },
