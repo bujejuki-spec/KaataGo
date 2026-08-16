@@ -28,8 +28,7 @@ class TableQrGeneratorScreen extends StatefulWidget {
 class _TableQrGeneratorScreenState extends State<TableQrGeneratorScreen> {
   final _tableCtrl = TextEditingController();
   final _prefixCtrl = TextEditingController();
-  final _fromCtrl = TextEditingController(text: '1');
-  final _toCtrl = TextEditingController(text: '10');
+  final _countCtrl = TextEditingController(text: '10');
   final _restoRepo = RestaurantRepository();
 
   String _restoName = '';
@@ -62,8 +61,7 @@ class _TableQrGeneratorScreenState extends State<TableQrGeneratorScreen> {
   void dispose() {
     _tableCtrl.dispose();
     _prefixCtrl.dispose();
-    _fromCtrl.dispose();
-    _toCtrl.dispose();
+    _countCtrl.dispose();
     super.dispose();
   }
 
@@ -81,35 +79,35 @@ class _TableQrGeneratorScreenState extends State<TableQrGeneratorScreen> {
       return raw.isEmpty ? const [] : [raw];
     }
 
-    final from = int.tryParse(_fromCtrl.text.trim());
-    final to = int.tryParse(_toCtrl.text.trim());
-    if (from == null || to == null) return const [];
-    return tableLabelRange(prefix: _prefixCtrl.text.trim(), from: from, to: to);
+    final count = int.tryParse(_countCtrl.text.trim());
+    if (count == null) return const [];
+    return tableLabels(prefix: _prefixCtrl.text.trim(), count: count);
   }
 
   /// Keterangan kenapa mode banyak belum bisa dijalankan, atau null kalau
   /// isiannya sudah sah.
   String? get _bulkProblem {
     if (!_bulkMode) return null;
-    final from = int.tryParse(_fromCtrl.text.trim());
-    final to = int.tryParse(_toCtrl.text.trim());
-    if (from == null || to == null) return 'Isi nomor awal dan nomor akhir.';
-    if (from < 1) return 'Nomor awal minimal 1.';
-    if (to < from) return 'Nomor akhir harus lebih besar dari nomor awal.';
-    if (to - from + 1 > kMaxTableBatch) {
-      return 'Maksimal $kMaxTableBatch meja sekali buat.';
-    }
+    final count = int.tryParse(_countCtrl.text.trim());
+    if (count == null) return 'Isi jumlah mejanya.';
+    if (count < 1) return 'Jumlah meja minimal 1.';
+    if (count > kMaxTableBatch) return 'Maksimal $kMaxTableBatch meja sekali buat.';
     return null;
   }
 
-  List<TableQrCard> _cardsFor(String restoId) => [
-        for (final table in _tables)
-          TableQrCard(
-            restoName: _restoName.isEmpty ? restoId : _restoName,
-            table: table,
-            payload: _payloadFor(table, restoId),
-          ),
-      ];
+  List<TableQrCard> _cardsFor(String restoId) {
+    final tables = _tables;
+    return [
+      for (var i = 0; i < tables.length; i++)
+        TableQrCard(
+          restoName: _restoName.isEmpty ? restoId : _restoName,
+          table: tables[i],
+          payload: _payloadFor(tables[i], restoId),
+          // Urutannya hanya berarti kalau memang dibuat borongan.
+          sequence: _bulkMode ? i + 1 : null,
+        ),
+    ];
+  }
 
   Future<void> _save(String restoId) async {
     final cards = _cardsFor(restoId);
@@ -276,8 +274,7 @@ class _TableQrGeneratorScreenState extends State<TableQrGeneratorScreen> {
                 else
                   _BulkFields(
                     prefixCtrl: _prefixCtrl,
-                    fromCtrl: _fromCtrl,
-                    toCtrl: _toCtrl,
+                    countCtrl: _countCtrl,
                     problem: _bulkProblem,
                     tables: tables,
                     onChanged: () => setState(() {}),
@@ -324,16 +321,14 @@ class _TableQrGeneratorScreenState extends State<TableQrGeneratorScreen> {
 
 class _BulkFields extends StatelessWidget {
   final TextEditingController prefixCtrl;
-  final TextEditingController fromCtrl;
-  final TextEditingController toCtrl;
+  final TextEditingController countCtrl;
   final String? problem;
   final List<String> tables;
   final VoidCallback onChanged;
 
   const _BulkFields({
     required this.prefixCtrl,
-    required this.fromCtrl,
-    required this.toCtrl,
+    required this.countCtrl,
     required this.problem,
     required this.tables,
     required this.onChanged,
@@ -353,41 +348,27 @@ class _BulkFields extends StatelessWidget {
             hintText: 'Contoh: A, VIP-',
             prefixIcon: Icon(Icons.text_fields),
             counterText: '',
-            helperText: 'Kosongkan kalau mejanya cuma bernomor',
+            helperText: 'Kosongkan kalau mejanya cuma bernomor. '
+                'Diisi "A" jadi A1, A2, A3, …',
           ),
           onChanged: (_) => onChanged(),
         ),
         const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: TextFormField(
-                controller: fromCtrl,
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                maxLength: 4,
-                decoration: const InputDecoration(
-                  labelText: 'Dari nomor',
-                  counterText: '',
-                ),
-                onChanged: (_) => onChanged(),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: TextFormField(
-                controller: toCtrl,
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                maxLength: 4,
-                decoration: const InputDecoration(
-                  labelText: 'Sampai nomor',
-                  counterText: '',
-                ),
-                onChanged: (_) => onChanged(),
-              ),
-            ),
-          ],
+        TextFormField(
+          controller: countCtrl,
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          maxLength: 3,
+          autofocus: true,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          decoration: const InputDecoration(
+            labelText: 'Jumlah Meja',
+            hintText: 'Contoh: 10',
+            prefixIcon: Icon(Icons.tag),
+            counterText: '',
+            helperText: 'Nomornya dibuat urut mulai dari 1',
+          ),
+          onChanged: (_) => onChanged(),
         ),
         if (problem != null) ...[
           const SizedBox(height: 10),
@@ -407,7 +388,7 @@ class _BulkFields extends StatelessWidget {
         ] else if (tables.isNotEmpty) ...[
           const SizedBox(height: 6),
           Text(
-            '${tables.length} QR akan dibuat: ${tables.first} sampai ${tables.last}',
+            '${tables.length} QR akan dibuat: meja ${tables.first} sampai ${tables.last}',
             style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
           ),
         ],

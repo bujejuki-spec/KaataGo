@@ -16,16 +16,30 @@ class TableQrCard {
   final String table;
   final String payload;
 
+  /// Nomor urutnya dalam sekali pembuatan borongan, mulai dari 1.
+  ///
+  /// Dipakai hanya untuk mengurutkan berkasnya di galeri. Null untuk
+  /// pembuatan satuan, yang tidak punya urutan apa pun.
+  final int? sequence;
+
   const TableQrCard({
     required this.restoName,
     required this.table,
     required this.payload,
+    this.sequence,
   });
 
   /// Nama berkas yang tetap enak dibaca di galeri dan di share sheet.
+  ///
+  /// Nomor urutnya diberi nol di depan, bukan nomor mejanya. Galeri
+  /// mengurutkan nama berkas sebagai teks, jadi tanpa itu meja 10
+  /// nyempil di antara 1 dan 2 dan yang memasangnya harus membaca satu
+  /// per satu. Yang tidak boleh ikut berubah adalah nomor meja di dalam
+  /// QR-nya — itu yang dibaca pemindai dan muncul di layar dapur.
   String get fileName {
     final safe = table.replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '-');
-    return 'qr-meja-$safe.png';
+    final order = sequence == null ? '' : '${sequence!.toString().padLeft(3, '0')}-';
+    return 'qr-meja-$order$safe.png';
   }
 }
 
@@ -33,24 +47,28 @@ class TableQrCard {
 ///
 /// Bukan batas teknis: 500 kartu berarti 500 rasterisasi dan 500 gambar
 /// di galeri, yang hampir pasti bukan yang dimaksud orangnya waktu salah
-/// ketik "1 sampai 1000".
+/// ketik nol satu kali kebanyakan.
 const kMaxTableBatch = 100;
 
-/// Menjabarkan rentang nomor meja jadi daftar labelnya.
+/// Nomor meja 1 sampai [count].
 ///
-/// Nomornya diberi nol di depan mengikuti nomor terbesar, jadi meja 7 dan
-/// meja 12 sama-sama jadi "07" dan "12". Tanpa itu daftar QR di galeri
-/// terurut 1, 10, 11, 2 — dan yang memasangnya di meja harus membaca
-/// satu per satu.
+/// Satu isian, bukan rentang dari–sampai: yang diketahui pemilik resto
+/// adalah "mejanya ada sepuluh", bukan "dari nomor satu sampai nomor
+/// sepuluh". Rentang memaksanya menerjemahkan dulu apa yang sudah dia
+/// tahu jadi dua angka, dan menyediakan dua kolom yang bisa diisi
+/// terbalik.
 ///
-/// Rentang yang tidak masuk akal mengembalikan daftar kosong, dan itulah
+/// Nomornya polos — "7", bukan "07". Nomor inilah yang tersimpan di
+/// dalam QR dan muncul di layar dapur, jadi harus sama persis dengan
+/// yang diketik orang di mode satu meja. Urutan berkasnya di galeri
+/// dijaga lewat nama berkasnya (lihat [TableQrCard.fileName]), bukan
+/// dengan mengubah nomor mejanya.
+///
+/// Jumlah yang tidak masuk akal mengembalikan daftar kosong, dan itulah
 /// yang mematikan tombol-tombolnya di layar.
-List<String> tableLabelRange({String prefix = '', required int from, required int to}) {
-  if (from < 1 || to < from || to - from + 1 > kMaxTableBatch) return const [];
-  final width = to.toString().length;
-  return [
-    for (var i = from; i <= to; i++) '$prefix${i.toString().padLeft(width, '0')}',
-  ];
+List<String> tableLabels({String prefix = '', required int count}) {
+  if (count < 1 || count > kMaxTableBatch) return const [];
+  return [for (var i = 1; i <= count; i++) '$prefix$i'];
 }
 
 const _brand = PdfColor.fromInt(0xFF4F46E5);

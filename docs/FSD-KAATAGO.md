@@ -257,8 +257,9 @@ kasir **tidak boleh** muncul di daftar ini.
 | ID | Kebutuhan |
 |---|---|
 | F-QR-01 | Membuat QR untuk satu meja dengan nomor bebas ("7", "A01", "VIP-2") |
-| F-QR-02 | Membuat sederet meja sekaligus: awalan opsional + rentang, maksimal **100** |
-| F-QR-03 | Nomornya diberi nol di depan mengikuti nomor terbesar (8–12 → `08`…`12`) |
+| F-QR-02 | Membuat banyak meja sekaligus: **isi jumlah mejanya**, misal 10 → 10 QR bernomor 1–10. Maksimal **100** |
+| F-QR-03 | Awalan opsional; diisi "A" menghasilkan A1, A2, A3, … |
+| F-QR-07 | Nomor meja ditulis polos (`7`, bukan `07`) supaya sama dengan mode satu meja; urutan berkas di galeri dijaga lewat nama berkasnya |
 | F-QR-04 | Kartunya bergaya KaataGo, memuat nama resto dan nomor meja |
 | F-QR-05 | Menyimpan ke galeri satuan maupun **seluruhnya sekaligus**, dengan penghitung kemajuan |
 | F-QR-06 | Membagikan dan mencetak, satu meja satu halaman |
@@ -351,7 +352,7 @@ disimpan.
 | **Tarif persen** | **6** | Angka, `.` `,` | Rentang 0–100; koma dibaca desimal; kosong berarti 0 |
 | **Harga & stok** | — | Angka | Wajib |
 | **Awalan QR meja** | **6** | Bebas | Opsional |
-| **Rentang nomor meja** | **4** digit | Angka | 1 ≤ dari ≤ sampai; maksimal 100 baris |
+| **Jumlah meja** | **3** digit | Angka | 1 sampai 100 |
 
 ### 6.1 Alasan aturan yang sering dikira bug
 
@@ -461,7 +462,6 @@ dilaporkan sebagai temuan.
 | **Notifikasi tertahan pada sebagian HP** | Di Xiaomi, Oppo, Vivo, Realme, dan sebagian Samsung, menggeser aplikasi dari daftar aplikasi terkini sama dengan menghentikannya paksa — notifikasi baru masuk saat aplikasi dibuka lagi. Perlu mengaktifkan *Autostart* dan menyetel baterainya *Tidak dibatasi* |
 | **Penanda merah bukan waktu-nyata** | Angkanya dimuat saat layar dibuka dan saat kembali dari layarnya, bukan dipantau terus-menerus |
 | **Penanda di kasir menghitung se-resto** | Termasuk pengajuan rekan seshift, bukan hanya miliknya sendiri |
-| **Nomor meja borongan berimbuhan nol** | Rentang 1–12 menghasilkan `01`…`12`, bukan `1`…`12` |
 | **Maksimal 100 QR sekali buat** | Batas yang disengaja |
 | **Struk & QR butuh internet saat dibuat** | Dalam keadaan benar-benar luring, hurufnya jatuh ke font bawaan; bentuknya tetap benar |
 | **Titik lokasi memakai layanan gratis** | Pengambilan lokasi beruntun dalam waktu singkat bisa ditolak sementara |
