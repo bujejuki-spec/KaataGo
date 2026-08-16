@@ -332,6 +332,7 @@ membacanya.
 |---|---|
 | F-DS-01 | Diskon berbasis **menu tertentu**: satu menu, atau beberapa sekaligus untuk bundling |
 | F-DS-02 | Diskon berbasis **minimum belanja** dengan indikator **≥** atau **>** yang dipilih sendiri |
+| F-DS-10 | Diskon berbasis menu dapat mensyaratkan **jumlah minimum pembelian** — "beli 2 lebih murah"; bawaannya 1 |
 | F-DS-03 | Potongan berbentuk **persen** (1–100) atau **rupiah** |
 | F-DS-04 | Masa berlaku: mulai tidak boleh mundur ke belakang, berakhir minimal besok |
 | F-DS-05 | Lencana status: **Berjalan**, **Terjadwal**, **Sudah lewat**, **Nonaktif** |
@@ -346,6 +347,8 @@ membacanya.
 |---|---|
 | Hanya **satu** diskon dipakai — yang paling menguntungkan pelanggan | Menumpuk terdengar murah hati sampai dua promo berlaku bersamaan dan totalnya melebihi harga barangnya |
 | Bundling menjumlahkan seluruh menu yang ikut, baru dipotong | Kalau dipotong per baris, diskon rupiah tetap terkalikan sebanyak menu yang ikut |
+| Syarat jumlah dihitung **per menu**, bukan per keranjang | Kalau dijumlahkan lintas menu, keranjang apa pun berisi dua barang lolos "beli 2" — bukan itu yang dijanjikan spanduknya |
+| Menu yang belum memenuhi syarat jumlah tidak ikut dihitung, tapi tidak menggugurkan yang sudah | Satu menu yang kurang tidak membatalkan promo untuk menu lain yang sudah memenuhi |
 | Potongan tidak pernah melebihi tagihannya | Kalau tidak, totalnya negatif — resto berutang kepada orang yang belum membayar apa pun |
 | Diskon dihitung dari **total setelah service dan PPN** | Itulah angka yang dilihat dan dijanjikan ke pelanggan |
 
@@ -648,6 +651,24 @@ latarnya.
 
 ### A.1 Pelanggan — tanpa akun (tamu)
 
+Tamu memesan tanpa mendaftar apa pun. Yang dikorbankan cuma satu — jejak
+pesanannya hanya tersimpan di HP itu sendiri, dan hilang bersama
+aplikasinya kalau dihapus.
+
+| Layar | Yang bisa dilakukan di sana |
+|---|---|
+| **Halaman awal** | Memilih masuk sebagai Pelanggan atau Karyawan Resto; mengatur tema; membuka Tentang KaataGo |
+| **Ajakan login** | Melewatinya lewat "Lewati, Pesan Tanpa Login" dan langsung memesan |
+| **Layar pembuka tamu** | Tiga pintu saja: Scan QR Meja, Pilih Resto, dan Riwayat Pesanan Saya |
+| **Pilih Resto** | Mencari resto; melihat yang terdekat berikut jaraknya begitu izin lokasi diberikan — sebelum itu hanya bagian Semua Resto yang tampil |
+| **Menu resto** | Melihat banner promo, membuka kategori, menambah menu ke keranjang |
+| **Dialog menu** | Memilih level/varian — minuman bisa punya tiga kelompok sekaligus (Gula, Es, Ukuran) — menulis catatan, mengatur jumlah |
+| **Keranjang** | Memilih Dine In atau Take Away; Take Away tidak meminta nomor meja, tapi nama pemesan tetap wajib; memilih QRIS atau Tunai |
+| **Bayar dengan QRIS** | Memindai QR berbingkai KaataGo, melihat masa berlakunya, menyimpannya ke galeri |
+| **Pesanan diterima** | Membaca nomor pesanan untuk disebutkan di kasir, dan hitung mundur 30 menit sebelum pesanannya hangus |
+| **Pesanan Saya** | Memantau status dapur dan pembayaran untuk sesi meja yang sedang berjalan |
+| **Riwayat Saya** | Melihat pesanan sebelumnya — disertai peringatan bahwa riwayatnya hanya ada di HP ini |
+
 
 **Mode Terang** — 13 tangkapan
 
@@ -755,6 +776,25 @@ dan riwayatnya.
 
 ### A.3 Kasir
 
+Kasir memegang dua antrean sekaligus: pesanan yang dia ketik sendiri di
+meja kasir, dan pesanan yang dikirim pelanggan dari HP-nya lalu memilih
+bayar tunai. Keduanya bertemu di layar yang sama.
+
+| Layar | Yang bisa dilakukan di sana |
+|---|---|
+| **Menu kasir** | Tujuh pintu: Input Pesanan, Pending Payment (berikut jumlah yang menunggu), Riwayat Kasir, Saldo & Pengeluaran, Setor Saldo Cash, Kotak Masuk, Diskon |
+| **Input Pesanan** | Memilih menu per kategori; sisa stok tampil di pojok kartu — angka yang tidak pernah dilihat pelanggan |
+| **Dialog menu** | Memilih level/varian, menulis catatan, mengatur jumlah; deskripsi dan sisa stok ikut terlihat |
+| **Checkout** | Memilih Dine In atau Take Away; Dine In meminta nomor meja, Take Away meminta nama pelanggan; tombol pembayaran mati sampai yang wajib terisi; diskon sudah terhitung dan menurunkan nominal DIBAYAR |
+| **Bayar QRIS di kasir** | Menampilkan QR berbingkai KaataGo, dan mencetak QR itu untuk diserahkan ke pelanggan |
+| **Dialog pembayaran tunai** | Memakai pilihan nominal cepat atau papan angka; kembalian dihitung sendiri; tombol terima mati selama uangnya kurang |
+| **Struk** | Mencetak struk lengkap berikut nama kasir, uang bayar, dan kembaliannya |
+| **Pending Payment** | Melihat pesanan pelanggan yang menunggu dibayar berikut sisa waktunya; membuka rinciannya; memilih cara terima pembayaran — Tunai, QRIS, atau Transfer — walau pelanggannya tadi memilih tunai |
+| **Riwayat Kasir** | Rekap per hari berikut rincian per cara bayar, dan mencetak ulang struk |
+| **Saldo & Pengeluaran** | Melihat saldo total, cash dan non-cash, petty cash, dan rekening resto; mengajukan Top Up Petty Cash yang menunggu persetujuan Finance |
+| **Setor Saldo Cash** | Melihat tunai di laci berikut rinciannya; mengisi formulir setoran dengan rekening tujuan yang terisi sendiri dari Pengaturan Pembayaran, dan melampirkan buktinya |
+| **Diskon** | Membuat dan mengubah promo — per menu, bundling, atau minimum belanja — berikut syarat jumlah dan masa berlakunya |
+
 
 **Mode Terang** — 18 tangkapan
 
@@ -816,6 +856,19 @@ dan riwayatnya.
 
 ### A.4 Dapur (Chef)
 
+Layar dapur hanya empat tab, dan urutannya adalah urutan hidup sebuah
+pesanan. Yang belum dibayar berhenti di tab pertama dan tidak pernah
+sampai ke antrean masak — bahan tidak terpakai untuk pesanan yang
+uangnya belum tentu datang.
+
+| Layar | Yang bisa dilakukan di sana |
+|---|---|
+| **Tab Menunggu Bayar** | Melihat pesanan yang belum dilunasi; sengaja tanpa tombol masak |
+| **Tab Baru** | Melihat pesanan siap dimasak, dikelompokkan Dine In dan Take Away; menekan Mulai Masak |
+| **Tab Diproses** | Membuka daftar centang per menu; menyimpan progres sebagian, atau menutup pesanan begitu seluruh menunya tercentang |
+| **Tab Selesai** | Melihat pesanan yang sudah beres, dikelompokkan per tanggal dan tertutup secara bawaan |
+| **Pemilih tema** | Berganti terang, gelap, atau ikut setelan HP langsung dari layar dapur |
+
 
 **Mode Terang** — 9 tangkapan
 
@@ -843,6 +896,27 @@ dan riwayatnya.
 
 
 ### A.5 Admin
+
+Admin mengurus isi restonya — menu, harga, banner, QR meja — dan ikut
+memegang antrean pembayaran bersama kasir. Yang tidak dia pegang adalah
+angka akuntansinya: Info Pembayaran dan Mapping GL milik Finance.
+
+| Layar | Yang bisa dilakukan di sana |
+|---|---|
+| **Menu admin** | Kasir, Kelola Produk, Pesanan Masuk, Pending Payment, Riwayat Kasir, Pengaturan, Saldo, Kirim Pengumuman, Diskon |
+| **Kelola Produk — tab Produk** | Menambah dan mengubah menu; menandai habis lewat saklar di barisnya, tanpa membuka formulirnya |
+| **Tab Kategori** | Menyusun kategori menu |
+| **Tab Level** | Mengubah dan menambah kelompok varian milik resto ini — lima kelompok bawaan sudah terisi |
+| **Pesanan Masuk** | Melihat seluruh pesanan resto berikut status bayar dan status dapurnya |
+| **Pending Payment** | Antrean yang sama dengan kasir: menerima pembayaran Tunai, QRIS, atau Transfer; QR-nya bisa dicetak untuk pelanggan |
+| **Pengaturan → Info Resto** | Mengubah nama dan alamat; menggeser pin di pratinjau peta; memilih cara makan yang dilayani — Dine In, Take Away, atau keduanya |
+| **Pengaturan → Banner Promo** | Menambah dan mengubah banner berikut gambar, judul, keterangan, urutan tampil, masa berlaku, dan saklar aktif |
+| **Pengaturan → QR Meja** | Membuat kartu QR satu meja dengan pratinjau langsung, atau sekaligus banyak meja lalu Download Semua |
+| **Pengaturan → Info Pembayaran** | Melihat saja — yang mengubahnya Finance atau Owner |
+| **Saldo & Pengeluaran** | Melihat saldo dan petty cash; pengajuan yang menunggu persetujuan Finance ikut terlihat berikut penandanya |
+| **Setor Saldo Cash** | Melihat setoran yang sudah dikonfirmasi maupun yang masih menunggu approval |
+| **Kirim Pengumuman** | Menulis pengumuman dan memilih sasarannya: Karyawan, Customer, atau Semua |
+| **Diskon** | Membuat promo per menu, bundling beberapa menu sekaligus, atau minimum belanja; menetapkan syarat jumlah, bentuk potongan, dan masa berlakunya |
 
 
 **Mode Terang** — 19 tangkapan
@@ -896,6 +970,25 @@ dan riwayatnya.
 
 ### A.6 Keuangan (Finance)
 
+Finance tidak menyentuh pesanan sama sekali. Yang dia pegang adalah dua
+titik tempat uang berpindah tangan — setoran tunai ke rekening dan top
+up petty cash — dan keduanya sengaja dibuat menunggu persetujuannya.
+Selama menunggu, uangnya duduk di akun suspense: sudah tidak ada di
+laci, tapi belum diakui masuk.
+
+| Layar | Yang bisa dilakukan di sana |
+|---|---|
+| **Menu Finance** | Berpindah resto lewat pemilih di atas — semua angka mengikutinya; penanda merah menunjukkan menu yang sedang menunggu persetujuan |
+| **Pemasukan** | Melihat total semua waktu, dirinci per hari dengan pecahan Tunai/QRIS/Transfer |
+| **Saldo & Pengeluaran** | Melihat saldo total dan pecahan Cash/Non Cash; menyetujui atau menolak top up petty cash; mencatat pengeluaran; melipat bagian Petty Cash dan Riwayat Pengeluaran |
+| **Dialog persetujuan** | Membaca perpindahan yang akan terjadi — dari GL Suspense ke GL tujuannya — sebelum menyetujui, dan menambahkan catatan |
+| **Setor Saldo Cash** | Melihat tunai di laci berikut rinciannya; mengonfirmasi atau menolak setoran kasir setelah mencocokkan nominalnya di rekening |
+| **Mapping GL Account** | Menetapkan nomor akun untuk tiap cara bayar, petty cash, pajak, service, total saldo, suspense, gateway, dan diskon; mengatur tarif PPN dan biaya service |
+| **Pencairan Gateway** | Mencatat dana penyedia pembayaran yang masuk rekening berikut potongan MDR-nya |
+| **Jurnal GL** | Membaca jejak audit tiap pergerakan: nomor akun, arah debit/kredit, referensi pesanan, dan pelepasan titipan suspense saat sesuatu disetujui; mencetak atau mengekspornya |
+| **Laporan Transaksi** | Memilih rentang tanggal, melihat saldo awal dan akhir, mengekspor PDF |
+| **Pengaturan Pembayaran** | Melihat data QRIS dan rekening transfer resto |
+
 
 **Mode Terang** — 10 tangkapan
 
@@ -933,6 +1026,19 @@ dan riwayatnya.
 
 
 ### A.7 Owner
+
+Owner tidak punya layar khusus miliknya sendiri. Yang dia punya adalah
+seluruhnya: tiap layar kasir, dapur, admin, dan Finance terbuka untuknya
+tanpa perlu ditambahkan peran satu per satu. Menunya karena itu
+dikelompokkan tiga — dan pengelompokan itulah yang membedakan
+tampilannya dari peran lain.
+
+| Layar | Yang bisa dilakukan di sana |
+|---|---|
+| **Pemilih resto** | Berpindah antar resto yang dimilikinya; seluruh isi menu mengikuti yang dipilih |
+| **Kelompok PENJUALAN** | Kasir/Input Pesanan, Pesanan Masuk, Layar Dapur, Pending Payment, Riwayat Kasir |
+| **Kelompok KEUANGAN** | Pemasukan, Saldo & Pengeluaran, Setor Saldo Cash, Mapping GL Account, Pencairan Gateway, Jurnal GL — sama persis dengan yang dipegang Finance, termasuk hak menyetujui |
+| **Kelompok PENGELOLAAN** | Kelola Produk, Pengaturan (termasuk mengubah Info Pembayaran), Kirim Pengumuman, Kotak Masuk berikut jumlah belum dibaca, Diskon, dan Keluar |
 
 
 **Mode Terang** — 6 tangkapan

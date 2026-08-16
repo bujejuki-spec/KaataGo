@@ -12,6 +12,7 @@ Discount _d({
   List<String> productIds = const ['p1'],
   int minPurchase = 0,
   MinCompare compare = MinCompare.atLeast,
+  int minQty = 1,
   DateTime? startsOn,
   DateTime? endsOn,
   bool active = true,
@@ -26,6 +27,7 @@ Discount _d({
       productIds: productIds,
       minPurchase: minPurchase,
       compare: compare,
+      minQty: minQty,
       startsOn: startsOn,
       endsOn: endsOn,
       active: active,
@@ -108,6 +110,7 @@ void main() {
         discounts: [bundling],
         total: 80000,
         subtotalOf: subtotal,
+        qtyOf: (_) => 1,
         productIds: {'p1', 'p2'},
         now: _hariIni,
       );
@@ -122,6 +125,7 @@ void main() {
         discounts: [d],
         total: 80000,
         subtotalOf: subtotal,
+        qtyOf: (_) => 1,
         productIds: {'p1', 'p2'},
         now: _hariIni,
       );
@@ -145,6 +149,7 @@ void main() {
         discounts: [kecil, besar],
         total: 80000,
         subtotalOf: subtotal,
+        qtyOf: (_) => 1,
         productIds: {'p1'},
         now: _hariIni,
       );
@@ -158,6 +163,7 @@ void main() {
         discounts: [_d(productIds: ['p9'])],
         total: 80000,
         subtotalOf: subtotal,
+        qtyOf: (_) => 1,
         productIds: {'p1'},
         now: _hariIni,
       );
@@ -213,6 +219,7 @@ void main() {
         discounts: [promo],
         total: 50000,
         subtotalOf: subtotal,
+        qtyOf: (_) => 1,
         productIds: {'p1'},
         now: _hariIni,
       );
@@ -228,6 +235,7 @@ void main() {
         discounts: [promo],
         total: 50000,
         subtotalOf: subtotal,
+        qtyOf: (_) => 1,
         productIds: {'p1'},
         now: _hariIni,
       );
@@ -235,4 +243,79 @@ void main() {
       expect(50000 - hasil!.amount, 42500);
     });
   });
+
+  group('syarat jumlah pembelian', () {
+    // "Beli 2 Mont Blanc diskon 30%". Tanpa syarat jumlah, promo yang
+    // dimaksudkan untuk mendorong pembelian kedua ikut terpakai oleh
+    // yang membeli satu — dan alasan promonya ada hilang.
+    int subtotal(String id) => {'p1': 50000, 'p2': 30000}[id] ?? 0;
+
+    AppliedDiscount? jalankan(Discount d, Map<String, int> qty) =>
+        bestDiscountFor(
+          discounts: [d],
+          total: 80000,
+          subtotalOf: (id) => subtotal(id) * (qty[id] ?? 0),
+          qtyOf: (id) => qty[id] ?? 0,
+          productIds: qty.keys,
+          now: _hariIni,
+        );
+
+    test('beli satu belum dapat kalau syaratnya dua', () {
+      expect(jalankan(_d(value: 30, minQty: 2), {'p1': 1}), isNull);
+    });
+
+    test('beli dua dapat, dihitung dari seluruh baris', () {
+      final hasil = jalankan(_d(value: 30, minQty: 2), {'p1': 2});
+      expect(hasil!.amount, 30000); // 30% dari 100.000
+    });
+
+    test('lebih dari syaratnya tetap dapat', () {
+      final hasil = jalankan(_d(value: 30, minQty: 2), {'p1': 3});
+      expect(hasil!.amount, 45000);
+    });
+
+    test('jumlahnya dihitung per menu, bukan per keranjang', () {
+      // Dua menu berbeda masing-masing satu tidak memenuhi "beli 2".
+      // Kalau dijumlahkan lintas menu, keranjang apa pun berisi dua
+      // barang akan lolos — bukan itu yang dijanjikan spanduknya.
+      expect(jalankan(_d(value: 30, minQty: 2, productIds: ['p1', 'p2']),
+          {'p1': 1, 'p2': 1}), isNull);
+    });
+
+    test('yang memenuhi ikut, yang belum tidak menumpang', () {
+      final hasil = jalankan(
+        _d(value: 50, minQty: 2, productIds: ['p1', 'p2']),
+        {'p1': 2, 'p2': 1},
+      );
+      // Hanya p1 yang masuk hitungan: 50% dari 100.000.
+      expect(hasil!.amount, 50000);
+    });
+
+    test('bawaannya satu — promo lama tidak berubah artinya', () {
+      expect(_d().minQty, 1);
+      expect(jalankan(_d(value: 10), {'p1': 1})!.amount, 5000);
+    });
+
+    test('diskon minimum belanja tidak terpengaruh jumlah', () {
+      final d = _d(
+        basis: DiscountBasis.minPurchase,
+        minPurchase: 50000,
+        value: 10,
+        minQty: 9,
+      );
+      expect(jalankan(d, {'p1': 1})!.amount, 8000);
+    });
+
+    test('jumlahnya ikut tersimpan dan terbaca kembali', () {
+      final map = _d(minQty: 3).toMap();
+      expect(map['min_qty'], 3);
+      expect(Discount.fromMap({...map, 'created_at': _hariIni.toIso8601String()}).minQty, 3);
+    });
+
+    test('baris lama tanpa kolom jumlah dibaca sebagai satu', () {
+      final map = _d().toMap()..remove('min_qty');
+      expect(Discount.fromMap({...map, 'created_at': _hariIni.toIso8601String()}).minQty, 1);
+    });
+  });
+
 }

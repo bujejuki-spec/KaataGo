@@ -48,6 +48,7 @@ FILES=(
   kasir_journal_read.sql
   cancel_order.sql
   settled_at_counter.sql
+  discount_min_qty.sql
 )
 
 {

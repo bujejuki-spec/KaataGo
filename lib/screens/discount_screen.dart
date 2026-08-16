@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -241,7 +242,9 @@ class _DiscountCard extends StatelessWidget {
                       discount.basis == DiscountBasis.minPurchase
                           ? 'Belanja ${discount.compare == MinCompare.atLeast ? '≥' : '>'} '
                               '${currency.format(discount.minPurchase)}'
-                          : '${discount.productIds.length} menu',
+                          : discount.minQty > 1
+                              ? '${discount.productIds.length} menu · min ${discount.minQty} pcs'
+                              : '${discount.productIds.length} menu',
                       style: TextStyle(
                           fontSize: 12.5, color: KaataTheme.mutedOf(context)),
                       overflow: TextOverflow.ellipsis,
@@ -362,6 +365,9 @@ class _DiscountFormScreenState extends State<_DiscountFormScreen> {
         : formatRupiahInput(widget.existing!.minPurchase),
   );
 
+  late final _qtyCtrl =
+      TextEditingController(text: '${widget.existing?.minQty ?? 1}');
+
   late DiscountBasis _basis = widget.existing?.basis ?? DiscountBasis.products;
   late DiscountKind _kind = widget.existing?.kind ?? DiscountKind.percent;
   late MinCompare _compare = widget.existing?.compare ?? MinCompare.atLeast;
@@ -375,6 +381,7 @@ class _DiscountFormScreenState extends State<_DiscountFormScreen> {
     _nameCtrl.dispose();
     _valueCtrl.dispose();
     _minCtrl.dispose();
+    _qtyCtrl.dispose();
     super.dispose();
   }
 
@@ -411,6 +418,9 @@ class _DiscountFormScreenState extends State<_DiscountFormScreen> {
             ? (parseRupiah(_minCtrl.text) ?? 0)
             : 0,
         compare: _compare,
+        minQty: _basis == DiscountBasis.products
+            ? (int.tryParse(_qtyCtrl.text.trim()) ?? 1).clamp(1, 999)
+            : 1,
         startsOn: _startsOn,
         endsOn: _endsOn,
         active: widget.existing?.active ?? true,
@@ -465,14 +475,19 @@ class _DiscountFormScreenState extends State<_DiscountFormScreen> {
               ),
               const SizedBox(height: 18),
 
-              if (_basis == DiscountBasis.products)
+              if (_basis == DiscountBasis.products) ...[
                 _ProductPicker(
                   products: products,
                   memuat: _memuatProduk,
                   selected: _productIds,
                   onChanged: (ids) => setState(() => _productIds = ids),
-                )
-              else
+                ),
+                const SizedBox(height: 14),
+                _MinQtyField(
+                  controller: _qtyCtrl,
+                  onChanged: () => setState(() {}),
+                ),
+              ] else
                 _MinPurchaseFields(
                   controller: _minCtrl,
                   compare: _compare,
@@ -643,6 +658,66 @@ class _ProductPicker extends StatelessWidget {
               ],
             ),
           ),
+      ],
+    );
+  }
+}
+
+/// Berapa banyak menunya harus dibeli supaya promonya berlaku.
+///
+/// Isinya angka, tapi yang dibaca orang yang mengisi formulir ini adalah
+/// kalimat promonya. Karena itu kalimat itu ditulis balik ke layar
+/// begitu angkanya berubah — "berlaku kalau menu yang dipilih dipesan
+/// minimal 2" salah dibaca jauh lebih sulit daripada kotak isian
+/// bertuliskan "Qty".
+class _MinQtyField extends StatelessWidget {
+  final TextEditingController controller;
+  final VoidCallback onChanged;
+
+  const _MinQtyField({required this.controller, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final qty = int.tryParse(controller.text.trim()) ?? 1;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Minimum Jumlah',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            SizedBox(
+              width: 110,
+              child: TextFormField(
+                controller: controller,
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                decoration: const InputDecoration(
+                  labelText: 'Jumlah',
+                  suffixText: 'pcs',
+                ),
+                onChanged: (_) => onChanged(),
+                validator: (v) {
+                  final n = int.tryParse((v ?? '').trim()) ?? 0;
+                  return n < 1 ? 'Minimal 1' : null;
+                },
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                qty <= 1
+                    ? 'Berlaku berapa pun jumlah yang dibeli.'
+                    : 'Berlaku kalau menu yang dipilih dipesan minimal '
+                        '$qty pcs. Kalau ada beberapa menu, tiap menu '
+                        'dihitung sendiri.',
+                style: TextStyle(
+                    fontSize: 11.5, color: KaataTheme.mutedOf(context)),
+              ),
+            ),
+          ],
+        ),
       ],
     );
   }

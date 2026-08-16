@@ -82,6 +82,7 @@ class CartProvider extends ChangeNotifier {
         total: chargesFor(orderType).total,
         subtotalOf: (productId) => linesOf(productId)
             .fold(0, (sum, line) => sum + menuSubtotalOf(line)),
+        qtyOf: quantityOf,
         productIds: _items.map((i) => i.product.id).toSet(),
       );
 

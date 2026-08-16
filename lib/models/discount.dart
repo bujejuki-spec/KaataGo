@@ -72,6 +72,20 @@ class Discount {
   final int minPurchase;
   final MinCompare compare;
 
+  /// Berapa banyak menunya harus dipesan supaya promonya berlaku.
+  ///
+  /// "Beli 2 Mont Blanc diskon 30%" — tanpa ini, promo yang dimaksud
+  /// untuk pembelian kedua ikut terpakai oleh yang membeli satu, dan
+  /// alasan promonya ada (mendorong orang menambah satu lagi) hilang.
+  ///
+  /// Dihitung per menu, bukan per keranjang: pada bundling, tiap menu
+  /// yang ikut harus mencapai jumlah ini sendiri. Dua Mont Blanc tidak
+  /// menutupi Nasi Goreng yang tidak dipesan.
+  ///
+  /// Bawaannya 1 — promo lama yang tidak menyebut jumlah tetap berlaku
+  /// persis seperti sebelumnya.
+  final int minQty;
+
   final DateTime? startsOn;
   final DateTime? endsOn;
 
@@ -89,6 +103,7 @@ class Discount {
     this.productIds = const [],
     this.minPurchase = 0,
     this.compare = MinCompare.atLeast,
+    this.minQty = 1,
     this.startsOn,
     this.endsOn,
     this.active = true,
@@ -131,6 +146,7 @@ class Discount {
         'product_ids': productIds,
         'min_purchase': minPurchase,
         'compare_mode': _compareDb[compare],
+        'min_qty': minQty,
         'starts_on': startsOn?.toIso8601String().split('T').first,
         'ends_on': endsOn?.toIso8601String().split('T').first,
         'active': active,
@@ -159,6 +175,7 @@ class Discount {
             .firstWhere((e) => e.value == map['compare_mode'],
                 orElse: () => _compareDb.entries.first)
             .key,
+        minQty: (map['min_qty'] as num?)?.toInt() ?? 1,
         startsOn: _date(map['starts_on']),
         endsOn: _date(map['ends_on']),
         active: map['active'] != false,
@@ -177,6 +194,7 @@ class Discount {
     List<String>? productIds,
     int? minPurchase,
     MinCompare? compare,
+    int? minQty,
     Object? startsOn = _unset,
     Object? endsOn = _unset,
     bool? active,
@@ -191,6 +209,7 @@ class Discount {
         productIds: productIds ?? this.productIds,
         minPurchase: minPurchase ?? this.minPurchase,
         compare: compare ?? this.compare,
+        minQty: minQty ?? this.minQty,
         startsOn:
             identical(startsOn, _unset) ? this.startsOn : startsOn as DateTime?,
         endsOn: identical(endsOn, _unset) ? this.endsOn : endsOn as DateTime?,
@@ -220,10 +239,14 @@ class AppliedDiscount {
 /// [subtotalOf] mengembalikan nilai baris untuk sebuah produk; dipakai
 /// diskon berbasis menu supaya potongannya hanya mengenai menu yang
 /// memang ikut promo, bukan seluruh tagihan.
+///
+/// [qtyOf] mengembalikan jumlah menu itu di keranjang — dipakai promo
+/// yang mensyaratkan pembelian lebih dari satu.
 AppliedDiscount? bestDiscountFor({
   required List<Discount> discounts,
   required int total,
   required int Function(String productId) subtotalOf,
+  required int Function(String productId) qtyOf,
   required Iterable<String> productIds,
   DateTime? now,
 }) {
@@ -237,7 +260,11 @@ AppliedDiscount? bestDiscountFor({
       if (!d.meetsMinimum(total)) continue;
       potongan = d.amountFor(total);
     } else {
-      final kena = productIds.where(d.productIds.contains);
+      // Jumlahnya diperiksa per menu. Promo "beli 2" yang lolos karena
+      // keranjangnya kebetulan berisi dua menu berbeda bukan promo yang
+      // dijanjikan spanduknya.
+      final kena = productIds
+          .where((id) => d.productIds.contains(id) && qtyOf(id) >= d.minQty);
       if (kena.isEmpty) continue;
       // Bundling: semua menu yang ikut promo dijumlahkan dulu, baru
       // dipotong. Memotong tiap baris sendiri-sendiri membuat diskon
