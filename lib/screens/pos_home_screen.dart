@@ -278,7 +278,7 @@ class _CartPanel extends StatelessWidget {
                         child: Text(
                           'Belum ada item.\nPilih menu di sebelah kiri.',
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.grey.shade500),
+                          style: TextStyle(color: KaataTheme.mutedOf(context)),
                         ),
                       ),
                     )
@@ -307,7 +307,7 @@ class _CartPanel extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('${cart.itemCount} item', style: TextStyle(color: Colors.grey.shade600)),
+                      Text('${cart.itemCount} item', style: TextStyle(color: KaataTheme.mutedOf(context))),
                       Text(
                         currency.format(cart.total),
                         style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold),

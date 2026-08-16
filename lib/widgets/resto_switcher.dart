@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../theme.dart';
 import 'package:provider/provider.dart';
 
 import '../db/restaurant_repository.dart';
@@ -70,7 +72,7 @@ class _RestoSwitcherState extends State<RestoSwitcher> {
             const SizedBox(height: 4),
             Text(
               'Semua data mengikuti resto yang dipilih',
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              style: TextStyle(fontSize: 12, color: KaataTheme.mutedOf(context)),
             ),
             const SizedBox(height: 10),
             for (final id in auth.restoIds)

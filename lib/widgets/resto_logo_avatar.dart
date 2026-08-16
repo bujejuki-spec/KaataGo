@@ -2,6 +2,9 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 
+import '../theme.dart';
+
+
 /// Circular resto logo for list rows, falling back to a storefront icon
 /// when none has been uploaded. Greyed out for a deactivated resto so it
 /// reads the same way the rest of that row does.
@@ -24,7 +27,7 @@ class RestoLogoAvatar extends StatelessWidget {
     if (!hasLogo) {
       return CircleAvatar(
         radius: radius,
-        backgroundColor: active ? null : Colors.grey.shade300,
+        backgroundColor: active ? null : KaataTheme.borderOf(context),
         child: Icon(Icons.storefront_outlined, size: radius),
       );
     }

@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+
+import '../theme.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 
@@ -150,6 +152,11 @@ class _AnnouncementFormState extends State<_AnnouncementForm>
     setState(() => _imageBase64 = base64Encode(bytes));
   }
 
+  /// Sasaran pengumuman. Hanya berlaku untuk pengumuman umum dari
+  /// resto — kabar versi baru dan pengumuman Super Admin selalu untuk
+  /// semua orang.
+  AnnouncementAudience _audience = AnnouncementAudience.all;
+
   Future<void> _publish() async {
     if (!_formKey.currentState!.validate()) return;
     final auth = context.read<AuthProvider>();
@@ -178,11 +185,13 @@ class _AnnouncementFormState extends State<_AnnouncementForm>
             _isUpdate && _urlCtrl.text.trim().isNotEmpty ? _urlCtrl.text.trim() : null,
         restoId: _isUpdate ? null : restoId,
         imageBase64: _isUpdate ? null : _imageBase64,
+        audience: restoId == null ? AnnouncementAudience.all : _audience,
         createdBy: auth.user?.email ?? 'KaataGo',
       );
       toast.show(restoId == null
           ? 'Pengumuman terkirim ke semua kotak masuk.'
-          : 'Pengumuman terkirim ke kotak masuk resto ini.');
+          : 'Pengumuman terkirim ke '
+              '${kAnnouncementAudienceHints[_audience]!.toLowerCase()}.');
       navigator.pop();
     } catch (e) {
       toast.show('Gagal mengirim: $e', isError: true);
@@ -220,9 +229,8 @@ class _AnnouncementFormState extends State<_AnnouncementForm>
                             '"General" pada kotak masuk semua pengguna yang login.'
                         : 'Pengumuman umum untuk '
                             '${_restoName ?? 'resto yang sedang kamu buka'}. '
-                            'Muncul di kotak masuk karyawan resto itu, dan di '
-                            'halaman menu pelanggannya. Resto lain tidak '
-                            'menerimanya.',
+                            'Masuk ke tab "General" di kotak masuk, berikut '
+                            'notifikasinya. Resto lain tidak menerimanya.',
                 style: const TextStyle(fontSize: 12.5, color: Color(0xFF075985)),
               ),
             ),
@@ -241,6 +249,40 @@ class _AnnouncementFormState extends State<_AnnouncementForm>
               validator: (v) => (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null,
             ),
             const SizedBox(height: 14),
+            // Sasarannya dipilih tegas, tanpa bawaan yang tersembunyi.
+            //
+            // Promo dan pengumuman internal punya pembaca yang berbeda.
+            // Jadwal shift yang ikut terkirim ke pelanggan bukan cuma
+            // tidak berguna — sebagian memang tidak pantas dibaca
+            // mereka, dan yang mengirimnya baru tahu setelah terkirim.
+            if (!_isUpdate && !toEveryone) ...[
+              const Text('Dikirim ke',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+              const SizedBox(height: 8),
+              SegmentedButton<AnnouncementAudience>(
+                segments: [
+                  for (final a in AnnouncementAudience.values)
+                    ButtonSegment(
+                      value: a,
+                      label: Text(kAnnouncementAudienceLabels[a]!),
+                    ),
+                ],
+                selected: {_audience},
+                onSelectionChanged: (v) => setState(() => _audience = v.first),
+                style: ButtonStyle(
+                  visualDensity: VisualDensity.compact,
+                  textStyle:
+                      WidgetStateProperty.all(const TextStyle(fontSize: 12.5)),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                kAnnouncementAudienceHints[_audience]!,
+                style: TextStyle(
+                    fontSize: 11.5, color: KaataTheme.mutedOf(context)),
+              ),
+              const SizedBox(height: 16),
+            ],
             if (_isUpdate) ...[
               TextFormField(
                 controller: _versionCtrl,

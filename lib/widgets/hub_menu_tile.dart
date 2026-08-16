@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../theme.dart';
+
 import 'count_badge.dart';
 
 /// A colorful menu row used on "hub" home screens (Super Admin, Finance)
@@ -75,11 +77,11 @@ class HubMenuTile extends StatelessWidget {
                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15.5)),
                     const SizedBox(height: 3),
                     Text(subtitle,
-                        style: TextStyle(color: Colors.grey.shade600, fontSize: 12.5)),
+                        style: TextStyle(color: KaataTheme.mutedOf(context), fontSize: 12.5)),
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right, color: Colors.grey.shade400),
+              Icon(Icons.chevron_right, color: KaataTheme.mutedOf(context)),
             ],
           ),
         ),

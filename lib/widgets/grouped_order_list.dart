@@ -87,7 +87,7 @@ class GroupedOrderList extends StatelessWidget {
             decoration: BoxDecoration(
               color: KaataTheme.surfaceOf(context),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: Colors.grey.shade300),
+              border: Border.all(color: KaataTheme.borderOf(context)),
             ),
             clipBehavior: Clip.antiAlias,
             child: Theme(
@@ -102,7 +102,7 @@ class GroupedOrderList extends StatelessWidget {
                 ),
                 subtitle: Text(
                   '${dayOrders.length} pesanan',
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  style: TextStyle(fontSize: 12, color: KaataTheme.mutedOf(context)),
                 ),
                 childrenPadding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
                 children: sections,
@@ -145,14 +145,14 @@ class _TypeHeader extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 6, top: 2),
       child: Row(
         children: [
-          Icon(icon, size: 15, color: Colors.grey.shade700),
+          Icon(icon, size: 15, color: KaataTheme.mutedOf(context)),
           const SizedBox(width: 6),
           Text(
             '$label ($count)',
             style: TextStyle(
               fontWeight: FontWeight.w600,
               fontSize: 13,
-              color: Colors.grey.shade700,
+              color: KaataTheme.mutedOf(context),
             ),
           ),
         ],

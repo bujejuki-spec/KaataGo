@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../theme.dart';
+
 import '../db/employee_repository.dart';
 import '../db/restaurant_repository.dart';
 import '../models/employee.dart';
@@ -183,7 +185,7 @@ class _EmployeeRow extends StatelessWidget {
     final color = _roleColors[e.role] ?? Colors.grey;
     return ListTile(
       leading: CircleAvatar(
-        backgroundColor: e.active ? color : Colors.grey.shade300,
+        backgroundColor: e.active ? color : KaataTheme.borderOf(context),
         child: Icon(e.active ? Icons.person : Icons.person_off_outlined, color: Colors.white),
       ),
       title: Text(
@@ -197,7 +199,7 @@ class _EmployeeRow extends StatelessWidget {
           children: [
             if (e.name.isNotEmpty) Text(e.email, style: const TextStyle(fontSize: 12)),
             if (e.nip != null && e.nip!.isNotEmpty)
-              Text('NIP: ${e.nip}', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+              Text('NIP: ${e.nip}', style: TextStyle(fontSize: 12, color: KaataTheme.mutedOf(context))),
             const SizedBox(height: 4),
             Wrap(
               spacing: 6,

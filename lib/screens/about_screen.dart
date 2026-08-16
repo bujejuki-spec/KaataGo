@@ -63,7 +63,7 @@ class _AboutScreenState extends State<AboutScreen> {
                 if (_version.isNotEmpty) ...[
                   const SizedBox(height: 8),
                   Text(_version,
-                      style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
+                      style: TextStyle(color: KaataTheme.mutedOf(context), fontSize: 12)),
                 ],
               ],
             ),
@@ -82,7 +82,7 @@ class _AboutScreenState extends State<AboutScreen> {
               'kasir tetap bisa melayani pesanan langsung, dapur melihat semua '
               'pesanan masuk secara real-time, dan bagian keuangan mendapat '
               'catatan yang rapi dari setiap transaksi tanpa input ulang.',
-              style: TextStyle(fontSize: 13.5, height: 1.55, color: Colors.grey.shade800),
+              style: TextStyle(fontSize: 13.5, height: 1.55, color: KaataTheme.mutedOf(context)),
             ),
           ),
           const SizedBox(height: 14),
@@ -127,7 +127,7 @@ class _AboutScreenState extends State<AboutScreen> {
             child: Text(
               'Butuh bantuan? Hubungi Call Center KaataGo.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              style: TextStyle(fontSize: 12, color: KaataTheme.mutedOf(context)),
             ),
           ),
         ],
@@ -199,7 +199,7 @@ class _WebsiteLink extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white,
+      color: KaataTheme.surfaceOf(context),
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
@@ -233,13 +233,13 @@ class _WebsiteLink extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       'bujejuki-spec.github.io/KaataGo-LandingPage',
-                      style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600),
+                      style: TextStyle(fontSize: 11.5, color: KaataTheme.mutedOf(context)),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
               ),
-              Icon(Icons.open_in_new, size: 17, color: Colors.grey.shade500),
+              Icon(Icons.open_in_new, size: 17, color: KaataTheme.mutedOf(context)),
             ],
           ),
         ),
@@ -282,7 +282,7 @@ class _Features extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(desc,
                           style: TextStyle(
-                              fontSize: 12, height: 1.35, color: Colors.grey.shade600)),
+                              fontSize: 12, height: 1.35, color: KaataTheme.mutedOf(context))),
                     ],
                   ),
                 ),

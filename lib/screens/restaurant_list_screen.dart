@@ -327,7 +327,7 @@ class _SectionHeader extends StatelessWidget {
           Expanded(
             child: Text(
               subtitle,
-              style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600),
+              style: TextStyle(fontSize: 11.5, color: KaataTheme.mutedOf(context)),
             ),
           ),
         ],
@@ -381,12 +381,12 @@ class _EmptySearch extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.search_off, size: 52, color: Colors.grey.shade300),
+            Icon(Icons.search_off, size: 52, color: KaataTheme.borderOf(context)),
             const SizedBox(height: 12),
             Text(
               'Tidak ada resto bernama "$query".',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey.shade600),
+              style: TextStyle(color: KaataTheme.mutedOf(context)),
             ),
           ],
         ),

@@ -272,7 +272,7 @@ class _PendingCard extends StatelessWidget {
                 '${DateFormat('dd MMM · HH:mm').format(order.createdAt.toWib())}'
                 '${order.customerName?.trim().isNotEmpty == true ? ' · ${order.customerName!.trim()}' : ''}'
                 ' · ${order.customerLabel}',
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                style: TextStyle(fontSize: 12, color: KaataTheme.mutedOf(context)),
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 6),
@@ -346,7 +346,7 @@ class _MethodSheet extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('Pesanan #${refOf(order.id)}',
-                    style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600)),
+                    style: TextStyle(fontSize: 12.5, color: KaataTheme.mutedOf(context))),
                 const SizedBox(height: 2),
                 Text(
                   'Terima ${currency.format(order.total)} lewat',
@@ -447,8 +447,8 @@ class _CountdownState extends State<_Countdown> {
       text: menit < 1
           ? 'Kurang dari 1 menit lagi'
           : 'Sisa waktu bayar $menit menit',
-      color: urgent ? const Color(0xFFB45309) : Colors.grey.shade700,
-      background: urgent ? const Color(0xFFFEF3C7) : Colors.grey.shade100,
+      color: urgent ? const Color(0xFFB45309) : KaataTheme.mutedOf(context),
+      background: urgent ? const Color(0xFFFEF3C7) : KaataTheme.softFillOf(context),
     );
   }
 }
@@ -522,11 +522,11 @@ class _OrderDetailDialog extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               '$where · ${DateFormat('dd MMM yyyy · HH:mm').format(order.createdAt.toWib())}',
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              style: TextStyle(fontSize: 12, color: KaataTheme.mutedOf(context)),
             ),
             if (order.customerName?.trim().isNotEmpty == true)
               Text('a.n. ${order.customerName!.trim()}',
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                  style: TextStyle(fontSize: 12, color: KaataTheme.mutedOf(context))),
             const Divider(height: 20),
             Flexible(
               child: SingleChildScrollView(
@@ -547,7 +547,7 @@ class _OrderDetailDialog extends StatelessWidget {
                                   '${item.quantity} x ${currency.format(item.price)}'
                                   '${item.notes?.isNotEmpty == true ? ' · ${item.notes}' : ''}',
                                   style:
-                                      TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                                      TextStyle(fontSize: 12, color: KaataTheme.mutedOf(context)),
                                 ),
                               ],
                             ),
@@ -565,11 +565,11 @@ class _OrderDetailDialog extends StatelessWidget {
             ),
             const Divider(height: 20),
             if ((order.serviceAmount ?? 0) > 0)
-              _row('Biaya Service', currency.format(order.serviceAmount!), soft: true),
+              _row(context, 'Biaya Service', currency.format(order.serviceAmount!), soft: true),
             if ((order.ppnAmount ?? 0) > 0)
-              _row('PPN', currency.format(order.ppnAmount!), soft: true),
+              _row(context, 'PPN', currency.format(order.ppnAmount!), soft: true),
             const SizedBox(height: 4),
-            _row('TOTAL', currency.format(order.total), bold: true),
+            _row(context, 'TOTAL', currency.format(order.total), bold: true),
             const SizedBox(height: 10),
             Align(
               alignment: Alignment.centerRight,
@@ -584,7 +584,8 @@ class _OrderDetailDialog extends StatelessWidget {
     );
   }
 
-  Widget _row(String label, String value, {bool bold = false, bool soft = false}) {
+  Widget _row(BuildContext context, String label, String value,
+      {bool bold = false, bool soft = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
@@ -594,13 +595,13 @@ class _OrderDetailDialog extends StatelessWidget {
               style: TextStyle(
                 fontWeight: bold ? FontWeight.bold : FontWeight.normal,
                 fontSize: bold ? 15 : 13,
-                color: soft ? Colors.grey.shade700 : null,
+                color: soft ? KaataTheme.mutedOf(context) : null,
               )),
           Text(value,
               style: TextStyle(
                 fontWeight: bold ? FontWeight.bold : FontWeight.w600,
                 fontSize: bold ? 17 : 13,
-                color: soft ? Colors.grey.shade700 : null,
+                color: soft ? KaataTheme.mutedOf(context) : null,
               )),
         ],
       ),
@@ -619,16 +620,16 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.check_circle_outline, size: 64, color: Colors.grey.shade300),
+            Icon(Icons.check_circle_outline, size: 64, color: KaataTheme.borderOf(context)),
             const SizedBox(height: 14),
             Text('Tidak ada pesanan yang menunggu dibayar',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 14)),
+                style: TextStyle(color: KaataTheme.mutedOf(context), fontSize: 14)),
             const SizedBox(height: 6),
             Text(
               'Pesanan dari HP pelanggan yang memilih bayar tunai akan muncul di sini.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+              style: TextStyle(color: KaataTheme.mutedOf(context), fontSize: 12),
             ),
           ],
         ),

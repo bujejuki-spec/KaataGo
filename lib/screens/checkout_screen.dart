@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../theme.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -383,7 +385,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             Text(
               'Hapus dulu dari keranjang sebelum menerima pembayaran.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12.5, color: Colors.grey.shade700),
+              style: TextStyle(fontSize: 12.5, color: KaataTheme.mutedOf(context)),
             ),
           ],
         ),

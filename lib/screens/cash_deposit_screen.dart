@@ -316,7 +316,7 @@ class _CashDepositScreenState extends State<CashDepositScreen> {
                                 ? 'Belum ada pembayaran tunai yang masuk.'
                                 : 'Semua uang tunai sudah disetor.',
                             textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                            style: TextStyle(fontSize: 12, color: KaataTheme.mutedOf(context)),
                           ),
                         ],
                         const SizedBox(height: 24),
@@ -326,7 +326,7 @@ class _CashDepositScreenState extends State<CashDepositScreen> {
                                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                             const Spacer(),
                             Text('${_deposits.length} setoran',
-                                style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                                style: TextStyle(fontSize: 12, color: KaataTheme.mutedOf(context))),
                           ],
                         ),
                         const SizedBox(height: 10),
@@ -336,7 +336,7 @@ class _CashDepositScreenState extends State<CashDepositScreen> {
                             alignment: Alignment.center,
                             child: Text(
                               'Belum ada setoran dicatat.',
-                              style: TextStyle(color: Colors.grey.shade500),
+                              style: TextStyle(color: KaataTheme.mutedOf(context)),
                             ),
                           )
                         else
@@ -475,7 +475,7 @@ class _DepositTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: KaataTheme.surfaceOf(context),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: KaataTheme.softFillOf(context)),
       ),
       padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
       child: Row(
@@ -510,28 +510,28 @@ class _DepositTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(dateFmt.format(deposit.createdAt.toWib()),
-                    style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600)),
+                    style: TextStyle(fontSize: 11.5, color: KaataTheme.mutedOf(context))),
                 Text('Oleh ${deposit.createdBy}',
-                    style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600)),
+                    style: TextStyle(fontSize: 11.5, color: KaataTheme.mutedOf(context))),
                 if (deposit.bankName != null)
                   Text(
                     '${deposit.bankName}'
                     '${deposit.accountNumber != null ? ' · ${deposit.accountNumber}' : ''}'
                     '${deposit.accountHolder != null ? ' · a.n. ${deposit.accountHolder}' : ''}',
-                    style: TextStyle(fontSize: 11.5, color: Colors.grey.shade700),
+                    style: TextStyle(fontSize: 11.5, color: KaataTheme.mutedOf(context)),
                   ),
                 if (deposit.note != null && deposit.note!.trim().isNotEmpty) ...[
                   const SizedBox(height: 4),
                   Text(deposit.note!,
                       style: TextStyle(
-                          fontSize: 12, fontStyle: FontStyle.italic, color: Colors.grey.shade700)),
+                          fontSize: 12, fontStyle: FontStyle.italic, color: KaataTheme.mutedOf(context))),
                 ],
                 if (deposit.reviewedBy != null) ...[
                   const SizedBox(height: 3),
                   Text(
                     '${deposit.isApproved ? 'Dikonfirmasi' : 'Ditolak'} oleh ${deposit.reviewedBy}'
                     '${deposit.reviewNote != null ? ' · ${deposit.reviewNote}' : ''}',
-                    style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600),
+                    style: TextStyle(fontSize: 11.5, color: KaataTheme.mutedOf(context)),
                   ),
                 ],
                 if (deposit.hasProof) ...[
@@ -589,7 +589,7 @@ class _DepositTile extends StatelessWidget {
           if (onDelete != null)
             IconButton(
               icon: const Icon(Icons.close, size: 18),
-              color: Colors.grey.shade500,
+              color: KaataTheme.mutedOf(context),
               tooltip: 'Batalkan setoran',
               onPressed: onDelete,
             ),
@@ -779,7 +779,7 @@ class _AddDepositDialogState extends State<_AddDepositDialog> {
                 const SizedBox(height: 14),
                 Text('Rekening Tujuan',
                     style: TextStyle(
-                        fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey.shade700)),
+                        fontSize: 12, fontWeight: FontWeight.w600, color: KaataTheme.mutedOf(context))),
                 const SizedBox(height: 8),
                 _ReadOnlyField(label: 'Nama Bank', value: widget.bankName),
                 const SizedBox(height: 10),
@@ -816,7 +816,7 @@ class _AddDepositDialogState extends State<_AddDepositDialog> {
                 const SizedBox(height: 14),
                 Text('Bukti Setor / Transfer',
                     style: TextStyle(
-                        fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey.shade700)),
+                        fontSize: 12, fontWeight: FontWeight.w600, color: KaataTheme.mutedOf(context))),
                 const SizedBox(height: 8),
                 if (_proof == null)
                   OutlinedButton.icon(
@@ -888,10 +888,10 @@ class _ErrorState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.cloud_off, size: 40, color: Colors.grey.shade400),
+            Icon(Icons.cloud_off, size: 40, color: KaataTheme.mutedOf(context)),
             const SizedBox(height: 12),
             Text('Gagal memuat data.\n$message',
-                textAlign: TextAlign.center, style: TextStyle(color: Colors.grey.shade600)),
+                textAlign: TextAlign.center, style: TextStyle(color: KaataTheme.mutedOf(context))),
             const SizedBox(height: 16),
             OutlinedButton.icon(
               onPressed: onRetry,
@@ -938,7 +938,7 @@ class _ReadOnlyField extends StatelessWidget {
       ),
       style: TextStyle(
         fontWeight: FontWeight.w600,
-        color: text.isEmpty ? Colors.grey.shade500 : Colors.black87,
+        color: text.isEmpty ? KaataTheme.mutedOf(context) : KaataTheme.textOf(context),
       ),
     );
   }

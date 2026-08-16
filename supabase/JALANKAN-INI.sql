@@ -17,7 +17,7 @@
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 1 dari 21 — employee_surrogate_key.sql
+-- BAGIAN 1 dari 23 — employee_surrogate_key.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — email karyawan jadi bisa diubah.
@@ -68,7 +68,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 2 dari 21 — promo_banner.sql
+-- BAGIAN 2 dari 23 — promo_banner.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — banner promo per resto.
@@ -130,7 +130,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 3 dari 21 — rilis_setor_petty_inbox.sql
+-- BAGIAN 3 dari 23 — rilis_setor_petty_inbox.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — setoran & top up petty cash berjenjang, GL Suspense, dan
@@ -612,7 +612,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 4 dari 21 — customer_cash_payment.sql
+-- BAGIAN 4 dari 23 — customer_cash_payment.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pelanggan boleh memilih bayar tunai di kasir.
@@ -682,7 +682,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 5 dari 21 — push_notifications.sql
+-- BAGIAN 5 dari 23 — push_notifications.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — notifikasi yang tetap sampai walau aplikasinya tertutup.
@@ -1030,7 +1030,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 6 dari 21 — announcement_categories.sql
+-- BAGIAN 6 dari 23 — announcement_categories.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pengumuman dibagi dua jenis, dan admin resto boleh mengirim.
@@ -1119,7 +1119,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 7 dari 21 — fix_device_tokens_rls.sql
+-- BAGIAN 7 dari 23 — fix_device_tokens_rls.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pendaftaran token push lewat fungsi, bukan tulis langsung.
@@ -1238,7 +1238,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 8 dari 21 — push_trigger_pg_net.sql
+-- BAGIAN 8 dari 23 — push_trigger_pg_net.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — panggil Edge Function langsung dari database, tanpa webhook.
@@ -1351,7 +1351,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 9 dari 21 — payment_gateway.sql
+-- BAGIAN 9 dari 23 — payment_gateway.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — QRIS sungguhan lewat Xendit.
@@ -1505,7 +1505,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 10 dari 21 — gateway_settlement.sql
+-- BAGIAN 10 dari 23 — gateway_settlement.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pencairan dana dari payment gateway.
@@ -1683,7 +1683,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 11 dari 21 — resto_payment_accounts.sql
+-- BAGIAN 11 dari 23 — resto_payment_accounts.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pencairan langsung ke rekening masing-masing resto.
@@ -1776,7 +1776,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 12 dari 21 — counter_charge.sql
+-- BAGIAN 12 dari 23 — counter_charge.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — tagihan QRIS di meja kasir.
@@ -1813,7 +1813,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 13 dari 21 — announcement_push.sql
+-- BAGIAN 13 dari 23 — announcement_push.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pengumuman ikut membunyikan HP.
@@ -1870,7 +1870,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 14 dari 21 — cash_payment_expiry.sql
+-- BAGIAN 14 dari 23 — cash_payment_expiry.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pesanan tunai yang tidak dilunasi di kasir hangus sendiri.
@@ -1944,7 +1944,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 15 dari 21 — level_groups.sql
+-- BAGIAN 15 dari 23 — level_groups.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — tiap resto menyusun sendiri kelompok levelnya.
@@ -2070,7 +2070,7 @@ create trigger trg_seed_level_groups
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 16 dari 21 — resto_order_types.sql
+-- BAGIAN 16 dari 23 — resto_order_types.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — resto menentukan sendiri melayani Dine In, Take Away, atau
@@ -2108,7 +2108,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 17 dari 21 — product_out_of_stock.sql
+-- BAGIAN 17 dari 23 — product_out_of_stock.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — ketersediaan produk ditandai, bukan dihitung.
@@ -2152,7 +2152,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 18 dari 21 — discounts.sql
+-- BAGIAN 18 dari 23 — discounts.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — diskon: per menu (termasuk bundling) atau minimum belanja.
@@ -2353,7 +2353,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 19 dari 21 — promo_banner_period.sql
+-- BAGIAN 19 dari 23 — promo_banner_period.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — banner promo punya masa berlaku.
@@ -2381,7 +2381,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 20 dari 21 — default_gl_accounts.sql
+-- BAGIAN 20 dari 23 — default_gl_accounts.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — resto baru langsung punya bagan akun dan tarif pajaknya.
@@ -2547,7 +2547,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 21 dari 21 — gateway_account_super_admin.sql
+-- BAGIAN 21 dari 23 — gateway_account_super_admin.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pengenal sub-akun Xendit jadi urusan Super Admin saja.
@@ -2583,5 +2583,114 @@ drop policy if exists "resto_payment_accounts: staff write" on resto_payment_acc
 drop policy if exists "resto_payment_accounts: super_admin all" on resto_payment_accounts;
 create policy "resto_payment_accounts: super_admin all" on resto_payment_accounts
   for all using (is_super_admin()) with check (is_super_admin());
+
+commit;
+
+
+-- ═══════════════════════════════════════════════════════════════════
+-- BAGIAN 22 dari 23 — announcement_audience.sql
+-- ═══════════════════════════════════════════════════════════════════
+
+-- KaataGo — pengumuman resto memilih sasarannya: karyawan, pelanggan,
+-- atau keduanya.
+--
+-- Jalankan SETELAH announcement_categories.sql dan announcement_push.sql.
+-- Aman dijalankan berulang kali.
+--
+-- Sebelumnya satu pengumuman resto pergi ke semua orang yang terkait
+-- resto itu. Dua kebutuhan yang sangat berbeda terpaksa memakai jalur
+-- yang sama: promo yang justru harus dibaca pelanggan, dan pengumuman
+-- internal — jadwal shift, rapat, aturan baru dapur — yang tidak ada
+-- urusannya dengan pelanggan dan sering tidak pantas dibaca mereka.
+--
+-- Tanpa pilihan, yang terjadi bisa ditebak: pengumuman internal berhenti
+-- ditulis di sini dan pindah ke grup chat, lalu kotak masuknya kosong
+-- dan tidak ada yang membukanya lagi.
+
+begin;
+
+alter table app_announcements
+  add column if not exists audience text not null default 'all';
+
+alter table app_announcements drop constraint if exists app_announcements_audience_check;
+alter table app_announcements add constraint app_announcements_audience_check
+  check (audience in ('employees', 'customers', 'all'));
+
+-- Pengumuman lama tetap 'all' — itu memang perilakunya selama ini, dan
+-- mengubahnya surut berarti menyembunyikan kabar yang sudah terlanjur
+-- dibaca sebagian orang.
+
+-- ─────────────────────────────────────────────────────────────────────
+-- Notifikasinya ikut menyempit
+-- ─────────────────────────────────────────────────────────────────────
+--
+-- Sasaran yang dipilih dititipkan ke antrean push, supaya Edge Function
+-- tidak perlu membaca ulang barisnya. Nama audience-nya sendiri
+-- ('all') sengaja tidak dipakai ulang untuk ini — itu jenis penerima
+-- di antrean push, bukan sasaran pengumuman.
+create or replace function queue_push_announcement()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into push_outbox (resto_id, event, payload) values (
+    new.resto_id, 'announcement',
+    jsonb_build_object(
+      'audience', 'all',
+      'target', coalesce(new.audience, 'all'),
+      'title', new.title,
+      'body', case
+                when length(new.body) > 160
+                  then left(new.body, 157) || '...'
+                else new.body
+              end
+    )
+  );
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_queue_push_announcement on app_announcements;
+create trigger trg_queue_push_announcement
+  after insert on app_announcements
+  for each row execute function queue_push_announcement();
+
+commit;
+
+
+-- ═══════════════════════════════════════════════════════════════════
+-- BAGIAN 23 dari 23 — kasir_journal_read.sql
+-- ═══════════════════════════════════════════════════════════════════
+
+-- KaataGo — kasir boleh melihat jurnal dari catatan yang dia buat.
+--
+-- Aman dijalankan berulang kali.
+--
+-- Layar Saldo & Pengeluaran memang sudah dibuka untuk kasir: dia
+-- mencatat pengeluaran dari petty cash dan mengajukan top up, dan
+-- keduanya terlihat di sana. Yang tertinggal cuma satu — mengetuk salah
+-- satu catatan untuk melihat jurnalnya.
+--
+-- Karena hak bacanya berhenti di admin dan finance, jawabannya selalu
+-- kosong, dan layarnya menyimpulkan yang paling masuk akal dari data
+-- kosong: "akun GL-nya belum dipetakan". Kasir lalu mencari kesalahan
+-- pemetaan yang tidak pernah ada, sementara di layar Finance jurnal yang
+-- sama muncul lengkap.
+--
+-- Tidak ada yang baru yang terbuka: barisnya menjelaskan catatan yang
+-- sudah boleh dia lihat isinya. Menulis tetap tertutup untuk semua peran
+-- — seluruh baris jurnal ditulis oleh pemicu, tidak pernah oleh
+-- aplikasi.
+
+begin;
+
+drop policy if exists "gl_journal_entries: finance/admin read" on gl_journal_entries;
+drop policy if exists "gl_journal_entries: staff read" on gl_journal_entries;
+create policy "gl_journal_entries: staff read" on gl_journal_entries
+  for select using (
+    is_resto_employee(resto_id, array['admin', 'finance', 'kasir'])
+  );
 
 commit;

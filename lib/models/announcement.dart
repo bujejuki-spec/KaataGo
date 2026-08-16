@@ -26,6 +26,36 @@ extension AnnouncementCategoryDb on AnnouncementCategory {
 /// orang yang mendaftar besok tidak akan pernah melihat pengumuman hari
 /// ini, dan setiap blast menambah ribuan baris kembar. Yang disimpan per
 /// orang hanyalah keadaannya — sudah dibaca, atau sudah dihapus.
+/// Siapa yang dituju sebuah pengumuman resto.
+///
+/// Promo dan pengumuman internal punya pembaca yang berbeda, dan
+/// sebelumnya keduanya terpaksa memakai jalur yang sama. Jadwal shift
+/// yang ikut terkirim ke pelanggan bukan cuma tidak berguna — sebagian
+/// memang tidak pantas dibaca mereka.
+enum AnnouncementAudience { employees, customers, all }
+
+const _audienceDb = {
+  AnnouncementAudience.employees: 'employees',
+  AnnouncementAudience.customers: 'customers',
+  AnnouncementAudience.all: 'all',
+};
+
+const kAnnouncementAudienceLabels = {
+  AnnouncementAudience.employees: 'Karyawan',
+  AnnouncementAudience.customers: 'Customer',
+  AnnouncementAudience.all: 'Semua',
+};
+
+const kAnnouncementAudienceHints = {
+  AnnouncementAudience.employees: 'Hanya karyawan resto ini',
+  AnnouncementAudience.customers: 'Hanya pelanggan resto ini',
+  AnnouncementAudience.all: 'Karyawan dan pelanggan',
+};
+
+extension AnnouncementAudienceDb on AnnouncementAudience {
+  String get dbValue => _audienceDb[this]!;
+}
+
 class Announcement {
   final String id;
   final String title;
@@ -52,6 +82,19 @@ class Announcement {
   /// Keadaan pembacanya, hasil gabungan dengan tabel inbox_states.
   final bool read;
 
+  /// Siapa yang dituju. Pengumuman lama — dan seluruh kabar dari Super
+  /// Admin — berlaku untuk semuanya.
+  final AnnouncementAudience audience;
+
+  /// Nama resto pengirimnya, diisi saat dibaca untuk kotak masuk
+  /// pelanggan.
+  ///
+  /// Pelanggan memesan di banyak resto, dan promo tanpa nama pengirim
+  /// adalah promo yang tidak bisa dipakai: dia tidak tahu harus datang
+  /// ke mana. Karyawan tidak membutuhkannya — kotak masuknya hanya
+  /// berisi kabar restonya sendiri.
+  final String? restoName;
+
   Announcement({
     required this.id,
     required this.title,
@@ -63,6 +106,8 @@ class Announcement {
     this.imageBase64,
     required this.createdAt,
     this.read = false,
+    this.restoName,
+    this.audience = AnnouncementAudience.all,
   });
 
   bool get hasImage => imageBase64 != null && imageBase64!.isNotEmpty;
@@ -77,7 +122,21 @@ class Announcement {
   /// lain akan berhenti dibaca.
   bool visibleTo(String? restoId) => this.restoId == null || this.restoId == restoId;
 
-  Announcement copyWith({bool? read}) => Announcement(
+  /// Pantas muncul di kotak masuk pelanggan yang pernah memesan di
+  /// [restoIds].
+  ///
+  /// Berbeda dari [visibleTo] yang memakai satu resto: pelanggan tidak
+  /// punya "resto sendiri". Yang dia punya adalah daftar resto yang
+  /// pernah dia datangi, dan resto yang sedang dia buka sekarang.
+  bool visibleToCustomer(Set<String> restoIds) =>
+      audience != AnnouncementAudience.employees &&
+      (restoId == null || restoIds.contains(restoId));
+
+  /// Pantas muncul di kotak masuk karyawan resto [restoId].
+  bool visibleToEmployee(String? restoId) =>
+      audience != AnnouncementAudience.customers && visibleTo(restoId);
+
+  Announcement copyWith({bool? read, String? restoName}) => Announcement(
         id: id,
         title: title,
         body: body,
@@ -88,6 +147,8 @@ class Announcement {
         imageBase64: imageBase64,
         createdAt: createdAt,
         read: read ?? this.read,
+        restoName: restoName ?? this.restoName,
+        audience: audience,
       );
 
   factory Announcement.fromMap(Map<String, dynamic> map, {bool read = false}) {
@@ -102,6 +163,11 @@ class Announcement {
       imageBase64: map['image_base64'] as String?,
       createdAt: DateTime.parse(map['created_at'] as String).toUtc(),
       read: read,
+      audience: _audienceDb.entries
+          .firstWhere((e) => e.value == map['audience'],
+              orElse: () => const MapEntry(
+                  AnnouncementAudience.all, 'all'))
+          .key,
     );
   }
 }

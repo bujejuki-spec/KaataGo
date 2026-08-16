@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../theme.dart';
 import 'package:intl/intl.dart';
 
 import '../models/cart_item.dart';
@@ -102,13 +104,13 @@ class CartLineTile extends StatelessWidget {
                                   color: Colors.white)),
                         ),
                       if (onEdit != null)
-                        Icon(Icons.edit_outlined, size: 15, color: Colors.grey.shade500),
+                        Icon(Icons.edit_outlined, size: 15, color: KaataTheme.mutedOf(context)),
                     ],
                   ),
                   const SizedBox(height: 2),
                   Text(
                     '${currency.format(unitPrice)} / item',
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                    style: TextStyle(fontSize: 12, color: KaataTheme.mutedOf(context)),
                   ),
                   if (options.isNotEmpty) ...[
                     const SizedBox(height: 6),
@@ -120,9 +122,9 @@ class CartLineTile extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                             decoration: BoxDecoration(
-                              color: Colors.grey.shade100,
+                              color: KaataTheme.softFillOf(context),
                               borderRadius: BorderRadius.circular(6),
-                              border: Border.all(color: Colors.grey.shade300),
+                              border: Border.all(color: KaataTheme.borderOf(context)),
                             ),
                             child: Text(option, style: const TextStyle(fontSize: 11)),
                           ),
@@ -134,7 +136,7 @@ class CartLineTile extends StatelessWidget {
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(Icons.sticky_note_2_outlined, size: 13, color: Colors.grey.shade600),
+                        Icon(Icons.sticky_note_2_outlined, size: 13, color: KaataTheme.mutedOf(context)),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
@@ -142,7 +144,7 @@ class CartLineTile extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 11.5,
                               fontStyle: FontStyle.italic,
-                              color: Colors.grey.shade700,
+                              color: KaataTheme.mutedOf(context),
                             ),
                           ),
                         ),
@@ -207,7 +209,7 @@ class _StepButton extends StatelessWidget {
         height: 30,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.grey.shade300),
+          border: Border.all(color: KaataTheme.borderOf(context)),
         ),
         child: Icon(icon, size: 17),
       ),

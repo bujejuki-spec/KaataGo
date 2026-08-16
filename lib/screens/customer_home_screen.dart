@@ -35,10 +35,10 @@ import '../widgets/product_category_list.dart';
 import '../widgets/product_lines_sheet.dart';
 import '../widgets/promo_banner_carousel.dart';
 import '../widgets/language_theme_toggle.dart';
-import '../widgets/resto_announcement_strip.dart';
 import '../widgets/quantity_dialog.dart';
 import 'customer_cart_screen.dart';
 import 'customer_history_screen.dart';
+import 'customer_inbox_screen.dart';
 import 'customer_order_status_screen.dart';
 import 'customer_profile_screen.dart';
 import 'restaurant_list_screen.dart';
@@ -706,6 +706,13 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
             session.tableNumber != null ? 'Meja ${session.tableNumber}' : 'KaataGo (Customer)',
           ),
           actions: [
+            IconButton(
+              icon: const Icon(Icons.mail_outline),
+              tooltip: 'Kotak Masuk',
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const CustomerInboxScreen()),
+              ),
+            ),
             const AppearanceIconButton(),
             if (!session.enteredViaQr)
               IconButton(
@@ -773,7 +780,6 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                 );
               },
             ),
-            RestoAnnouncementStrip(restoId: session.restoId!),
             PromoBannerCarousel(restoId: session.restoId!),
             Expanded(
               child: StreamBuilder<List<Product>>(

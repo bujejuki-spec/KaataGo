@@ -110,7 +110,7 @@ class _PromoBannerCarouselState extends State<PromoBannerCarousel> {
                       Padding(
                         padding: const EdgeInsets.only(top: 4),
                         child: Text(banner.description!,
-                            style: TextStyle(fontSize: 13, color: Colors.grey.shade700)),
+                            style: TextStyle(fontSize: 13, color: KaataTheme.mutedOf(context))),
                       ),
                   ],
                 ),
@@ -169,7 +169,7 @@ class _PromoBannerCarouselState extends State<PromoBannerCarousel> {
                             base64Decode(banner.imageBase64),
                             fit: BoxFit.cover,
                             errorBuilder: (_, __, ___) =>
-                                Container(color: Colors.grey.shade200),
+                                Container(color: KaataTheme.softFillOf(context)),
                           ),
                         ),
                         Image.memory(
@@ -232,7 +232,7 @@ class _PromoBannerCarouselState extends State<PromoBannerCarousel> {
                   width: i == _index ? 18 : 6,
                   height: 6,
                   decoration: BoxDecoration(
-                    color: i == _index ? KaataTheme.brand : Colors.grey.shade300,
+                    color: i == _index ? KaataTheme.brand : KaataTheme.borderOf(context),
                     borderRadius: BorderRadius.circular(3),
                   ),
                 ),

@@ -33,7 +33,7 @@ class CartBottomBar extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: KaataTheme.surfaceOf(context),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.08),
@@ -53,11 +53,11 @@ class CartBottomBar extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.shopping_cart_outlined, size: 17, color: Colors.grey.shade400),
+                      Icon(Icons.shopping_cart_outlined, size: 17, color: KaataTheme.mutedOf(context)),
                       const SizedBox(width: 8),
                       Text(
                         'Keranjang masih kosong',
-                        style: TextStyle(color: Colors.grey.shade500, fontSize: 13.5),
+                        style: TextStyle(color: KaataTheme.mutedOf(context), fontSize: 13.5),
                       ),
                     ],
                   ),
@@ -73,7 +73,7 @@ class CartBottomBar extends StatelessWidget {
                           children: [
                             Text(
                               '$itemCount item',
-                              style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600),
+                              style: TextStyle(fontSize: 11.5, color: KaataTheme.mutedOf(context)),
                             ),
                             const SizedBox(height: 1),
                             Text(

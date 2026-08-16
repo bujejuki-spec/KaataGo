@@ -125,9 +125,9 @@ class KasirHomeScreen extends StatelessWidget {
                   ),
                 ),
                 HubMenuTile(
-                  icon: Icons.translate,
-                  title: 'Bahasa & Tampilan',
-                  subtitle: 'Indonesia/English, terang atau gelap',
+                  icon: Icons.brightness_6_outlined,
+                  title: 'Tampilan',
+                  subtitle: 'Mode terang, gelap, atau ikut setelan HP',
                   color: const Color(0xFF0EA5E9),
                   onTap: () => showAppearanceDialog(context),
                 ),

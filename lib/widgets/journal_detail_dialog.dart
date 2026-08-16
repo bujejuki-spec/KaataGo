@@ -133,7 +133,7 @@ class _JournalDetailDialogState extends State<_JournalDetailDialog> {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 20),
                 child: Text('Gagal memuat jurnal.\n$_error',
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+                    style: TextStyle(color: KaataTheme.mutedOf(context), fontSize: 13)),
               )
             else if (_entries.isEmpty)
               Padding(
@@ -141,7 +141,7 @@ class _JournalDetailDialogState extends State<_JournalDetailDialog> {
                 child: Text(
                   'Belum ada jurnal untuk catatan ini.\n'
                   'Biasanya karena akun GL-nya belum dipetakan di Mapping GL Account.',
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                  style: TextStyle(color: KaataTheme.mutedOf(context), fontSize: 13),
                 ),
               )
             else ...[
@@ -191,9 +191,9 @@ class _JournalDetailDialogState extends State<_JournalDetailDialog> {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(11),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: KaataTheme.softFillOf(context),
         borderRadius: BorderRadius.circular(11),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: KaataTheme.softFillOf(context)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -222,9 +222,9 @@ class _JournalDetailDialogState extends State<_JournalDetailDialog> {
                 ),
                 if (e.description != null && e.description!.isNotEmpty)
                   Text(e.description!,
-                      style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600)),
+                      style: TextStyle(fontSize: 11.5, color: KaataTheme.mutedOf(context))),
                 Text(dateFmt.format(e.createdAt.toWib()),
-                    style: TextStyle(fontSize: 10.5, color: Colors.grey.shade500)),
+                    style: TextStyle(fontSize: 10.5, color: KaataTheme.mutedOf(context))),
               ],
             ),
           ),

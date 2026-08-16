@@ -151,7 +151,7 @@ class _KitchenChecklistDialogState extends State<KitchenChecklistDialog> {
                       // panjang, warna abu-abu saja terlalu mudah
                       // terlewat sekilas pandang.
                       decoration: checked ? TextDecoration.lineThrough : null,
-                      color: checked ? Colors.grey.shade500 : Colors.black87,
+                      color: checked ? KaataTheme.mutedOf(context) : KaataTheme.textOf(context),
                     ),
                   ),
                   if (item.notes != null && item.notes!.isNotEmpty)
@@ -159,7 +159,7 @@ class _KitchenChecklistDialogState extends State<KitchenChecklistDialog> {
                       item.notes!,
                       style: TextStyle(
                         fontSize: 12,
-                        color: checked ? Colors.grey.shade400 : Colors.orange.shade800,
+                        color: checked ? KaataTheme.mutedOf(context) : Colors.orange.shade800,
                         fontWeight: checked ? FontWeight.normal : FontWeight.w600,
                       ),
                     ),

@@ -65,7 +65,7 @@ class _Pill extends StatelessWidget {
         color: failed
             ? Colors.red.shade700
             : notice != null
-                ? Colors.grey.shade800
+                ? KaataTheme.mutedOf(context)
                 : KaataTheme.brandDark,
         borderRadius: BorderRadius.circular(24),
         elevation: 6,
@@ -172,7 +172,7 @@ Future<void> showUpdateDownloadDialog(BuildContext context) {
                 'Berkasnya sekitar 80 MB. Unduhan tetap berjalan walau '
                 'layar ini ditutup.',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600),
+                style: TextStyle(fontSize: 11.5, color: KaataTheme.mutedOf(context)),
               ),
             ],
           );

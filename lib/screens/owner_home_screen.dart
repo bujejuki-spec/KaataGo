@@ -253,7 +253,7 @@ class _SectionLabel extends StatelessWidget {
           fontWeight: FontWeight.bold,
           fontSize: 12,
           letterSpacing: 0.8,
-          color: Colors.grey.shade500,
+          color: KaataTheme.mutedOf(context),
         ),
       ),
     );

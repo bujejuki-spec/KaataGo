@@ -5,6 +5,18 @@ import '../l10n/strings.dart';
 import '../providers/app_prefs_provider.dart';
 import '../theme.dart';
 
+/// Fitur bahasa disembunyikan dulu.
+///
+/// Mekanismenya jalan, tapi terjemahannya baru menutup sekitar 90 dari
+/// ~1.400 kalimat di aplikasi ini. Tombol yang menjanjikan bahasa
+/// Inggris lalu menyodorkan layar yang tetap berbahasa Indonesia lebih
+/// buruk daripada tidak ada tombolnya: yang menekannya menyimpulkan
+/// aplikasinya rusak, bukan bahwa fiturnya belum selesai.
+///
+/// Dikembalikan ke true saat terjemahannya sudah utuh. Kodenya sengaja
+/// tidak dibuang — yang tersisa cuma mengisi kamusnya.
+const kLanguageSwitcherEnabled = false;
+
 /// Pemilih bahasa berbendera, dipakai di halaman awal dan di Pengaturan.
 ///
 /// Benderanya emoji, bukan berkas gambar: ikut mengikuti bentuk yang
@@ -21,6 +33,7 @@ class LanguageToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (!kLanguageSwitcherEnabled) return const SizedBox.shrink();
     final prefs = context.watch<AppPrefsProvider>();
 
     return SegmentedButton<String>(
@@ -104,11 +117,13 @@ class LanguageThemeSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(context.tr('Bahasa'),
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-        const SizedBox(height: 8),
-        const LanguageToggle(),
-        const SizedBox(height: 18),
+        if (kLanguageSwitcherEnabled) ...[
+          Text(context.tr('Bahasa'),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+          const SizedBox(height: 8),
+          const LanguageToggle(),
+          const SizedBox(height: 18),
+        ],
         Text(context.tr('Tampilan'),
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
         const SizedBox(height: 8),
@@ -135,8 +150,8 @@ class AppearanceIconButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return IconButton(
-      icon: const Icon(Icons.translate),
-      tooltip: '${context.tr('Bahasa')} & ${context.tr('Tampilan')}',
+      icon: const Icon(Icons.brightness_6_outlined),
+      tooltip: context.tr('Tampilan'),
       onPressed: () => showAppearanceDialog(context),
     );
   }
@@ -147,10 +162,8 @@ Future<void> showAppearanceDialog(BuildContext context) {
     context: context,
     builder: (dialogContext) => AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      title: Text(
-        '${dialogContext.tr('Bahasa')} & ${dialogContext.tr('Tampilan')}',
-        style: const TextStyle(fontSize: 17),
-      ),
+      title: Text(dialogContext.tr('Tampilan'),
+          style: const TextStyle(fontSize: 17)),
       content: const SingleChildScrollView(child: LanguageThemeSection()),
       actionsAlignment: MainAxisAlignment.center,
       actions: [

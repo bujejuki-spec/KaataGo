@@ -824,7 +824,7 @@ class _SectionHeader extends StatelessWidget {
                     const SizedBox(width: 6),
                     Text('($count)',
                         style: TextStyle(
-                            fontSize: 12, color: Colors.grey.shade600)),
+                            fontSize: 12, color: KaataTheme.mutedOf(context))),
                   ],
                 ],
               ),
@@ -1195,7 +1195,7 @@ class _AddExpenseDialogState extends State<_AddExpenseDialog> {
                 const SizedBox(height: 14),
                 Text('Bukti Pengeluaran (opsional)',
                     style: TextStyle(
-                        fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey.shade700)),
+                        fontSize: 12, fontWeight: FontWeight.w600, color: KaataTheme.mutedOf(context))),
                 const SizedBox(height: 8),
                 if (_receipt == null)
                   OutlinedButton.icon(
@@ -1547,7 +1547,7 @@ class _SourceTab extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 18, color: selected ? Colors.white : Colors.grey.shade500),
+              Icon(icon, size: 18, color: selected ? Colors.white : KaataTheme.mutedOf(context)),
               const SizedBox(height: 3),
               Text(
                 label,
@@ -1555,7 +1555,7 @@ class _SourceTab extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 11.5,
                   fontWeight: FontWeight.w600,
-                  color: selected ? Colors.white : Colors.grey.shade600,
+                  color: selected ? Colors.white : KaataTheme.mutedOf(context),
                 ),
               ),
             ],
@@ -1593,7 +1593,7 @@ class _IncomeSplitCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: KaataTheme.surfaceOf(context),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: KaataTheme.softFillOf(context)),
       ),
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       child: Column(
@@ -1602,6 +1602,7 @@ class _IncomeSplitCard extends StatelessWidget {
             children: [
               Expanded(
                 child: _half(
+                  context,
                   icon: Icons.payments_outlined,
                   color: const Color(0xFF0EA5E9),
                   label: 'Saldo Cash',
@@ -1609,9 +1610,10 @@ class _IncomeSplitCard extends StatelessWidget {
                   value: cashBalance,
                 ),
               ),
-              Container(width: 1, height: 46, color: Colors.grey.shade200),
+              Container(width: 1, height: 46, color: KaataTheme.softFillOf(context)),
               Expanded(
                 child: _half(
+                  context,
                   icon: Icons.qr_code_2,
                   color: const Color(0xFF8B5CF6),
                   label: 'Saldo Non Cash',
@@ -1625,12 +1627,12 @@ class _IncomeSplitCard extends StatelessWidget {
             const Divider(height: 18),
             Row(
               children: [
-                Icon(Icons.account_balance_outlined, size: 15, color: Colors.grey.shade600),
+                Icon(Icons.account_balance_outlined, size: 15, color: KaataTheme.mutedOf(context)),
                 const SizedBox(width: 7),
                 Expanded(
                   child: Text(
                     'Sudah disetor ke rekening',
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                    style: TextStyle(fontSize: 12, color: KaataTheme.mutedOf(context)),
                   ),
                 ),
                 Text(
@@ -1665,7 +1667,8 @@ class _IncomeSplitCard extends StatelessWidget {
     );
   }
 
-  Widget _half({
+  Widget _half(
+    BuildContext context, {
     required IconData icon,
     required Color color,
     required String label,
@@ -1695,7 +1698,7 @@ class _IncomeSplitCard extends StatelessWidget {
             currency.format(value),
             style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.bold),
           ),
-          Text(hint, style: TextStyle(fontSize: 10.5, color: Colors.grey.shade500)),
+          Text(hint, style: TextStyle(fontSize: 10.5, color: KaataTheme.mutedOf(context))),
         ],
       ),
     );

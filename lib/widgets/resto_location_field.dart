@@ -213,7 +213,17 @@ class RestoLocationField extends StatelessWidget {
 }
 
 /// Peta OpenStreetMap.
-class _MapView extends StatelessWidget {
+///
+/// Stateful, dan itu bukan pilihan gaya. `initialCenter` hanya dibaca
+/// sekali saat petanya dibuat — sesudah itu, memberi nilai baru tidak
+/// menggerakkan apa pun. Akibatnya pratinjau tetap memandang tempat
+/// lama setelah pin dipindahkan, dan penandanya nyempil di pinggir
+/// layar atau keluar sama sekali. Yang melihatnya wajar menyimpulkan
+/// titiknya salah, padahal cuma kameranya yang tidak ikut pindah.
+///
+/// [MapController] yang menutupnya: tiap kali titiknya berubah,
+/// kameranya digeser ke sana.
+class _MapView extends StatefulWidget {
   final LatLng center;
   final bool interactive;
   final LatLng? marker;
@@ -225,13 +235,46 @@ class _MapView extends StatelessWidget {
   });
 
   @override
+  State<_MapView> createState() => _MapViewState();
+}
+
+class _MapViewState extends State<_MapView> {
+  final _controller = MapController();
+
+  /// Petanya sudah siap menerima perintah.
+  ///
+  /// Memanggil move() sebelum petanya terpasang melempar galat. Titik
+  /// yang datang lebih dulu — dan itu yang biasa terjadi, karena data
+  /// restonya dimuat sebelum layarnya selesai digambar — disimpan di
+  /// sini, lalu dipakai begitu petanya siap.
+  bool _ready = false;
+
+  @override
+  void didUpdateWidget(_MapView old) {
+    super.didUpdateWidget(old);
+    if (old.center != widget.center) _recenter();
+  }
+
+  void _recenter() {
+    if (!_ready) return;
+    _controller.move(widget.center, _controller.camera.zoom);
+  }
+
+  @override
   Widget build(BuildContext context) {
     return FlutterMap(
+      mapController: _controller,
       options: MapOptions(
-        initialCenter: center,
+        initialCenter: widget.center,
         initialZoom: 16,
+        onMapReady: () {
+          _ready = true;
+          // Titik yang sudah berubah sebelum petanya siap tetap
+          // terkejar di sini.
+          if (_controller.camera.center != widget.center) _recenter();
+        },
         interactionOptions: InteractionOptions(
-          flags: interactive
+          flags: widget.interactive
               ? InteractiveFlag.pinchZoom |
                   InteractiveFlag.drag |
                   InteractiveFlag.doubleTapZoom
@@ -247,16 +290,19 @@ class _MapView extends StatelessWidget {
           // tanpa keterangan apa pun.
           userAgentPackageName: 'com.kaatago.pos',
         ),
-        if (marker != null)
+        if (widget.marker != null)
           MarkerLayer(
             markers: [
               Marker(
-                point: marker!,
-                width: 40,
-                height: 40,
+                point: widget.marker!,
+                width: 44,
+                height: 44,
+                // Ujung runcingnya yang menunjuk titiknya, bukan tengah
+                // ikonnya: pin yang dipusatkan tepat di titik justru
+                // menunjuk sekitar 20 meter di utaranya.
                 alignment: Alignment.topCenter,
                 child: const Icon(Icons.location_on,
-                    size: 38, color: Color(0xFFEF4444)),
+                    size: 40, color: Color(0xFFEF4444)),
               ),
             ],
           ),

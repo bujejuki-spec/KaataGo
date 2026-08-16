@@ -43,6 +43,10 @@ interface OutboxRow {
   event: string;
   payload: {
     audience: "role" | "email" | "order_owner" | "all";
+
+    /// Sasaran pengumuman: karyawan saja, pelanggan saja, atau keduanya.
+    /// Hanya dipakai saat audience = "all".
+    target?: "employees" | "customers" | "all";
     roles?: string[];
     email?: string;
     session_id?: string;
@@ -190,10 +194,24 @@ async function resolveTokens(row: OutboxRow): Promise<string[]> {
       if (o.session_id) sessions.add(o.session_id);
     }
 
-    const bagian = [`resto_id.eq.${row.resto_id}`];
+    // Karyawan dikenali dari kolom role-nya. Perangkat pelanggan
+    // mendaftar tanpa peran — itulah yang membedakan keduanya, dan
+    // itulah satu-satunya penanda yang tersedia di tabel token.
+    const target = p.target ?? "all";
+    if (target === "employees") {
+      return await tokensOf(q.eq("resto_id", row.resto_id).not("role", "is", null));
+    }
+
+    const bagian: string[] = [];
+    if (target !== "customers") bagian.push(`resto_id.eq.${row.resto_id}`);
     if (emails.size) bagian.push(`email.in.(${[...emails].join(",")})`);
     if (sessions.size) bagian.push(`session_id.in.(${[...sessions].join(",")})`);
+    // Pengumuman khusus pelanggan di resto yang belum pernah menerima
+    // pesanan tidak punya sasaran sama sekali — dan itu bukan galat.
+    if (bagian.length === 0) return [];
     q = q.or(bagian.join(","));
+
+    if (target === "customers") q = q.is("role", null);
   } else {
     // Pemilik pesanan TIDAK disaring restonya.
     //
@@ -215,7 +233,12 @@ async function resolveTokens(row: OutboxRow): Promise<string[]> {
     q = q.or(parts.join(","));
   }
 
-  const { data, error } = await q;
+  return await tokensOf(q);
+}
+
+// deno-lint-ignore no-explicit-any
+async function tokensOf(query: any): Promise<string[]> {
+  const { data, error } = await query;
   if (error) throw new Error(`Gagal membaca device_tokens: ${error.message}`);
   return (data ?? []).map((r: { token: string }) => r.token);
 }

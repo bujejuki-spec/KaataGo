@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../theme.dart';
 import 'package:provider/provider.dart';
 
 import '../models/level_option.dart';
@@ -103,7 +105,7 @@ class LevelManagementScreen extends StatelessWidget {
                   Text(
                     'Pilihan yang muncul saat memesan. Produk ditandai '
                     'memakai kelompok mana lewat formulir produknya.',
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                    style: TextStyle(fontSize: 12, color: KaataTheme.mutedOf(context)),
                   ),
                   const SizedBox(height: 12),
                   for (final group in provider.groups)
@@ -123,7 +125,7 @@ class LevelManagementScreen extends StatelessWidget {
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 8, vertical: 3),
                                   decoration: BoxDecoration(
-                                    color: Colors.grey.shade200,
+                                    color: KaataTheme.softFillOf(context),
                                     borderRadius: BorderRadius.circular(20),
                                   ),
                                   child: Text(option,

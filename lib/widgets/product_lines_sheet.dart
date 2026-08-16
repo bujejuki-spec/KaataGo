@@ -60,7 +60,7 @@ class ProductLinesSheet extends StatelessWidget {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey.shade300,
+                color: KaataTheme.borderOf(context),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -77,14 +77,14 @@ class ProductLinesSheet extends StatelessWidget {
                         Text(
                           '$totalQty di keranjang'
                           '${lines.length > 1 ? ' · ${lines.length} varian' : ''}',
-                          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                          style: TextStyle(fontSize: 12, color: KaataTheme.mutedOf(context)),
                         ),
                       ],
                     ),
                   ),
                   IconButton(
                     icon: const Icon(Icons.close),
-                    color: Colors.grey.shade500,
+                    color: KaataTheme.mutedOf(context),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ],

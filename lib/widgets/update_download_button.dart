@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../theme.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../services/app_updater.dart';
@@ -86,7 +88,7 @@ class _UpdateDownloadButtonState extends State<UpdateDownloadButton> {
             'Berkasnya sekitar 80 MB. Unduhan tetap berjalan walau '
             'kotak masuk ini ditutup.',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+            style: TextStyle(fontSize: 11, color: KaataTheme.mutedOf(context)),
           ),
           TextButton(
             onPressed: _updater.cancel,
@@ -100,7 +102,7 @@ class _UpdateDownloadButtonState extends State<UpdateDownloadButton> {
             ),
             child: Text(
               'Unduh lewat browser',
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              style: TextStyle(fontSize: 12, color: KaataTheme.mutedOf(context)),
             ),
           ),
       ],

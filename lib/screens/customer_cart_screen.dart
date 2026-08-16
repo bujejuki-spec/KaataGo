@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../theme.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -189,7 +191,7 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
             Text(
               'Hapus dulu dari keranjang untuk melanjutkan pembayaran.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12.5, color: Colors.grey.shade700),
+              style: TextStyle(fontSize: 12.5, color: KaataTheme.mutedOf(context)),
             ),
           ],
         ),
@@ -397,7 +399,9 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
                             // itu satu-satunya yang harus diisi.
                             filled: true,
                             fillColor:
-                                tableKnown ? Colors.grey.shade200 : Colors.white,
+                                tableKnown
+                                    ? KaataTheme.softFillOf(context)
+                                    : KaataTheme.surfaceOf(context),
                           ),
                           validator: (v) {
                             if (tableKnown) return null;

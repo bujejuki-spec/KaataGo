@@ -193,7 +193,7 @@ class CustomerOrderStatusScreen extends StatelessWidget {
                               if (item.notes != null && item.notes!.isNotEmpty)
                                 Text(
                                   item.notes!,
-                                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                                  style: TextStyle(fontSize: 12, color: KaataTheme.mutedOf(context)),
                                 ),
                             ],
                           ),
@@ -266,7 +266,7 @@ class _OrderPlaceLine extends StatelessWidget {
           _chip(
             icon: Icons.person_outline,
             text: name,
-            color: Colors.grey.shade600,
+            color: KaataTheme.mutedOf(context),
           ),
       ],
     );

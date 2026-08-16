@@ -46,7 +46,7 @@ class _LoadingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: Colors.white,
+      backgroundColor: KaataTheme.surfaceOf(context),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 30),
@@ -67,7 +67,7 @@ class _LoadingCard extends StatelessWidget {
             const SizedBox(height: 6),
             Text(
               'Sebentar ya...',
-              style: TextStyle(fontSize: 12.5, color: Colors.grey.shade500),
+              style: TextStyle(fontSize: 12.5, color: KaataTheme.mutedOf(context)),
             ),
             const SizedBox(height: 18),
             const SizedBox(

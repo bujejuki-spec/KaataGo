@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+
+import '../theme.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../db/restaurant_repository.dart';
@@ -484,7 +486,7 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
               Text(
                 'Harga menu ditampilkan sudah termasuk keduanya. Service hanya '
                 'dikenakan untuk Dine In.',
-                style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600),
+                style: TextStyle(fontSize: 11.5, color: KaataTheme.mutedOf(context)),
               ),
               const SizedBox(height: 20),
               RestoLocationField(
@@ -510,7 +512,7 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
               Text(
                 'Yang dimatikan tidak muncul sebagai pilihan saat checkout, '
                 'baik di kasir maupun di HP pelanggan.',
-                style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600),
+                style: TextStyle(fontSize: 11.5, color: KaataTheme.mutedOf(context)),
               ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,

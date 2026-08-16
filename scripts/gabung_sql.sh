@@ -44,6 +44,8 @@ FILES=(
   promo_banner_period.sql
   default_gl_accounts.sql
   gateway_account_super_admin.sql
+  announcement_audience.sql
+  kasir_journal_read.sql
 )
 
 {

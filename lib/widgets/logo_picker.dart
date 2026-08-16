@@ -64,7 +64,7 @@ class LogoPicker extends StatelessWidget {
       children: [
         Text('Logo Resto',
             style: TextStyle(
-                fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey.shade700)),
+                fontSize: 12, fontWeight: FontWeight.w600, color: KaataTheme.mutedOf(context))),
         const SizedBox(height: 8),
         Row(
           children: [
@@ -74,9 +74,9 @@ class LogoPicker extends StatelessWidget {
                 width: 96,
                 height: 96,
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
+                  color: KaataTheme.softFillOf(context),
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: Colors.grey.shade300),
+                  border: Border.all(color: KaataTheme.borderOf(context)),
                   image: hasLogo
                       ? DecorationImage(image: preview, fit: BoxFit.cover)
                       : null,
@@ -87,10 +87,10 @@ class LogoPicker extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(Icons.storefront_outlined,
-                              size: 28, color: Colors.grey.shade400),
+                              size: 28, color: KaataTheme.mutedOf(context)),
                           const SizedBox(height: 4),
                           Text('Belum ada',
-                              style: TextStyle(fontSize: 10, color: Colors.grey.shade500)),
+                              style: TextStyle(fontSize: 10, color: KaataTheme.mutedOf(context))),
                         ],
                       ),
               ),
@@ -126,7 +126,7 @@ class LogoPicker extends StatelessWidget {
                   ] else
                     Text(
                       hasLogo ? 'Logo terpasang' : 'Belum ada logo',
-                      style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                      style: TextStyle(fontSize: 13, color: KaataTheme.mutedOf(context)),
                     ),
                 ],
               ),

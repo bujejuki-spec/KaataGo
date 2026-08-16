@@ -155,11 +155,11 @@ class _PromoBannerScreenState extends State<PromoBannerScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.cloud_off, size: 40, color: Colors.grey.shade400),
+                        Icon(Icons.cloud_off, size: 40, color: KaataTheme.mutedOf(context)),
                         const SizedBox(height: 12),
                         Text('Gagal memuat banner.\n$_error',
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.grey.shade600)),
+                            style: TextStyle(color: KaataTheme.mutedOf(context))),
                         const SizedBox(height: 14),
                         OutlinedButton.icon(
                           onPressed: _load,
@@ -199,10 +199,10 @@ class _PromoBannerScreenState extends State<PromoBannerScreen> {
                             padding: const EdgeInsets.symmetric(vertical: 40),
                             child: Column(
                               children: [
-                                Icon(Icons.image_outlined, size: 46, color: Colors.grey.shade300),
+                                Icon(Icons.image_outlined, size: 46, color: KaataTheme.borderOf(context)),
                                 const SizedBox(height: 12),
                                 Text('Belum ada banner promo.',
-                                    style: TextStyle(color: Colors.grey.shade500)),
+                                    style: TextStyle(color: KaataTheme.mutedOf(context))),
                               ],
                             ),
                           )
@@ -254,7 +254,7 @@ class _BannerCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: KaataTheme.surfaceOf(context),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.grey.shade300),
+        border: Border.all(color: KaataTheme.borderOf(context)),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -270,7 +270,7 @@ class _BannerCard extends StatelessWidget {
                   // Gambar rusak tidak boleh menjatuhkan seluruh daftar —
                   // tanpa ini satu baris cacat mengosongkan layarnya.
                   errorBuilder: (_, __, ___) => Container(
-                    color: Colors.grey.shade200,
+                    color: KaataTheme.softFillOf(context),
                     alignment: Alignment.center,
                     child: const Icon(Icons.broken_image_outlined, color: Colors.grey),
                   ),
@@ -304,12 +304,12 @@ class _BannerCard extends StatelessWidget {
                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5)),
                 if (banner.description != null && banner.description!.isNotEmpty)
                   Text(banner.description!,
-                      style: TextStyle(fontSize: 12.5, color: Colors.grey.shade700)),
+                      style: TextStyle(fontSize: 12.5, color: KaataTheme.mutedOf(context))),
                 const SizedBox(height: 4),
                 Row(
                   children: [
                     Text('Urutan ${position + 1}',
-                        style: TextStyle(fontSize: 11.5, color: Colors.grey.shade500)),
+                        style: TextStyle(fontSize: 11.5, color: KaataTheme.mutedOf(context))),
                     const Spacer(),
                     IconButton(
                       icon: const Icon(Icons.arrow_upward, size: 18),
@@ -462,7 +462,7 @@ class _BannerFormDialogState extends State<_BannerFormDialog> {
                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
               const SizedBox(height: 4),
               Text('Rasio 16:9 paling pas — gambar lain akan terpotong.',
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                  style: TextStyle(fontSize: 12, color: KaataTheme.mutedOf(context))),
               const SizedBox(height: 14),
               GestureDetector(
                 onTap: _pick,
@@ -470,9 +470,9 @@ class _BannerFormDialogState extends State<_BannerFormDialog> {
                   aspectRatio: 16 / 9,
                   child: Container(
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
+                      color: KaataTheme.softFillOf(context),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey.shade300),
+                      border: Border.all(color: KaataTheme.borderOf(context)),
                     ),
                     clipBehavior: Clip.antiAlias,
                     child: preview ??
@@ -480,10 +480,10 @@ class _BannerFormDialogState extends State<_BannerFormDialog> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(Icons.add_photo_alternate_outlined,
-                                size: 34, color: Colors.grey.shade400),
+                                size: 34, color: KaataTheme.mutedOf(context)),
                             const SizedBox(height: 6),
                             Text('Ketuk untuk pilih gambar',
-                                style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+                                style: TextStyle(fontSize: 12, color: KaataTheme.mutedOf(context))),
                           ],
                         ),
                   ),

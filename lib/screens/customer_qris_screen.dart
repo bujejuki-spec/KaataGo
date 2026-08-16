@@ -377,7 +377,7 @@ class _StatusLine extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Text('Menunggu pembayaran…',
-                style: TextStyle(fontSize: 12.5, color: Colors.grey.shade700)),
+                style: TextStyle(fontSize: 12.5, color: KaataTheme.mutedOf(context))),
           ],
         ),
         const SizedBox(height: 6),
@@ -390,7 +390,7 @@ class _StatusLine extends StatelessWidget {
         Text(
           'Layar ini berpindah sendiri begitu pembayaranmu diterima.',
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600),
+          style: TextStyle(fontSize: 11.5, color: KaataTheme.mutedOf(context)),
         ),
       ],
     );

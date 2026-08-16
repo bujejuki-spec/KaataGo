@@ -103,7 +103,7 @@ class _InboxScreenState extends State<InboxScreen> {
             children: [
               Text(
                 DateFormat('d MMMM yyyy, HH:mm', 'id_ID').format(item.createdAt.toWib()),
-                style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600),
+                style: TextStyle(fontSize: 11.5, color: KaataTheme.mutedOf(context)),
               ),
               if (item.hasImage) ...[
                 const SizedBox(height: 10),
@@ -363,14 +363,14 @@ class _InboxScreenState extends State<InboxScreen> {
           physics: const AlwaysScrollableScrollPhysics(),
           children: [
             SizedBox(height: MediaQuery.sizeOf(context).height * 0.22),
-            Icon(Icons.mark_email_read_outlined, size: 46, color: Colors.grey.shade300),
+            Icon(Icons.mark_email_read_outlined, size: 46, color: KaataTheme.borderOf(context)),
             const SizedBox(height: 12),
             Text(
               category == AnnouncementCategory.update
                   ? 'Belum ada pemberitahuan versi baru.'
                   : 'Belum ada pengumuman.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey.shade500),
+              style: TextStyle(color: KaataTheme.mutedOf(context)),
             ),
           ],
         ),
@@ -387,7 +387,7 @@ class _InboxScreenState extends State<InboxScreen> {
               Padding(
                 padding: const EdgeInsets.only(bottom: 10),
                 child: Text('$unread pesan belum dibaca',
-                    style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600)),
+                    style: TextStyle(fontSize: 12.5, color: KaataTheme.mutedOf(context))),
               ),
             for (final item in items) _tile(item),
             const SizedBox(height: 14),
@@ -424,7 +424,7 @@ class _InboxScreenState extends State<InboxScreen> {
         color: item.read ? Colors.white : KaataTheme.brand.withOpacity(0.05),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: selected ? KaataTheme.brand : Colors.grey.shade300,
+          color: selected ? KaataTheme.brand : KaataTheme.borderOf(context),
           width: selected ? 1.6 : 1,
         ),
       ),
@@ -481,10 +481,10 @@ class _InboxScreenState extends State<InboxScreen> {
             Text(item.body,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 12.5, color: Colors.grey.shade700)),
+                style: TextStyle(fontSize: 12.5, color: KaataTheme.mutedOf(context))),
             const SizedBox(height: 3),
             Text(dateFmt.format(item.createdAt.toWib()),
-                style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+                style: TextStyle(fontSize: 11, color: KaataTheme.mutedOf(context))),
           ],
         ),
         onTap: _selecting
@@ -520,11 +520,11 @@ class _ErrorState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.cloud_off, size: 40, color: Colors.grey.shade400),
+            Icon(Icons.cloud_off, size: 40, color: KaataTheme.mutedOf(context)),
             const SizedBox(height: 12),
             Text('Gagal memuat kotak masuk.\n$message',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey.shade600)),
+                style: TextStyle(color: KaataTheme.mutedOf(context))),
             const SizedBox(height: 14),
             OutlinedButton.icon(
               onPressed: onRetry,

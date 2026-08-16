@@ -60,7 +60,7 @@ class ProductGridCard extends StatelessWidget {
         color: KaataTheme.surfaceOf(context),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: selected ? KaataTheme.brand : Colors.grey.shade200,
+          color: selected ? KaataTheme.brand : KaataTheme.softFillOf(context),
           width: selected ? 2 : 1,
         ),
         boxShadow: [
@@ -114,7 +114,7 @@ class ProductGridCard extends StatelessWidget {
                         child: Container(
                           padding: const EdgeInsets.all(5),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: KaataTheme.surfaceOf(context),
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
@@ -171,7 +171,7 @@ class ProductGridCard extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                         fontSize: 13.5,
                         height: 1.15,
-                        color: inStock ? Colors.black87 : Colors.grey,
+                        color: inStock ? KaataTheme.textOf(context) : Colors.grey,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -206,7 +206,7 @@ class ProductGridCard extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: 10.5,
                                 fontWeight: FontWeight.bold,
-                                color: lowStock ? Colors.orange.shade800 : Colors.grey.shade700,
+                                color: lowStock ? Colors.orange.shade800 : KaataTheme.mutedOf(context),
                               ),
                             ),
                           ),

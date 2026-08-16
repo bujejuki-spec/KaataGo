@@ -58,6 +58,14 @@ class KaataTheme {
           ? const Color(0xFF9BA1B0)
           : const Color(0xFF757575);
 
+  /// Warna teks utama. Menggantikan Colors.black87 yang ditulis
+  /// langsung di layar — hitam di atas latar gelap tidak terbaca sama
+  /// sekali.
+  static Color textOf(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+          ? const Color(0xFFE7E9EF)
+          : Colors.black87;
+
   /// Ungu merek yang aman dibaca di tema yang sedang dipakai.
   static Color brandOf(BuildContext context) =>
       Theme.of(context).brightness == Brightness.dark ? brandOnDark : brand;

@@ -566,7 +566,7 @@ class _FinanceGlMappingScreenState extends State<FinanceGlMappingScreen> {
                             Padding(
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               child: Text('Belum ada GL pengeluaran.',
-                                  style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+                                  style: TextStyle(color: KaataTheme.mutedOf(context), fontSize: 13)),
                             )
                           else
                             ..._expenseAccounts.map((a) => _ExpenseGlRow(
@@ -701,7 +701,7 @@ class _GlSectionCard extends StatelessWidget {
                           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                       const SizedBox(height: 1),
                       Text(subtitle,
-                          style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600)),
+                          style: TextStyle(fontSize: 11.5, color: KaataTheme.mutedOf(context))),
                     ],
                   ),
                 ),
@@ -709,7 +709,7 @@ class _GlSectionCard extends StatelessWidget {
               ],
             ),
           ),
-          Divider(height: 1, color: Colors.grey.shade200),
+          Divider(height: 1, color: KaataTheme.softFillOf(context)),
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 6, 14, 14),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children),
@@ -764,7 +764,7 @@ class _GlAccountRow extends StatelessWidget {
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text('• $hint',
-                      style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                      style: TextStyle(fontSize: 11, color: KaataTheme.mutedOf(context)),
                       overflow: TextOverflow.ellipsis),
                 ),
               ],
@@ -854,7 +854,7 @@ class _GlAccountRow extends StatelessWidget {
                       name.isEmpty ? 'Tanpa nama' : name,
                       style: TextStyle(
                         fontSize: 13.5,
-                        color: name.isEmpty ? Colors.grey : Colors.black87,
+                        color: name.isEmpty ? Colors.grey : KaataTheme.textOf(context),
                         fontStyle: name.isEmpty ? FontStyle.italic : FontStyle.normal,
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -953,6 +953,7 @@ class _TaxRateRow extends StatelessWidget {
             children: [
               Expanded(
                 child: _rate(
+                  context,
                   label: 'PPN',
                   hint: 'Ditambahkan ke harga menu',
                   controller: ppnCtrl,
@@ -961,6 +962,7 @@ class _TaxRateRow extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: _rate(
+                  context,
                   label: 'Biaya Service',
                   hint: 'Dine In saja',
                   controller: serviceCtrl,
@@ -972,14 +974,15 @@ class _TaxRateRow extends StatelessWidget {
           Text(
             'Harga menu yang dilihat customer sudah termasuk PPN. Biaya service '
             'ditambahkan saat checkout. Kosongkan atau isi 0 kalau tidak dipakai.',
-            style: TextStyle(fontSize: 11, color: Colors.grey.shade700, height: 1.3),
+            style: TextStyle(fontSize: 11, color: KaataTheme.mutedOf(context), height: 1.3),
           ),
         ],
       ),
     );
   }
 
-  Widget _rate({
+  Widget _rate(
+    BuildContext context, {
     required String label,
     required String hint,
     required TextEditingController controller,
@@ -1018,7 +1021,7 @@ class _TaxRateRow extends StatelessWidget {
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
         const SizedBox(height: 2),
-        Text(hint, style: TextStyle(fontSize: 10.5, color: Colors.grey.shade600)),
+        Text(hint, style: TextStyle(fontSize: 10.5, color: KaataTheme.mutedOf(context))),
       ],
     );
   }

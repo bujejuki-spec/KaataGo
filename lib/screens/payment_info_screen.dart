@@ -112,12 +112,12 @@ class _PaymentInfoScreenState extends State<PaymentInfoScreen> {
             const SizedBox(height: 16),
             Row(
               children: [
-                Icon(Icons.info_outline, size: 15, color: Colors.grey.shade500),
+                Icon(Icons.info_outline, size: 15, color: KaataTheme.mutedOf(context)),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'Data ini hanya bisa diubah oleh Finance.',
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                    style: TextStyle(fontSize: 12, color: KaataTheme.mutedOf(context)),
                   ),
                 ),
               ],
@@ -176,7 +176,7 @@ class _InfoCard extends StatelessWidget {
               ],
             ),
           ),
-          Divider(height: 1, color: Colors.grey.shade200),
+          Divider(height: 1, color: KaataTheme.softFillOf(context)),
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 4, 14, 10),
             child: Column(
@@ -209,7 +209,7 @@ class _DetailRow extends StatelessWidget {
             width: 130,
             child: Text(
               label,
-              style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600),
+              style: TextStyle(fontSize: 12.5, color: KaataTheme.mutedOf(context)),
             ),
           ),
           Expanded(
@@ -218,7 +218,7 @@ class _DetailRow extends StatelessWidget {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: empty ? FontWeight.normal : FontWeight.w600,
-                color: empty ? Colors.grey.shade400 : Colors.black87,
+                color: empty ? KaataTheme.mutedOf(context) : KaataTheme.textOf(context),
                 fontStyle: empty ? FontStyle.italic : FontStyle.normal,
               ),
             ),

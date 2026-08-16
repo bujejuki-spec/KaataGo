@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+
+import '../theme.dart';
 import 'package:intl/intl.dart';
 
 import '../models/customer_order.dart';
@@ -149,7 +151,7 @@ class _CustomerCashPendingScreenState extends State<CustomerCashPendingScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
-                  color: habis ? const Color(0xFFFEE2E2) : Colors.grey.shade100,
+                  color: habis ? const Color(0xFFFEE2E2) : KaataTheme.softFillOf(context),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Column(
@@ -157,7 +159,7 @@ class _CustomerCashPendingScreenState extends State<CustomerCashPendingScreen> {
                     Icon(
                       habis ? Icons.cancel_outlined : Icons.timer_outlined,
                       size: 20,
-                      color: habis ? const Color(0xFFB91C1C) : Colors.grey.shade600,
+                      color: habis ? const Color(0xFFB91C1C) : KaataTheme.mutedOf(context),
                     ),
                     const SizedBox(height: 6),
                     if (habis)
@@ -185,7 +187,7 @@ class _CustomerCashPendingScreenState extends State<CustomerCashPendingScreen> {
                         'Kalau belum dibayar sampai waktunya habis, pesanan '
                         'ini otomatis dibatalkan.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                        style: TextStyle(fontSize: 12, color: KaataTheme.mutedOf(context)),
                       ),
                     ],
                   ],
@@ -196,7 +198,7 @@ class _CustomerCashPendingScreenState extends State<CustomerCashPendingScreen> {
                 'Pesanan kamu sudah diteruskan ke dapur. Sebutkan nomor pesanan '
                 'di atas saat membayar di kasir.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                style: TextStyle(color: KaataTheme.mutedOf(context), fontSize: 13),
               ),
               const SizedBox(height: 24),
               SizedBox(

@@ -65,7 +65,7 @@ class _OrderCardState extends State<OrderCard> {
         // Garis tepi, bukan sekadar bayangan: dengan banyak pesanan
         // beruntun, bayangan tipis membuat batas antar kartu nyaris tak
         // terlihat dan dua pesanan mudah terbaca sebagai satu.
-        border: Border.all(color: Colors.grey.shade300),
+        border: Border.all(color: KaataTheme.borderOf(context)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.04),
@@ -214,20 +214,20 @@ class _OrderCardState extends State<OrderCard> {
                 child: Row(
                   children: [
                     Icon(_expanded ? Icons.expand_less : Icons.expand_more,
-                        size: 18, color: Colors.grey.shade600),
+                        size: 18, color: KaataTheme.mutedOf(context)),
                     const SizedBox(width: 6),
                     Text(
                       '${order.items.fold<int>(0, (sum, i) => sum + i.quantity)} item',
                       style: TextStyle(
                           fontSize: 12.5,
                           fontWeight: FontWeight.w600,
-                          color: Colors.grey.shade700),
+                          color: KaataTheme.mutedOf(context)),
                     ),
                     const Spacer(),
                     if (!_expanded)
                       Text(
                         'Lihat rincian',
-                        style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                        style: TextStyle(fontSize: 12, color: KaataTheme.mutedOf(context)),
                       ),
                   ],
                 ),
@@ -253,7 +253,7 @@ class _OrderCardState extends State<OrderCard> {
                         padding: const EdgeInsets.only(top: 1),
                         child: Text(
                           item.notes!,
-                          style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                          style: TextStyle(fontSize: 12, color: KaataTheme.mutedOf(context)),
                         ),
                       ),
                   ],

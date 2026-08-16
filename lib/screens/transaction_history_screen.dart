@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../theme.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -138,7 +140,7 @@ class TransactionHistoryScreen extends StatelessWidget {
                               .where((e) => group.byMethod[e.key]! > 0)
                               .map((e) => '${e.value} ${currency.format(group.byMethod[e.key]!)}')
                               .join(' · '),
-                          style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600),
+                          style: TextStyle(fontSize: 11.5, color: KaataTheme.mutedOf(context)),
                         ),
                       ],
                     ),
@@ -160,9 +162,9 @@ class TransactionHistoryScreen extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text('${o.items.length} item',
-                              style: TextStyle(color: Colors.grey.shade600, fontSize: 12.5)),
+                              style: TextStyle(color: KaataTheme.mutedOf(context), fontSize: 12.5)),
                           const SizedBox(width: 4),
-                          Icon(Icons.print_outlined, size: 18, color: Colors.grey.shade500),
+                          Icon(Icons.print_outlined, size: 18, color: KaataTheme.mutedOf(context)),
                         ],
                       ),
                       // Struk hilang, printer macet, pelanggan minta

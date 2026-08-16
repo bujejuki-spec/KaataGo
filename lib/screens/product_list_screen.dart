@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../theme.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -102,7 +104,7 @@ class _ProductTab extends StatelessWidget {
                         p.name,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          color: p.outOfStock ? Colors.grey.shade600 : null,
+                          color: p.outOfStock ? KaataTheme.mutedOf(context) : null,
                         ),
                       ),
                     ),

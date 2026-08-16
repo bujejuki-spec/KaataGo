@@ -292,7 +292,7 @@ class _TableQrGeneratorScreenState extends State<TableQrGeneratorScreen> {
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 13,
-                    color: Colors.grey.shade700,
+                    color: KaataTheme.mutedOf(context),
                   ),
                 ),
               ),
@@ -389,7 +389,7 @@ class _BulkFields extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             '${tables.length} QR akan dibuat: meja ${tables.first} sampai ${tables.last}',
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+            style: TextStyle(fontSize: 12, color: KaataTheme.mutedOf(context)),
           ),
         ],
       ],
@@ -414,7 +414,7 @@ class _TableChips extends StatelessWidget {
       decoration: BoxDecoration(
         color: KaataTheme.surfaceOf(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: KaataTheme.softFillOf(context)),
       ),
       child: Wrap(
         spacing: 6,
@@ -481,14 +481,14 @@ class _EmptyPreview extends StatelessWidget {
       decoration: BoxDecoration(
         color: KaataTheme.surfaceOf(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: KaataTheme.softFillOf(context)),
       ),
       child: Column(
         children: [
-          Icon(Icons.qr_code_2, size: 56, color: Colors.grey.shade300),
+          Icon(Icons.qr_code_2, size: 56, color: KaataTheme.borderOf(context)),
           const SizedBox(height: 12),
           Text('Isi nomor meja untuk membuat QR',
-              style: TextStyle(color: Colors.grey.shade500, fontSize: 13)),
+              style: TextStyle(color: KaataTheme.mutedOf(context), fontSize: 13)),
         ],
       ),
     );
@@ -548,14 +548,14 @@ class _Card extends StatelessWidget {
                           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                       const SizedBox(height: 1),
                       Text(subtitle,
-                          style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600)),
+                          style: TextStyle(fontSize: 11.5, color: KaataTheme.mutedOf(context))),
                     ],
                   ),
                 ),
               ],
             ),
           ),
-          Divider(height: 1, color: Colors.grey.shade200),
+          Divider(height: 1, color: KaataTheme.softFillOf(context)),
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children),

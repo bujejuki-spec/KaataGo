@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+
+import '../theme.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -239,7 +241,7 @@ class _WaitingLine extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Text('Menunggu pembayaran…',
-                style: TextStyle(fontSize: 12.5, color: Colors.grey.shade700)),
+                style: TextStyle(fontSize: 12.5, color: KaataTheme.mutedOf(context))),
           ],
         ),
         const SizedBox(height: 4),

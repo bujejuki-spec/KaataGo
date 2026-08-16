@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../theme.dart';
 import 'package:intl/intl.dart';
 
 import '../utils/tax_calculator.dart';
@@ -69,7 +71,7 @@ class ChargeSummary extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: Text(
               menuPriceNote(ppnPercent)!,
-              style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600),
+              style: TextStyle(fontSize: 11.5, color: KaataTheme.mutedOf(context)),
             ),
           ),
         ],
@@ -80,7 +82,7 @@ class ChargeSummary extends StatelessWidget {
   Widget _row(BuildContext context, String label, String value, {bool muted = false}) {
     final style = TextStyle(
       fontSize: 13.5,
-      color: muted ? Colors.grey.shade700 : null,
+      color: muted ? KaataTheme.mutedOf(context) : null,
     );
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,

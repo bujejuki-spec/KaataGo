@@ -100,7 +100,7 @@ class _FinanceGatewaySettlementScreenState
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.cloud_off, size: 40, color: Colors.grey.shade400),
+                        Icon(Icons.cloud_off, size: 40, color: KaataTheme.mutedOf(context)),
                         const SizedBox(height: 12),
                         Text('Gagal memuat.\n$_error', textAlign: TextAlign.center),
                         const SizedBox(height: 14),
@@ -150,7 +150,7 @@ class _FinanceGatewaySettlementScreenState
                               'Belum ada pencairan tercatat.\n'
                               'Catat setiap kali dana dari penyedia masuk ke rekening.',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+                              style: TextStyle(color: KaataTheme.mutedOf(context), fontSize: 13),
                             ),
                           )
                         else
@@ -348,7 +348,7 @@ class _AddSettlementDialogState extends State<_AddSettlementDialog> {
                   'Salin dari laporan penyedia dan mutasi bank. Jangan '
                   'menghitungnya sendiri — angka yang berbeda justru yang '
                   'perlu ketahuan.',
-                  style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600),
+                  style: TextStyle(fontSize: 11.5, color: KaataTheme.mutedOf(context)),
                 ),
                 const SizedBox(height: 16),
                 InkWell(

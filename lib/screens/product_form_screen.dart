@@ -313,9 +313,9 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                       height: 160,
                       width: double.infinity,
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade100,
+                        color: KaataTheme.softFillOf(context),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.grey.shade300),
+                        border: Border.all(color: KaataTheme.borderOf(context)),
                         image: photoPreview != null
                             ? DecorationImage(image: photoPreview, fit: BoxFit.cover)
                             : null,
@@ -325,10 +325,10 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Icon(Icons.add_a_photo_outlined,
-                                    size: 36, color: Colors.grey.shade500),
+                                    size: 36, color: KaataTheme.mutedOf(context)),
                                 const SizedBox(height: 6),
                                 Text('Tambah Foto Produk',
-                                    style: TextStyle(color: Colors.grey.shade600)),
+                                    style: TextStyle(color: KaataTheme.mutedOf(context))),
                               ],
                             )
                           : Align(
@@ -509,7 +509,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
               const SizedBox(height: 4),
               Text(
                 'Pilih level yang tersedia untuk produk ini — pemesan akan diminta memilih salah satu opsi per level.',
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                style: TextStyle(color: KaataTheme.mutedOf(context), fontSize: 12),
               ),
               const SizedBox(height: 8),
               Wrap(
@@ -535,7 +535,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
               for (final group in _selectedLevelGroups) ...[
                 const SizedBox(height: 12),
                 Card(
-                  color: Colors.grey.shade50,
+                  color: KaataTheme.softFillOf(context),
                   child: Padding(
                     padding: const EdgeInsets.all(12),
                     child: Column(
@@ -546,7 +546,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                         const SizedBox(height: 4),
                         Text(
                           'Kosongkan/0 kalau opsi itu tidak menambah harga dari harga dasar.',
-                          style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
+                          style: TextStyle(color: KaataTheme.mutedOf(context), fontSize: 11),
                         ),
                         const SizedBox(height: 8),
                         for (final option in LevelGroupRegistry.optionsOf(group))
@@ -656,11 +656,11 @@ class _SellingPricePreview extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 3),
-          Text(note, style: TextStyle(fontSize: 11.5, color: Colors.grey.shade700)),
+          Text(note, style: TextStyle(fontSize: 11.5, color: KaataTheme.mutedOf(context))),
           const SizedBox(height: 2),
           Text(
             'Biaya service ditambahkan saat checkout untuk pesanan Dine In.',
-            style: TextStyle(fontSize: 11.5, color: Colors.grey.shade700),
+            style: TextStyle(fontSize: 11.5, color: KaataTheme.mutedOf(context)),
           ),
         ],
       ),

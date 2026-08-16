@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../theme.dart';
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -554,7 +556,7 @@ class _JournalRow extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
               decoration: BoxDecoration(
-                color: Colors.grey.shade200,
+                color: KaataTheme.softFillOf(context),
                 borderRadius: BorderRadius.circular(4),
               ),
               child: const Text('Pembatalan',
