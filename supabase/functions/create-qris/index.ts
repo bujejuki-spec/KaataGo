@@ -97,14 +97,24 @@ Deno.serve(async (req) => {
       .eq("resto_id", order.resto_id ?? "")
       .maybeSingle();
 
-    // Resto yang belum punya sub-akun sengaja TIDAK dibuatkan tagihan.
+    const subAccount =
+      account?.active === false ? null : account?.account_id ?? null;
+
+    // Resto tanpa sub-akun sengaja TIDAK dibuatkan tagihan — kecuali di
+    // mode uji.
     //
-    // Menjatuhkannya ke akun platform akan "berhasil" — QR-nya terbit,
-    // pelanggannya membayar — dan uangnya masuk ke rekening yang salah
-    // tanpa satu pun tanda bahwa ada yang keliru. Kegagalan yang
-    // terlihat jauh lebih murah: aplikasinya kembali ke QR simulasi, dan
-    // restonya tahu pemasangannya belum selesai.
-    if (!account?.account_id || account.active === false) {
+    // Di produksi, menjatuhkannya ke akun platform akan "berhasil":
+    // QR-nya terbit, pelanggannya membayar, dan uangnya mendarat di
+    // rekening yang salah tanpa satu pun tanda bahwa ada yang keliru.
+    // Kegagalan yang terlihat jauh lebih murah daripada keberhasilan
+    // yang salah alamat.
+    //
+    // Di mode uji tidak ada uang sungguhan yang bisa salah alamat, dan
+    // sub-akun belum tentu tersedia — pengaktifannya di penyedia butuh
+    // persetujuan yang memakan hari. Menahan pengujian selama masa
+    // tunggu itu berarti seluruh alur pembayaran baru bisa dicoba
+    // pertama kali justru saat uangnya sudah sungguhan.
+    if (!subAccount && !testMode) {
       return json({
         error: "resto ini belum punya akun pembayaran",
         needs_setup: true,
@@ -138,7 +148,10 @@ Deno.serve(async (req) => {
         // Dibuat atas nama sub-akun restonya. Kuncinya tetap milik
         // platform — yang berpindah cuma atas nama siapa tagihannya
         // terbit, dan ke rekening siapa dananya nanti cair.
-        "for-user-id": account.account_id,
+        //
+        // Tanpa sub-akun (hanya mungkin di mode uji), tagihannya terbit
+        // atas nama akun platform.
+        ...(subAccount ? { "for-user-id": subAccount } : {}),
       },
       body: JSON.stringify({
         reference_id: referenceId,
@@ -183,6 +196,9 @@ Deno.serve(async (req) => {
       expires_at: expiresAt.toISOString(),
       reused: false,
       test_mode: testMode,
+      // Supaya layar ujinya bisa menyebutkan bahwa dananya belum
+      // terarah ke resto yang benar.
+      platform_account: subAccount == null,
     });
   } catch (e) {
     return json({ error: e instanceof Error ? e.message : String(e) }, 500);
