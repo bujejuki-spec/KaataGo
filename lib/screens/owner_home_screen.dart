@@ -17,6 +17,7 @@ import 'cash_deposit_screen.dart';
 import 'chef_home_screen.dart';
 import 'employee_orders_screen.dart';
 import 'finance_balance_screen.dart';
+import 'finance_gateway_settlement_screen.dart';
 import 'finance_gl_mapping_screen.dart';
 import 'finance_income_screen.dart';
 import 'finance_journal_screen.dart';
@@ -156,6 +157,15 @@ class OwnerHomeScreen extends StatelessWidget {
                     subtitle: 'Nomor akun untuk pemasukan & pengeluaran',
                     color: const Color(0xFF8B5CF6),
                     onTap: () => _open(context, const FinanceGlMappingScreen()),
+                  ),
+                  const SizedBox(height: 12),
+                  HubMenuTile(
+                    icon: Icons.credit_card_outlined,
+                    title: 'Pencairan Gateway',
+                    subtitle: 'Catat dana QRIS yang masuk rekening & potongannya',
+                    color: const Color(0xFFEC4899),
+                    onTap: () =>
+                        _open(context, const FinanceGatewaySettlementScreen()),
                   ),
                   const SizedBox(height: 12),
                   HubMenuTile(

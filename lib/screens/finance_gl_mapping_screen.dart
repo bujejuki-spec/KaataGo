@@ -58,6 +58,12 @@ const _suspenseMethod = 'suspense';
 // tertahan di masing-masing alur.
 const _suspensePettyMethod = 'suspense_petty';
 
+// Potongan penyedia pembayaran (MDR). Uang yang tidak pernah sampai ke
+// rekening resto tapi tetap harus tercatat — tanpa akun ini, selisih
+// antara yang dibayar pelanggan dan yang cair ke bank tidak punya nama,
+// dan pembukuannya tidak akan pernah bisa ditutup.
+const _gatewayFeeMethod = 'gateway_fee';
+
 // PPN and service charge collected are money owed onward, not revenue,
 // so they're journaled to their own accounts instead of being folded
 // into the payment-method income mapping.
@@ -77,6 +83,7 @@ const _allMethods = [
   _totalBalanceMethod,
   _suspenseMethod,
   _suspensePettyMethod,
+  _gatewayFeeMethod,
 ];
 
 /// Drops a trailing ".0" so a rate of 11 shows as "11", not "11.00".
@@ -519,6 +526,25 @@ class _FinanceGlMappingScreenState extends State<FinanceGlMappingScreen> {
                             color: const Color(0xFFF59E0B),
                             codeCtrl: _codeCtrls[_suspensePettyMethod]!,
                             nameCtrl: _nameCtrls[_suspensePettyMethod]!,
+                            editing: _editing,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      _GlSectionCard(
+                        icon: Icons.credit_card_outlined,
+                        color: const Color(0xFFEC4899),
+                        title: 'GL Payment Gateway',
+                        subtitle: 'Potongan penyedia saat dana dicairkan',
+                        children: [
+                          _GlAccountRow(
+                            icon: Icons.percent,
+                            label: 'GL Biaya MDR',
+                            hint: 'Potongan penyedia — selisih yang dibayar '
+                                'pelanggan dengan yang cair ke rekening',
+                            color: const Color(0xFFEC4899),
+                            codeCtrl: _codeCtrls[_gatewayFeeMethod]!,
+                            nameCtrl: _nameCtrls[_gatewayFeeMethod]!,
                             editing: _editing,
                           ),
                         ],

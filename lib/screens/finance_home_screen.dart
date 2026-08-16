@@ -14,6 +14,7 @@ import '../widgets/resto_switcher.dart';
 import '../widgets/kaata_logo.dart';
 import 'cash_deposit_screen.dart';
 import 'finance_balance_screen.dart';
+import 'finance_gateway_settlement_screen.dart';
 import 'finance_gl_mapping_screen.dart';
 import 'finance_income_screen.dart';
 import 'finance_journal_screen.dart';
@@ -101,6 +102,16 @@ class FinanceHomeScreen extends StatelessWidget {
                   color: const Color(0xFFF59E0B),
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => const FinanceGlMappingScreen()),
+                  ),
+                ),
+                HubMenuTile(
+                  icon: Icons.credit_card_outlined,
+                  title: 'Pencairan Gateway',
+                  subtitle: 'Catat dana QRIS yang masuk rekening & potongannya',
+                  color: const Color(0xFFEC4899),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                        builder: (_) => const FinanceGatewaySettlementScreen()),
                   ),
                 ),
                 HubMenuTile(
