@@ -1,6 +1,6 @@
 # KaataGo — Functional Specification Document
 
-**Versi Aplikasi:** 1.45.2 (build 90)
+**Versi Aplikasi:** 1.45.4 (build 92)
 **Versi Dokumen:** 2.0
 **Tanggal Terbit:** 16 Agustus 2026
 **Status:** Rilis
@@ -1062,6 +1062,6 @@ tampilannya dari peran lain.
 !!ss[Kelompok KEUANGAN dalam mode gelap](gambar/capture/Darkmode/Owner/Screenshot_20260816-215208.jpg)
 !!ss[Kelompok PENGELOLAAN dalam mode gelap](gambar/capture/Darkmode/Owner/Screenshot_20260816-215213.jpg)
 
-*Dokumen ini disusun dari aplikasi versi 1.45.2. Sisi teknisnya —
+*Dokumen ini disusun dari aplikasi versi 1.45.4. Sisi teknisnya —
 arsitektur, tabel, keamanan baris, prasyarat basis data — ada di
 `SPESIFIKASI-KAATAGO`.*
