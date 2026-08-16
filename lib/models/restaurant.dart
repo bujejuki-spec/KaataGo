@@ -1,3 +1,5 @@
+import 'order_type.dart';
+
 /// Hardcoded restaurant category options, roughly matching the
 /// taxonomy used by GoFood/GrabFood/ShopeeFood-style apps in Indonesia.
 const kRestaurantCategories = [
@@ -47,6 +49,21 @@ class Restaurant {
   final double ppnPercent;
   final double servicePercent;
 
+  /// Cara makan yang dilayani resto ini.
+  ///
+  /// Tidak semua resto melayani keduanya: gerai di food court dan
+  /// cloud kitchen tidak punya meja sama sekali, sementara beberapa
+  /// restoran memang tidak membungkus. Selama pilihannya selalu
+  /// ditawarkan, pesanan yang tidak bisa dilayani tetap masuk — dan
+  /// yang menolaknya jadi orang, di depan pelanggan yang sudah
+  /// membayar.
+  ///
+  /// Keduanya bernilai true untuk resto yang sudah ada. Menonaktifkan
+  /// salah satunya adalah keputusan yang harus diambil sengaja, bukan
+  /// akibat kolom baru yang belum diisi.
+  final bool dineInEnabled;
+  final bool takeAwayEnabled;
+
   /// Optional store logo, base64-encoded. Shared between Super Admin and
   /// Admin — whoever uploads it, either can replace or clear it.
   final String? logoBase64;
@@ -63,6 +80,8 @@ class Restaurant {
     this.longitude,
     this.ppnPercent = 0,
     this.servicePercent = 0,
+    this.dineInEnabled = true,
+    this.takeAwayEnabled = true,
   });
 
   Map<String, dynamic> toMap() => {
@@ -82,6 +101,8 @@ class Restaurant {
         'longitude': longitude,
         'ppn_percent': ppnPercent,
         'service_percent': servicePercent,
+        'dine_in_enabled': dineInEnabled,
+        'take_away_enabled': takeAwayEnabled,
       };
 
   factory Restaurant.fromMap(String id, Map<String, dynamic> map) {
@@ -97,8 +118,24 @@ class Restaurant {
       longitude: (map['longitude'] as num?)?.toDouble(),
       ppnPercent: (map['ppn_percent'] as num?)?.toDouble() ?? 0,
       servicePercent: (map['service_percent'] as num?)?.toDouble() ?? 0,
+      dineInEnabled: map['dine_in_enabled'] as bool? ?? true,
+      takeAwayEnabled: map['take_away_enabled'] as bool? ?? true,
     );
   }
 
   bool get hasLocation => latitude != null && longitude != null;
+
+  /// Cara makan yang boleh dipilih saat checkout.
+  ///
+  /// Tidak pernah kosong. Resto yang keduanya dimatikan — entah salah
+  /// pencet atau data yang belum lengkap — akan membuat layar checkout
+  /// tanpa satu pun pilihan yang bisa ditekan, dan tidak ada pesanan
+  /// yang bisa dibuat sama sekali. Dine In yang dipaksakan jauh lebih
+  /// ringan akibatnya daripada resto yang berhenti berjualan.
+  List<OrderType> get orderTypes {
+    return [
+      if (dineInEnabled || !takeAwayEnabled) OrderType.dineIn,
+      if (takeAwayEnabled) OrderType.takeAway,
+    ];
+  }
 }

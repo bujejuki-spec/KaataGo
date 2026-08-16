@@ -54,6 +54,16 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
   final _pettyCashRepo = PettyCashRepository();
   final _depositRepo = CashDepositRepository();
 
+  /// Terbuka atau tertutupnya seluruh bagian, bukan cuma satu harinya.
+  ///
+  /// Dua bagian ini tumbuh terus dan tidak pernah menyusut. Kartu harian
+  /// sudah bisa dilipat sendiri-sendiri, tapi puluhan judul hari yang
+  /// tetap berbaris tetap saja mendorong Setoran dan Saldo Total jauh ke
+  /// bawah layar — padahal itu yang dicari orang saat membuka layar ini.
+  /// Melipat bagiannya sekali ketuk mengembalikannya ke satu layar.
+  bool _pettyCashOpen = true;
+  bool _expensesOpen = true;
+
   int _cashIncome = 0;
   int _nonCashIncome = 0;
   List<CashDeposit> _deposits = [];
@@ -531,11 +541,13 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
                         ),
                       ],
                       const SizedBox(height: 24),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text('Petty Cash', style: TextStyle(fontWeight: FontWeight.bold)),
-                          _PillButton(
+                      _SectionHeader(
+                        title: 'Petty Cash',
+                        open: _pettyCashOpen,
+                        count: _pettyCashEntries.length,
+                        onToggle: () =>
+                            setState(() => _pettyCashOpen = !_pettyCashOpen),
+                        action: _PillButton(
                             icon: Icons.add_circle_outline,
                             // Kasir mengajukan, Finance menambahkan
                             // langsung — labelnya menyebutkan bedanya
@@ -545,10 +557,11 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
                             color: const Color(0xFF6366F1),
                             onTap: _addPettyCash,
                           ),
-                        ],
                       ),
                       const SizedBox(height: 8),
-                      if (_pettyCashEntries.isEmpty)
+                      if (!_pettyCashOpen)
+                        const SizedBox.shrink()
+                      else if (_pettyCashEntries.isEmpty)
                         const Padding(
                           padding: EdgeInsets.symmetric(vertical: 16),
                           child: Text('Belum ada Petty Cash tercatat.', style: TextStyle(color: Colors.grey)),
@@ -671,21 +684,23 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
                           );
                         }),
                       const SizedBox(height: 20),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text('Riwayat Pengeluaran',
-                              style: TextStyle(fontWeight: FontWeight.bold)),
-                          _PillButton(
-                            icon: Icons.remove_circle_outline,
-                            label: 'Catat',
-                            color: const Color(0xFFEF4444),
-                            onTap: _addExpense,
-                          ),
-                        ],
+                      _SectionHeader(
+                        title: 'Riwayat Pengeluaran',
+                        open: _expensesOpen,
+                        count: _expenses.length,
+                        onToggle: () =>
+                            setState(() => _expensesOpen = !_expensesOpen),
+                        action: _PillButton(
+                          icon: Icons.remove_circle_outline,
+                          label: 'Catat',
+                          color: const Color(0xFFEF4444),
+                          onTap: _addExpense,
+                        ),
                       ),
                       const SizedBox(height: 8),
-                      if (_expenses.isEmpty)
+                      if (!_expensesOpen)
+                        const SizedBox.shrink()
+                      else if (_expenses.isEmpty)
                         const Padding(
                           padding: EdgeInsets.symmetric(vertical: 16),
                           child: Text('Belum ada pengeluaran tercatat.', style: TextStyle(color: Colors.grey)),
@@ -756,6 +771,68 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
 /// Small solid pill sitting beside a section heading — the action that
 /// belongs to that section. Replaces a floating action button, which
 /// covered the last rows of whatever list it hovered over.
+/// Judul bagian yang bisa dilipat, berikut tombol aksinya.
+///
+/// Tombolnya tetap terlihat saat bagiannya tertutup — mencatat
+/// pengeluaran baru tidak ada hubungannya dengan sedang membaca atau
+/// tidak daftar yang lama, dan menyembunyikannya berarti memaksa satu
+/// ketukan tambahan hanya untuk sampai ke tombol yang sudah ada di
+/// tempatnya.
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  final bool open;
+  final int count;
+  final VoidCallback onToggle;
+  final Widget action;
+
+  const _SectionHeader({
+    required this.title,
+    required this.open,
+    required this.count,
+    required this.onToggle,
+    required this.action,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: InkWell(
+            borderRadius: BorderRadius.circular(8),
+            onTap: onToggle,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(
+                children: [
+                  AnimatedRotation(
+                    turns: open ? 0 : -0.25,
+                    duration: const Duration(milliseconds: 150),
+                    child: const Icon(Icons.expand_more, size: 20),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(title,
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                  // Jumlahnya disebut justru saat tertutup: bagian yang
+                  // dilipat tidak boleh terlihat sama dengan bagian yang
+                  // memang kosong.
+                  if (!open && count > 0) ...[
+                    const SizedBox(width: 6),
+                    Text('($count)',
+                        style: TextStyle(
+                            fontSize: 12, color: Colors.grey.shade600)),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ),
+        action,
+      ],
+    );
+  }
+}
+
 class _PillButton extends StatelessWidget {
   final IconData icon;
   final String label;

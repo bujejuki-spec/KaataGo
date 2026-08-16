@@ -31,7 +31,9 @@ class UpdateDownloadBanner extends StatelessWidget {
               animation: AppUpdater.instance,
               builder: (context, _) {
                 final updater = AppUpdater.instance;
-                if (!updater.downloading && updater.error == null) {
+                if (!updater.downloading &&
+                    updater.error == null &&
+                    updater.notice == null) {
                   return const SizedBox.shrink();
                 }
                 return _Pill(updater: updater);
@@ -52,17 +54,27 @@ class _Pill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final failed = !updater.downloading && updater.error != null;
+    final notice = !updater.downloading && updater.error == null
+        ? updater.notice
+        : null;
     final percent = updater.percent;
 
     return Align(
       alignment: Alignment.bottomCenter,
       child: Material(
-        color: failed ? Colors.red.shade700 : KaataTheme.brandDark,
+        color: failed
+            ? Colors.red.shade700
+            : notice != null
+                ? Colors.grey.shade800
+                : KaataTheme.brandDark,
         borderRadius: BorderRadius.circular(24),
         elevation: 6,
         child: InkWell(
           borderRadius: BorderRadius.circular(24),
-          onTap: () => showUpdateDownloadDialog(context),
+          // Pembatalan tidak membuka apa pun kalau diketuk. Tidak ada
+          // rincian yang perlu dibaca — yang terjadi sudah tertulis
+          // seluruhnya di kalimat itu sendiri.
+          onTap: notice != null ? null : () => showUpdateDownloadDialog(context),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             child: Row(
@@ -70,6 +82,8 @@ class _Pill extends StatelessWidget {
               children: [
                 if (failed)
                   const Icon(Icons.error_outline, color: Colors.white, size: 18)
+                else if (notice != null)
+                  const Icon(Icons.cancel_outlined, color: Colors.white, size: 18)
                 else
                   SizedBox(
                     width: 18,
@@ -87,9 +101,10 @@ class _Pill extends StatelessWidget {
                 Text(
                   failed
                       ? 'Unduhan gagal — ketuk untuk lihat'
-                      : percent == null
-                          ? 'Mengunduh pembaruan…'
-                          : 'Mengunduh pembaruan $percent%',
+                      : notice ??
+                          (percent == null
+                              ? 'Mengunduh pembaruan…'
+                              : 'Mengunduh pembaruan $percent%'),
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,

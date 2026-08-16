@@ -17,7 +17,7 @@
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 1 dari 14 — employee_surrogate_key.sql
+-- BAGIAN 1 dari 18 — employee_surrogate_key.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — email karyawan jadi bisa diubah.
@@ -68,7 +68,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 2 dari 14 — promo_banner.sql
+-- BAGIAN 2 dari 18 — promo_banner.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — banner promo per resto.
@@ -130,7 +130,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 3 dari 14 — rilis_setor_petty_inbox.sql
+-- BAGIAN 3 dari 18 — rilis_setor_petty_inbox.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — setoran & top up petty cash berjenjang, GL Suspense, dan
@@ -612,7 +612,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 4 dari 14 — customer_cash_payment.sql
+-- BAGIAN 4 dari 18 — customer_cash_payment.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pelanggan boleh memilih bayar tunai di kasir.
@@ -682,7 +682,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 5 dari 14 — push_notifications.sql
+-- BAGIAN 5 dari 18 — push_notifications.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — notifikasi yang tetap sampai walau aplikasinya tertutup.
@@ -1030,7 +1030,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 6 dari 14 — announcement_categories.sql
+-- BAGIAN 6 dari 18 — announcement_categories.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pengumuman dibagi dua jenis, dan admin resto boleh mengirim.
@@ -1119,7 +1119,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 7 dari 14 — fix_device_tokens_rls.sql
+-- BAGIAN 7 dari 18 — fix_device_tokens_rls.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pendaftaran token push lewat fungsi, bukan tulis langsung.
@@ -1238,7 +1238,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 8 dari 14 — push_trigger_pg_net.sql
+-- BAGIAN 8 dari 18 — push_trigger_pg_net.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — panggil Edge Function langsung dari database, tanpa webhook.
@@ -1351,7 +1351,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 9 dari 14 — payment_gateway.sql
+-- BAGIAN 9 dari 18 — payment_gateway.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — QRIS sungguhan lewat Xendit.
@@ -1505,7 +1505,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 10 dari 14 — gateway_settlement.sql
+-- BAGIAN 10 dari 18 — gateway_settlement.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pencairan dana dari payment gateway.
@@ -1683,7 +1683,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 11 dari 14 — resto_payment_accounts.sql
+-- BAGIAN 11 dari 18 — resto_payment_accounts.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pencairan langsung ke rekening masing-masing resto.
@@ -1776,7 +1776,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 12 dari 14 — counter_charge.sql
+-- BAGIAN 12 dari 18 — counter_charge.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — tagihan QRIS di meja kasir.
@@ -1813,7 +1813,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 13 dari 14 — announcement_push.sql
+-- BAGIAN 13 dari 18 — announcement_push.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pengumuman ikut membunyikan HP.
@@ -1870,7 +1870,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 14 dari 14 — cash_payment_expiry.sql
+-- BAGIAN 14 dari 18 — cash_payment_expiry.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pesanan tunai yang tidak dilunasi di kasir hangus sendiri.
@@ -1939,5 +1939,254 @@ select cron.schedule(
   '* * * * *',
   $$select expire_unpaid_cash_orders();$$
 );
+
+commit;
+
+
+-- ═══════════════════════════════════════════════════════════════════
+-- BAGIAN 15 dari 18 — level_groups.sql
+-- ═══════════════════════════════════════════════════════════════════
+
+-- KaataGo — tiap resto menyusun sendiri kelompok levelnya.
+--
+-- Jalankan SETELAH product_level_groups.sql. Aman diulang.
+--
+-- Sebelumnya daftarnya tertanam di dalam aplikasi: lima kelompok tetap
+-- (Level Pedas, Level Gula, Level Es, Suhu, Ukuran), sama untuk semua
+-- resto. Cukup untuk warung nasi dan kedai kopi, dan langsung kurang
+-- untuk yang berikutnya — tingkat kematangan steak, pilihan topping,
+-- jenis susu. Resto yang butuh satu kelompok di luar lima itu tidak
+-- punya jalan apa pun selain menyuruh pelanggannya mengetik di kolom
+-- catatan, yang tidak terbaca sebagai pilihan oleh dapur maupun kasir.
+--
+-- Produk tetap menyandang NAMA kelompoknya (products.level_groups),
+-- bukan id-nya. Sengaja: itu yang sudah tersimpan di ribuan baris
+-- produk dan pesanan, dan mengubahnya jadi id berarti membongkar
+-- riwayat pesanan yang sudah terjadi hanya demi kerapian.
+
+begin;
+
+create table if not exists level_groups (
+  id text primary key,
+  resto_id text not null references restaurants (id) on delete cascade,
+
+  -- Namanya yang mengikat produk ke kelompok ini, jadi tidak boleh
+  -- kembar di dalam satu resto.
+  name text not null,
+
+  options jsonb not null default '[]'::jsonb,
+
+  -- Urutan tampilnya di layar pesan. Kelompok yang paling sering
+  -- dipakai pantas berada di atas, dan itu berbeda tiap resto.
+  sort_order integer not null default 0,
+
+  created_at timestamptz not null default now(),
+  unique (resto_id, name)
+);
+
+create index if not exists idx_level_groups_resto on level_groups (resto_id);
+
+alter table level_groups enable row level security;
+
+-- Dibaca siapa saja, termasuk pelanggan tamu yang belum login: tanpa
+-- ini dropdown level di layar pesan kosong, dan pesanan pedas tidak
+-- bisa dibedakan dari yang tidak.
+drop policy if exists "level_groups: public read" on level_groups;
+create policy "level_groups: public read" on level_groups
+  for select using (true);
+
+drop policy if exists "level_groups: admin write" on level_groups;
+create policy "level_groups: admin write" on level_groups
+  for all using (
+    is_super_admin() or is_resto_employee(resto_id, array['admin'])
+  ) with check (
+    is_super_admin() or is_resto_employee(resto_id, array['admin'])
+  );
+
+-- ─────────────────────────────────────────────────────────────────────
+-- Bibit: lima kelompok yang selama ini tertanam di aplikasi
+-- ─────────────────────────────────────────────────────────────────────
+--
+-- Disemaikan ke tiap resto yang sudah ada, sekali. Tanpa ini semua resto
+-- membuka tab Level yang kosong dan produk mereka yang sudah menyandang
+-- "Level Pedas" menunjuk kelompok yang tidak ada lagi.
+--
+-- `on conflict do nothing` yang membuatnya aman diulang: resto yang
+-- sudah menyunting "Level Pedas"-nya sendiri tidak dikembalikan ke
+-- bentuk bawaan hanya karena berkas ini dijalankan dua kali.
+
+insert into level_groups (id, resto_id, name, options, sort_order)
+select
+  r.id || ':' || b.name,
+  r.id,
+  b.name,
+  b.options,
+  b.sort_order
+from restaurants r
+cross join (values
+  ('Level Pedas',
+   '["Tidak Pedas","Sedang","Pedas","Extra Pedas"]'::jsonb, 0),
+  ('Level Gula',
+   '["Normal","Kurang Manis","Setengah Manis","Tanpa Gula"]'::jsonb, 1),
+  ('Level Es',
+   '["Normal","Less Ice","No Ice"]'::jsonb, 2),
+  ('Suhu',
+   '["Panas","Dingin"]'::jsonb, 3),
+  ('Ukuran',
+   '["Regular","Large"]'::jsonb, 4)
+) as b(name, options, sort_order)
+on conflict (resto_id, name) do nothing;
+
+commit;
+
+-- Resto yang dibuat SESUDAH ini tetap perlu bibitnya. Pemicu di bawah
+-- yang mengurusnya, supaya tidak ada yang harus ingat menjalankan
+-- berkas ini lagi tiap kali ada resto baru.
+create or replace function seed_level_groups()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into level_groups (id, resto_id, name, options, sort_order)
+  select new.id || ':' || b.name, new.id, b.name, b.options, b.sort_order
+  from (values
+    ('Level Pedas', '["Tidak Pedas","Sedang","Pedas","Extra Pedas"]'::jsonb, 0),
+    ('Level Gula', '["Normal","Kurang Manis","Setengah Manis","Tanpa Gula"]'::jsonb, 1),
+    ('Level Es', '["Normal","Less Ice","No Ice"]'::jsonb, 2),
+    ('Suhu', '["Panas","Dingin"]'::jsonb, 3),
+    ('Ukuran', '["Regular","Large"]'::jsonb, 4)
+  ) as b(name, options, sort_order)
+  on conflict (resto_id, name) do nothing;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_seed_level_groups on restaurants;
+create trigger trg_seed_level_groups
+  after insert on restaurants
+  for each row execute function seed_level_groups();
+
+
+-- ═══════════════════════════════════════════════════════════════════
+-- BAGIAN 16 dari 18 — resto_order_types.sql
+-- ═══════════════════════════════════════════════════════════════════
+
+-- KaataGo — resto menentukan sendiri melayani Dine In, Take Away, atau
+-- keduanya.
+--
+-- Aman dijalankan berulang kali.
+--
+-- Selama ini kedua pilihan selalu ditawarkan di layar checkout, di
+-- semua resto. Padahal tidak semua resto melayani keduanya: gerai food
+-- court dan cloud kitchen tidak punya meja sama sekali. Selama
+-- pilihannya tetap ada, pesanan yang tidak bisa dilayani tetap masuk —
+-- dan yang harus menolaknya adalah orang, di depan pelanggan yang sudah
+-- membayar.
+--
+-- Keduanya true untuk semua resto yang sudah ada. Mematikan salah
+-- satunya harus jadi keputusan yang diambil sengaja, bukan akibat kolom
+-- baru yang belum sempat diisi.
+
+begin;
+
+alter table restaurants
+  add column if not exists dine_in_enabled boolean not null default true;
+alter table restaurants
+  add column if not exists take_away_enabled boolean not null default true;
+
+-- Resto yang tidak melayani keduanya tidak bisa menerima pesanan apa
+-- pun — layar checkoutnya tidak punya satu pun pilihan yang bisa
+-- ditekan. Itu bukan konfigurasi, itu resto yang tutup, dan untuk itu
+-- sudah ada kolom `active`.
+alter table restaurants drop constraint if exists restaurants_order_type_check;
+alter table restaurants add constraint restaurants_order_type_check
+  check (dine_in_enabled or take_away_enabled);
+
+commit;
+
+
+-- ═══════════════════════════════════════════════════════════════════
+-- BAGIAN 17 dari 18 — product_out_of_stock.sql
+-- ═══════════════════════════════════════════════════════════════════
+
+-- KaataGo — ketersediaan produk ditandai, bukan dihitung.
+--
+-- Aman dijalankan berulang kali.
+--
+-- Sampai sekarang produk hilang dari menu begitu stoknya 0. Itu memaksa
+-- tiap resto mengurus angka yang sebagian besar tidak pernah mereka
+-- hitung: nasi goreng tidak punya "sisa 7 porsi", yang ada cuma "masih
+-- ada" atau "bahannya habis". Resto yang membiarkan stoknya 0 karena
+-- angkanya memang tidak relevan justru kehilangan seluruh menunya, dan
+-- tidak pernah tahu kenapa.
+--
+-- Sekarang angka stok jadi catatan biasa — boleh diisi, boleh tidak —
+-- dan yang menentukan bisa dipesan atau tidak cuma kolom ini, yang
+-- dinyatakan sengaja oleh orang yang tahu keadaan dapurnya.
+
+begin;
+
+alter table products
+  add column if not exists out_of_stock boolean not null default false;
+
+-- Stok tidak lagi wajib. Produk yang tidak diisi angkanya bukan produk
+-- yang habis — cuma produk yang tidak dihitung.
+alter table products alter column stock drop not null;
+alter table products alter column stock set default 0;
+
+-- Produk lama dianggap tersedia, termasuk yang stoknya 0.
+--
+-- Sebagian dari mereka memang benar-benar habis, dan menyalakannya
+-- kembali berarti resto harus menandainya lagi satu per satu. Itu
+-- disengaja: resto jauh lebih cepat menandai barang yang habis daripada
+-- menemukan sendiri kenapa separuh menunya tidak pernah muncul.
+update products set out_of_stock = false where out_of_stock is null;
+
+commit;
+
+-- Catatan: fungsi decrement_stock tetap dipakai — angkanya masih
+-- berguna buat resto yang memang menghitung. Yang berubah cuma
+-- artinya: mencapai nol tidak lagi menyembunyikan produknya.
+
+
+-- ═══════════════════════════════════════════════════════════════════
+-- BAGIAN 18 dari 18 — gateway_account_super_admin.sql
+-- ═══════════════════════════════════════════════════════════════════
+
+-- KaataGo — pengenal sub-akun Xendit jadi urusan Super Admin saja.
+--
+-- Jalankan SETELAH resto_payment_accounts.sql. Aman diulang.
+--
+-- Sebelumnya Finance resto boleh membaca dan mengubah pengenal ini dari
+-- Pengaturan Pembayaran. Itu keliru dari dua sisi.
+--
+-- Yang pertama: dia tidak punya cara mengetahui nilainya. Sub-akunnya
+-- dibuat di akun Xendit milik KaataGo dan pengenalnya ditentukan
+-- Xendit — bukan sesuatu yang bisa dicari orang resto di mana pun.
+-- Kolom isian yang jawabannya tidak dimiliki siapa pun yang melihatnya
+-- hanya mengundang tebakan.
+--
+-- Yang kedua, dan ini yang berbahaya: salah ketik satu huruf mengirim
+-- seluruh pembayaran QRIS resto ini ke sub-akun resto lain. Uangnya
+-- tidak hilang — tapi cair ke rekening orang lain, dan yang menemukan
+-- selisihnya adalah kedua resto sekaligus, berhari-hari kemudian.
+--
+-- Batasnya ditegakkan di sini, bukan hanya dengan menyembunyikan
+-- kolomnya di aplikasi: kolom yang disembunyikan cuma menghalangi orang
+-- yang memakai aplikasinya.
+--
+-- Edge Function create-qris tetap bisa membacanya — dia memakai service
+-- role, yang memang melewati RLS.
+
+begin;
+
+drop policy if exists "resto_payment_accounts: staff read" on resto_payment_accounts;
+drop policy if exists "resto_payment_accounts: staff write" on resto_payment_accounts;
+
+drop policy if exists "resto_payment_accounts: super_admin all" on resto_payment_accounts;
+create policy "resto_payment_accounts: super_admin all" on resto_payment_accounts
+  for all using (is_super_admin()) with check (is_super_admin());
 
 commit;

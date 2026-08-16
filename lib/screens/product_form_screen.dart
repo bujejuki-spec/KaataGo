@@ -48,6 +48,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   double _ppnPercent = 0;
 
   late bool _ppnExempt;
+  late bool _outOfStock;
   late bool _serviceExempt;
 
   /// Adding a brand-new product has nothing to accidentally overwrite,
@@ -78,9 +79,10 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     _existingPhotoBase64 = p?.photoBase64;
     _selectedLevelGroups = (p?.levelGroups ?? const []).toSet();
     _ppnExempt = p?.ppnExempt ?? false;
+    _outOfStock = p?.outOfStock ?? false;
     _serviceExempt = p?.serviceExempt ?? false;
     _editing = widget.existing == null;
-    for (final entry in kLevelGroups.entries) {
+    for (final entry in LevelGroupRegistry.all.entries) {
       _priceDeltaCtrls[entry.key] = {
         for (final option in entry.value)
           option: TextEditingController(
@@ -152,6 +154,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
       'category': _selectedCategory,
       'levelGroups': {..._selectedLevelGroups},
       'ppnExempt': _ppnExempt,
+      'outOfStock': _outOfStock,
       'serviceExempt': _serviceExempt,
       'existingPhoto': _existingPhotoBase64,
       'pickedPhoto': _pickedPhoto,
@@ -179,6 +182,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     _selectedCategory = _snapshot['category'] as String?;
     _selectedLevelGroups = {...(_snapshot['levelGroups'] as Set<String>? ?? const {})};
     _ppnExempt = _snapshot['ppnExempt'] as bool? ?? false;
+    _outOfStock = _snapshot['outOfStock'] as bool? ?? false;
     _serviceExempt = _snapshot['serviceExempt'] as bool? ?? false;
     _existingPhotoBase64 = _snapshot['existingPhoto'] as String?;
     _pickedPhoto = _snapshot['pickedPhoto'] as File?;
@@ -202,7 +206,9 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     final description = _descriptionCtrl.text.trim();
     final category = _selectedCategory!;
     final price = parseRupiah(_priceCtrl.text)!;
-    final stock = int.parse(_stockCtrl.text.trim());
+    // Stok boleh kosong. Yang tidak mengisinya bukan resto yang
+    // kehabisan — cuma resto yang tidak menghitung, dan itu mayoritas.
+    final stock = int.tryParse(_stockCtrl.text.trim()) ?? 0;
 
     String? photoBase64 = _existingPhotoBase64;
     if (_pickedPhoto != null) {
@@ -232,6 +238,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
         levelPrices: levelPrices,
         ppnExempt: _ppnExempt,
         serviceExempt: _serviceExempt,
+        outOfStock: _outOfStock,
       );
     } else {
       await provider.updateProduct(widget.existing!.copyWith(
@@ -245,6 +252,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
         levelPrices: levelPrices,
         ppnExempt: _ppnExempt,
         serviceExempt: _serviceExempt,
+        outOfStock: _outOfStock,
       ));
     }
 
@@ -464,16 +472,36 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                 controller: _stockCtrl,
                 enabled: _editing,
                 decoration: InputDecoration(
-                  label: requiredLabel('Stok'),
+                  labelText: 'Stok (opsional)',
+                  helperText: 'Kosongkan kalau tidak dihitung. Tidak '
+                      'menentukan produk muncul atau tidak.',
+                  helperMaxLines: 2,
                   filled: !_editing,
                   fillColor: _editing ? null : const Color(0xFFEEEEEE),
                 ),
                 keyboardType: TextInputType.number,
                 validator: (v) {
-                  if (v == null || v.trim().isEmpty) return 'Wajib diisi';
+                  if (v == null || v.trim().isEmpty) return null;
                   if (int.tryParse(v.trim()) == null) return 'Harus angka';
                   return null;
                 },
+              ),
+              const SizedBox(height: 8),
+              // Inilah yang menentukan produknya bisa dipesan atau
+              // tidak — dinyatakan sengaja, bukan disimpulkan dari angka
+              // stok yang mungkin tidak pernah diperbarui.
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+                title: const Text('Tandai Habis (Out of Stock)'),
+                subtitle: const Text(
+                  'Tetap tampil di menu dengan tanda habis, tapi tidak '
+                  'bisa dipesan.',
+                  style: TextStyle(fontSize: 11.5),
+                ),
+                value: _outOfStock,
+                activeColor: Colors.red,
+                onChanged: _editing ? (v) => setState(() => _outOfStock = v) : null,
               ),
               const SizedBox(height: 16),
               const Text('Level / Varian (opsional)',
@@ -487,7 +515,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
               Wrap(
                 spacing: 8,
                 runSpacing: 4,
-                children: kLevelGroups.keys.map((group) {
+                children: LevelGroupRegistry.names.map((group) {
                   final selected = _selectedLevelGroups.contains(group);
                   return FilterChip(
                     label: Text(group),
@@ -521,7 +549,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                           style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
                         ),
                         const SizedBox(height: 8),
-                        for (final option in kLevelGroups[group]!)
+                        for (final option in LevelGroupRegistry.optionsOf(group))
                           Padding(
                             padding: const EdgeInsets.symmetric(vertical: 4),
                             child: Row(

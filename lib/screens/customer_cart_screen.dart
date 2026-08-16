@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 
 import '../db/customer_profile_repository.dart';
 import '../db/restaurant_repository.dart';
+import '../db/firestore_product_repository.dart';
+import '../models/product.dart';
 import '../models/restaurant.dart';
 import '../db/guest_order_store.dart';
 import '../models/order_type.dart';
@@ -55,6 +57,21 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
   bool _placing = false;
   Restaurant? _resto;
 
+  /// Produk di keranjang yang ternyata sudah habis, ketahuan saat
+  /// hendak membayar.
+  ///
+  /// Keranjang bisa terisi berjam-jam sebelum dibayar — pelanggan
+  /// memilih sambil menunggu teman datang, lalu dapur kehabisan bahan di
+  /// sela itu. Memeriksanya hanya saat produk dimasukkan berarti pesanan
+  /// yang tidak bisa dimasak tetap dibayar, dan yang menyampaikan
+  /// kabarnya adalah pramusaji, setelah uangnya diterima.
+  Set<String> _soldOut = {};
+
+  /// Cara makan yang dilayani resto ini; keduanya sampai datanya
+  /// termuat.
+  List<OrderType> get _orderTypes =>
+      _resto?.orderTypes ?? const [OrderType.dineIn, OrderType.takeAway];
+
   double get _ppnPercent => _resto?.ppnPercent ?? 0;
   double get _servicePercent => _resto?.servicePercent ?? 0;
 
@@ -64,7 +81,15 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
     try {
       final resto = await RestaurantRepository().getOnce(restoId);
       if (!mounted) return;
-      setState(() => _resto = resto);
+      setState(() {
+        _resto = resto;
+        // Pindahkan sekarang kalau resto ini tidak melayani cara makan
+        // yang sedang terpilih — pelanggan tidak boleh sampai ke
+        // pembayaran untuk sesuatu yang akan ditolak di tempat.
+        if (resto != null && !resto.orderTypes.contains(_orderType)) {
+          _orderType = resto.orderTypes.first;
+        }
+      });
       context.read<CustomerCartProvider>().setRates(
             ppn: resto?.ppnPercent ?? 0,
             service: resto?.servicePercent ?? 0,
@@ -102,8 +127,88 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
     super.dispose();
   }
 
+  /// Memeriksa ulang ketersediaan tepat sebelum membayar.
+  ///
+  /// Mengembalikan true kalau semuanya masih bisa dipesan. Kalau
+  /// pemeriksaannya sendiri gagal — jaringan mati — pesanannya
+  /// diteruskan: menahan pesanan yang mungkin baik-baik saja gara-gara
+  /// sinyal jelek merugikan lebih banyak orang daripada satu porsi yang
+  /// harus dibatalkan di kasir.
+  Future<bool> _pastikanMasihAda(CustomerCartProvider cart) async {
+    final restoId = context.read<TableSessionProvider>().restoId;
+    if (restoId == null) return true;
+
+    final List<Product> terbaru;
+    try {
+      terbaru = await FirestoreProductRepository().getAllOnce(restoId);
+    } catch (_) {
+      return true;
+    }
+    if (!mounted) return false;
+
+    final habis = <String>{
+      for (final p in terbaru)
+        if (p.outOfStock) p.id,
+    };
+    final kena = <String>{
+      for (final item in cart.items)
+        if (habis.contains(item.product.id)) item.product.id,
+    };
+
+    setState(() => _soldOut = kena);
+    if (kena.isEmpty) return true;
+
+    final nama = <String>{
+      for (final item in cart.items)
+        if (kena.contains(item.product.id)) item.product.name,
+    };
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        icon: const Icon(Icons.remove_shopping_cart_outlined,
+            size: 38, color: Colors.red),
+        title: const Text('Ada menu yang sudah habis'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              nama.length == 1
+                  ? '${nama.first} baru saja ditandai habis oleh resto.'
+                  : 'Menu berikut baru saja ditandai habis oleh resto:',
+              textAlign: TextAlign.center,
+            ),
+            if (nama.length > 1) ...[
+              const SizedBox(height: 8),
+              for (final n in nama)
+                Text('• $n',
+                    style: const TextStyle(fontWeight: FontWeight.w600)),
+            ],
+            const SizedBox(height: 10),
+            Text(
+              'Hapus dulu dari keranjang untuk melanjutkan pembayaran.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 12.5, color: Colors.grey.shade700),
+            ),
+          ],
+        ),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Kembali ke Keranjang'),
+          ),
+        ],
+      ),
+    );
+    return false;
+  }
+
   Future<void> _checkout() async {
     if (!_formKey.currentState!.validate()) return;
+    if (!await _pastikanMasihAda(context.read<CustomerCartProvider>())) return;
+    if (!mounted) return;
 
     final session = context.read<TableSessionProvider>();
     final cart = context.read<CustomerCartProvider>();
@@ -226,6 +331,7 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
                         onDecrement: () => cart.decrementLine(item.lineId),
                         onDelete: () => cart.removeLine(item.lineId),
                         onEdit: () => _editLine(context, cart, item),
+                        soldOut: _soldOut.contains(item.product.id),
                       );
                     },
                   ),
@@ -235,22 +341,42 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     children: [
-                      SegmentedButton<OrderType>(
-                        segments: const [
-                          ButtonSegment(
-                            value: OrderType.dineIn,
-                            label: Text('Dine In'),
-                            icon: Icon(Icons.restaurant_outlined),
+                      if (_orderTypes.length > 1)
+                        SegmentedButton<OrderType>(
+                          segments: const [
+                            ButtonSegment(
+                              value: OrderType.dineIn,
+                              label: Text('Dine In'),
+                              icon: Icon(Icons.restaurant_outlined),
+                            ),
+                            ButtonSegment(
+                              value: OrderType.takeAway,
+                              label: Text('Take Away'),
+                              icon: Icon(Icons.shopping_bag_outlined),
+                            ),
+                          ],
+                          selected: {_orderType},
+                          onSelectionChanged: (v) => setState(() => _orderType = v.first),
+                        )
+                      else
+                        // Resto yang cuma melayani satu cara makan tetap
+                        // menyebutkannya. Pelanggan yang tidak melihat
+                        // pilihan apa pun akan mengira aplikasinya belum
+                        // selesai memuat.
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Chip(
+                            avatar: Icon(
+                              isDineIn
+                                  ? Icons.restaurant_outlined
+                                  : Icons.shopping_bag_outlined,
+                              size: 17,
+                            ),
+                            label: Text(isDineIn
+                                ? 'Makan di tempat'
+                                : 'Dibungkus (Take Away)'),
                           ),
-                          ButtonSegment(
-                            value: OrderType.takeAway,
-                            label: Text('Take Away'),
-                            icon: Icon(Icons.shopping_bag_outlined),
-                          ),
-                        ],
-                        selected: {_orderType},
-                        onSelectionChanged: (v) => setState(() => _orderType = v.first),
-                      ),
+                        ),
                       const SizedBox(height: 16),
                       if (isDineIn) ...[
                         TextFormField(

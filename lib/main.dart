@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'providers/auth_provider.dart';
 import 'providers/cart_provider.dart';
 import 'providers/category_provider.dart';
+import 'providers/level_group_provider.dart';
 import 'providers/customer_cart_provider.dart';
 import 'providers/product_provider.dart';
 import 'providers/settings_provider.dart';
@@ -35,6 +36,7 @@ class PosApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => ProductProvider()),
         ChangeNotifierProvider(create: (_) => CategoryProvider()),
+        ChangeNotifierProvider(create: (_) => LevelGroupProvider()),
         ChangeNotifierProvider(create: (_) => CartProvider()),
         ChangeNotifierProvider(create: (_) => SettingsProvider()..load()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),

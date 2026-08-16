@@ -26,12 +26,22 @@ class ProductGridCard extends StatelessWidget {
   /// customer is quoted.
   final double ppnPercent;
 
+  /// Angka sisa stok ditampilkan atau tidak.
+  ///
+  /// Mati untuk pelanggan. Sisa stok adalah urusan dapur: pelanggan yang
+  /// melihat "sisa 2" jadi terburu-buru atau justru mengurungkan
+  /// niatnya, dan angka yang ternyata tidak diperbarui membuatnya
+  /// merasa dibohongi. Yang perlu dia tahu cuma satu — masih bisa
+  /// dipesan atau tidak.
+  final bool showStock;
+
   const ProductGridCard({
     super.key,
     required this.product,
     required this.quantityInCart,
     required this.onTap,
     this.ppnPercent = 0,
+    this.showStock = false,
   });
 
   @override
@@ -42,8 +52,8 @@ class ProductGridCard extends StatelessWidget {
       decimalDigits: 0,
     );
     final selected = quantityInCart > 0;
-    final inStock = product.stock > 0;
-    final lowStock = inStock && product.stock <= 5;
+    final inStock = product.available;
+    final lowStock = showStock && product.stock > 0 && product.stock <= 5;
 
     return Container(
       decoration: BoxDecoration(
@@ -85,7 +95,7 @@ class ProductGridCard extends StatelessWidget {
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: const Text(
-                            'STOK HABIS',
+                            'HABIS',
                             style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
@@ -182,7 +192,7 @@ class ProductGridCard extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        if (inStock)
+                        if (inStock && showStock && product.stock > 0)
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(

@@ -5,6 +5,8 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'notification_service.dart';
+
 /// Mendaftarkan perangkat ini supaya bisa dikirimi notifikasi walau
 /// aplikasinya sedang tertutup.
 ///
@@ -19,9 +21,12 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 /// yang sedang memakainya, supaya server tahu pesan mana pantas dikirim
 /// ke mana.
 ///
-/// Notifikasi yang datang saat aplikasinya terbuka sengaja **tidak**
-/// ditampilkan dari sini: aliran realtime sudah menampilkannya, dan
-/// keduanya sekaligus berarti satu kejadian berbunyi dua kali.
+/// Notifikasi pesanan yang datang saat aplikasinya terbuka sengaja
+/// **tidak** ditampilkan dari sini: aliran realtime sudah
+/// menampilkannya, dan keduanya sekaligus berarti satu kejadian
+/// berbunyi dua kali.
+///
+/// Pengumuman adalah kekecualiannya — lihat [_foregroundEvents].
 class PushService {
   PushService._();
   static final instance = PushService._();
@@ -65,12 +70,44 @@ class PushService {
         if (last != null) register(email: last.$1, restoId: last.$2, role: last.$3);
       });
 
+      FirebaseMessaging.onMessage.listen(_onForeground);
+
       _ready = true;
       lastError = null;
     } catch (e) {
       lastError = 'Firebase gagal menyiapkan token — $e';
       debugPrint('[Push] gagal disiapkan: $e');
     }
+  }
+
+  /// Kejadian yang tetap ditampilkan walau aplikasinya sedang terbuka.
+  ///
+  /// Android tidak pernah menampilkan sendiri notifikasi yang tiba saat
+  /// aplikasinya di depan — pesannya diserahkan ke aplikasi, dan kalau
+  /// aplikasinya diam, tidak ada apa pun yang muncul. Untuk pesanan itu
+  /// benar: aliran realtime sudah membunyikannya sendiri, dan
+  /// menampilkan keduanya berarti satu pesanan berbunyi dua kali.
+  ///
+  /// Pengumuman tidak punya aliran realtime yang menampilkannya. Tanpa
+  /// daftar ini, pengumuman yang tiba selagi orangnya memandangi
+  /// layarnya adalah satu-satunya yang tidak pernah dia dengar.
+  static const _foregroundEvents = {'announcement'};
+
+  void _onForeground(RemoteMessage message) {
+    final event = message.data['event'] as String?;
+    if (event == null || !_foregroundEvents.contains(event)) return;
+
+    final notification = message.notification;
+    if (notification == null) return;
+
+    NotificationService.instance.showAnnouncement(
+      // Dari hashCode pesannya, bukan penghitung yang naik terus:
+      // pengumuman yang sama yang tiba dua kali menimpa dirinya
+      // sendiri alih-alih berbaris dua kali di panel notifikasi.
+      id: (message.messageId ?? notification.title ?? '').hashCode & 0x7fffffff,
+      title: notification.title ?? 'Pengumuman',
+      body: notification.body ?? '',
+    );
   }
 
   (String?, String?, String?)? _lastOwner;

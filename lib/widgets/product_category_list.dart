@@ -17,12 +17,16 @@ class ProductCategoryList extends StatelessWidget {
   final void Function(Product product) onTapProduct;
   final double ppnPercent;
 
+  /// Diteruskan ke kartunya — mati untuk layar pelanggan.
+  final bool showStock;
+
   const ProductCategoryList({
     super.key,
     required this.products,
     required this.quantityOf,
     required this.onTapProduct,
     this.ppnPercent = 0,
+    this.showStock = false,
   });
 
   @override
@@ -113,6 +117,7 @@ class ProductCategoryList extends StatelessWidget {
                         product: product,
                         quantityInCart: quantityOf(product.id),
                         ppnPercent: ppnPercent,
+                        showStock: showStock,
                         onTap: () => onTapProduct(product),
                       );
                     },

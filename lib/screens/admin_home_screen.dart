@@ -109,8 +109,8 @@ class AdminHomeScreen extends StatelessWidget {
                 ),
                 HubMenuTile(
                   icon: Icons.receipt_long_outlined,
-                  title: 'Riwayat Transaksi',
-                  subtitle: 'Rekap penjualan per hari, breakdown pembayaran',
+                  title: 'Riwayat Kasir',
+                  subtitle: 'Transaksi yang diinput kasir — rekap per hari',
                   color: const Color(0xFF0EA5E9),
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => const TransactionHistoryScreen()),

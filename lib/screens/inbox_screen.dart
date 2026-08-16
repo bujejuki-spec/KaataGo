@@ -183,10 +183,23 @@ class _InboxScreenState extends State<InboxScreen> {
     }
   }
 
-  Future<void> _deleteSelected({bool all = false}) async {
+  /// Menghapus pesan dari kotak masuk orang ini.
+  ///
+  /// [all] berarti seluruh isi tab [category] — bukan seluruh kotak
+  /// masuk. Tombolnya berada di dalam tab, di bawah daftar yang sedang
+  /// dibaca orangnya, dan yang dia lihat saat menekannya cuma daftar
+  /// itu. Ikut menghapus tab sebelah berarti membuang pemberitahuan
+  /// versi baru yang belum sempat dia buka, tanpa satu pun tanda bahwa
+  /// itu akan terjadi.
+  Future<void> _deleteSelected({
+    required AnnouncementCategory category,
+    bool all = false,
+  }) async {
     final email = _email;
     if (email == null) return;
-    final ids = all ? _items.map((i) => i.id).toList() : _selected.toList();
+    final ids = all
+        ? _itemsIn(category).map((i) => i.id).toList()
+        : _selected.toList();
     if (ids.isEmpty) return;
 
     final confirm = await showDialog<bool>(
@@ -194,10 +207,19 @@ class _InboxScreenState extends State<InboxScreen> {
       builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         icon: const Icon(Icons.delete_outline, size: 38, color: Colors.red),
-        title: Text(all ? 'Hapus semua pesan?' : 'Hapus ${ids.length} pesan?'),
-        content: const Text(
-          'Pesan hanya hilang dari kotak masuk kamu. Pengguna lain tetap '
-          'menerimanya seperti biasa.',
+        title: Text(all
+            ? 'Hapus semua di ${kAnnouncementCategoryLabels[category]}?'
+            : 'Hapus ${ids.length} pesan?'),
+        content: Text(
+          all
+              // Disebutkan tabnya, bukan "semua pesan": yang tidak ikut
+              // terhapus sama pentingnya untuk diketahui sebelum
+              // menekan Hapus.
+              ? '${ids.length} pesan di tab '
+                  '${kAnnouncementCategoryLabels[category]} akan hilang dari '
+                  'kotak masuk kamu. Tab sebelahnya tidak ikut terhapus.'
+              : 'Pesan hanya hilang dari kotak masuk kamu. Pengguna lain '
+                  'tetap menerimanya seperti biasa.',
           textAlign: TextAlign.center,
         ),
         actionsAlignment: MainAxisAlignment.center,
@@ -225,6 +247,10 @@ class _InboxScreenState extends State<InboxScreen> {
       showAppToast(context, 'Gagal menghapus: $e', isError: true);
     }
   }
+
+  /// Tab yang sedang dibuka — dasar dari setiap tindakan massal di sini.
+  AnnouncementCategory _activeCategory(BuildContext context) =>
+      AnnouncementCategory.values[DefaultTabController.of(context).index];
 
   List<Announcement> _itemsIn(AnnouncementCategory category) =>
       _items.where((i) => i.category == category).toList();
@@ -275,11 +301,15 @@ class _InboxScreenState extends State<InboxScreen> {
           if (_selecting) ...[
             IconButton(
               icon: const Icon(Icons.select_all),
-              tooltip: 'Pilih semua',
+              tooltip: 'Pilih semua di tab ini',
+              // Sebatas tab yang sedang terbuka. "Pilih semua" yang
+              // diam-diam ikut mencentang tab sebelah membuat tombol
+              // Hapus di sebelahnya menghapus barang yang tidak pernah
+              // dilihat orangnya.
               onPressed: () => setState(() {
                 _selected
                   ..clear()
-                  ..addAll(_items.map((i) => i.id));
+                  ..addAll(_itemsIn(_activeCategory(context)).map((i) => i.id));
               }),
             ),
             IconButton(
@@ -287,13 +317,14 @@ class _InboxScreenState extends State<InboxScreen> {
               tooltip: 'Tandai sudah dibaca',
               onPressed: _selected.isEmpty
                   ? null
-                  : () => _markRead(AnnouncementCategory.values[
-                      DefaultTabController.of(context).index]),
+                  : () => _markRead(_activeCategory(context)),
             ),
             IconButton(
               icon: const Icon(Icons.delete_outline),
               tooltip: 'Hapus terpilih',
-              onPressed: _selected.isEmpty ? null : () => _deleteSelected(),
+              onPressed: _selected.isEmpty
+                  ? null
+                  : () => _deleteSelected(category: _activeCategory(context)),
             ),
             IconButton(
               icon: const Icon(Icons.close),
@@ -373,7 +404,7 @@ class _InboxScreenState extends State<InboxScreen> {
                   icon: const Icon(Icons.delete_sweep_outlined, size: 18),
                   label: const Text('Hapus Semua'),
                   style: TextButton.styleFrom(foregroundColor: Colors.red),
-                  onPressed: () => _deleteSelected(all: true),
+                  onPressed: () => _deleteSelected(category: category, all: true),
                 ),
               ],
             ),

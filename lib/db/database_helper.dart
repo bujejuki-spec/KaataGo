@@ -24,7 +24,7 @@ class DatabaseHelper {
 
     return openDatabase(
       path,
-      version: 11,
+      version: 12,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE products (
@@ -39,6 +39,7 @@ class DatabaseHelper {
             level_prices TEXT,
             ppn_exempt INTEGER NOT NULL DEFAULT 0,
             service_exempt INTEGER NOT NULL DEFAULT 0,
+            out_of_stock INTEGER NOT NULL DEFAULT 0,
             -- Katalog milik resto mana. Tanpa kolom ini, akun yang
             -- memegang dua cabang akan melihat produk keduanya bercampur
             -- di satu daftar — dan sinkronisasi akan mendorong produk
@@ -133,6 +134,16 @@ class DatabaseHelper {
           // ada satu resto per perangkat.
           await db.execute('ALTER TABLE products ADD COLUMN resto_id TEXT');
           await db.execute('ALTER TABLE categories ADD COLUMN resto_id TEXT');
+        }
+        if (oldVersion < 12) {
+          // Ketersediaan pindah dari angka stok ke penanda ini. Produk
+          // lama dianggap tersedia — termasuk yang stoknya 0, yang
+          // sampai kemarin tersembunyi. Sebagian memang habis, tapi
+          // sebagian lagi cuma tidak pernah diisi angkanya, dan resto
+          // lebih cepat menandai yang benar-benar habis daripada
+          // menemukan menunya diam-diam menghilang.
+          await db.execute(
+              'ALTER TABLE products ADD COLUMN out_of_stock INTEGER NOT NULL DEFAULT 0');
         }
       },
     );

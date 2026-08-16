@@ -155,6 +155,14 @@ class NotificationService {
   }) =>
       _show(channel: _channels[2], id: id, title: title, body: body);
 
+  /// Pengumuman — dari resto maupun dari sistem.
+  Future<void> showAnnouncement({
+    required int id,
+    required String title,
+    required String body,
+  }) =>
+      _show(channel: _channels[3], id: id, title: title, body: body);
+
   Future<void> _show({
     required ({String id, String name, String description}) channel,
     required int id,

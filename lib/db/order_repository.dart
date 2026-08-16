@@ -67,6 +67,32 @@ class OrderRepository {
     }).eq('id', orderId);
   }
 
+  /// Melunasi pesanan dengan cara bayar selain yang dipilih pelanggan.
+  ///
+  /// Pelanggan memilih "bayar tunai di kasir" dari HP-nya, lalu sampai
+  /// di kasir dan ternyata uangnya kurang, atau memang lebih suka
+  /// membayar dengan QRIS. Tanpa ini, satu-satunya jalan keluarnya
+  /// adalah membatalkan pesanan lalu mengetiknya ulang dari awal —
+  /// pesanan yang sudah dimasak dapur, dengan nomor yang sudah
+  /// disebutkan pelanggannya.
+  ///
+  /// [method] ditulis juga ke kolom cara bayarnya, bukan hanya status
+  /// lunasnya: pemicu di database membaca kolom itu untuk menentukan GL
+  /// mana yang dikredit. Uang QRIS yang tercatat di GL Kas berarti laci
+  /// yang tidak pernah cocok, dan mutasi bank yang tidak pernah
+  /// ditemukan pasangannya.
+  Future<void> settlePayment(
+    String orderId, {
+    required String method,
+    int? cashReceived,
+  }) async {
+    await _client.from('orders').update({
+      'payment_status': OrderPaymentStatus.paid.name,
+      'payment_method': method,
+      if (cashReceived != null) 'cash_received': cashReceived,
+    }).eq('id', orderId);
+  }
+
   /// Aliran langsung satu pesanan.
   ///
   /// Dipakai layar pembayaran untuk mengetahui pesanannya sudah lunas

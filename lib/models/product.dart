@@ -5,7 +5,26 @@ class Product {
   final String name;
   final String category;
   final int price; // stored in Rupiah, no decimals
+  /// Sisa stok — sekadar catatan, bukan penentu tersedia atau tidak.
+  ///
+  /// Dulu inilah yang menentukan: stok 0 berarti produk hilang dari
+  /// menu. Itu memaksa tiap resto mengurus angka yang sebagian besar
+  /// tidak pernah mereka hitung — nasi goreng tidak punya "sisa 7
+  /// porsi", yang ada cuma "masih ada" atau "bahannya habis". Resto yang
+  /// membiarkannya 0 karena tidak relevan justru kehilangan seluruh
+  /// menunya.
+  ///
+  /// Sekarang angka ini boleh diisi atau tidak, dan tidak menyembunyikan
+  /// apa pun. Yang menentukan cuma [outOfStock].
   final int stock;
+
+  /// Ditandai habis oleh resto.
+  ///
+  /// Satu-satunya penentu produk bisa dipesan atau tidak. Dinyatakan
+  /// sengaja oleh orang yang tahu keadaannya, bukan disimpulkan dari
+  /// angka yang mungkin tidak pernah diperbarui.
+  final bool outOfStock;
+
   final String? description;
 
   /// Base64-encoded JPEG, stored directly in the row/doc — same
@@ -37,7 +56,8 @@ class Product {
     required this.name,
     required this.category,
     required this.price,
-    required this.stock,
+    this.stock = 0,
+    this.outOfStock = false,
     this.description,
     this.photoBase64,
     this.levelGroups = const [],
@@ -45,6 +65,9 @@ class Product {
     this.ppnExempt = false,
     this.serviceExempt = false,
   });
+
+  /// Bisa dipesan sekarang.
+  bool get available => !outOfStock;
 
   /// Extra price for the chosen [option] within [group], or 0 if unset.
   int priceDeltaFor(String group, String option) =>
@@ -64,6 +87,7 @@ class Product {
       // SQLite has no bool — 0/1 round-trips through both it and Postgres.
       'ppn_exempt': ppnExempt ? 1 : 0,
       'service_exempt': serviceExempt ? 1 : 0,
+      'out_of_stock': outOfStock ? 1 : 0,
     };
   }
 
@@ -75,7 +99,7 @@ class Product {
       name: map['name'] as String,
       category: map['category'] as String,
       price: (map['price'] as num).toInt(),
-      stock: (map['stock'] as num).toInt(),
+      stock: (map['stock'] as num?)?.toInt() ?? 0,
       description: map['description'] as String?,
       photoBase64: map['photo_base64'] as String?,
       levelGroups: (rawLevels == null || rawLevels.isEmpty)
@@ -92,6 +116,7 @@ class Product {
             ),
       ppnExempt: _asBool(map['ppn_exempt']),
       serviceExempt: _asBool(map['service_exempt']),
+      outOfStock: _asBool(map['out_of_stock']),
     );
   }
 
@@ -107,6 +132,7 @@ class Product {
     String? category,
     int? price,
     int? stock,
+    bool? outOfStock,
     Object? description = _unset,
     Object? photoBase64 = _unset,
     List<String>? levelGroups,
@@ -120,6 +146,7 @@ class Product {
       category: category ?? this.category,
       price: price ?? this.price,
       stock: stock ?? this.stock,
+      outOfStock: outOfStock ?? this.outOfStock,
       description:
           identical(description, _unset) ? this.description : description as String?,
       photoBase64:

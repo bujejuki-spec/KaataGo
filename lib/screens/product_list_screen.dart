@@ -4,8 +4,10 @@ import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
 import '../providers/category_provider.dart';
+import '../providers/level_group_provider.dart';
 import '../providers/product_provider.dart';
 import 'category_management_screen.dart';
+import 'level_management_screen.dart';
 import 'product_form_screen.dart';
 import '../widgets/dialog_actions.dart';
 import '../widgets/responsive.dart';
@@ -37,13 +39,15 @@ class _ProductListScreenState extends State<ProductListScreen> {
       // whatever happened to be in the local database, i.e. nothing at
       // all on a freshly installed device.
       await context.read<ProductProvider>().syncWithResto(restoId);
+      if (!mounted || restoId == null) return;
+      await context.read<LevelGroupProvider>().load(restoId);
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Kelola Produk'),
@@ -51,6 +55,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
             tabs: [
               Tab(text: 'Produk'),
               Tab(text: 'Kategori'),
+              Tab(text: 'Level'),
             ],
           ),
         ),
@@ -58,6 +63,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
           children: [
             _ProductTab(),
             CategoryManagementScreen(),
+            LevelManagementScreen(),
           ],
         ),
       ),
@@ -89,9 +95,51 @@ class _ProductTab extends StatelessWidget {
             itemBuilder: (context, index) {
               final p = products[index];
               return ListTile(
-                title: Text(p.name),
-                subtitle: Text('${p.category} • Stok: ${p.stock}'),
-                trailing: Text(currency.format(p.price)),
+                title: Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        p.name,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: p.outOfStock ? Colors.grey.shade600 : null,
+                        ),
+                      ),
+                    ),
+                    if (p.outOfStock) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.red.shade50,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text('HABIS',
+                            style: TextStyle(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.red.shade700)),
+                      ),
+                    ],
+                  ],
+                ),
+                subtitle: Text(
+                  '${p.category}'
+                  '${p.stock > 0 ? ' • Stok: ${p.stock}' : ''}'
+                  ' • ${currency.format(p.price)}',
+                ),
+                // Ditandai habis dari daftar ini, tanpa membuka
+                // formulirnya. Yang menandai biasanya sedang berdiri di
+                // dapur sambil melayani, dan formulir produk berisi
+                // belasan kolom yang tidak ada hubungannya dengan
+                // "ayamnya habis".
+                trailing: Switch(
+                  value: !p.outOfStock,
+                  activeColor: const Color(0xFF10B981),
+                  onChanged: (tersedia) =>
+                      provider.setOutOfStock(p, !tersedia),
+                ),
                 onTap: () {
                   Navigator.of(context).push(MaterialPageRoute(
                     builder: (_) => ProductFormScreen(existing: p),

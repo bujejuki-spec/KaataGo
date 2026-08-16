@@ -39,6 +39,10 @@ class QuantityDialog extends StatefulWidget {
   /// customer just tapped, which are shown inclusive of PPN.
   final double ppnPercent;
 
+  /// Menampilkan sisa stok. Mati untuk pelanggan — lihat
+  /// [ProductGridCard.showStock].
+  final bool showStock;
+
   /// True when reopened on a line already in the cart. Changes the
   /// confirm label from "Tambah" to "Simpan" and offers a delete, so
   /// removing something you added by mistake doesn't require fiddling
@@ -53,6 +57,7 @@ class QuantityDialog extends StatefulWidget {
     this.initialNotes,
     this.ppnPercent = 0,
     this.editing = false,
+    this.showStock = false,
   });
 
   @override
@@ -75,9 +80,18 @@ class _QuantityDialogState extends State<QuantityDialog> {
     // always present without the pemesan needing to touch each dropdown.
     _selectedLevels = {
       for (final group in widget.product.levelGroups)
-        group: widget.initialLevels?[group] ?? kLevelGroups[group]!.first,
+        group: widget.initialLevels?[group] ??
+            LevelGroupRegistry.firstOptionOf(group) ??
+            '',
     };
   }
+
+  /// Sisa stok hanya untuk yang berhak melihatnya, dan hanya kalau
+  /// restonya memang menghitungnya.
+  String get _stockNote =>
+      widget.showStock && widget.product.stock > 0
+          ? ' • Stok: ${widget.product.stock}'
+          : '';
 
   @override
   void dispose() {
@@ -86,9 +100,16 @@ class _QuantityDialogState extends State<QuantityDialog> {
     super.dispose();
   }
 
+  /// Batas atas jumlah pesanan.
+  ///
+  /// Angka stok cuma membatasi kalau restonya memang mengisinya. Yang
+  /// membiarkannya 0 bukan berarti tidak punya barang — dia cuma tidak
+  /// menghitungnya, dan dulu itu membuat semua jumlah terkunci di 1.
+  int get _maxQuantity =>
+      widget.product.stock > 0 ? widget.product.stock : 999;
+
   void _setQuantity(int value) {
-    final maxQty = widget.product.stock;
-    final clamped = value.clamp(1, maxQty < 1 ? 1 : maxQty);
+    final clamped = value.clamp(1, _maxQuantity);
     setState(() {
       _quantity = clamped;
       _qtyCtrl.text = '$_quantity';
@@ -145,8 +166,8 @@ class _QuantityDialogState extends State<QuantityDialog> {
             if (widget.product.photoBase64 != null) const SizedBox(height: 12),
             Text(
               priceDelta == 0
-                  ? '${currency.format(shownBase)} / item • Stok: ${widget.product.stock}'
-                  : '${currency.format(unitPrice)} / item (dasar ${currency.format(shownBase)} + ${currency.format(shownDelta)}) • Stok: ${widget.product.stock}',
+                  ? '${currency.format(shownBase)} / item$_stockNote'
+                  : '${currency.format(unitPrice)} / item (dasar ${currency.format(shownBase)} + ${currency.format(shownDelta)})$_stockNote',
               textAlign: TextAlign.center,
               style: const TextStyle(color: Colors.grey),
             ),
@@ -175,7 +196,7 @@ class _QuantityDialogState extends State<QuantityDialog> {
                     border: OutlineInputBorder(),
                     contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   ),
-                  items: kLevelGroups[group]!
+                  items: LevelGroupRegistry.optionsOf(group)
                       .map((opt) => DropdownMenuItem(value: opt, child: Text(opt)))
                       .toList(),
                   onChanged: (value) {

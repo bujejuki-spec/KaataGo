@@ -80,13 +80,13 @@ class TransactionHistoryScreen extends StatelessWidget {
 
     if (restoId == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Riwayat Transaksi')),
+        appBar: AppBar(title: const Text('Riwayat Kasir')),
         body: const Center(child: Text('Akun ini belum punya Resto ID.')),
       );
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Riwayat Transaksi')),
+      appBar: AppBar(title: const Text('Riwayat Kasir')),
       body: StreamBuilder<List<CustomerOrder>>(
         stream: OrderRepository().watchAll(restoId),
         builder: (context, snapshot) {

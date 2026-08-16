@@ -29,7 +29,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late final TextEditingController _bankNameCtrl;
   late final TextEditingController _accountNumberCtrl;
   late final TextEditingController _accountHolderCtrl;
-  final _gatewayAccountCtrl = TextEditingController();
   bool _loading = true;
   bool _editing = false;
   bool _saving = false;
@@ -47,45 +46,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _accountNumberCtrl = TextEditingController(text: s.accountNumber);
     _accountHolderCtrl = TextEditingController(text: s.accountHolder);
     _loadFromSupabase();
-    _loadGatewayAccount();
-  }
-
-  /// Pengenal sub-akun penyedia pembayaran untuk resto ini.
-  ///
-  /// Disimpan terpisah dari `settings`, yang disiarkan realtime ke layar
-  /// pembayaran pelanggan. Bukan karena pengenal ini rahasia, tapi
-  /// karena tidak ada gunanya di HP pelanggan — dan yang tidak berguna
-  /// di sana sebaiknya tidak ada di sana.
-  Future<void> _loadGatewayAccount() async {
-    final restoId = context.read<AuthProvider>().restoId;
-    if (restoId == null) return;
-    try {
-      final row = await Supabase.instance.client
-          .from('resto_payment_accounts')
-          .select('account_id')
-          .eq('resto_id', restoId)
-          .maybeSingle();
-      if (!mounted || row == null) return;
-      setState(() => _gatewayAccountCtrl.text = row['account_id'] as String? ?? '');
-    } catch (_) {
-      // Tabelnya belum dimigrasi, atau perannya tidak boleh membacanya.
-      // Layar pengaturan lainnya tetap harus bisa dipakai.
-    }
-  }
-
-  Future<void> _saveGatewayAccount(String restoId) async {
-    final id = _gatewayAccountCtrl.text.trim();
-    final table = Supabase.instance.client.from('resto_payment_accounts');
-    if (id.isEmpty) {
-      await table.delete().eq('resto_id', restoId);
-      return;
-    }
-    await table.upsert({
-      'resto_id': restoId,
-      'account_id': id,
-      'updated_by': context.read<AuthProvider>().user?.email,
-      'updated_at': DateTime.now().toUtc().toIso8601String(),
-    }, onConflict: 'resto_id');
   }
 
   Future<void> _loadFromSupabase() async {
@@ -117,7 +77,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _bankNameCtrl.dispose();
     _accountNumberCtrl.dispose();
     _accountHolderCtrl.dispose();
-    _gatewayAccountCtrl.dispose();
     super.dispose();
   }
 
@@ -161,7 +120,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             accountNumber: _accountNumberCtrl.text.trim(),
             accountHolder: _accountHolderCtrl.text.trim(),
           );
-      await _saveGatewayAccount(restoId);
       if (!mounted) return;
       setState(() {
         _editing = false;
@@ -278,24 +236,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 textCapitalization: TextCapitalization.words,
                 validator: (v) =>
                     _editing ? validateName(v, label: 'Nama pemilik rekening') : null,
-              ),
-              const SizedBox(height: 20),
-              const Divider(),
-              const SizedBox(height: 12),
-              Text('Payment Gateway',
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                      color: Colors.grey.shade700)),
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: _gatewayAccountCtrl,
-                enabled: _editing,
-                decoration: _decoration('ID Akun Xendit').copyWith(
-                  helperText: 'Sub-akun resto ini. Dana QRIS cair langsung '
-                      'ke rekening yang terdaftar di sub-akun itu.',
-                  helperMaxLines: 3,
-                ),
               ),
               const SizedBox(height: 24),
               if (_editing)

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../db/restaurant_repository.dart';
 import '../models/restaurant.dart';
@@ -41,7 +42,12 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
   late final TextEditingController _phoneCtrl;
   late final TextEditingController _ppnCtrl;
   late final TextEditingController _serviceCtrl;
+  final _gatewayAccountCtrl = TextEditingController();
   String? _category;
+  bool _dineIn = true;
+  bool _takeAway = true;
+  bool _snapshotDineIn = true;
+  bool _snapshotTakeAway = true;
   String? _existingLogo;
   File? _pickedLogo;
   bool _logoRemoved = false;
@@ -66,8 +72,50 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
     _ppnCtrl = TextEditingController(text: _pctText(r?.ppnPercent ?? 0));
     _serviceCtrl = TextEditingController(text: _pctText(r?.servicePercent ?? 0));
     _category = r?.category;
+    _dineIn = r?.dineInEnabled ?? true;
+    _takeAway = r?.takeAwayEnabled ?? true;
     _existingLogo = r?.logoBase64;
     _editing = !_isEditing;
+    if (_isEditing) _loadGatewayAccount(r!.id);
+  }
+
+  /// Pengenal sub-akun Xendit resto ini.
+  ///
+  /// Tempatnya di sini, bukan di Pengaturan Pembayaran milik Finance.
+  /// Sub-akun dibuat di akun Xendit KaataGo dan pengenalnya ditentukan
+  /// Xendit, bukan restonya — orang resto tidak punya cara mengetahui
+  /// nilainya, tidak punya cara memeriksa benar atau salahnya, dan
+  /// salah ketik satu huruf mengirim seluruh pembayaran QRIS-nya ke
+  /// sub-akun resto lain. Yang memasangnya harus orang yang sama dengan
+  /// yang membuatnya.
+  Future<void> _loadGatewayAccount(String restoId) async {
+    try {
+      final row = await Supabase.instance.client
+          .from('resto_payment_accounts')
+          .select('account_id')
+          .eq('resto_id', restoId)
+          .maybeSingle();
+      if (!mounted || row == null) return;
+      setState(() =>
+          _gatewayAccountCtrl.text = row['account_id'] as String? ?? '');
+    } catch (_) {
+      // Tabelnya belum dimigrasi. Sisa formulirnya tetap harus jalan.
+    }
+  }
+
+  Future<void> _saveGatewayAccount(String restoId) async {
+    final id = _gatewayAccountCtrl.text.trim();
+    final table = Supabase.instance.client.from('resto_payment_accounts');
+    if (id.isEmpty) {
+      await table.delete().eq('resto_id', restoId);
+      return;
+    }
+    await table.upsert({
+      'resto_id': restoId,
+      'account_id': id,
+      'updated_by': Supabase.instance.client.auth.currentUser?.email,
+      'updated_at': DateTime.now().toUtc().toIso8601String(),
+    }, onConflict: 'resto_id');
   }
 
   @override
@@ -78,6 +126,7 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
     _phoneCtrl.dispose();
     _ppnCtrl.dispose();
     _serviceCtrl.dispose();
+    _gatewayAccountCtrl.dispose();
     super.dispose();
   }
 
@@ -105,6 +154,8 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
       'service': _serviceCtrl.text,
       'category': _category,
     };
+    _snapshotDineIn = _dineIn;
+    _snapshotTakeAway = _takeAway;
     _snapshotPickedLogo = _pickedLogo;
     _snapshotExistingLogo = _existingLogo;
     _snapshotLogoRemoved = _logoRemoved;
@@ -122,6 +173,8 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
     _ppnCtrl.text = _snapshot['ppn'] ?? '';
     _serviceCtrl.text = _snapshot['service'] ?? '';
     _category = _snapshot['category'];
+    _dineIn = _snapshotDineIn;
+    _takeAway = _snapshotTakeAway;
     _pickedLogo = _snapshotPickedLogo;
     _existingLogo = _snapshotExistingLogo;
     _logoRemoved = _snapshotLogoRemoved;
@@ -160,12 +213,19 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
         ppnPercent: double.tryParse(_ppnCtrl.text.trim().replaceAll(',', '.')) ?? 0,
         servicePercent: double.tryParse(_serviceCtrl.text.trim().replaceAll(',', '.')) ?? 0,
         category: _category,
+        dineInEnabled: _dineIn,
+        takeAwayEnabled: _takeAway,
         logoBase64: logoBase64,
         // Preserve the existing active/inactive status when editing —
         // that's managed separately via the switch on List Resto, not
         // this form.
         active: widget.existing?.active ?? true,
       ));
+
+      // Sesudah restonya tersimpan, bukan sebelum: barisnya menunjuk
+      // restaurants(id), dan menulisnya lebih dulu akan ditolak kunci
+      // asingnya saat resto baru dibuat.
+      await _saveGatewayAccount(id);
 
       if (!mounted) return;
       showAppToast(context, _isEditing ? 'Resto "$id" diperbarui.' : 'Resto "$id" berhasil dibuat.');
@@ -322,6 +382,56 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
                 'Harga menu ditampilkan sudah termasuk keduanya. Service hanya '
                 'dikenakan untuk Dine In.',
                 style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600),
+              ),
+              const SizedBox(height: 20),
+              const Text('Cara Makan yang Dilayani',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+              const SizedBox(height: 2),
+              Text(
+                'Yang dimatikan tidak muncul sebagai pilihan saat checkout, '
+                'baik di kasir maupun di HP pelanggan.',
+                style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600),
+              ),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+                title: const Text('Dine In'),
+                subtitle: const Text('Makan di tempat, pakai nomor meja',
+                    style: TextStyle(fontSize: 11.5)),
+                value: _dineIn,
+                // Mematikan yang terakhir menyala tidak diizinkan.
+                // Resto tanpa satu pun cara makan tidak bisa menerima
+                // pesanan apa pun — itu bukan pengaturan, itu resto yang
+                // tutup, dan untuk itu sudah ada tombol Aktif/Nonaktif di
+                // List Resto.
+                onChanged: !_editing || !_takeAway
+                    ? null
+                    : (v) => setState(() => _dineIn = v),
+              ),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+                title: const Text('Take Away'),
+                subtitle: const Text('Dibungkus, pakai nama pemesan',
+                    style: TextStyle(fontSize: 11.5)),
+                value: _takeAway,
+                onChanged: !_editing || !_dineIn
+                    ? null
+                    : (v) => setState(() => _takeAway = v),
+              ),
+              const SizedBox(height: 20),
+              TextFormField(
+                controller: _gatewayAccountCtrl,
+                enabled: _editing,
+                decoration: InputDecoration(
+                  labelText: 'ID Akun Xendit (opsional)',
+                  filled: !_editing,
+                  fillColor: _editing ? null : const Color(0xFFEEEEEE),
+                  helperText: 'Sub-akun resto ini di Xendit. Dana QRIS cair '
+                      'langsung ke rekening yang terdaftar di sub-akun itu. '
+                      'Kosongkan kalau belum dibuat.',
+                  helperMaxLines: 4,
+                ),
               ),
               const SizedBox(height: 20),
               LogoPicker(

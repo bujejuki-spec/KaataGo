@@ -13,6 +13,8 @@ import '../utils/id_time.dart';
 import '../widgets/app_toast.dart';
 import '../widgets/cash_payment_dialog.dart';
 import '../widgets/responsive.dart';
+import 'payment_qris_screen.dart';
+import 'payment_transfer_screen.dart';
 
 /// Antrean pesanan yang dipesan sendiri dari HP pelanggan, dipilih bayar
 /// tunai, dan menunggu dilunasi di meja kasir.
@@ -36,23 +38,57 @@ class _PendingPaymentScreenState extends State<PendingPaymentScreen> {
   /// satu pesanan tidak dilunasi dua kali oleh dua ketukan beruntun.
   String? _settling;
 
+  /// Menerima pembayaran, dengan cara bayar yang boleh berubah.
+  ///
+  /// Pelanggan memilih tunai dari HP-nya, tapi yang menentukan
+  /// akhirnya adalah apa yang benar-benar terjadi di meja kasir.
   Future<void> _settle(CustomerOrder order) async {
-    final received = await showDialog<int>(
+    final method = await showModalBottomSheet<String>(
       context: context,
-      builder: (_) => CashPaymentDialog(total: order.total),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => _MethodSheet(order: order, currency: _currency),
     );
-    if (received == null || !mounted) return;
+    if (method == null || !mounted) return;
+
+    int? received;
+    if (method == 'cash') {
+      received = await showDialog<int>(
+        context: context,
+        builder: (_) => CashPaymentDialog(total: order.total),
+      );
+      if (received == null || !mounted) return;
+    } else {
+      // QRIS dan transfer punya layarnya sendiri, dan layar itulah yang
+      // menyatakan uangnya sudah masuk — bukan ketukan di sini.
+      final confirmed = await Navigator.of(context).push<bool>(
+        MaterialPageRoute(
+          builder: (_) => method == 'qris'
+              ? PaymentQrisScreen(amount: order.total)
+              : PaymentTransferScreen(amount: order.total),
+        ),
+      );
+      if (confirmed != true || !mounted) return;
+    }
 
     setState(() => _settling = order.id);
     try {
-      await _repo.settleCashPayment(order.id, cashReceived: received);
+      await _repo.settlePayment(
+        order.id,
+        method: method,
+        cashReceived: received,
+      );
       if (!mounted) return;
-      final change = received - order.total;
+      final change = (received ?? 0) - order.total;
       showAppToast(
         context,
-        change > 0
-            ? 'Pesanan #${refOf(order.id)} lunas. Kembalian ${_currency.format(change)}.'
-            : 'Pesanan #${refOf(order.id)} lunas — uang pas.',
+        method != 'cash'
+            ? 'Pesanan #${refOf(order.id)} lunas lewat '
+                '${method == 'qris' ? 'QRIS' : 'transfer'}.'
+            : change > 0
+                ? 'Pesanan #${refOf(order.id)} lunas. Kembalian ${_currency.format(change)}.'
+                : 'Pesanan #${refOf(order.id)} lunas — uang pas.',
       );
     } catch (e) {
       if (!mounted) return;
@@ -281,6 +317,79 @@ class _PendingCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Pilihan cara bayar saat pesanan dilunasi di kasir.
+///
+/// Tunai ditaruh paling atas dan ditandai — itu yang dipilih
+/// pelanggannya dari HP, dan hampir selalu itu pula yang terjadi.
+/// Dua lainnya ada supaya kasir tidak pernah buntu: pelanggan yang
+/// uangnya kurang tidak perlu pesanannya dibatalkan lalu diketik ulang.
+class _MethodSheet extends StatelessWidget {
+  final CustomerOrder order;
+  final NumberFormat currency;
+
+  const _MethodSheet({required this.order, required this.currency});
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Pesanan #${refOf(order.id)}',
+                    style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600)),
+                const SizedBox(height: 2),
+                Text(
+                  'Terima ${currency.format(order.total)} lewat',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 4),
+          _tile(context,
+              method: 'cash',
+              icon: Icons.payments_outlined,
+              label: 'Tunai',
+              note: 'Dipilih pelanggan saat memesan'),
+          _tile(context,
+              method: 'qris',
+              icon: Icons.qr_code_2,
+              label: 'QRIS',
+              note: 'Tampilkan QR, lunas sendiri setelah dibayar'),
+          _tile(context,
+              method: 'transfer',
+              icon: Icons.account_balance_outlined,
+              label: 'Transfer',
+              note: 'Rekening resto, dikonfirmasi kasir'),
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+
+  Widget _tile(
+    BuildContext context, {
+    required String method,
+    required IconData icon,
+    required String label,
+    required String note,
+  }) {
+    return ListTile(
+      leading: Icon(icon, color: KaataTheme.brandDark),
+      title: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+      subtitle: Text(note, style: const TextStyle(fontSize: 11.5)),
+      trailing: const Icon(Icons.chevron_right, size: 20),
+      onTap: () => Navigator.pop(context, method),
     );
   }
 }

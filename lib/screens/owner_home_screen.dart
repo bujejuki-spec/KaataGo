@@ -115,8 +115,8 @@ class OwnerHomeScreen extends StatelessWidget {
                   const SizedBox(height: 12),
                   HubMenuTile(
                     icon: Icons.history,
-                    title: 'Riwayat Transaksi',
-                    subtitle: 'Rekap penjualan per hari, breakdown pembayaran',
+                    title: 'Riwayat Kasir',
+                    subtitle: 'Transaksi yang diinput kasir — rekap per hari',
                     color: const Color(0xFF6366F1),
                     onTap: () => _open(context, const TransactionHistoryScreen()),
                   ),

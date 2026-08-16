@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../theme.dart';
 import '../widgets/kaata_logo.dart';
@@ -67,7 +68,9 @@ class _AboutScreenState extends State<AboutScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 18),
+          const _WebsiteLink(),
+          const SizedBox(height: 14),
           _Section(
             title: 'Apa itu KaataGo?',
             child: Text(
@@ -176,6 +179,70 @@ class _Section extends StatelessWidget {
           const SizedBox(height: 12),
           child,
         ],
+      ),
+    );
+  }
+}
+
+/// Tautan ke situs KaataGo.
+///
+/// Ditaruh di layar ini karena inilah satu-satunya halaman yang bisa
+/// dibuka sebelum login — yang membukanya sering justru orang yang
+/// belum punya akun dan sedang menimbang, dan yang dia butuhkan
+/// berikutnya ada di situsnya: cara berlangganan, dan berkas
+/// pemasangnya.
+class _WebsiteLink extends StatelessWidget {
+  static const _url = 'https://bujejuki-spec.github.io/KaataGo-LandingPage/';
+
+  const _WebsiteLink();
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: () => launchUrl(
+          Uri.parse(_url),
+          // Di browser, bukan di dalam aplikasi: halamannya memuat
+          // tautan unduhan APK, dan tampilan web di dalam aplikasi
+          // menangani unduhan berkas dengan cara yang berbeda-beda di
+          // tiap HP — sebagian diam saja.
+          mode: LaunchMode.externalApplication,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(7),
+                decoration: BoxDecoration(
+                  color: KaataTheme.brand.withOpacity(0.10),
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                child: const Icon(Icons.language, size: 18, color: KaataTheme.brand),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Situs KaataGo',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    const SizedBox(height: 2),
+                    Text(
+                      'bujejuki-spec.github.io/KaataGo-LandingPage',
+                      style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.open_in_new, size: 17, color: Colors.grey.shade500),
+            ],
+          ),
+        ),
       ),
     );
   }

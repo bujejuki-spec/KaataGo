@@ -61,6 +61,21 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
   /// that Super Admin had switched off.
   bool _active = true;
 
+  /// Cara makan yang dilayani resto ini.
+  ///
+  /// Bisa diubah admin restonya sendiri, bukan cuma Super Admin: yang
+  /// tahu mejanya sedang direnovasi atau dapurnya berhenti membungkus
+  /// adalah orang di tempat itu, dan menunggu Super Admin berarti
+  /// pesanan yang tidak bisa dilayani terus masuk sampai dia sempat.
+  ///
+  /// Ikut disimpan apa adanya walau tidak disentuh — toMap() selalu
+  /// mengirim kedua kolomnya, jadi tanpa dimuat lebih dulu, menyimpan
+  /// perubahan alamat saja sudah menyalakan ulang keduanya.
+  bool _dineIn = true;
+  bool _takeAway = true;
+  bool _snapshotDineIn = true;
+  bool _snapshotTakeAway = true;
+
   String? _existingLogo;
   File? _pickedLogo;
   bool _logoRemoved = false;
@@ -88,6 +103,8 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
       _selectedCategory = resto.category;
       _existingLogo = resto.logoBase64;
       _active = resto.active;
+      _dineIn = resto.dineInEnabled;
+      _takeAway = resto.takeAwayEnabled;
     }
     if (mounted) setState(() => _loading = false);
   }
@@ -108,6 +125,8 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
       'phone': _phoneCtrl.text,
       'category': _selectedCategory,
     };
+    _snapshotDineIn = _dineIn;
+    _snapshotTakeAway = _takeAway;
     _snapshotPickedLogo = _pickedLogo;
     _snapshotExistingLogo = _existingLogo;
     _snapshotLogoRemoved = _logoRemoved;
@@ -120,6 +139,8 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
     _longitude = _snapshot['lng'] as double?;
     _phoneCtrl.text = _snapshot['phone'] as String? ?? '';
     _selectedCategory = _snapshot['category'] as String?;
+    _dineIn = _snapshotDineIn;
+    _takeAway = _snapshotTakeAway;
     _pickedLogo = _snapshotPickedLogo;
     _existingLogo = _snapshotExistingLogo;
     _logoRemoved = _snapshotLogoRemoved;
@@ -240,6 +261,8 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
         category: _selectedCategory,
         logoBase64: logoBase64,
         active: _active,
+        dineInEnabled: _dineIn,
+        takeAwayEnabled: _takeAway,
       ));
       // Keep local state in step with what was just written, so a second
       // edit round doesn't re-upload or resurrect a removed logo.
@@ -345,6 +368,41 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
                         _latitude = null;
                         _longitude = null;
                       }),
+                    ),
+                    const SizedBox(height: 20),
+                    const Text('Cara Makan yang Dilayani',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Yang dimatikan tidak muncul sebagai pilihan saat '
+                      'checkout, baik di kasir maupun di HP pelanggan.',
+                      style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600),
+                    ),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      dense: true,
+                      title: const Text('Dine In'),
+                      subtitle: const Text('Makan di tempat, pakai nomor meja',
+                          style: TextStyle(fontSize: 11.5)),
+                      value: _dineIn,
+                      // Yang terakhir menyala tidak bisa dimatikan —
+                      // resto tanpa satu pun cara makan tidak bisa
+                      // menerima pesanan sama sekali. Untuk berhenti
+                      // berjualan sudah ada tombol Aktif/Nonaktif.
+                      onChanged: !_editing || !_takeAway
+                          ? null
+                          : (v) => setState(() => _dineIn = v),
+                    ),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      dense: true,
+                      title: const Text('Take Away'),
+                      subtitle: const Text('Dibungkus, pakai nama pemesan',
+                          style: TextStyle(fontSize: 11.5)),
+                      value: _takeAway,
+                      onChanged: !_editing || !_dineIn
+                          ? null
+                          : (v) => setState(() => _takeAway = v),
                     ),
                     const SizedBox(height: 20),
                     LogoPicker(

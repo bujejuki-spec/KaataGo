@@ -17,6 +17,7 @@ import '../models/product.dart';
 import '../models/restaurant.dart';
 import '../providers/auth_provider.dart';
 import '../providers/customer_cart_provider.dart';
+import '../providers/level_group_provider.dart';
 import '../providers/table_session_provider.dart';
 import '../utils/customer_login_flow.dart';
 import '../utils/greeting.dart';
@@ -102,6 +103,9 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
       _refreshGuestHistoryFlag();
       _loadProfileName();
       _loadRates(session.restoId);
+      // Kelompok level disusun tiap resto sendiri; tanpa dimuat lebih
+      // dulu, dropdown pilihannya jatuh ke lima kelompok bawaan.
+      if (session.restoId != null) primeLevelGroups(session.restoId!);
     });
   }
 

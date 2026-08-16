@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
+import 'package:http/http.dart' show ClientException;
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -54,8 +56,8 @@ class ApkUpdater {
     if (Platform.isAndroid) {
       final status = await Permission.requestInstallPackages.request();
       if (!status.isGranted) {
-        return 'Izin memasang aplikasi belum diberikan. Aktifkan lewat '
-            'Setelan HP → Aplikasi → KaataGo → Izinkan dari sumber ini.';
+        return 'Izin memasang aplikasi belum diberikan. Aktifkan di Setelan '
+            'HP → Aplikasi → KaataGo.';
       }
     }
 
@@ -70,7 +72,7 @@ class ApkUpdater {
       // menyampaikannya ke orang yang baru saja menekan Batalkan cuma
       // membuat tindakannya sendiri terlihat seperti kerusakan.
       if (_cancelled) return null;
-      return 'Gagal mengunduh: $e';
+      return downloadErrorMessage(e);
     }
 
     final result = await OpenFilex.open(
@@ -78,8 +80,8 @@ class ApkUpdater {
       type: 'application/vnd.android.package-archive',
     );
     if (result.type != ResultType.done) {
-      return 'Berkasnya sudah terunduh, tapi pemasangnya tidak bisa dibuka: '
-          '${result.message}';
+      return 'Berkasnya sudah terunduh, tapi layar pemasangnya tidak bisa '
+          'dibuka. Coba buka lagi dari notifikasi unduhan.';
     }
     return null;
   }
@@ -91,7 +93,7 @@ class ApkUpdater {
     try {
       final response = await client.send(http.Request('GET', Uri.parse(url)));
       if (response.statusCode != 200) {
-        throw 'server menjawab ${response.statusCode}';
+        throw _BadStatus(response.statusCode);
       }
 
       // Disimpan di folder milik aplikasi sendiri, bukan folder Unduhan
@@ -129,6 +131,49 @@ class ApkUpdater {
   }
 }
 
+/// Menerjemahkan galat teknis jadi satu kalimat yang berguna.
+///
+/// Yang dilempar http dan dart:io ditulis untuk yang menulis
+/// programnya: "ClientException with SocketException: Connection reset
+/// by peer (OS Error: Connection reset by peer, errno = 54), address
+/// = objects.githubusercontent.com, port = 443". Orang yang membacanya
+/// tidak bisa berbuat apa pun dengan satu pun kata di dalamnya, dan
+/// paragraf sepanjang itu di layar HP terbaca seperti aplikasinya yang
+/// rusak — padahal yang terjadi cuma sinyalnya putus.
+///
+/// Yang perlu dia tahu cuma dua: apa yang gagal, dan apakah mencoba
+/// lagi masuk akal.
+String downloadErrorMessage(Object e) {
+  if (e is _BadStatus) {
+    // 404 berarti berkasnya memang tidak ada di sana — mengulanginya
+    // akan gagal dengan cara yang sama persis, dan mengatakan
+    // "masalah koneksi" cuma mengirim orang memeriksa wifi-nya
+    // berulang kali untuk sesuatu yang bukan salahnya.
+    return e.status == 404
+        ? 'Berkas pembaruannya tidak ditemukan di server.'
+        : 'Unduhan gagal — server sedang tidak bisa melayani '
+            '(kode ${e.status}).';
+  }
+  if (e is SocketException ||
+      e is HttpException ||
+      e is HandshakeException ||
+      e is TimeoutException ||
+      e is ClientException) {
+    return 'Unduhan gagal karena masalah koneksi.';
+  }
+  if (e is FileSystemException) {
+    return 'Unduhan gagal — ruang penyimpanan HP tidak cukup.';
+  }
+  return 'Unduhan gagal. Coba lagi sebentar lagi.';
+}
+
+
 class _Cancelled implements Exception {
   const _Cancelled();
+}
+
+class _BadStatus implements Exception {
+  final int status;
+
+  const _BadStatus(this.status);
 }

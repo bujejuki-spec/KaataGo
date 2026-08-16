@@ -66,4 +66,10 @@ class ProductRepository {
     await db.update('products', {'stock': stock},
         where: 'id = ?', whereArgs: [id]);
   }
+
+  Future<void> setOutOfStock(String id, bool value) async {
+    final db = await _dbHelper.database;
+    await db.update('products', {'out_of_stock': value ? 1 : 0},
+        where: 'id = ?', whereArgs: [id]);
+  }
 }

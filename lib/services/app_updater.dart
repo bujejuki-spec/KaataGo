@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
 import '../utils/apk_updater.dart';
@@ -37,6 +39,8 @@ class AppUpdater extends ChangeNotifier {
 
     _url = url;
     error = null;
+    _noticeTimer?.cancel();
+    notice = null;
     progress = 0;
     downloading = true;
     notifyListeners();
@@ -63,12 +67,33 @@ class AppUpdater extends ChangeNotifier {
     await start(url);
   }
 
+  /// Kabar singkat yang hilang sendiri — bukan galat.
+  ///
+  /// Membatalkan unduhan sendiri bukan kegagalan, jadi tidak boleh
+  /// muncul sebagai kotak merah berisi keterangan teknis yang menuntut
+  /// dibaca dan ditutup. Cukup satu kalimat yang menegaskan bahwa yang
+  /// diminta memang terjadi, lalu pergi.
+  String? notice;
+
+  Timer? _noticeTimer;
+
   void cancel() {
     _updater?.cancel();
     _updater = null;
     downloading = false;
     progress = null;
+    error = null;
+    _showNotice('Unduhan dibatalkan');
+  }
+
+  void _showNotice(String message) {
+    _noticeTimer?.cancel();
+    notice = message;
     notifyListeners();
+    _noticeTimer = Timer(const Duration(seconds: 4), () {
+      notice = null;
+      notifyListeners();
+    });
   }
 
   void clearError() {

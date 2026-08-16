@@ -10,6 +10,7 @@ import '../models/cart_item.dart';
 import '../models/product.dart';
 import '../providers/auth_provider.dart';
 import '../providers/cart_provider.dart';
+import '../providers/level_group_provider.dart';
 import '../providers/product_provider.dart';
 import '../widgets/cart_bottom_bar.dart';
 import '../widgets/product_category_list.dart';
@@ -36,6 +37,8 @@ class _PosHomeScreenState extends State<PosHomeScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final restoId = context.read<AuthProvider>().restoId;
       await context.read<ProductProvider>().syncWithResto(restoId);
+      // Kelompok level disusun tiap resto sendiri.
+      if (restoId != null) await primeLevelGroups(restoId);
       await _loadRates(restoId);
     });
   }
@@ -70,7 +73,7 @@ class _PosHomeScreenState extends State<PosHomeScreen> {
     final cart = context.read<CartProvider>();
     final result = await showDialog<QuantityDialogResult>(
       context: context,
-      builder: (_) => QuantityDialog(product: product, ppnPercent: cart.ppnPercent),
+      builder: (_) => QuantityDialog(product: product, ppnPercent: cart.ppnPercent, showStock: true),
     );
     if (result == null) return;
     cart.addLine(
@@ -86,6 +89,7 @@ class _PosHomeScreenState extends State<PosHomeScreen> {
     final result = await showDialog<QuantityDialogResult>(
       context: context,
       builder: (_) => QuantityDialog(
+        showStock: true,
         product: line.product,
         initialQuantity: line.quantity,
         initialLevels: line.selectedLevels,
@@ -173,6 +177,7 @@ class _PosHomeScreenState extends State<PosHomeScreen> {
           }
 
           final grid = ProductCategoryList(
+            showStock: true,
             products: products,
             quantityOf: cart.quantityOf,
             ppnPercent: cart.ppnPercent,

@@ -37,6 +37,10 @@ FILES=(
   counter_charge.sql
   announcement_push.sql
   cash_payment_expiry.sql
+  level_groups.sql
+  resto_order_types.sql
+  product_out_of_stock.sql
+  gateway_account_super_admin.sql
 )
 
 {

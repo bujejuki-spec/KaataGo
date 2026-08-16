@@ -148,11 +148,52 @@ async function resolveTokens(row: OutboxRow): Promise<string[]> {
     q = q.eq("email", p.email);
   } else if (p.audience === "all") {
     // Pengumuman. Resto kosong berarti dari Super Admin — kabar versi
-    // baru menyangkut semua orang yang memasang aplikasinya. Resto
-    // terisi berarti dari admin resto itu, dan hanya perangkat yang
-    // terdaftar di restonya yang dikabari: pelanggan maupun karyawan,
-    // tanpa memandang perannya.
-    if (row.resto_id) q = q.eq("resto_id", row.resto_id);
+    // baru menyangkut semua orang yang memasang aplikasinya.
+    if (!row.resto_id) {
+      const { data, error } = await q;
+      if (error) throw new Error(`Gagal membaca device_tokens: ${error.message}`);
+      return (data ?? []).map((r: { token: string }) => r.token);
+    }
+
+    // Resto terisi berarti dari admin resto itu, dan sasarannya dua
+    // kelompok yang harus dicari dengan cara berbeda.
+    //
+    // Karyawan gampang: restonya tertulis di barisnya sendiri.
+    //
+    // Pelanggan tidak. resto_id pada perangkat pelanggan menyebut resto
+    // yang sedang dia buka saat itu — dan begitu dia menutup menunya
+    // atau membuka resto lain, isinya berubah atau kosong. Menyaring
+    // dengan kolom itu saja berarti promo resto A cuma sampai ke
+    // pelanggan yang kebetulan sedang membuka menu resto A: orang yang
+    // paling tidak perlu diberi tahu, karena dia sudah ada di sana.
+    //
+    // Yang dipakai justru jejak yang tidak bisa berubah: dia pernah
+    // memesan di resto ini. Dibatasi 90 hari supaya pengumuman tidak
+    // mengejar orang yang mampir sekali dua tahun lalu.
+    const sejak = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
+    const { data: pesanan, error: errPesanan } = await admin
+      .from("orders")
+      .select("customer_label, session_id")
+      .eq("resto_id", row.resto_id)
+      .gte("created_at", sejak)
+      .limit(5000);
+    if (errPesanan) {
+      throw new Error(`Gagal membaca orders: ${errPesanan.message}`);
+    }
+
+    const emails = new Set<string>();
+    const sessions = new Set<string>();
+    for (const o of pesanan ?? []) {
+      if (o.customer_label && o.customer_label !== "Tamu") {
+        emails.add(o.customer_label);
+      }
+      if (o.session_id) sessions.add(o.session_id);
+    }
+
+    const bagian = [`resto_id.eq.${row.resto_id}`];
+    if (emails.size) bagian.push(`email.in.(${[...emails].join(",")})`);
+    if (sessions.size) bagian.push(`session_id.in.(${[...sessions].join(",")})`);
+    q = q.or(bagian.join(","));
   } else {
     // Pemilik pesanan TIDAK disaring restonya.
     //

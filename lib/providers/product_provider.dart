@@ -68,7 +68,8 @@ class ProductProvider extends ChangeNotifier {
     _firestoreRepo.upsert(product, restoId!).catchError((_) {});
   }
 
-  /// Pulls current stock numbers down from Firestore into the local
+  /// Pulls current stock numbers and availability down from Firestore
+  /// into the local
   /// database. Needed because customer self-orders decrement stock
   /// directly in Firestore — without this, the cashier's local copy would
   /// drift and keep showing stale (higher) stock for items customers
@@ -81,6 +82,11 @@ class ProductProvider extends ChangeNotifier {
       for (final remote in remoteProducts) {
         if (localIds.contains(remote.id)) {
           await _repo.setStock(remote.id, remote.stock);
+          // Penanda habis ikut ditarik. Yang menandainya sering
+          // perangkat lain — admin dari HP-nya, sementara kasir memakai
+          // tablet — dan penanda yang tidak sampai berarti kasir terus
+          // menjual barang yang sudah dinyatakan habis.
+          await _repo.setOutOfStock(remote.id, remote.outOfStock);
         }
       }
       await load();
@@ -119,6 +125,7 @@ class ProductProvider extends ChangeNotifier {
     Map<String, Map<String, int>> levelPrices = const {},
     bool ppnExempt = false,
     bool serviceExempt = false,
+    bool outOfStock = false,
   }) async {
     final product = Product(
       id: _uuid.v4(),
@@ -132,10 +139,22 @@ class ProductProvider extends ChangeNotifier {
       levelPrices: levelPrices,
       ppnExempt: ppnExempt,
       serviceExempt: serviceExempt,
+      outOfStock: outOfStock,
     );
     await _repo.insert(product, restoId);
     _mirrorToFirestore(product);
     await load();
+  }
+
+  /// Menandai produk habis atau tersedia lagi, tanpa membuka
+  /// formulirnya.
+  ///
+  /// Yang menandai habis biasanya sedang berdiri di dapur atau di depan
+  /// antrean, dan jaraknya ke tombol menentukan apakah penandaan itu
+  /// benar-benar terjadi. Formulir produk berisi belasan kolom yang
+  /// tidak ada hubungannya dengan "ayamnya habis".
+  Future<void> setOutOfStock(Product product, bool value) async {
+    await updateProduct(product.copyWith(outOfStock: value));
   }
 
   Future<void> updateProduct(Product product) async {

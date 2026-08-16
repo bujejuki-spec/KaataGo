@@ -29,6 +29,14 @@ class CartLineTile extends StatelessWidget {
   /// Opens the options editor. Null hides the affordance entirely.
   final VoidCallback? onEdit;
 
+  /// Produknya ternyata sudah habis sejak dimasukkan ke keranjang.
+  ///
+  /// Ditandai di barisnya sendiri, bukan cuma disebut di dialog
+  /// peringatan: yang harus dilakukan orangnya adalah menghapus baris
+  /// tertentu, dan dialog yang sudah ditutup tidak menolongnya
+  /// menemukan yang mana di antara tujuh baris lain.
+  final bool soldOut;
+
   final NumberFormat currency;
 
   const CartLineTile({
@@ -41,6 +49,7 @@ class CartLineTile extends StatelessWidget {
     required this.onDelete,
     required this.currency,
     this.onEdit,
+    this.soldOut = false,
   });
 
   @override
@@ -52,7 +61,9 @@ class CartLineTile extends StatelessWidget {
 
     return InkWell(
       onTap: onEdit,
-      child: Padding(
+      child: Container(
+        color: soldOut ? Colors.red.shade50 : null,
+        child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -66,9 +77,30 @@ class CartLineTile extends StatelessWidget {
                       Expanded(
                         child: Text(
                           item.product.name,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14.5,
+                            color: soldOut ? Colors.red.shade700 : null,
+                            decoration:
+                                soldOut ? TextDecoration.lineThrough : null,
+                          ),
                         ),
                       ),
+                      if (soldOut)
+                        Container(
+                          margin: const EdgeInsets.only(left: 6),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.red.shade700,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Text('HABIS',
+                              style: TextStyle(
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white)),
+                        ),
                       if (onEdit != null)
                         Icon(Icons.edit_outlined, size: 15, color: Colors.grey.shade500),
                     ],
@@ -152,6 +184,7 @@ class CartLineTile extends StatelessWidget {
               ),
             ),
           ],
+          ),
         ),
       ),
     );

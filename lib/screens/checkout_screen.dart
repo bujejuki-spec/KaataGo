@@ -47,6 +47,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final _restoRepo = RestaurantRepository();
   Restaurant? _resto;
 
+  /// Produk di keranjang yang ternyata sudah habis. Dapur bisa
+  /// menandainya di sela kasir menyusun pesanan.
+  Set<String> _soldOut = {};
+
   /// Rates come from the resto record, so the same order rung up on any
   /// device splits identically.
   double get _ppnPercent => _resto?.ppnPercent ?? 0;
@@ -58,7 +62,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     try {
       final resto = await _restoRepo.getOnce(restoId);
       if (!mounted) return;
-      setState(() => _resto = resto);
+      setState(() {
+        _resto = resto;
+        // Kalau resto ini tidak melayani cara makan yang sedang
+        // terpilih, pindahkan sekarang — bukan menunggu kasir menekan
+        // tombol bayar lalu ditolak.
+        if (resto != null && !resto.orderTypes.contains(_orderType)) {
+          _orderType = resto.orderTypes.first;
+        }
+      });
       context.read<CartProvider>().setRates(
             ppn: resto?.ppnPercent ?? 0,
             service: resto?.servicePercent ?? 0,
@@ -69,6 +81,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   bool get _isDineIn => _orderType == OrderType.dineIn;
+
+  /// Cara makan yang dilayani resto ini. Sebelum datanya termuat,
+  /// keduanya dianggap dilayani — itu keadaan sebelum ini dan berlaku
+  /// untuk hampir semua resto.
+  List<OrderType> get _orderTypes =>
+      _resto?.orderTypes ?? const [OrderType.dineIn, OrderType.takeAway];
 
   /// Free-form label, not a number — "A01" and "VIP-2" are valid tables.
   String? get _tableNumber {
@@ -88,6 +106,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final result = await showDialog<QuantityDialogResult>(
       context: context,
       builder: (_) => QuantityDialog(
+        showStock: true,
         product: item.product,
         initialQuantity: item.quantity,
         initialLevels: item.selectedLevels,
@@ -136,6 +155,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       onDecrement: () => cart.decrementLine(item.lineId),
                       onDelete: () => cart.removeLine(item.lineId),
                       onEdit: () => _editLine(context, cart, item),
+                      soldOut: _soldOut.contains(item.product.id),
                     );
                   },
                 ),
@@ -144,22 +164,45 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   children: [
-                    SegmentedButton<OrderType>(
-                      segments: const [
-                        ButtonSegment(
-                          value: OrderType.dineIn,
-                          label: Text('Dine In'),
-                          icon: Icon(Icons.restaurant_outlined),
+                    // Hanya cara makan yang benar-benar dilayani resto
+                    // ini. Tombol yang selalu ada berarti pesanan yang
+                    // tidak bisa dilayani tetap masuk, dan yang menolak
+                    // belakangan adalah orang — di depan pelanggan yang
+                    // sudah membayar.
+                    if (_orderTypes.length > 1)
+                      SegmentedButton<OrderType>(
+                        segments: const [
+                          ButtonSegment(
+                            value: OrderType.dineIn,
+                            label: Text('Dine In'),
+                            icon: Icon(Icons.restaurant_outlined),
+                          ),
+                          ButtonSegment(
+                            value: OrderType.takeAway,
+                            label: Text('Take Away'),
+                            icon: Icon(Icons.shopping_bag_outlined),
+                          ),
+                        ],
+                        selected: {_orderType},
+                        onSelectionChanged: (v) => setState(() => _orderType = v.first),
+                      )
+                    else
+                      // Satu-satunya pilihan tetap ditulis, bukan
+                      // dihilangkan begitu saja: struk dan layar dapur
+                      // menyebut Dine In atau Take Away, dan kasir harus
+                      // tahu yang mana tanpa harus menebak.
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Chip(
+                          avatar: Icon(
+                            _isDineIn
+                                ? Icons.restaurant_outlined
+                                : Icons.shopping_bag_outlined,
+                            size: 17,
+                          ),
+                          label: Text(_isDineIn ? 'Dine In' : 'Take Away'),
                         ),
-                        ButtonSegment(
-                          value: OrderType.takeAway,
-                          label: Text('Take Away'),
-                          icon: Icon(Icons.shopping_bag_outlined),
-                        ),
-                      ],
-                      selected: {_orderType},
-                      onSelectionChanged: (v) => setState(() => _orderType = v.first),
-                    ),
+                      ),
                     const SizedBox(height: 12),
                     if (_isDineIn) ...[
                       TextField(
@@ -272,9 +315,80 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
+  /// Memeriksa ulang ketersediaan sebelum uang diterima.
+  ///
+  /// Sumbernya daftar produk yang sudah disinkronkan layar kasir, bukan
+  /// panggilan jaringan baru: kasir sering bekerja dengan koneksi
+  /// seadanya, dan menahan pembayaran sambil menunggu jawaban server
+  /// adalah antrean yang berhenti.
+  Future<bool> _pastikanMasihAda(BuildContext context, CartProvider cart) async {
+    final terbaru = context.read<ProductProvider>().products;
+    if (terbaru.isEmpty) return true;
+
+    final habis = <String>{
+      for (final p in terbaru)
+        if (p.outOfStock) p.id,
+    };
+    final kena = <String>{
+      for (final item in cart.items)
+        if (habis.contains(item.product.id)) item.product.id,
+    };
+
+    setState(() => _soldOut = kena);
+    if (kena.isEmpty) return true;
+
+    final nama = <String>{
+      for (final item in cart.items)
+        if (kena.contains(item.product.id)) item.product.name,
+    };
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        icon: const Icon(Icons.remove_shopping_cart_outlined,
+            size: 38, color: Colors.red),
+        title: const Text('Ada menu yang sudah habis'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final n in nama)
+              Text('• $n', style: const TextStyle(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 10),
+            Text(
+              'Hapus dulu dari keranjang sebelum menerima pembayaran.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 12.5, color: Colors.grey.shade700),
+            ),
+          ],
+        ),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Kembali ke Keranjang'),
+          ),
+        ],
+      ),
+    );
+    return false;
+  }
+
   Future<void> _handlePayment(BuildContext context, CartProvider cart, PaymentMethod method) async {
     if (!_canPay) return;
+    if (!await _pastikanMasihAda(context, cart)) return;
+    if (!context.mounted) return;
     final tableNumber = _isDineIn ? _tableNumber : null;
+
+    // Yang ditagih adalah total tagihannya, bukan subtotal menunya.
+    //
+    // `cart.total` berhenti di harga menu (dasar + PPN) dan tidak
+    // memuat biaya service. Pada Take Away keduanya kebetulan sama
+    // persis — dan justru itu yang membuat selisihnya lolos begitu
+    // lama: hanya Dine In yang salah, dan salahnya selalu kurang.
+    // QR yang menagih kurang berarti lacinya kurang tiap hari, dan
+    // baru ketahuan saat tutup buku.
+    final amount = cart.chargesFor(_orderType).total;
 
     // Cash: the cashier keys in what the customer handed over so the
     // change is worked out here instead of in their head — and so the
@@ -283,7 +397,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     if (method == PaymentMethod.cash) {
       cashReceived = await showDialog<int>(
         context: context,
-        builder: (_) => CashPaymentDialog(total: cart.total),
+        builder: (_) => CashPaymentDialog(total: amount),
       );
       if (cashReceived == null || !context.mounted) return;
     }
@@ -294,8 +408,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       final confirmed = await Navigator.of(context).push<bool>(
         MaterialPageRoute(
           builder: (_) => method == PaymentMethod.qris
-              ? PaymentQrisScreen(amount: cart.total)
-              : PaymentTransferScreen(amount: cart.total),
+              ? PaymentQrisScreen(amount: amount)
+              : PaymentTransferScreen(amount: amount),
         ),
       );
       if (confirmed != true) return;
