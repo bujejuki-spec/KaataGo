@@ -10,6 +10,7 @@ import '../widgets/hub_menu_tile.dart';
 import '../widgets/kaata_logo.dart';
 import 'restaurant_info_screen.dart';
 import 'payment_info_screen.dart';
+import 'settings_screen.dart';
 import 'table_qr_generator_screen.dart';
 import 'promo_banner_screen.dart';
 
@@ -96,13 +97,31 @@ class SettingsMenuScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
+                // Owner menyunting, Admin cuma melihat.
+                //
+                // Rekening tujuan dan ID merchant menentukan ke mana
+                // uang resto mengalir; yang boleh mengubahnya adalah
+                // yang menanggung akibatnya kalau salah. Finance
+                // memegangnya sehari-hari, dan Owner — pemilik
+                // rekeningnya sendiri — tidak masuk akal dikunci di
+                // balik layar baca-saja di restonya sendiri.
+                //
+                // Database sudah mengizinkannya sejak awal: peran owner
+                // lolos setiap pemeriksaan peran. Yang menghalanginya
+                // cuma layar ini.
                 HubMenuTile(
                   icon: Icons.payments_outlined,
                   title: 'Info Pembayaran',
-                  subtitle: 'QRIS & rekening bank (hanya lihat)',
+                  subtitle: context.read<AuthProvider>().isOwner
+                      ? 'QRIS & rekening bank — bisa diubah'
+                      : 'QRIS & rekening bank (hanya lihat)',
                   color: const Color(0xFFF59E0B),
                   onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const PaymentInfoScreen()),
+                    MaterialPageRoute(
+                      builder: (_) => context.read<AuthProvider>().isOwner
+                          ? const SettingsScreen()
+                          : const PaymentInfoScreen(),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 22),

@@ -317,6 +317,37 @@ class _DiscountFormScreenState extends State<_DiscountFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _repo = DiscountRepository();
 
+  @override
+  void initState() {
+    super.initState();
+    // Daftar produknya dimuat sendiri kalau belum ada isinya.
+    //
+    // Sebelumnya layar ini menumpang daftar yang diisi layar lain —
+    // Input Pesanan atau Kelola Produk. Dari hub Admin itu kebetulan
+    // selalu benar, karena Kelola Produk hampir selalu dibuka lebih
+    // dulu. Dari hub Kasir tidak: yang membuka Diskon langsung
+    // disambut "Belum ada produk di resto ini", lalu menyimpulkan
+    // restonya memang belum punya menu.
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final products = context.read<ProductProvider>();
+      if (products.products.isNotEmpty) return;
+      setState(() => _memuatProduk = true);
+      try {
+        await products.syncWithResto(widget.restoId);
+      } finally {
+        if (mounted) setState(() => _memuatProduk = false);
+      }
+    });
+  }
+
+  /// Sedang menarik daftar produknya.
+  ///
+  /// Dibedakan dari "kosong" dengan sengaja: keduanya terlihat sama di
+  /// layar, tapi yang satu berarti tunggu sebentar dan yang satu lagi
+  /// berarti buat produknya dulu. Menyamakannya membuat orang menyerah
+  /// pada layar yang sebenarnya sedang bekerja.
+  bool _memuatProduk = false;
+
   late final _nameCtrl = TextEditingController(text: widget.existing?.name ?? '');
   late final _valueCtrl = TextEditingController(
     text: widget.existing == null
@@ -437,6 +468,7 @@ class _DiscountFormScreenState extends State<_DiscountFormScreen> {
               if (_basis == DiscountBasis.products)
                 _ProductPicker(
                   products: products,
+                  memuat: _memuatProduk,
                   selected: _productIds,
                   onChanged: (ids) => setState(() => _productIds = ids),
                 )
@@ -529,11 +561,13 @@ class _DiscountFormScreenState extends State<_DiscountFormScreen> {
 /// dinyatakan.
 class _ProductPicker extends StatelessWidget {
   final List<Product> products;
+  final bool memuat;
   final Set<String> selected;
   final ValueChanged<Set<String>> onChanged;
 
   const _ProductPicker({
     required this.products,
+    required this.memuat,
     required this.selected,
     required this.onChanged,
   });
@@ -560,7 +594,23 @@ class _ProductPicker extends StatelessWidget {
           style: TextStyle(fontSize: 11.5, color: KaataTheme.mutedOf(context)),
         ),
         const SizedBox(height: 10),
-        if (products.isEmpty)
+        if (products.isEmpty && memuat)
+          Row(
+            children: [
+              SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(
+                    strokeWidth: 2, color: KaataTheme.mutedOf(context)),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text('Memuat daftar menu…',
+                    style: TextStyle(color: KaataTheme.mutedOf(context))),
+              ),
+            ],
+          )
+        else if (products.isEmpty)
           Text('Belum ada produk di resto ini.',
               style: TextStyle(color: KaataTheme.mutedOf(context)))
         else

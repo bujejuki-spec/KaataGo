@@ -12,6 +12,8 @@ import '../providers/auth_provider.dart';
 import '../providers/table_session_provider.dart';
 import '../theme.dart';
 import '../utils/id_time.dart';
+import '../widgets/app_toast.dart';
+import '../widgets/dialog_actions.dart';
 import '../widgets/responsive.dart';
 import '../widgets/update_download_button.dart';
 
@@ -83,8 +85,18 @@ class _CustomerInboxScreenState extends State<CustomerInboxScreen> {
   final _repo = AnnouncementRepository();
 
   List<Announcement> _items = [];
+  final Set<String> _selected = {};
+  bool _selecting = false;
   bool _loading = true;
   String? _error;
+
+  /// Tamu tidak punya email, jadi tidak punya tempat menyimpan penanda
+  /// sudah dibaca maupun terhapus. Menawarkan tombolnya tetap berarti
+  /// menjanjikan sesuatu yang hilang begitu layarnya ditutup.
+  bool get _bisaMenandai => context.read<AuthProvider>().user?.email != null;
+
+  AnnouncementCategory _activeCategory(BuildContext context) =>
+      AnnouncementCategory.values[DefaultTabController.of(context).index];
 
   @override
   void initState() {
@@ -195,13 +207,151 @@ class _CustomerInboxScreenState extends State<CustomerInboxScreen> {
   List<Announcement> _itemsIn(AnnouncementCategory c) =>
       _items.where((i) => i.category == c).toList();
 
+  /// Menandai sudah dibaca — yang terpilih, atau seluruh isi tab.
+  ///
+  /// Sama persis dengan kotak masuk karyawan, termasuk batasnya: yang
+  /// dikenai cuma tab yang sedang dibuka. Menandai tab sebelah yang
+  /// tidak sedang dilihat berarti menghapus penanda yang justru dipasang
+  /// orangnya untuk dirinya sendiri.
+  Future<void> _markRead(AnnouncementCategory category, {bool all = false}) async {
+    final email = context.read<AuthProvider>().user?.email;
+    if (email == null) return;
+
+    final ids = (all ? _itemsIn(category) : _items.where((i) => _selected.contains(i.id)))
+        .where((i) => !i.read)
+        .map((i) => i.id)
+        .toList();
+    if (ids.isEmpty) {
+      showAppToast(context, 'Tidak ada pesan yang belum dibaca.');
+      return;
+    }
+
+    setState(() {
+      _items = [
+        for (final i in _items) ids.contains(i.id) ? i.copyWith(read: true) : i,
+      ];
+      _selected.clear();
+      _selecting = false;
+    });
+
+    try {
+      await _repo.markManyRead(email, ids);
+    } catch (e) {
+      if (!mounted) return;
+      showAppToast(context, 'Gagal menandai: $e', isError: true);
+      _load();
+    }
+  }
+
+  Future<void> _deleteSelected({
+    required AnnouncementCategory category,
+    bool all = false,
+  }) async {
+    final email = context.read<AuthProvider>().user?.email;
+    if (email == null) return;
+    final ids = all
+        ? _itemsIn(category).map((i) => i.id).toList()
+        : _selected.toList();
+    if (ids.isEmpty) return;
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        icon: const Icon(Icons.delete_outline, size: 38, color: Colors.red),
+        title: Text(all
+            ? 'Hapus semua di ${kAnnouncementCategoryLabels[category]}?'
+            : 'Hapus ${ids.length} pesan?'),
+        content: Text(
+          all
+              ? '${ids.length} pesan di tab '
+                  '${kAnnouncementCategoryLabels[category]} akan hilang dari '
+                  'kotak masuk kamu. Tab sebelahnya tidak ikut terhapus.'
+              : 'Pesan hanya hilang dari kotak masuk kamu. Yang lain tetap '
+                  'menerimanya seperti biasa.',
+          textAlign: TextAlign.center,
+        ),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          DialogActions(
+            confirmLabel: 'Hapus',
+            destructive: true,
+            onConfirm: () => Navigator.pop(dialogContext, true),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+
+    try {
+      await _repo.deleteForUser(email, ids);
+      if (!mounted) return;
+      setState(() {
+        _selected.clear();
+        _selecting = false;
+      });
+      _load();
+    } catch (e) {
+      if (!mounted) return;
+      showAppToast(context, 'Gagal menghapus: $e', isError: true);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
       length: AnnouncementCategory.values.length,
-      child: Scaffold(
+      // Builder supaya context-nya berada di bawah controller — tanpa
+      // itu, tombol yang membaca tab aktif diam saja saat ditekan.
+      child: Builder(builder: _buildScaffold),
+    );
+  }
+
+  Widget _buildScaffold(BuildContext context) {
+    return Scaffold(
         appBar: AppBar(
-          title: const Text('Kotak Masuk'),
+          title: Text(_selecting ? '${_selected.length} dipilih' : 'Kotak Masuk'),
+          actions: [
+            if (_bisaMenandai && _items.isNotEmpty && !_selecting)
+              IconButton(
+                icon: const Icon(Icons.checklist),
+                tooltip: 'Pilih pesan',
+                onPressed: () => setState(() => _selecting = true),
+              ),
+            if (_selecting) ...[
+              IconButton(
+                icon: const Icon(Icons.select_all),
+                tooltip: 'Pilih semua di tab ini',
+                onPressed: () => setState(() {
+                  _selected
+                    ..clear()
+                    ..addAll(_itemsIn(_activeCategory(context)).map((i) => i.id));
+                }),
+              ),
+              IconButton(
+                icon: const Icon(Icons.mark_email_read_outlined),
+                tooltip: 'Tandai sudah dibaca',
+                onPressed: _selected.isEmpty
+                    ? null
+                    : () => _markRead(_activeCategory(context)),
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete_outline),
+                tooltip: 'Hapus terpilih',
+                onPressed: _selected.isEmpty
+                    ? null
+                    : () => _deleteSelected(category: _activeCategory(context)),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close),
+                tooltip: 'Batal',
+                onPressed: () => setState(() {
+                  _selecting = false;
+                  _selected.clear();
+                }),
+              ),
+            ],
+          ],
           bottom: TabBar(
             tabs: [
               for (final c in AnnouncementCategory.values)
@@ -232,7 +382,6 @@ class _CustomerInboxScreenState extends State<CustomerInboxScreen> {
                       for (final c in AnnouncementCategory.values) _list(c),
                     ],
                   ),
-      ),
     );
   }
 
@@ -261,24 +410,68 @@ class _CustomerInboxScreenState extends State<CustomerInboxScreen> {
           : ResponsiveCenter(
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
-                children: [for (final item in items) _tile(item)],
+                children: [
+                  for (final item in items) _tile(item),
+                  if (_bisaMenandai && !_selecting) ...[
+                    const SizedBox(height: 6),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        if (items.any((i) => !i.read))
+                          TextButton.icon(
+                            icon: const Icon(Icons.mark_email_read_outlined,
+                                size: 18),
+                            label: const Text('Tandai Semua Dibaca'),
+                            onPressed: () => _markRead(category, all: true),
+                          ),
+                        TextButton.icon(
+                          icon: const Icon(Icons.delete_sweep_outlined, size: 18),
+                          label: const Text('Hapus Semua'),
+                          style:
+                              TextButton.styleFrom(foregroundColor: Colors.red),
+                          onPressed: () =>
+                              _deleteSelected(category: category, all: true),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
               ),
             ),
     );
   }
 
   Widget _tile(Announcement item) {
+    final terpilih = _selected.contains(item.id);
+
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       child: InkWell(
-        onTap: () => _open(item),
+        // Selagi memilih, mengetuk kartunya berarti mencentang — bukan
+        // membuka pesannya. Membuka pesan di tengah memilih akan
+        // menandainya dibaca, padahal orangnya mungkin justru hendak
+        // menghapusnya.
+        onTap: () => _selecting
+            ? setState(() =>
+                terpilih ? _selected.remove(item.id) : _selected.add(item.id))
+            : _open(item),
         borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (!item.read)
+              if (_selecting)
+                Padding(
+                  padding: const EdgeInsets.only(right: 4),
+                  child: Checkbox(
+                    value: terpilih,
+                    onChanged: (_) => setState(() => terpilih
+                        ? _selected.remove(item.id)
+                        : _selected.add(item.id)),
+                  ),
+                ),
+              if (!item.read && !_selecting)
                 Container(
                   width: 8,
                   height: 8,
