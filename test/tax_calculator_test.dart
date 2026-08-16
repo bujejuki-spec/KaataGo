@@ -139,4 +139,40 @@ void main() {
       expect(formatPercent(2.5), '2.5%');
     });
   });
+
+  group('yang harus dibayar', () {
+    // Harga menu dan total tagihan adalah dua angka berbeda, dan
+    // memakai yang keliru berarti pelanggan melihat nominal yang tidak
+    // sama dengan yang ditagih QR-nya.
+    const lines = [TaxableLine(baseTotal: 35000)];
+
+    test('Dine In: total lebih besar daripada harga menunya', () {
+      final charges = calculateCharges(
+        lines: lines,
+        ppnPercent: 11,
+        servicePercent: 5,
+        serviceApplies: true,
+      );
+      final hargaMenu = menuPrice(35000, ppnPercent: 11);
+
+      expect(charges.total, greaterThan(hargaMenu));
+      // Selisihnya lebih besar daripada biaya service-nya sendiri,
+      // karena service pun kena PPN. Menyangka selisihnya persis sama
+      // dengan service adalah cara paling mudah salah menghitung ulang
+      // angka ini di tempat lain.
+      expect(charges.total - hargaMenu, greaterThan(charges.service));
+    });
+
+    test('Take Away: keduanya sama persis', () {
+      // Inilah sebabnya selisih itu bisa lolos lama — separuh pesanan
+      // memang tidak menunjukkannya sama sekali.
+      final charges = calculateCharges(
+        lines: lines,
+        ppnPercent: 11,
+        servicePercent: 5,
+        serviceApplies: false,
+      );
+      expect(charges.total, menuPrice(35000, ppnPercent: 11));
+    });
+  });
 }

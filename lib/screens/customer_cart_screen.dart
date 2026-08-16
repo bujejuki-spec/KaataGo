@@ -121,7 +121,16 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
 
     setState(() => _placing = true);
     final label = auth.user?.email ?? 'Tamu';
-    final amount = cart.total;
+    // Total yang benar-benar ditagihkan, bukan subtotal menunya.
+    //
+    // `cart.total` adalah jumlah harga menu — harga bersih + PPN, tanpa
+    // biaya service. Angka itu benar untuk daftar belanja, tapi salah
+    // untuk dibayar: pesanan Dine In menyimpan total yang sudah termasuk
+    // service, dan pelanggan akan melihat nominal yang lebih kecil
+    // daripada yang ditagih QR-nya. Pada Take Away keduanya kebetulan
+    // sama persis, dan justru itu yang membuat selisihnya lolos begitu
+    // lama.
+    final amount = cart.chargesFor(_orderType).total;
     final orderId = await cart.placeOrder(
       label,
       tableNumber: tableNumber,
