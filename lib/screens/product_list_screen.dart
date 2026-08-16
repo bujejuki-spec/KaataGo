@@ -114,14 +114,14 @@ class _ProductTab extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: Colors.red.shade50,
+                          color: KaataTheme.tintOf(context, Colors.red),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text('HABIS',
                             style: TextStyle(
                                 fontSize: 9.5,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.red.shade700)),
+                                color: KaataTheme.onTintOf(context, Colors.red))),
                       ),
                     ],
                   ],

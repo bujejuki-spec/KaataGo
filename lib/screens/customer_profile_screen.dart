@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+
+import '../theme.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../db/customer_profile_repository.dart';
@@ -129,7 +131,7 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
                   children: [
                     CircleAvatar(
                       radius: 48,
-                      backgroundColor: Colors.indigo.shade50,
+                      backgroundColor: KaataTheme.tintOf(context, Colors.indigo),
                       backgroundImage: avatarImage,
                       child: avatarImage == null
                           ? const Icon(Icons.person, size: 48, color: Colors.indigo)

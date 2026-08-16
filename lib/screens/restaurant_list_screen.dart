@@ -169,7 +169,7 @@ class _RestaurantListScreenState extends State<RestaurantListScreen> {
     final searching = _searchCtrl.text.trim().isNotEmpty;
 
     return Scaffold(
-      backgroundColor: KaataTheme.backgroundTint,
+      backgroundColor: KaataTheme.backgroundOf(context),
       appBar: AppBar(
         title: const Text('Pilih Resto'),
         bottom: PreferredSize(

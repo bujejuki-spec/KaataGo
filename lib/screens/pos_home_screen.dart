@@ -252,7 +252,7 @@ class _CartPanel extends StatelessWidget {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
-              color: KaataTheme.backgroundTint,
+              color: KaataTheme.backgroundOf(context),
               child: Row(
                 children: [
                   const Icon(Icons.shopping_cart_outlined, size: 18, color: KaataTheme.brandDark),

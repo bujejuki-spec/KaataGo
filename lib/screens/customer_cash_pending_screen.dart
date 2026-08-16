@@ -102,7 +102,7 @@ class _CustomerCashPendingScreenState extends State<CustomerCashPendingScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFEF3C7),
+                  color: KaataTheme.tintOf(context, Colors.amber),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: const Color(0xFFF59E0B).withOpacity(0.4)),
                 ),
@@ -118,7 +118,7 @@ class _CustomerCashPendingScreenState extends State<CustomerCashPendingScreen> {
                     // satunya hal yang harus dibaca ulang orangnya beberapa
                     // menit lagi, sambil berdiri di depan kasir.
                     Text('Nomor Pesanan',
-                        style: TextStyle(fontSize: 11.5, color: Colors.brown.shade400)),
+                        style: TextStyle(fontSize: 11.5, color: KaataTheme.onTintOf(context, Colors.brown))),
                     Text(
                       ref,
                       style: const TextStyle(
@@ -130,7 +130,7 @@ class _CustomerCashPendingScreenState extends State<CustomerCashPendingScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text('Yang harus dibayar',
-                        style: TextStyle(fontSize: 11.5, color: Colors.brown.shade400)),
+                        style: TextStyle(fontSize: 11.5, color: KaataTheme.onTintOf(context, Colors.brown))),
                     Text(
                       currency.format(amount),
                       style: const TextStyle(
@@ -151,7 +151,7 @@ class _CustomerCashPendingScreenState extends State<CustomerCashPendingScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
-                  color: habis ? const Color(0xFFFEE2E2) : KaataTheme.softFillOf(context),
+                  color: habis ? KaataTheme.tintOf(context, Colors.red) : KaataTheme.softFillOf(context),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Column(
@@ -159,7 +159,7 @@ class _CustomerCashPendingScreenState extends State<CustomerCashPendingScreen> {
                     Icon(
                       habis ? Icons.cancel_outlined : Icons.timer_outlined,
                       size: 20,
-                      color: habis ? const Color(0xFFB91C1C) : KaataTheme.mutedOf(context),
+                      color: habis ? KaataTheme.onTintOf(context, Colors.red) : KaataTheme.mutedOf(context),
                     ),
                     const SizedBox(height: 6),
                     if (habis)

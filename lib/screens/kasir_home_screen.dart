@@ -44,7 +44,7 @@ class KasirHomeScreen extends StatelessWidget {
     final restoId = auth.restoId;
 
     return Scaffold(
-      backgroundColor: KaataTheme.backgroundTint,
+      backgroundColor: KaataTheme.backgroundOf(context),
       // Fixed header + scrolling menu, rather than a SliverAppBar: with
       // enough entries to scroll, a collapsing app bar took the logo,
       // name and email away with it. Only the menu should move.

@@ -932,7 +932,7 @@ class _ReadOnlyField extends StatelessWidget {
         labelText: label,
         isDense: true,
         filled: true,
-        fillColor: const Color(0xFFEEEEEE),
+        fillColor: KaataTheme.disabledFillOf(context),
         helperText: text.isEmpty ? null : 'Dari Pengaturan Pembayaran',
         helperStyle: const TextStyle(fontSize: 10.5),
       ),

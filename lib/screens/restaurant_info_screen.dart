@@ -314,7 +314,7 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
                         label: requiredLabel('Nama Resto'),
                         helperText: 'Cuma Super Admin yang bisa ubah nama resto',
                         filled: true,
-                        fillColor: const Color(0xFFEEEEEE),
+                        fillColor: KaataTheme.disabledFillOf(context),
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -323,7 +323,7 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
                       decoration: InputDecoration(
                         label: requiredLabel('Kategori Resto'),
                         filled: !_editing,
-                        fillColor: _editing ? null : const Color(0xFFEEEEEE),
+                        fillColor: _editing ? null : KaataTheme.disabledFillOf(context),
                       ),
                       isExpanded: true,
                       items: kRestaurantCategories
@@ -339,7 +339,7 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
                       decoration: InputDecoration(
                         label: requiredLabel('Alamat'),
                         filled: !_editing,
-                        fillColor: _editing ? null : const Color(0xFFEEEEEE),
+                        fillColor: _editing ? null : KaataTheme.disabledFillOf(context),
                       ),
                       maxLines: 2,
                       validator: (v) =>
@@ -353,7 +353,7 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
                         labelText: 'Nomor HP (opsional)',
                         helperText: 'Ditampilkan di struk',
                         filled: !_editing,
-                        fillColor: _editing ? null : const Color(0xFFEEEEEE),
+                        fillColor: _editing ? null : KaataTheme.disabledFillOf(context),
                       ),
                       keyboardType: TextInputType.phone,
                       inputFormatters: phoneFormatters,

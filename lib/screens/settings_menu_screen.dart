@@ -30,7 +30,7 @@ class SettingsMenuScreen extends StatelessWidget {
     final email = context.watch<AuthProvider>().user?.email;
 
     return Scaffold(
-      backgroundColor: KaataTheme.backgroundTint,
+      backgroundColor: KaataTheme.backgroundOf(context),
       // Fixed header like the role hubs. This one is a pushed route, so
       // the back arrow the SliverAppBar used to provide is layered onto
       // the header instead of disappearing with it.

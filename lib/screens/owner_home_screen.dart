@@ -61,7 +61,7 @@ class OwnerHomeScreen extends StatelessWidget {
     final restoId = auth.restoId;
 
     return Scaffold(
-      backgroundColor: KaataTheme.backgroundTint,
+      backgroundColor: KaataTheme.backgroundOf(context),
       body: Column(
         children: [
           HubHeader(

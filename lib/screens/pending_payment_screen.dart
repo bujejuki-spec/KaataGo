@@ -117,7 +117,7 @@ class _PendingPaymentScreenState extends State<PendingPaymentScreen> {
     }
 
     return Scaffold(
-      backgroundColor: KaataTheme.backgroundTint,
+      backgroundColor: KaataTheme.backgroundOf(context),
       appBar: AppBar(title: const Text('Pending Payment')),
       body: StreamBuilder<List<CustomerOrder>>(
         stream: _repo.watchPendingCashPayments(restoId),
@@ -429,11 +429,11 @@ class _CountdownState extends State<_Countdown> {
   Widget build(BuildContext context) {
     final left = widget.deadline.difference(DateTime.now());
     if (left.isNegative) {
-      return const _Chip(
+      return _Chip(
         icon: Icons.timer_off_outlined,
         text: 'Waktu habis — pesanan akan dibatalkan',
-        color: Color(0xFFB91C1C),
-        background: Color(0xFFFEE2E2),
+        color: KaataTheme.onTintOf(context, Colors.red),
+        background: KaataTheme.tintOf(context, Colors.red),
       );
     }
 
@@ -447,8 +447,8 @@ class _CountdownState extends State<_Countdown> {
       text: menit < 1
           ? 'Kurang dari 1 menit lagi'
           : 'Sisa waktu bayar $menit menit',
-      color: urgent ? const Color(0xFFB45309) : KaataTheme.mutedOf(context),
-      background: urgent ? const Color(0xFFFEF3C7) : KaataTheme.softFillOf(context),
+      color: urgent ? KaataTheme.onTintOf(context, Colors.amber) : KaataTheme.mutedOf(context),
+      background: urgent ? KaataTheme.tintOf(context, Colors.amber) : KaataTheme.softFillOf(context),
     );
   }
 }

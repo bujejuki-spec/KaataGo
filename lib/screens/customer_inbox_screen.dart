@@ -15,6 +15,52 @@ import '../utils/id_time.dart';
 import '../widgets/responsive.dart';
 import '../widgets/update_download_button.dart';
 
+/// Resto yang kabarnya pantas sampai ke seorang pelanggan.
+///
+/// Yang pernah dia pesan, ditambah yang sedang dia buka. Tamu dikenali
+/// lewat daftar pesanan yang tersimpan di HP-nya sendiri — satu-satunya
+/// jejak yang dia punya.
+///
+/// Fungsi bersama, bukan milik satu layar: kartu Kotak Masuk di hub
+/// menghitung yang belum dibaca, dan angkanya harus lahir dari aturan
+/// yang sama persis dengan isi layarnya. Dua perhitungan terpisah akan
+/// berpisah, dan yang terlihat adalah penanda merah yang menunjuk kotak
+/// masuk kosong.
+Future<Set<String>> customerRestoIds(BuildContext context) async {
+  final ids = <String>{};
+  final session = context.read<TableSessionProvider>();
+  if (session.restoId != null) ids.add(session.restoId!);
+
+  final client = Supabase.instance.client;
+  final email = context.read<AuthProvider>().user?.email;
+  try {
+    if (email != null) {
+      final rows = await client
+          .from('orders')
+          .select('resto_id')
+          .eq('customer_label', email)
+          .limit(200);
+      for (final r in rows) {
+        if (r['resto_id'] != null) ids.add(r['resto_id'] as String);
+      }
+    } else {
+      final guestIds = await GuestOrderStore().ids();
+      if (guestIds.isNotEmpty) {
+        final rows = await client
+            .from('orders')
+            .select('resto_id')
+            .inFilter('id', guestIds.take(50).toList());
+        for (final r in rows) {
+          if (r['resto_id'] != null) ids.add(r['resto_id'] as String);
+        }
+      }
+    }
+  } catch (_) {
+    // Luring — cukup pakai resto yang sedang dibuka.
+  }
+  return ids;
+}
+
 /// Kotak masuk pelanggan.
 ///
 /// Sebelumnya promo resto ditempelkan sebagai pita di atas daftar menu.
@@ -46,46 +92,6 @@ class _CustomerInboxScreenState extends State<CustomerInboxScreen> {
     _load();
   }
 
-  /// Resto yang kabarnya pantas sampai ke orang ini.
-  ///
-  /// Yang pernah dia pesan, ditambah yang sedang dia buka. Tamu dikenali
-  /// lewat daftar pesanan yang tersimpan di HP-nya sendiri — satu-
-  /// satunya jejak yang dia punya.
-  Future<Set<String>> _restoIds() async {
-    final ids = <String>{};
-    final session = context.read<TableSessionProvider>();
-    if (session.restoId != null) ids.add(session.restoId!);
-
-    final client = Supabase.instance.client;
-    final email = context.read<AuthProvider>().user?.email;
-    try {
-      if (email != null) {
-        final rows = await client
-            .from('orders')
-            .select('resto_id')
-            .eq('customer_label', email)
-            .limit(200);
-        for (final r in rows) {
-          if (r['resto_id'] != null) ids.add(r['resto_id'] as String);
-        }
-      } else {
-        final guestIds = await GuestOrderStore().ids();
-        if (guestIds.isNotEmpty) {
-          final rows = await client
-              .from('orders')
-              .select('resto_id')
-              .inFilter('id', guestIds.take(50).toList());
-          for (final r in rows) {
-            if (r['resto_id'] != null) ids.add(r['resto_id'] as String);
-          }
-        }
-      }
-    } catch (_) {
-      // Luring — cukup pakai resto yang sedang dibuka.
-    }
-    return ids;
-  }
-
   Future<void> _load() async {
     setState(() {
       _loading = true;
@@ -95,7 +101,7 @@ class _CustomerInboxScreenState extends State<CustomerInboxScreen> {
       final email = context.read<AuthProvider>().user?.email;
       final items = await _repo.customerInbox(
         email: email,
-        restoIds: await _restoIds(),
+        restoIds: await customerRestoIds(context),
       );
       if (!mounted) return;
       setState(() {

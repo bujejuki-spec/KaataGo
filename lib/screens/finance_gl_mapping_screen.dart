@@ -371,7 +371,7 @@ class _FinanceGlMappingScreenState extends State<FinanceGlMappingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: KaataTheme.backgroundTint,
+      backgroundColor: KaataTheme.backgroundOf(context),
       appBar: AppBar(
         title: const Text('Mapping GL Account'),
         actions: [

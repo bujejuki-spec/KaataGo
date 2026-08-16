@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../db/announcement_repository.dart';
 import '../providers/auth_provider.dart';
+import '../screens/customer_inbox_screen.dart';
 import '../screens/inbox_screen.dart';
 import 'hub_menu_tile.dart';
 
@@ -13,7 +14,15 @@ import 'hub_menu_tile.dart';
 /// berarti satu koneksi realtime lagi hanya demi sebuah titik merah —
 /// mahal untuk sesuatu yang isinya berubah beberapa kali sebulan.
 class InboxTile extends StatefulWidget {
-  const InboxTile({super.key});
+  /// Kotak masuk pelanggan, bukan karyawan.
+  ///
+  /// Isinya lahir dari aturan yang berbeda: pelanggan tidak punya
+  /// "resto sendiri", yang dia punya adalah daftar resto yang pernah
+  /// dia datangi. Memakai kotak masuk karyawan untuknya berarti promo
+  /// resto tidak pernah muncul — yang sampai cuma kabar versi baru.
+  final bool forCustomer;
+
+  const InboxTile({super.key, this.forCustomer = false});
 
   @override
   State<InboxTile> createState() => _InboxTileState();
@@ -31,10 +40,18 @@ class _InboxTileState extends State<InboxTile> {
   Future<void> _loadUnread() async {
     final auth = context.read<AuthProvider>();
     final email = auth.user?.email;
-    if (email == null) return;
+    if (email == null && !widget.forCustomer) return;
+    // Daftar restonya diambil sebelum menunggu apa pun: sesudah baris
+    // async pertama, context-nya mungkin sudah tidak terpasang lagi.
+    final restoIds =
+        widget.forCustomer ? await customerRestoIds(context) : const <String>{};
+    if (!mounted) return;
     try {
-      final items =
-          await AnnouncementRepository().inboxFor(email, restoId: auth.restoId);
+      final items = widget.forCustomer
+          ? await AnnouncementRepository()
+              .customerInbox(email: email, restoIds: restoIds)
+          : await AnnouncementRepository()
+              .inboxFor(email!, restoId: auth.restoId);
       if (!mounted) return;
       setState(() => _unread = items.where((i) => !i.read).length);
     } catch (_) {
@@ -50,7 +67,9 @@ class _InboxTileState extends State<InboxTile> {
       title: 'Kotak Masuk',
       subtitle: _unread > 0
           ? '$_unread pesan belum dibaca'
-          : 'Pengumuman & info versi terbaru KaataGo',
+          : widget.forCustomer
+              ? 'Promo resto & info versi terbaru'
+              : 'Pengumuman & info versi terbaru KaataGo',
       color: const Color(0xFF0EA5E9),
       // Angkanya pindah dari judul ke penanda merah. Sebagai tulisan
       // "(3 baru)" ia terbaca sebagai bagian dari nama menunya dan ikut
@@ -59,7 +78,11 @@ class _InboxTileState extends State<InboxTile> {
       badgeCount: _unread,
       onTap: () async {
         await Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const InboxScreen()),
+          MaterialPageRoute(
+            builder: (_) => widget.forCustomer
+                ? const CustomerInboxScreen()
+                : const InboxScreen(),
+          ),
         );
         _loadUnread();
       },

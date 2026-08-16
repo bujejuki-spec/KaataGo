@@ -152,7 +152,7 @@ class _TableQrGeneratorScreenState extends State<TableQrGeneratorScreen> {
     final restoName = _restoName.isEmpty ? restoId : _restoName;
 
     return Scaffold(
-      backgroundColor: KaataTheme.backgroundTint,
+      backgroundColor: KaataTheme.backgroundOf(context),
       appBar: AppBar(title: const Text('Generator QR Meja')),
       bottomNavigationBar: SafeArea(
         child: Padding(
@@ -221,10 +221,10 @@ class _TableQrGeneratorScreenState extends State<TableQrGeneratorScreen> {
                     key: ValueKey(_restoName),
                     initialValue: _restoName,
                     enabled: false,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Nama Resto',
                       filled: true,
-                      fillColor: Color(0xFFEEEEEE),
+                      fillColor: KaataTheme.disabledFillOf(context),
                     ),
                   ),
                 ],

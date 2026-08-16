@@ -58,6 +58,44 @@ class KaataTheme {
           ? const Color(0xFF9BA1B0)
           : const Color(0xFF757575);
 
+  /// Latar halaman. Menggantikan [backgroundTint] yang dipasang langsung
+  /// sebagai `backgroundColor` Scaffold di belasan layar.
+  ///
+  /// Nilai tetap itu menang atas `scaffoldBackgroundColor` milik tema —
+  /// hasilnya di mode gelap adalah halaman berlatar lavender terang
+  /// dengan kartu-kartu gelap di atasnya, persis kebalikan dari yang
+  /// dimaksud.
+  static Color backgroundOf(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+          ? darkBackground
+          : backgroundTint;
+
+  /// Latar kolom isian yang sedang tidak bisa disunting.
+  ///
+  /// Abu terang menandakan "terkunci" di tema terang. Di tema gelap ia
+  /// jadi balok putih menyilaukan, dan teks terangnya lenyap di
+  /// dalamnya.
+  static Color disabledFillOf(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+          ? const Color(0xFF2A2D39)
+          : const Color(0xFFEEEEEE);
+
+  /// Latar lembut berwarna — pengganti Colors.X.shade50/shade100.
+  ///
+  /// Warna pastel itu dipilih untuk menampung tulisan gelap. Di tema
+  /// gelap ia jadi pita terang yang menelan tulisan terangnya sendiri;
+  /// yang dibutuhkan justru kebalikannya — warna yang sama, tapi gelap.
+  static Color tintOf(BuildContext context, MaterialColor base) =>
+      Theme.of(context).brightness == Brightness.dark
+          ? Color.alphaBlend(base.withOpacity(0.16), darkSurface)
+          : base.shade50;
+
+  /// Warna tulisan di atas [tintOf].
+  static Color onTintOf(BuildContext context, MaterialColor base) =>
+      Theme.of(context).brightness == Brightness.dark
+          ? base.shade200
+          : base.shade700;
+
   /// Warna teks utama. Menggantikan Colors.black87 yang ditulis
   /// langsung di layar — hitam di atas latar gelap tidak terbaca sama
   /// sekali.

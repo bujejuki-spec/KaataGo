@@ -67,7 +67,7 @@ class _PaymentInfoScreenState extends State<PaymentInfoScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: KaataTheme.backgroundTint,
+      backgroundColor: KaataTheme.backgroundOf(context),
       appBar: AppBar(
         title: const Text('Info Pembayaran'),
         actions: [

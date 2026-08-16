@@ -54,6 +54,57 @@ void main() {
         reason: 'pakai KaataTheme.mutedOf / softFillOf / borderOf');
   });
 
+  test('latar halaman tidak lagi dipaku ke warna terang', () {
+    // KaataTheme.backgroundTint dipasang langsung sebagai
+    // backgroundColor Scaffold di belasan layar, dan nilai tetap itu
+    // menang atas scaffoldBackgroundColor milik tema. Hasilnya di mode
+    // gelap: halaman berlatar lavender terang dengan kartu gelap di
+    // atasnya — persis kebalikan dari yang dimaksud.
+    final pelanggar = <String>[];
+    for (final f in Directory('lib').listSync(recursive: true)) {
+      if (f is! File || !f.path.endsWith('.dart')) continue;
+      if (_dikecualikan.contains(f.path)) continue;
+      final isi = f.readAsStringSync();
+      if (isi.contains('KaataTheme.backgroundTint') ||
+          isi.contains('0xFFEEEEEE')) {
+        pelanggar.add(f.path);
+      }
+    }
+    expect(pelanggar, isEmpty,
+        reason: 'pakai KaataTheme.backgroundOf / disabledFillOf');
+  });
+
+  test('warna pastel tidak ditulis langsung sebagai latar', () {
+    // Colors.X.shade50 dipilih untuk menampung tulisan gelap. Di tema
+    // gelap ia jadi pita terang yang menelan tulisan terangnya sendiri.
+    final pelanggar = <String>[];
+    for (final f in Directory('lib').listSync(recursive: true)) {
+      if (f is! File || !f.path.endsWith('.dart')) continue;
+      if (_dikecualikan.contains(f.path)) continue;
+      final isi = f.readAsStringSync();
+      if (isi.contains('.shade50') || isi.contains('.shade100')) {
+        pelanggar.add(f.path);
+      }
+    }
+    expect(pelanggar, isEmpty, reason: 'pakai KaataTheme.tintOf / onTintOf');
+  });
+
+  testWidgets('latar dan kartu tidak pernah tertukar terang-gelapnya',
+      (tester) async {
+    // Kartu harus selalu lebih terang daripada latarnya di tema gelap,
+    // dan lebih terang pula di tema terang — kalau tertukar, kartunya
+    // terbaca sebagai lubang alih-alih sebagai kartu.
+    for (final tema in [KaataTheme.light(), KaataTheme.dark()]) {
+      late Color latar, kartu;
+      await _diTema(tester, tema, (c) {
+        latar = KaataTheme.backgroundOf(c);
+        kartu = KaataTheme.surfaceOf(c);
+      });
+      expect(kartu.computeLuminance(),
+          greaterThanOrEqualTo(latar.computeLuminance()));
+    }
+  });
+
   testWidgets('token temanya menjawab berbeda di terang dan gelap',
       (tester) async {
     late Color terang, gelap;

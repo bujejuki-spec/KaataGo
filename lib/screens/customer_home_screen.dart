@@ -38,7 +38,6 @@ import '../widgets/language_theme_toggle.dart';
 import '../widgets/quantity_dialog.dart';
 import 'customer_cart_screen.dart';
 import 'customer_history_screen.dart';
-import 'customer_inbox_screen.dart';
 import 'customer_order_status_screen.dart';
 import 'customer_profile_screen.dart';
 import 'restaurant_list_screen.dart';
@@ -494,7 +493,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
         if (!didPop) SystemNavigator.pop();
       },
       child: Scaffold(
-        backgroundColor: KaataTheme.backgroundTint,
+        backgroundColor: KaataTheme.backgroundOf(context),
         // Header stays put; only the menu scrolls — matching the
         // employee hubs.
         body: Column(
@@ -550,7 +549,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  const InboxTile(),
+                  const InboxTile(forCustomer: true),
                   const SizedBox(height: 12),
                   const NotificationTestTile(),
                   const SizedBox(height: 12),
@@ -706,13 +705,6 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
             session.tableNumber != null ? 'Meja ${session.tableNumber}' : 'KaataGo (Customer)',
           ),
           actions: [
-            IconButton(
-              icon: const Icon(Icons.mail_outline),
-              tooltip: 'Kotak Masuk',
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const CustomerInboxScreen()),
-              ),
-            ),
             const AppearanceIconButton(),
             if (!session.enteredViaQr)
               IconButton(
@@ -743,7 +735,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                 if (resto == null) return const SizedBox.shrink();
                 return Container(
                   width: double.infinity,
-                  color: Colors.indigo.shade50,
+                  color: KaataTheme.tintOf(context, Colors.indigo),
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

@@ -90,7 +90,7 @@ class _OrderCardState extends State<OrderCard> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
-                            color: Colors.blueGrey.shade50,
+                            color: KaataTheme.tintOf(context, Colors.blueGrey),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
@@ -106,13 +106,13 @@ class _OrderCardState extends State<OrderCard> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
-                            color: Colors.amber.shade50,
+                            color: KaataTheme.tintOf(context, Colors.amber),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
                             'a.n. ${order.customerName}',
                             style: TextStyle(
-                                fontSize: 12, fontWeight: FontWeight.bold, color: Colors.amber.shade800),
+                                fontSize: 12, fontWeight: FontWeight.bold, color: KaataTheme.onTintOf(context, Colors.amber)),
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -130,13 +130,13 @@ class _OrderCardState extends State<OrderCard> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: paid ? Colors.green.shade100 : Colors.orange.shade100,
+                    color: paid ? KaataTheme.tintOf(context, Colors.green) : KaataTheme.tintOf(context, Colors.orange),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     paid ? 'Sudah Dibayar' : 'Menunggu Pembayaran',
                     style: TextStyle(
-                      color: paid ? Colors.green.shade800 : Colors.orange.shade800,
+                      color: paid ? KaataTheme.onTintOf(context, Colors.green) : KaataTheme.onTintOf(context, Colors.orange),
                       fontWeight: FontWeight.bold,
                       fontSize: 12,
                     ),
@@ -151,8 +151,8 @@ class _OrderCardState extends State<OrderCard> {
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
                     color: order.source == OrderSource.kasir
-                        ? Colors.indigo.shade50
-                        : Colors.purple.shade50,
+                        ? KaataTheme.tintOf(context, Colors.indigo)
+                        : KaataTheme.tintOf(context, Colors.purple),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
@@ -171,8 +171,8 @@ class _OrderCardState extends State<OrderCard> {
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
                     color: order.orderType == OrderType.takeAway
-                        ? Colors.amber.shade50
-                        : Colors.teal.shade50,
+                        ? KaataTheme.tintOf(context, Colors.amber)
+                        : KaataTheme.tintOf(context, Colors.teal),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Row(
@@ -184,8 +184,8 @@ class _OrderCardState extends State<OrderCard> {
                             : Icons.restaurant_outlined,
                         size: 12,
                         color: order.orderType == OrderType.takeAway
-                            ? Colors.amber.shade800
-                            : Colors.teal.shade800,
+                            ? KaataTheme.onTintOf(context, Colors.amber)
+                            : KaataTheme.onTintOf(context, Colors.teal),
                       ),
                       const SizedBox(width: 4),
                       Text(
@@ -194,8 +194,8 @@ class _OrderCardState extends State<OrderCard> {
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
                           color: order.orderType == OrderType.takeAway
-                              ? Colors.amber.shade800
-                              : Colors.teal.shade800,
+                              ? KaataTheme.onTintOf(context, Colors.amber)
+                              : KaataTheme.onTintOf(context, Colors.teal),
                         ),
                       ),
                     ],

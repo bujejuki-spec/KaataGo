@@ -375,7 +375,7 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
                 decoration: InputDecoration(
                   label: requiredLabel('Nama resto'),
                   filled: !_editing,
-                  fillColor: _editing ? null : const Color(0xFFEEEEEE),
+                  fillColor: _editing ? null : KaataTheme.disabledFillOf(context),
                 ),
                 inputFormatters: nameFormatters,
                 textCapitalization: TextCapitalization.words,
@@ -396,11 +396,11 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
                 // dibuat. Membiarkannya bisa diketik hanya membuka pintu
                 // untuk id yang bentrok atau salah ketik.
                 enabled: false,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'ID resto (dibuat otomatis)',
                   helperText: 'Mengikuti nama resto — dipakai internal, tidak bisa diubah',
                   filled: true,
-                  fillColor: Color(0xFFEEEEEE),
+                  fillColor: KaataTheme.disabledFillOf(context),
                 ),
                 validator: (v) {
                   if (v == null || v.trim().isEmpty) return 'Wajib diisi';
@@ -417,7 +417,7 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
                 decoration: InputDecoration(
                   label: requiredLabel('Alamat'),
                   filled: !_editing,
-                  fillColor: _editing ? null : const Color(0xFFEEEEEE),
+                  fillColor: _editing ? null : KaataTheme.disabledFillOf(context),
                 ),
                 maxLines: 2,
               ),
@@ -429,7 +429,7 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
                   labelText: 'Nomor HP (opsional)',
                   helperText: 'Ditampilkan di struk',
                   filled: !_editing,
-                  fillColor: _editing ? null : const Color(0xFFEEEEEE),
+                  fillColor: _editing ? null : KaataTheme.disabledFillOf(context),
                 ),
                 keyboardType: TextInputType.phone,
                 inputFormatters: phoneFormatters,
@@ -441,7 +441,7 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
                 decoration: InputDecoration(
                   labelText: 'Kategori (opsional)',
                   filled: !_editing,
-                  fillColor: _editing ? null : const Color(0xFFEEEEEE),
+                  fillColor: _editing ? null : KaataTheme.disabledFillOf(context),
                 ),
                 items: kRestaurantCategories
                     .map((c) => DropdownMenuItem(value: c, child: Text(c)))
@@ -460,7 +460,7 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
                       decoration: InputDecoration(
                         labelText: 'PPN (%)',
                         filled: !_editing,
-                        fillColor: _editing ? null : const Color(0xFFEEEEEE),
+                        fillColor: _editing ? null : KaataTheme.disabledFillOf(context),
                       ),
                       validator: (v) => validateRate(v, label: 'PPN'),
                     ),
@@ -475,7 +475,7 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
                       decoration: InputDecoration(
                         labelText: 'Service (%)',
                         filled: !_editing,
-                        fillColor: _editing ? null : const Color(0xFFEEEEEE),
+                        fillColor: _editing ? null : KaataTheme.disabledFillOf(context),
                       ),
                       validator: (v) => validateRate(v, label: 'Biaya service'),
                     ),
@@ -548,7 +548,7 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
                 decoration: InputDecoration(
                   labelText: 'ID Akun Xendit (opsional)',
                   filled: !_editing,
-                  fillColor: _editing ? null : const Color(0xFFEEEEEE),
+                  fillColor: _editing ? null : KaataTheme.disabledFillOf(context),
                   helperText: 'Sub-akun resto ini di Xendit. Dana QRIS cair '
                       'langsung ke rekening yang terdaftar di sub-akun itu. '
                       'Kosongkan kalau belum dibuat.',

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../theme.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -143,7 +145,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       labelText: required && _editing ? null : label,
       label: required && _editing ? requiredLabel(label) : null,
       filled: !_editing,
-      fillColor: _editing ? null : const Color(0xFFEEEEEE),
+      fillColor: _editing ? null : KaataTheme.disabledFillOf(context),
     );
   }
 

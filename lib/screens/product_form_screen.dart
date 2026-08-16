@@ -389,7 +389,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                 decoration: InputDecoration(
                   label: requiredLabel('Nama produk'),
                   filled: !_editing,
-                  fillColor: _editing ? null : const Color(0xFFEEEEEE),
+                  fillColor: _editing ? null : KaataTheme.disabledFillOf(context),
                 ),
                 inputFormatters: nameFormatters,
                 textCapitalization: TextCapitalization.words,
@@ -403,14 +403,14 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                   labelText: 'Deskripsi (opsional)',
                   alignLabelWithHint: true,
                   filled: !_editing,
-                  fillColor: _editing ? null : const Color(0xFFEEEEEE),
+                  fillColor: _editing ? null : KaataTheme.disabledFillOf(context),
                 ),
                 maxLines: 3,
               ),
               const SizedBox(height: 12),
               if (categoryNames.isEmpty)
                 Card(
-                  color: Colors.orange.shade50,
+                  color: KaataTheme.tintOf(context, Colors.orange),
                   child: Padding(
                     padding: const EdgeInsets.all(12),
                     child: Column(
@@ -435,7 +435,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                   decoration: InputDecoration(
                     label: requiredLabel('Kategori'),
                     filled: !_editing,
-                    fillColor: _editing ? null : const Color(0xFFEEEEEE),
+                    fillColor: _editing ? null : KaataTheme.disabledFillOf(context),
                   ),
                   items: categoryNames
                       .map((name) => DropdownMenuItem(value: name, child: Text(name)))
@@ -452,7 +452,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                   label: requiredLabel('Harga Original (Rp)'),
                   helperText: 'Harga bersih, belum termasuk PPN',
                   filled: !_editing,
-                  fillColor: _editing ? null : const Color(0xFFEEEEEE),
+                  fillColor: _editing ? null : KaataTheme.disabledFillOf(context),
                 ),
                 keyboardType: TextInputType.number,
                 inputFormatters: [ThousandsInputFormatter()],
@@ -477,7 +477,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                       'menentukan produk muncul atau tidak.',
                   helperMaxLines: 2,
                   filled: !_editing,
-                  fillColor: _editing ? null : const Color(0xFFEEEEEE),
+                  fillColor: _editing ? null : KaataTheme.disabledFillOf(context),
                 ),
                 keyboardType: TextInputType.number,
                 validator: (v) {
@@ -569,7 +569,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                                       contentPadding:
                                           const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                                       filled: !_editing,
-                                      fillColor: _editing ? null : const Color(0xFFEEEEEE),
+                                      fillColor: _editing ? null : KaataTheme.disabledFillOf(context),
                                     ),
                                   ),
                                 ),

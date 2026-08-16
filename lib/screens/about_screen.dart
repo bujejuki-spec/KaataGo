@@ -31,7 +31,7 @@ class _AboutScreenState extends State<AboutScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: KaataTheme.backgroundTint,
+      backgroundColor: KaataTheme.backgroundOf(context),
       appBar: AppBar(title: const Text('Tentang KaataGo')),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),

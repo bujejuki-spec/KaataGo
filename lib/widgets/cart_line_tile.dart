@@ -64,7 +64,7 @@ class CartLineTile extends StatelessWidget {
     return InkWell(
       onTap: onEdit,
       child: Container(
-        color: soldOut ? Colors.red.shade50 : null,
+        color: soldOut ? KaataTheme.tintOf(context, Colors.red) : null,
         child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
         child: Row(
@@ -82,7 +82,7 @@ class CartLineTile extends StatelessWidget {
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 14.5,
-                            color: soldOut ? Colors.red.shade700 : null,
+                            color: soldOut ? KaataTheme.onTintOf(context, Colors.red) : null,
                             decoration:
                                 soldOut ? TextDecoration.lineThrough : null,
                           ),
@@ -94,7 +94,7 @@ class CartLineTile extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: Colors.red.shade700,
+                            color: KaataTheme.onTintOf(context, Colors.red),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: const Text('HABIS',

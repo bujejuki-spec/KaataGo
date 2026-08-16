@@ -347,7 +347,7 @@ class _AnnouncementFormState extends State<_AnnouncementForm>
                         height: 18,
                         child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                     : const Icon(Icons.campaign_outlined),
-                label: Text(toEveryone ? 'Kirim ke Semua' : 'Kirim ke Resto Ini'),
+                label: const Text('Kirim Pengumuman'),
                 style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
                 onPressed: _saving ? null : _publish,
               ),

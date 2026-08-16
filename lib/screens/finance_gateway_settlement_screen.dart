@@ -89,7 +89,7 @@ class _FinanceGatewaySettlementScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: KaataTheme.backgroundTint,
+      backgroundColor: KaataTheme.backgroundOf(context),
       appBar: AppBar(title: const Text('Pencairan Gateway')),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
