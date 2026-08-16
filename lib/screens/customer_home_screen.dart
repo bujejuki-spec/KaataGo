@@ -33,6 +33,7 @@ import '../widgets/loading_overlay.dart';
 import '../widgets/product_category_list.dart';
 import '../widgets/product_lines_sheet.dart';
 import '../widgets/promo_banner_carousel.dart';
+import '../widgets/resto_announcement_strip.dart';
 import '../widgets/quantity_dialog.dart';
 import 'customer_cart_screen.dart';
 import 'customer_history_screen.dart';
@@ -766,6 +767,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                 );
               },
             ),
+            RestoAnnouncementStrip(restoId: session.restoId!),
             PromoBannerCarousel(restoId: session.restoId!),
             Expanded(
               child: StreamBuilder<List<Product>>(

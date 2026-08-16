@@ -113,13 +113,33 @@ class _RestaurantListScreenState extends State<RestaurantListScreen> {
   String _distanceText(double km) =>
       km < 1 ? '${(km * 1000).round()} m' : '${km.toStringAsFixed(km < 10 ? 1 : 0)} km';
 
+  /// Yang cocok dengan pencarian, terurut dari yang paling dekat.
+  ///
+  /// Yang tidak diketahui lokasinya ditaruh paling belakang, bukan
+  /// dianggap berjarak nol. Resto yang belum mengisi titik lokasinya
+  /// bukan resto yang ada di sebelah kita — dan menaruhnya di puncak
+  /// daftar "terdekat" persis membalik arti daftar itu.
   List<Restaurant> get _matching {
     final q = _searchCtrl.text.trim().toLowerCase();
-    if (q.isEmpty) return _restaurants;
-    return _restaurants
-        .where((r) =>
-            r.name.toLowerCase().contains(q) || r.address.toLowerCase().contains(q))
-        .toList();
+    final matched = q.isEmpty
+        ? [..._restaurants]
+        : _restaurants
+            .where((r) =>
+                r.name.toLowerCase().contains(q) ||
+                r.address.toLowerCase().contains(q))
+            .toList();
+
+    if (_me == null) return matched;
+
+    matched.sort((a, b) {
+      final da = _distanceKm(a);
+      final db = _distanceKm(b);
+      if (da == null && db == null) return a.name.compareTo(b.name);
+      if (da == null) return 1;
+      if (db == null) return -1;
+      return da.compareTo(db);
+    });
+    return matched;
   }
 
   /// Yang dekat, terurut dari yang paling dekat.
@@ -204,7 +224,9 @@ class _RestaurantListScreenState extends State<RestaurantListScreen> {
                           _SectionHeader(
                             icon: Icons.storefront_outlined,
                             title: 'Semua Resto',
-                            subtitle: '${matching.length} resto',
+                            subtitle: _me == null
+                                ? '${matching.length} resto'
+                                : '${matching.length} resto · terdekat dulu',
                           ),
                           // Yang dekat tetap ikut muncul di sini. Daftar
                           // "semua" yang diam-diam menyembunyikan

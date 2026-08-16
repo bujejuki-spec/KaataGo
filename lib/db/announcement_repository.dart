@@ -56,6 +56,26 @@ class AnnouncementRepository {
     return rows.isEmpty ? null : Announcement.fromMap(rows.first);
   }
 
+  /// Pengumuman umum milik satu resto, terbaru di atas.
+  ///
+  /// Dipakai halaman menu pelanggan. Tanpa keadaan dibaca/dihapus:
+  /// pelanggan tamu tidak punya identitas yang bisa dipakai menyimpannya,
+  /// dan yang perlu mereka tahu cuma isi pengumumannya.
+  ///
+  /// Yang dari Super Admin sengaja tidak ikut — pemberitahuan versi
+  /// aplikasi urusan yang mengelola aplikasinya, bukan orang yang sedang
+  /// memilih makan siang.
+  Future<List<Announcement>> generalForResto(String restoId) async {
+    final rows = await _client
+        .from('app_announcements')
+        .select()
+        .eq('category', 'general')
+        .eq('resto_id', restoId)
+        .order('created_at', ascending: false)
+        .limit(5);
+    return rows.map((r) => Announcement.fromMap(r)).toList();
+  }
+
   Future<void> markRead(String email, String announcementId) async {
     await _client.from('inbox_states').upsert({
       'email': email,

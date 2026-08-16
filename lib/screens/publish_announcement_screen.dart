@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 
 import '../db/announcement_repository.dart';
 import '../models/announcement.dart';
+import '../db/restaurant_repository.dart';
 import '../providers/auth_provider.dart';
 import '../utils/photo_picker.dart';
 import '../widgets/app_toast.dart';
@@ -85,6 +86,14 @@ class _AnnouncementFormState extends State<_AnnouncementForm>
   String? _imageBase64;
   bool _saving = false;
 
+  /// Nama resto yang sedang dibuka, untuk disebut di keterangannya.
+  ///
+  /// Namanya, bukan Resto ID-nya. Admin yang memegang dua cabang perlu
+  /// tahu pengumumannya akan mendarat di mana, dan yang dia kenali
+  /// adalah "Kaata Resto Dago" — bukan deretan huruf yang tidak pernah
+  /// dia lihat di layar mana pun.
+  String? _restoName;
+
   bool get _isUpdate => widget.category == AnnouncementCategory.update;
 
   // Isian yang sudah diketik tidak boleh hilang saat berpindah tab lalu
@@ -96,6 +105,7 @@ class _AnnouncementFormState extends State<_AnnouncementForm>
   @override
   void initState() {
     super.initState();
+    _loadRestoName();
     if (!_isUpdate) return;
     // Versi yang terpasang di HP ini dipakai sebagai isian awal: yang
     // menerbitkan pengumuman biasanya baru saja memasang APK barunya.
@@ -108,6 +118,19 @@ class _AnnouncementFormState extends State<_AnnouncementForm>
             'Perbarui aplikasimu untuk mendapat perbaikan dan fitur terbaru.';
       });
     });
+  }
+
+  Future<void> _loadRestoName() async {
+    final restoId = context.read<AuthProvider>().restoId;
+    if (restoId == null) return;
+    try {
+      final resto = await RestaurantRepository().getOnce(restoId);
+      if (!mounted) return;
+      setState(() => _restoName = resto?.name);
+    } catch (_) {
+      // Luring — keterangannya cukup menyebut "resto yang sedang kamu
+      // buka" tanpa namanya.
+    }
   }
 
   @override
@@ -195,8 +218,11 @@ class _AnnouncementFormState extends State<_AnnouncementForm>
                     : toEveryone
                         ? 'Pengumuman umum ke seluruh resto. Muncul di tab '
                             '"General" pada kotak masuk semua pengguna yang login.'
-                        : 'Pengumuman umum untuk resto ini saja. Muncul di tab '
-                            '"General" pada kotak masuk karyawan resto ini.',
+                        : 'Pengumuman umum untuk '
+                            '${_restoName ?? 'resto yang sedang kamu buka'}. '
+                            'Muncul di kotak masuk karyawan resto itu, dan di '
+                            'halaman menu pelanggannya. Resto lain tidak '
+                            'menerimanya.',
                 style: const TextStyle(fontSize: 12.5, color: Color(0xFF075985)),
               ),
             ),
