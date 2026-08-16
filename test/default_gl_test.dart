@@ -81,4 +81,39 @@ void main() {
       expect(sql, contains('2200002'));
     });
   });
+
+  group('daftar batasan tidak boleh mundur', () {
+    // Tiga kali berturut-turut migrasi gagal dengan sebab yang sama:
+    // berkas lama menuliskan daftar nilai sepanjang zamannya sendiri,
+    // lalu dijalankan ulang sesudah berkas baru menambah nilai. Daftar
+    // menyempit, baris yang sudah memakai nilai baru melanggarnya, dan
+    // pesannya menuduh datanya yang salah.
+    //
+    // Tes ini membaca berkasnya langsung: tiap batasan bernama hanya
+    // boleh punya SATU bentuk daftar di seluruh folder supabase.
+    test('satu nama batasan, satu daftar nilai', () {
+      final pola = RegExp(
+        r'add constraint (\w+)\s*\n?\s*check \((.*?)\);',
+        dotAll: true,
+      );
+      final daftar = <String, Set<String>>{};
+
+      for (final f in Directory('supabase').listSync()) {
+        if (f is! File || !f.path.endsWith('.sql')) continue;
+        if (f.path.endsWith('JALANKAN-INI.sql')) continue;
+        for (final m in pola.allMatches(f.readAsStringSync())) {
+          final nama = m.group(1)!;
+          final isi = m.group(2)!.replaceAll(RegExp(r'\s+'), ' ').trim();
+          daftar.putIfAbsent(nama, () => {}).add(isi);
+        }
+      }
+
+      final bercabang = {
+        for (final e in daftar.entries)
+          if (e.value.length > 1) e.key: e.value.length,
+      };
+      expect(bercabang, isEmpty,
+          reason: 'daftarnya harus sama persis di semua berkas');
+    });
+  });
 }

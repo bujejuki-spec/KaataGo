@@ -38,7 +38,7 @@ create table if not exists orders (
   session_id text,
   table_number text,
   source text not null check (source in ('customer', 'kasir')),
-  payment_status text not null check (payment_status in ('pending', 'paid')),
+  payment_status text not null check (payment_status in ('pending', 'paid', 'expired', 'cancelled')),
   payment_method text,
   kitchen_status text not null default 'waiting'
     check (kitchen_status in ('waiting', 'onProgress', 'done')),

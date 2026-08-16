@@ -348,6 +348,34 @@ def build():
             i += 1
             continue
 
+        # Galeri tangkapan layar: baris "!!ss[caption](path)" yang
+        # berurutan dikumpulkan jadi satu tabel tanpa garis, tiga kolom.
+        #
+        # Ditaruh berkelompok, bukan satu per halaman: dua ratus tangkapan
+        # layar seukuran halaman penuh menghasilkan dokumen yang tidak
+        # akan pernah dibuka sampai habis. Bertiga sebaris, ukurannya
+        # masih cukup untuk mengenali layar mana yang sedang dilihat, dan
+        # seluruh peran muat dibaca dalam beberapa halaman.
+        if stripped.startswith("!!ss["):
+            grup = []
+            while i < len(lines) and lines[i].strip().startswith("!!ss["):
+                mm = re.match(r"!!ss\[(.*?)\]\((.+?)\)", lines[i].strip())
+                if mm:
+                    path = os.path.normpath(os.path.join(IMG_ROOT, mm.group(2)))
+                    if os.path.exists(path):
+                        grup.append((mm.group(1), path))
+                    else:
+                        # Diam-diam melewatkannya berarti lampiran yang
+                        # kurang setengahnya tanpa ada yang tahu — dan
+                        # itu memang sempat terjadi: nama folder yang
+                        # mengandung tanda kurung memutus jalurnya di
+                        # tengah.
+                        print("  ! gambar tidak ditemukan:", path)
+                i += 1
+            if grup:
+                add_gallery(doc, grup)
+            continue
+
         # Gambar
         m = re.match(r"!\[(.*?)\]\((.+?)\)", stripped)
         if m:
@@ -460,6 +488,46 @@ def build():
 
 def clean(text):
     return re.sub(r"[*`]", "", text).strip()
+
+
+def add_gallery(doc, items, per_row=3):
+    """Menyusun tangkapan layar jadi tabel tanpa garis.
+
+    Tabel, bukan deretan paragraf: paragraf gambar berukuran sama akan
+    dijatuhkan satu per baris oleh Word, dan dua ratus gambar berarti
+    dua ratus baris. Sel tabel menahan tiganya tetap sebaris.
+    """
+    from docx.enum.table import WD_TABLE_ALIGNMENT
+
+    lebar = Cm(5.0)
+    for mulai in range(0, len(items), per_row):
+        potong = items[mulai:mulai + per_row]
+        t = doc.add_table(rows=2, cols=per_row)
+        t.alignment = WD_TABLE_ALIGNMENT.CENTER
+        t.autofit = True
+        for kolom in range(per_row):
+            sel_gambar = t.cell(0, kolom)
+            sel_teks = t.cell(1, kolom)
+            pg = sel_gambar.paragraphs[0]
+            pg.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            pg.paragraph_format.space_after = Pt(0)
+            pt = sel_teks.paragraphs[0]
+            pt.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            pt.paragraph_format.space_after = Pt(10)
+            if kolom < len(potong):
+                caption, path = potong[kolom]
+                try:
+                    pg.add_run().add_picture(path, width=lebar)
+                except Exception:
+                    # Berkas rusak tidak boleh menjatuhkan seluruh
+                    # dokumen — lampiran yang kurang satu gambar masih
+                    # jauh lebih berguna daripada dokumen yang gagal
+                    # dibuat.
+                    continue
+                r = pt.add_run(caption)
+                r.italic = True
+                r.font.size = Pt(7.5)
+                r.font.color.rgb = MUTED
 
 
 def add_table(doc, block):

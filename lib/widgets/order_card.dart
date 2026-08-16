@@ -55,7 +55,17 @@ class _OrderCardState extends State<OrderCard> {
       decimalDigits: 0,
     );
     final dateFmt = DateFormat('dd MMM, HH:mm', 'id_ID');
-    final paid = order.paymentStatus == OrderPaymentStatus.paid;
+    // Status bayar diambil dari nilainya sendiri, bukan dari "lunas atau
+    // bukan". Dengan dua nilai saja, pesanan yang dibatalkan jatuh ke
+    // sisi "bukan" dan terbaca **Menunggu Pembayaran** — kartu yang
+    // menagih uang untuk pesanan yang sudah ditarik.
+    final (String labelBayar, MaterialColor warnaBayar) =
+        switch (order.paymentStatus) {
+      OrderPaymentStatus.paid => ('Sudah Dibayar', Colors.green),
+      OrderPaymentStatus.pending => ('Menunggu Pembayaran', Colors.orange),
+      OrderPaymentStatus.cancelled => ('Dibatalkan', Colors.red),
+      OrderPaymentStatus.expired => ('Hangus', Colors.grey),
+    };
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -130,13 +140,13 @@ class _OrderCardState extends State<OrderCard> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: paid ? KaataTheme.tintOf(context, Colors.green) : KaataTheme.tintOf(context, Colors.orange),
+                    color: KaataTheme.tintOf(context, warnaBayar),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    paid ? 'Sudah Dibayar' : 'Menunggu Pembayaran',
+                    labelBayar,
                     style: TextStyle(
-                      color: paid ? KaataTheme.onTintOf(context, Colors.green) : KaataTheme.onTintOf(context, Colors.orange),
+                      color: KaataTheme.onTintOf(context, warnaBayar),
                       fontWeight: FontWeight.bold,
                       fontSize: 12,
                     ),

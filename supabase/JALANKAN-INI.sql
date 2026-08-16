@@ -1896,9 +1896,21 @@ create extension if not exists pg_cron with schema extensions;
 -- 'expired' — dibatalkan karena tidak dibayar. Dibedakan dari 'pending'
 -- supaya hilang dari antrean kasir dan dapur, dan dibedakan dari 'paid'
 -- supaya tidak pernah ikut terhitung sebagai pendapatan.
+--
+-- Daftarnya ditulis lengkap — termasuk 'cancelled' yang baru
+-- diperkenalkan berkas lain. Berkas yang menuliskan daftar sepanjang
+-- zamannya sendiri berjalan baik tepat sekali: saat dijalankan berurutan
+-- di database kosong. Menjalankan ulang yang lebih tua sesudah yang
+-- lebih baru menyempitkan daftarnya lagi, dan baris yang terlanjur
+-- memakai nilai baru langsung melanggarnya:
+--
+--   check constraint "orders_payment_status_check" is violated by some row
+--
+-- Tidak ada satu pun data yang salah di sana. Yang salah adalah
+-- batasannya yang mundur.
 alter table orders drop constraint if exists orders_payment_status_check;
 alter table orders add constraint orders_payment_status_check
-  check (payment_status in ('pending', 'paid', 'expired'));
+  check (payment_status in ('pending', 'paid', 'expired', 'cancelled'));
 
 create or replace function expire_unpaid_cash_orders()
 returns integer

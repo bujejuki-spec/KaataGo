@@ -16,7 +16,7 @@
 alter table employees alter column resto_id drop not null;
 alter table employees drop constraint if exists employees_role_check;
 alter table employees add constraint employees_role_check
-  check (role in ('admin', 'kasir', 'chef', 'super_admin'));
+  check (role in ('admin', 'kasir', 'chef', 'super_admin', 'finance', 'owner'));
 
 -- ── Helper: is the currently-authenticated user an active super_admin?
 create or replace function is_super_admin()

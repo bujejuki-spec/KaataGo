@@ -1,0 +1,30 @@
+{
+ "Customer-NonLogin": {
+  "light": {
+   "215645": "Halaman awal — pilih peran, pemilih tema, nomor versi",
+   "215651": "Tentang KaataGo — tautan situs dan ringkasan fitur tiap peran",
+   "215655": "Ajakan login; tamu memilih Lewati, Pesan Tanpa Login",
+   "215700": "Layar pembuka tamu — Scan QR Meja, Pilih Resto, dan Riwayat Pesanan Saya",
+   "215705": "Pilih Resto sebelum izin lokasi diberikan — hanya bagian Semua Resto",
+   "215711": "Layar yang sama setelah lokasi diketahui — bagian Terdekat muncul berikut jaraknya",
+   "215715": "Menu resto — banner promo, kategori terlipat, keranjang kosong",
+   "215723": "Dialog menu makanan — Level Pedas, catatan, jumlah, subtotal",
+   "215730": "Dialog menu minuman — tiga kelompok level: Gula, Es, dan Ukuran",
+   "215807": "Keranjang Take Away — nomor meja tidak diminta, nama pemesan wajib",
+   "215811": "Cara bayar Tunai dipilih — tombolnya berubah jadi Pesan & Bayar di Kasir",
+   "215816": "Pesanan diterima — nomor pesanan untuk disebutkan di kasir dan hitung mundur 30 menit",
+   "215833": "Riwayat Saya milik tamu — peringatan bahwa riwayatnya hanya tersimpan di HP ini"
+  },
+  "dark": {
+   "213321": "Halaman awal dengan tema Gelap aktif",
+   "213329": "Layar pembuka tamu",
+   "213335": "Pilih Resto — Terdekat dan Semua Resto",
+   "213341": "Menu resto — banner promo dan kategori",
+   "213349": "Dialog menu — deskripsi produk ikut tampil di bawah harganya",
+   "213408": "Keranjang Dine In — nomor meja dan nama pemesan, rincian biaya service dan PPN",
+   "213417": "Bayar dengan QRIS — kartu QR berbingkai, masa berlaku, simpan ke galeri",
+   "213425": "Pembayaran berhasil berikut nomor pesanannya",
+   "213434": "Pesanan Saya — status dapur dan pembayaran untuk sesi meja ini"
+  }
+ }
+}

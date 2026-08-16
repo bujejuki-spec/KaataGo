@@ -85,4 +85,35 @@ void main() {
       expect(_order().isVoid, isFalse);
     });
   });
+
+  group('label status di kartu pesanan', () {
+    // Kartunya dulu cuma mengenal dua keadaan: lunas atau belum. Dengan
+    // itu, pesanan yang ditarik pelanggannya jatuh ke sisi "belum" dan
+    // terbaca "Menunggu Pembayaran" di layar Pesanan Masuk — kartu yang
+    // menagih uang untuk pesanan yang sudah dibatalkan.
+    String label(OrderPaymentStatus s) => switch (s) {
+          OrderPaymentStatus.paid => 'Sudah Dibayar',
+          OrderPaymentStatus.pending => 'Menunggu Pembayaran',
+          OrderPaymentStatus.cancelled => 'Dibatalkan',
+          OrderPaymentStatus.expired => 'Hangus',
+        };
+
+    test('tiap status punya labelnya sendiri', () {
+      final semua = OrderPaymentStatus.values.map(label).toSet();
+      expect(semua.length, OrderPaymentStatus.values.length);
+    });
+
+    test('yang dibatalkan tidak pernah terbaca menunggu pembayaran', () {
+      expect(label(OrderPaymentStatus.cancelled), isNot('Menunggu Pembayaran'));
+      expect(label(OrderPaymentStatus.expired), isNot('Menunggu Pembayaran'));
+    });
+
+    test('yang batal maupun hangus tidak ikut ditampilkan di Pesanan Masuk', () {
+      final tampil = [
+        for (final s in OrderPaymentStatus.values)
+          if (!_order(source: OrderSource.customer, status: s).isVoid) s,
+      ];
+      expect(tampil, [OrderPaymentStatus.pending, OrderPaymentStatus.paid]);
+    });
+  });
 }

@@ -34,7 +34,15 @@ class EmployeeOrdersScreen extends StatelessWidget {
                   textAlign: TextAlign.center),
             );
           }
-          final orders = snapshot.data ?? [];
+          // Pesanan yang dibatalkan atau hangus tidak ikut ditampilkan.
+          //
+          // Layar dapur sudah membuangnya sejak awal, layar ini belum —
+          // dan karena kartunya membaca status bayar sebagai "lunas atau
+          // bukan", pesanan yang ditarik pelanggannya muncul di sini
+          // dengan label Menunggu Pembayaran. Yang membacanya wajar
+          // menyiapkan makanannya.
+          final orders =
+              (snapshot.data ?? []).where((o) => !o.isVoid).toList();
           if (orders.isEmpty) {
             return const Center(child: Text('Belum ada pesanan masuk.'));
           }
