@@ -569,7 +569,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                   HubMenuTile(
                     icon: Icons.logout,
                     title: 'Keluar',
-                    subtitle: context.read<AuthProvider>().user?.email ?? '',
+                    subtitle: 'Logout dari akun ini',
                     color: const Color(0xFFEF4444),
                     onTap: () async {
                       if (!await confirmLogout(context)) return;

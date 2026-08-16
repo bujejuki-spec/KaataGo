@@ -827,7 +827,7 @@ class _GlAccountRow extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
-                color: const Color(0xFFF7F8FC),
+                color: KaataTheme.softFillOf(context),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Row(
@@ -882,7 +882,7 @@ class _ExpenseGlRow extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
         decoration: BoxDecoration(
-          color: const Color(0xFFF7F8FC),
+          color: KaataTheme.softFillOf(context),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Row(

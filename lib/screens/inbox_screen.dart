@@ -259,7 +259,15 @@ class _InboxScreenState extends State<InboxScreen> {
   Widget build(BuildContext context) {
     return DefaultTabController(
       length: AnnouncementCategory.values.length,
-      child: _buildScaffold(context),
+      // Builder, bukan _buildScaffold(context) langsung.
+      //
+      // Context yang diterima build() ini berada DI ATAS
+      // DefaultTabController, jadi DefaultTabController.of(context) di
+      // dalamnya tidak menemukan apa pun dan melempar galat. Galat itu
+      // terjadi di dalam onPressed, jadi tidak ada layar merah — yang
+      // terlihat cuma tombol Tandai Dibaca dan Hapus yang ditekan tapi
+      // tidak melakukan apa-apa.
+      child: Builder(builder: _buildScaffold),
     );
   }
 

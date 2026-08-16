@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../theme.dart';
 import 'package:intl/intl.dart';
 
 import '../utils/rupiah_input.dart';
@@ -98,7 +100,7 @@ class _CashPaymentDialogState extends State<CashPaymentDialog> {
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF4F5FB),
+                  color: KaataTheme.softFillOf(context),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(

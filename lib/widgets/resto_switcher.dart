@@ -76,22 +76,54 @@ class _RestoSwitcherState extends State<RestoSwitcher> {
             ),
             const SizedBox(height: 10),
             for (final id in auth.restoIds)
-              ListTile(
-                leading: Icon(
-                  id == auth.restoId ? Icons.radio_button_checked : Icons.radio_button_unchecked,
-                  color: id == auth.restoId ? Theme.of(context).primaryColor : Colors.grey,
-                ),
-                title: Text(
-                  _nameOf(id),
-                  style: TextStyle(
-                    fontWeight: id == auth.restoId ? FontWeight.bold : FontWeight.normal,
+              () {
+                final aktif = id == auth.restoId;
+                // Yang sedang aktif ditandai tiga kali: bulatan berisi,
+                // tulisan tebal, dan latar bersemburat merek.
+                //
+                // Terdengar berlebihan untuk satu baris daftar, tapi
+                // inilah yang menentukan seluruh data yang dilihat
+                // sesudahnya milik resto yang mana. Di tema gelap,
+                // warna bawaan Theme.primaryColor jatuh terlalu dekat
+                // dengan latarnya — bulatannya ada, tapi tidak
+                // terbaca, dan yang punya dua cabang tidak tahu sedang
+                // membuka yang mana.
+                return Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: aktif
+                        ? KaataTheme.brandOf(context).withOpacity(0.14)
+                        : null,
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                ),
-                subtitle: _restos[id]?.address.isNotEmpty == true
-                    ? Text(_restos[id]!.address, maxLines: 1, overflow: TextOverflow.ellipsis)
-                    : null,
-                onTap: () => Navigator.pop(sheetContext, id),
-              ),
+                  child: ListTile(
+                    leading: Icon(
+                      aktif
+                          ? Icons.radio_button_checked
+                          : Icons.radio_button_unchecked,
+                      color: aktif
+                          ? KaataTheme.brandOf(context)
+                          : KaataTheme.mutedOf(context),
+                    ),
+                    title: Text(
+                      _nameOf(id),
+                      style: TextStyle(
+                        fontWeight: aktif ? FontWeight.bold : FontWeight.normal,
+                        color: aktif ? KaataTheme.brandOf(context) : null,
+                      ),
+                    ),
+                    subtitle: _restos[id]?.address.isNotEmpty == true
+                        ? Text(_restos[id]!.address,
+                            maxLines: 1, overflow: TextOverflow.ellipsis)
+                        : null,
+                    trailing: aktif
+                        ? Icon(Icons.check,
+                            size: 18, color: KaataTheme.brandOf(context))
+                        : null,
+                    onTap: () => Navigator.pop(sheetContext, id),
+                  ),
+                );
+              }(),
             const SizedBox(height: 12),
           ],
         ),

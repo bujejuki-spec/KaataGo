@@ -65,8 +65,18 @@ void main() {
       if (f is! File || !f.path.endsWith('.dart')) continue;
       if (_dikecualikan.contains(f.path)) continue;
       final isi = f.readAsStringSync();
-      if (isi.contains('KaataTheme.backgroundTint') ||
-          isi.contains('0xFFEEEEEE')) {
+      // Warna near-putih yang ditulis langsung sebagai latar. Semuanya
+      // dipilih untuk menampung tulisan gelap, dan di tema gelap
+      // tulisannya berubah terang — hilang di dalam kotaknya sendiri.
+      const putihSamaran = [
+        'KaataTheme.backgroundTint',
+        '0xFFEEEEEE',
+        '0xFFF7F8FC',
+        '0xFFF4F5FB',
+        '0xFFFAFAFA',
+        '0xFFF5F5F5',
+      ];
+      if (putihSamaran.any(isi.contains)) {
         pelanggar.add(f.path);
       }
     }

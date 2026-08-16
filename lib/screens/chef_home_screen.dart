@@ -71,24 +71,33 @@ class _ChefHomeScreenState extends State<ChefHomeScreen> {
               ),
             ],
           ),
-          // Bisa digeser: empat tab dengan satu label dua kata tidak
-          // muat dibagi rata di layar HP, dan yang terpotong justru tab
-          // baru yang belum dikenali siapa pun.
+          // Bisa digeser, tapi ditaruh di tengah.
+          //
+          // Empat tab dengan satu label dua kata tidak muat dibagi rata
+          // di layar HP, jadi tetap harus bisa digeser. Yang berubah cuma
+          // perataannya: rata kiri menyisakan ruang kosong menganggur di
+          // kanan dan membuat barisnya terlihat terpotong — seolah ada
+          // tab kelima yang gagal dimuat.
           bottom: TabBar(
             isScrollable: true,
-            tabAlignment: TabAlignment.start,
+            tabAlignment: TabAlignment.center,
             tabs: _tabs.map((t) => Tab(text: t.$2)).toList(),
           ),
           actions: [
-            const AppearanceIconButton(),
-            // Owner membukanya dari hub-nya sendiri, yang sudah punya
-            // Kotak Masuk — sama alasannya dengan tombol Keluar di bawah.
-            if (!auth.isOwner) const InboxIconButton(),
-            IconButton(
-              icon: const Icon(Icons.notifications_active_outlined),
-              tooltip: 'Tes Notifikasi',
-              onPressed: () => showNotificationTest(context),
-            ),
+            // Owner membuka layar ini dari hub-nya sendiri, dan hub itu
+            // sudah punya Kotak Masuk, Tes Notifikasi, Tampilan, dan
+            // Keluar. Menampilkannya lagi di sini bukan cuma
+            // mengulang — ia menawarkan pengaturan aplikasi di layar
+            // yang dia buka untuk satu hal saja: mengintip dapur.
+            if (!auth.isOwner) ...[
+              const AppearanceIconButton(),
+              const InboxIconButton(),
+              IconButton(
+                icon: const Icon(Icons.notifications_active_outlined),
+                tooltip: 'Tes Notifikasi',
+                onPressed: () => showNotificationTest(context),
+              ),
+            ],
             // Owner membuka layar ini dari hub-nya, dan hub itu sudah
             // punya menu Keluar sendiri. Tombol logout di sini akan
             // mengeluarkannya dari aplikasi hanya karena dia mengintip

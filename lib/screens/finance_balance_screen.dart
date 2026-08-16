@@ -1389,7 +1389,7 @@ class _AddPettyCashDialogState extends State<_AddPettyCashDialog> {
                 Container(
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF4F5FB),
+                    color: KaataTheme.softFillOf(context),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Row(

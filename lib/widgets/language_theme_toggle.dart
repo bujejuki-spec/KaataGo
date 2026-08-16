@@ -73,7 +73,15 @@ class LanguageToggle extends StatelessWidget {
 /// lagi di sini berarti aplikasi ini yang menyendiri saat semua
 /// aplikasi lain di HP-nya berubah.
 class ThemeToggle extends StatelessWidget {
-  const ThemeToggle({super.key});
+  /// Dipanggil setelah temanya berganti.
+  ///
+  /// Dipakai dialog Tampilan untuk menutup dirinya sendiri. Tanpa itu
+  /// dialognya tetap menutupi layar yang barusan berganti warna, dan
+  /// yang terlihat cuma sebagian kecil di pinggirnya — cukup untuk
+  /// mengira temanya belum sepenuhnya berubah.
+  final VoidCallback? onChanged;
+
+  const ThemeToggle({super.key, this.onChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -99,7 +107,10 @@ class ThemeToggle extends StatelessWidget {
         ),
       ],
       selected: {prefs.themeMode},
-      onSelectionChanged: (v) => prefs.setThemeMode(v.first),
+      onSelectionChanged: (v) {
+        prefs.setThemeMode(v.first);
+        onChanged?.call();
+      },
       style: ButtonStyle(
         visualDensity: VisualDensity.compact,
         textStyle: WidgetStateProperty.all(const TextStyle(fontSize: 12)),
@@ -110,12 +121,20 @@ class ThemeToggle extends StatelessWidget {
 
 /// Blok Bahasa + Tampilan untuk layar Pengaturan.
 class LanguageThemeSection extends StatelessWidget {
-  const LanguageThemeSection({super.key});
+  final VoidCallback? onThemeChanged;
+
+  const LanguageThemeSection({super.key, this.onThemeChanged});
 
   @override
   Widget build(BuildContext context) {
+    // Ditaruh di tengah, bukan rata kiri.
+    //
+    // Pilihannya cuma satu baris tombol, dan rata kiri menyisakan ruang
+    // kosong menganggur di kanan — barisnya terlihat seperti separuh
+    // jadi. Judul "Tampilan" di atasnya juga sudah diulang oleh judul
+    // bagiannya di layar Pengaturan, jadi dibuang.
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         if (kLanguageSwitcherEnabled) ...[
           Text(context.tr('Bahasa'),
@@ -124,13 +143,11 @@ class LanguageThemeSection extends StatelessWidget {
           const LanguageToggle(),
           const SizedBox(height: 18),
         ],
-        Text(context.tr('Tampilan'),
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+        ThemeToggle(onChanged: onThemeChanged),
         const SizedBox(height: 8),
-        const ThemeToggle(),
-        const SizedBox(height: 6),
         Text(
           'Berlaku di perangkat ini saja.',
+          textAlign: TextAlign.center,
           style: TextStyle(fontSize: 11.5, color: KaataTheme.mutedOf(context)),
         ),
       ],
@@ -164,7 +181,13 @@ Future<void> showAppearanceDialog(BuildContext context) {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       title: Text(dialogContext.tr('Tampilan'),
           style: const TextStyle(fontSize: 17)),
-      content: const SingleChildScrollView(child: LanguageThemeSection()),
+      content: SingleChildScrollView(
+        child: LanguageThemeSection(
+          // Ditutup begitu temanya dipilih: yang menekan tombolnya
+          // sedang ingin melihat hasilnya, bukan melihat dialognya.
+          onThemeChanged: () => Navigator.pop(dialogContext),
+        ),
+      ),
       actionsAlignment: MainAxisAlignment.center,
       actions: [
         TextButton(

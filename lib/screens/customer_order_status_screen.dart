@@ -9,6 +9,7 @@ import '../providers/auth_provider.dart';
 import '../theme.dart';
 import '../providers/table_session_provider.dart';
 import '../utils/id_time.dart';
+import '../widgets/cancel_order_button.dart';
 import 'customer_receipt_screen.dart';
 import '../widgets/dialog_actions.dart';
 
@@ -120,7 +121,6 @@ class CustomerOrderStatusScreen extends StatelessWidget {
             itemCount: orders.length,
             itemBuilder: (context, index) {
               final order = orders[index];
-              final paid = order.paymentStatus == OrderPaymentStatus.paid;
               return Card(
                 margin: const EdgeInsets.only(bottom: 10),
                 child: Padding(
@@ -168,9 +168,18 @@ class CustomerOrderStatusScreen extends StatelessWidget {
                           ),
                           const SizedBox(width: 12),
                           Text(
-                            paid ? 'Sudah Dibayar' : 'Menunggu Pembayaran',
+                            switch (order.paymentStatus) {
+                              OrderPaymentStatus.paid => 'Sudah Dibayar',
+                              OrderPaymentStatus.cancelled => 'Dibatalkan',
+                              OrderPaymentStatus.expired => 'Hangus, tidak dibayar',
+                              OrderPaymentStatus.pending => 'Menunggu Pembayaran',
+                            },
                             style: TextStyle(
-                              color: paid ? Colors.green : Colors.orange,
+                              color: switch (order.paymentStatus) {
+                                OrderPaymentStatus.paid => Colors.green,
+                                OrderPaymentStatus.pending => Colors.orange,
+                                _ => KaataTheme.mutedOf(context),
+                              },
                               fontSize: 12,
                             ),
                           ),
@@ -208,6 +217,13 @@ class CustomerOrderStatusScreen extends StatelessWidget {
                               style: const TextStyle(fontWeight: FontWeight.bold)),
                         ],
                       ),
+                      // Di sinilah pelanggan berada saat berubah pikiran:
+                      // beberapa menit setelah memesan, masih duduk di
+                      // restonya. Riwayat baru dibuka jauh sesudahnya.
+                      if (order.canBeCancelledByCustomer) ...[
+                        const SizedBox(height: 10),
+                        CancelOrderButton(order: order),
+                      ],
                     ],
                   ),
                 ),
