@@ -57,3 +57,6 @@ app.*.map.json
 
 # Renamed release APKs (build artifacts, not source)
 /KaataGo Realase/
+
+# Berkas kunci sementara yang dibuat Word saat dokumennya dibuka.
+~$*
