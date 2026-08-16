@@ -51,6 +51,7 @@ class _CustomerQrisScreenState extends State<CustomerQrisScreen> {
   bool _loadingCharge = true;
   bool _confirming = false;
   bool _downloading = false;
+  bool _simulating = false;
 
   StreamSubscription<CustomerOrder?>? _orderSub;
   Timer? _ticker;
@@ -139,6 +140,22 @@ class _CustomerQrisScreenState extends State<CustomerQrisScreen> {
       showAppToast(context, 'Gagal konfirmasi pembayaran: $e', isError: true);
       setState(() => _confirming = false);
     }
+  }
+
+  /// Hanya muncul saat penyedianya memakai kunci uji.
+  ///
+  /// Yang dipanggil endpoint simulasi milik penyedia — pelunasannya
+  /// tetap datang lewat webhook, sama seperti pembayaran sungguhan.
+  /// Jadi yang diuji tetap rantai yang sebenarnya, bukan jalan pintas
+  /// yang cuma ada saat pengujian.
+  Future<void> _simulate() async {
+    setState(() => _simulating = true);
+    final error = await _gateway.simulatePayment(widget.orderId);
+    if (!mounted) return;
+    setState(() => _simulating = false);
+    if (error != null) showAppToast(context, error, isError: true);
+    // Perpindahan layarnya ditangani pemantau pesanan, sama seperti
+    // pembayaran sungguhan.
   }
 
   Future<void> _renewCharge() async {
@@ -254,6 +271,37 @@ class _CustomerQrisScreenState extends State<CustomerQrisScreen> {
                           : const Icon(Icons.download_outlined),
                       label: const Text('Simpan QR ke Galeri'),
                     ),
+                    // Mode uji: QR-nya bukan QRIS asli, jadi tidak ada
+                    // yang bisa memindainya. Tombol ini menggantikan
+                    // tindakan memindai itu — bukan menggantikan
+                    // webhooknya, yang tetap yang menyatakan lunas.
+                    //
+                    // Muncul karena servernya bilang ini kunci uji,
+                    // bukan karena penanda saat build. Ganti ke kunci
+                    // produksi dan tombolnya hilang tanpa build ulang.
+                    if (_charge?.testMode == true) ...[
+                      const SizedBox(height: 12),
+                      OutlinedButton.icon(
+                        onPressed: _simulating ? null : _simulate,
+                        icon: _simulating
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2))
+                            : const Icon(Icons.science_outlined, size: 18),
+                        label: const Text('Simulasikan Pembayaran'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.orange.shade800,
+                          side: BorderSide(color: Colors.orange.shade300),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Mode uji — QR ini bukan QRIS asli dan tidak bisa dipindai',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 11, color: Colors.orange.shade800),
+                      ),
+                    ],
                     // Tombol "sudah bayar" hanya ada saat belum ada
                     // gateway. Dengan gateway terpasang, satu-satunya
                     // yang boleh menyatakan lunas adalah penyedianya.

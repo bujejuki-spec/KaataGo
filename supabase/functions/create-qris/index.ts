@@ -73,17 +73,27 @@ Deno.serve(async (req) => {
       .limit(1)
       .maybeSingle();
 
+    const secret = Deno.env.get("XENDIT_SECRET_KEY");
+    if (!secret) return json({ error: "XENDIT_SECRET_KEY belum diset" }, 500);
+
+    // Mode uji ditentukan server, bukan aplikasi.
+    //
+    // Aplikasi tidak punya cara mengetahuinya sendiri, dan menitipkannya
+    // ke penanda saat build berarti mengandalkan seseorang ingat
+    // mematikannya sebelum rilis — yang selalu gagal tepat pada rilis
+    // yang paling sibuk. Dengan cara ini, mengganti kunci ke produksi
+    // sudah cukup untuk melenyapkan seluruh perkakas ujinya.
+    const testMode = secret.startsWith("xnd_development_");
+
     if (existing?.qr_string) {
       return json({
         qr_string: existing.qr_string,
         amount: existing.amount,
         expires_at: existing.expires_at,
         reused: true,
+        test_mode: testMode,
       });
     }
-
-    const secret = Deno.env.get("XENDIT_SECRET_KEY");
-    if (!secret) return json({ error: "XENDIT_SECRET_KEY belum diset" }, 500);
 
     // Pengenal kita sendiri, bukan nomor pesanannya mentah-mentah: satu
     // pesanan bisa butuh QR kedua setelah yang pertama kedaluwarsa, dan
@@ -142,6 +152,7 @@ Deno.serve(async (req) => {
       amount: order.total,
       expires_at: expiresAt.toISOString(),
       reused: false,
+      test_mode: testMode,
     });
   } catch (e) {
     return json({ error: e instanceof Error ? e.message : String(e) }, 500);

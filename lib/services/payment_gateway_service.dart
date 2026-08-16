@@ -16,10 +16,21 @@ class QrisCharge {
 
   final DateTime expiresAt;
 
+  /// Penyedianya sedang memakai kunci uji.
+  ///
+  /// Ditentukan server, bukan aplikasi. Aplikasi tidak punya cara
+  /// mengetahuinya sendiri, dan menitipkannya ke penanda saat build
+  /// berarti mengandalkan seseorang ingat mematikannya sebelum rilis —
+  /// yang selalu gagal tepat pada rilis yang paling sibuk. Dengan cara
+  /// ini, mengganti kunci ke produksi sudah cukup untuk melenyapkan
+  /// seluruh perkakas ujinya, tanpa build ulang.
+  final bool testMode;
+
   QrisCharge({
     required this.qrString,
     required this.amount,
     required this.expiresAt,
+    this.testMode = false,
   });
 
   Duration get remaining => expiresAt.difference(DateTime.now());
@@ -58,6 +69,7 @@ class PaymentGatewayService {
         qrString: data['qr_string'] as String,
         amount: (data['amount'] as num).toInt(),
         expiresAt: DateTime.parse(data['expires_at'] as String).toLocal(),
+        testMode: data['test_mode'] == true,
       );
     } catch (e) {
       // Termasuk saat kuncinya belum dipasang. Dicatat, tapi tidak
@@ -65,6 +77,30 @@ class PaymentGatewayService {
       // merugikan daripada layar pembayaran yang jatuh ke cara lama.
       debugPrint('[QRIS] gagal membuat tagihan: $e');
       return null;
+    }
+  }
+
+  /// Memalsukan pembayaran, hanya berlaku saat penyedianya memakai kunci
+  /// uji.
+  ///
+  /// Bukan jalan pintas untuk menandai pesanan lunas: yang dipanggil
+  /// adalah endpoint simulasi milik penyedia, dan pelunasannya tetap
+  /// datang lewat webhook seperti pembayaran sungguhan. Yang digantikan
+  /// cuma satu hal — tindakan pelanggan memindai QR-nya, yang di mode
+  /// uji memang mustahil karena kodenya bukan QRIS asli.
+  ///
+  /// Ditolak server kalau kuncinya bukan kunci uji.
+  Future<String?> simulatePayment(String orderId) async {
+    try {
+      final res = await _client.functions.invoke(
+        'create-qris',
+        body: {'order_id': orderId, 'simulate': true},
+      );
+      final data = res.data;
+      if (data is Map && data['simulated'] == true) return null;
+      return 'Simulasi ditolak: ${data is Map ? data['error'] ?? data : data}';
+    } catch (e) {
+      return 'Simulasi gagal: $e';
     }
   }
 }
