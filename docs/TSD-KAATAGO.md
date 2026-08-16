@@ -1,0 +1,571 @@
+# KaataGo — Technical Specification Document
+
+**Versi Aplikasi:** 1.45.4 (build 92)
+**Versi Dokumen:** 1.0
+**Tanggal Terbit:** 17 Agustus 2026
+**Status:** Rilis
+**Jenis Dokumen:** TSD — sisi teknis
+
+Dokumen ini menjelaskan **bagaimana** KaataGo dibangun: lapisannya,
+tabelnya, aturan keamanan barisnya, jalur uangnya di pembukuan, dan
+keputusan-keputusan yang bentuknya tidak jelas dari kodenya sendiri.
+Sisi fungsionalnya — siapa memakai apa, aturan bisnis apa yang berlaku —
+ada di dokumen terpisah (`FSD-KAATAGO`).
+
+Isinya diambil dari kode yang berjalan, bukan dari rencana. Setiap
+perbedaan antara dokumen ini dan kodenya adalah temuan yang layak
+dilaporkan.
+
+---
+
+## Daftar Isi
+
+1. Gambaran Arsitektur
+2. Tumpukan Teknologi
+3. Struktur Kode
+4. Model Data
+5. Keamanan Baris (RLS)
+6. Buku Besar (GL)
+7. Pembayaran
+8. Notifikasi Push
+9. Fungsi Edge
+10. Penyimpanan Lokal & Luring
+11. Migrasi Basis Data
+12. Pengujian
+13. Rilis & Distribusi
+14. Utang Teknis yang Diketahui
+
+---
+
+## 1. Gambaran Arsitektur
+
+KaataGo adalah aplikasi Flutter tunggal yang berbicara langsung ke
+Supabase. Tidak ada server aplikasi milik sendiri di tengahnya.
+
+```
+┌──────────────────────────────────────────┐
+│  Aplikasi Flutter (Android)              │
+│  ┌────────────┐  ┌──────────┐            │
+│  │  Layar     │→ │ Provider │            │
+│  └────────────┘  └────┬─────┘            │
+│                       ↓                  │
+│              ┌────────────────┐          │
+│              │  Repository    │          │
+│              └───┬────────┬───┘          │
+│                  ↓        ↓              │
+│          ┌───────────┐ ┌────────┐        │
+│          │  sqflite  │ │Supabase│        │
+│          │  (lokal)  │ │ client │        │
+│          └───────────┘ └───┬────┘        │
+└────────────────────────────┼─────────────┘
+                             ↓
+        ┌────────────────────────────────────┐
+        │  Supabase                          │
+        │  Postgres + RLS                    │
+        │  Edge Functions (Deno)             │
+        │  pg_cron · pg_net                  │
+        └───┬──────────────┬─────────────┬───┘
+            ↓              ↓             ↓
+        ┌───────┐    ┌──────────┐   ┌────────┐
+        │Xendit │    │ FCM v1   │   │ Resend │
+        └───────┘    └──────────┘   └────────┘
+```
+
+**Keputusan yang menentukan bentuk seluruhnya:** tidak ada lapisan
+server di antara aplikasi dan basis data. Yang menggantikannya adalah
+RLS — aturan keamanan yang hidup di Postgres, bukan di kode aplikasi.
+Konsekuensinya harus diterima sepenuhnya: **setiap aturan yang cuma
+dijaga aplikasi tidak dijaga sama sekali.** Siapa pun yang memegang
+kunci publik proyek bisa memanggil API-nya langsung. Karena itu tiap
+aturan penting ditulis dua kali — di formulir supaya orangnya tahu, dan
+di basis data supaya benar.
+
+---
+
+## 2. Tumpukan Teknologi
+
+| Lapis | Pilihan | Versi |
+|---|---|---|
+| Bahasa | Dart | ^3.5.4 |
+| Kerangka | Flutter | 3.24.5 (dipatok) |
+| Kelola keadaan | `provider` | ^6.1.2 |
+| Basis data lokal | `sqflite` | ^2.3.3 |
+| Basis data pusat | Supabase (Postgres) | — |
+| Klien | `supabase_flutter` | ^2.6.0 |
+| Masuk | `google_sign_in` | ^6.2.1 |
+| Push | `firebase_messaging` + `flutter_local_notifications` | ^15.2.10 / ^19.5.0 |
+| Peta | `flutter_map` + OpenStreetMap | ^7.0.2 |
+| Cetak | `pdf` + `printing` | ^3.11.1 / ^5.13.4 |
+| Pindai QR | `mobile_scanner` | ^5.2.3 |
+
+**Sasaran Android:** `com.gamskahfi.pos_app`, minSdk 23, compileSdk 35.
+
+> **Flutter dipatok, bukan mengikuti yang terbaru.** Versi Flutter
+> menentukan versi Dart, dan versi Dart menentukan paket mana yang bisa
+> dipakai. Membiarkannya bergerak sendiri berarti rilis bisa gagal
+> karena hal yang sama sekali tidak disentuh siapa pun hari itu.
+
+---
+
+## 3. Struktur Kode
+
+169 berkas Dart di `lib/`, dikelompokkan per peran, bukan per fitur.
+
+| Folder | Isi | Jumlah |
+|---|---|---|
+| `screens/` | Layar, satu berkas satu layar | 51 |
+| `widgets/` | Bagian yang dipakai lebih dari satu layar | — |
+| `providers/` | Keadaan yang hidup lebih lama dari satu layar | 9 |
+| `db/` | Repository — satu-satunya yang boleh menyentuh data | 23 |
+| `models/` | Bentuk data berikut aturannya sendiri | — |
+| `services/` | Push, unduhan, lokasi | — |
+| `utils/` | Perhitungan murni | — |
+| `l10n/` | Teks | — |
+
+**Aturan lapisan:** layar tidak pernah memanggil Supabase langsung.
+Selalu lewat repository. Yang menegakkan ini bukan alat, melainkan
+kebiasaan — tapi pelanggarannya mudah terlihat karena `import
+'package:supabase_flutter'` di dalam `screens/` menonjol.
+
+**Perhitungan ditaruh di `models/` dan `utils/`, bukan di layar.** Bukan
+demi kerapian: perhitungan yang hidup di dalam widget tidak bisa diuji
+tanpa membangun seluruh layarnya, dan yang tidak bisa diuji dengan mudah
+akhirnya tidak diuji. Rumus pajak, pemilihan diskon, dan penentuan
+status semuanya fungsi biasa yang menerima angka dan mengembalikan
+angka.
+
+### 3.1 Provider yang ada
+
+| Provider | Menyimpan |
+|---|---|
+| `AuthProvider` | Pengguna yang sedang masuk dan perannya |
+| `AppPrefsProvider` | Tema dan bahasa, tersimpan di perangkat |
+| `CartProvider` | Keranjang kasir |
+| `CustomerCartProvider` | Keranjang pelanggan — terpisah, karena keduanya bisa hidup bersamaan |
+| `ProductProvider` | Katalog resto yang sedang dibuka |
+| `CategoryProvider` | Kategori |
+| `LevelGroupProvider` | Kelompok varian |
+| `SettingsProvider` | Info resto, tarif pajak |
+| `TableSessionProvider` | Sesi meja hasil pindai QR |
+
+---
+
+## 4. Model Data
+
+27 tabel. Yang di bawah ini yang paling sering disentuh; sisanya
+pendukung.
+
+### 4.1 Inti
+
+| Tabel | Kunci | Catatan |
+|---|---|---|
+| `restaurants` | `id` (text) | Induk semuanya; hapus resto = hapus seluruh isinya |
+| `employees` | surrogate | `email` + `resto_id` + `role`; email boleh diubah tanpa kehilangan riwayat |
+| `products` | `id` (text) | `stock` boleh null — ketersediaan ditentukan `out_of_stock` |
+| `categories`, `level_groups` | — | Milik resto masing-masing |
+| `orders` | `id` (uuid) | Pusat segalanya |
+| `sessions` | `id` | Sesi meja; ditutup pg_cron 5 menit setelah pesanannya beres |
+
+### 4.2 Kolom `orders` yang menentukan perilaku
+
+| Kolom | Nilai | Arti |
+|---|---|---|
+| `source` | `customer` \| `kasir` | Siapa yang mengetiknya — menentukan hampir semua percabangan |
+| `payment_status` | `pending` \| `paid` \| `expired` \| `cancelled` | |
+| `kitchen_status` | `waiting` \| `on_progress` \| `done` | |
+| `payment_method` | `cash` \| `qris` \| `transfer` | |
+| `settled_by`, `settled_at` | email, waktu | Diisi saat kasir melunasi; dasar isi Riwayat Kasir |
+| `discount_id/name/amount` | — | Disalin, bukan dihitung ulang saat dibaca |
+
+> **Kenapa diskon disalin ke pesanannya.** Aturan diskonnya bisa diubah
+> atau dihapus besok. Struk pesanan hari ini tetap harus menyebut
+> potongan yang benar-benar diberikan saat itu — kalau dihitung ulang
+> saat dibaca, struk lama berubah sendiri setiap kali promonya disunting.
+
+> **Kenapa `settled_by` ada.** Sebelumnya Riwayat Kasir menebak dari
+> metode bayarnya: yang `cash` dianggap dilunasi di konter. Tebakan itu
+> runtuh begitu Pending Payment boleh mengganti metode — pesanan yang
+> dilunasi kasir lewat QRIS hilang dari rekapnya sendiri. Sekarang yang
+> dicatat adalah faktanya, bukan petunjuknya.
+
+### 4.3 Keuangan
+
+| Tabel | Isi |
+|---|---|
+| `gl_accounts` | Nomor akun per resto per jenis (12 jenis) |
+| `gl_journal_entries` | Jurnal — satu baris satu pergerakan |
+| `expenses`, `petty_cash_entries` | Pengeluaran dan kas kecil |
+| `cash_deposits` | Setoran tunai ke rekening, berikut alur persetujuan |
+| `gateway_settlements` | Pencairan dari penyedia pembayaran berikut potongan MDR |
+| `payment_charges` | Tagihan QRIS di sisi penyedia |
+
+### 4.4 Diskon
+
+`discounts` menyimpan aturan promo. Dua kolom menyimpan sasarannya, dan
+keduanya sengaja ada bersamaan:
+
+| Kolom | Isi |
+|---|---|
+| `product_ids` | `["p1","p2"]` — daftar id polos |
+| `product_rules` | `[{"product_id":"p1","qty":2,"mode":"exactly"}, …]` |
+
+`product_rules` yang dipakai. `product_ids` tetap ditulis supaya baris
+ini masih terbaca oleh versi aplikasi yang lebih lama — pengguna tidak
+memperbarui aplikasinya serentak, dan baris yang tidak terbaca membuat
+layar diskonnya gagal memuat sama sekali, bukan sekadar menampilkan
+promo tanpa syarat jumlah.
+
+Aturan pemilihannya (di `lib/models/discount.dart`):
+
+- Satu diskon dipakai, yang paling menguntungkan pelanggan — bukan
+  ditumpuk. Menumpuk terdengar murah hati sampai dua promo berlaku
+  bersamaan dan totalnya melebihi harga barangnya.
+- Untuk promo berbasis menu, **seluruh** menu yang disebut harus
+  terpenuhi syarat jumlahnya. Sebagian-cukup berarti paket yang
+  dijanjikan tidak pernah benar-benar dibeli, tapi restonya tetap
+  membayar potongannya.
+- Potongan dihitung dari jumlah seluruh menu yang ikut, bukan per baris
+  — kalau per baris, diskon rupiah tetap terkalikan sebanyak menunya.
+- Potongan tidak pernah melebihi dasarnya sendiri.
+
+---
+
+## 5. Keamanan Baris (RLS)
+
+Seluruh tabel menyalakan RLS. Dua fungsi jadi tulang punggungnya:
+
+```sql
+is_resto_employee(p_resto_id text, p_roles text[])
+is_super_admin()
+```
+
+`is_resto_employee` memeriksa email dari JWT pemanggil terhadap tabel
+`employees`: aktif, resto yang sama, peran yang cocok.
+
+> **`owner` harus disebut di setiap daftar peran.** Fungsinya
+> mencocokkan peran secara harfiah — tidak ada hierarki bawaan. Kebijakan
+> yang menulis `array['admin','kasir']` menutup pintu untuk pemilik
+> restonya sendiri, dan gejalanya bukan pesan galat melainkan layar
+> kosong: RLS tidak menolak, ia hanya tidak mengembalikan baris apa pun.
+> Itu jenis kegagalan yang paling lama tidak ketahuan.
+
+### 5.1 Pola kebijakan
+
+| Tabel | Baca | Tulis |
+|---|---|---|
+| `products`, `categories`, `level_groups` | siapa saja | karyawan resto |
+| `discounts`, `promo_banners` | siapa saja | admin, kasir, owner |
+| `orders` | pemiliknya atau karyawan resto | karyawan; pelanggan lewat RPC |
+| `gl_*`, `expenses`, `cash_deposits` | finance, owner | finance, owner |
+| `resto_payment_accounts` | finance, owner | finance, owner; sub-akun gateway hanya super admin |
+
+Katalog dibaca siapa saja termasuk tamu tanpa akun — menunya harus
+terlihat sebelum orangnya memutuskan memesan, apalagi login.
+
+### 5.2 RPC `security definer`
+
+Beberapa hal tidak bisa dilakukan pelanggan lewat kebijakan biasa, dan
+diberi fungsi khusus yang menembus RLS. Pengamannya ada di dalam
+fungsinya:
+
+| Fungsi | Kenapa perlu | Pengamannya |
+|---|---|---|
+| `decrement_stock` | Tamu tidak punya izin `UPDATE products` | Hanya mengurangi, tidak menerima nilai bebas |
+| `cancel_my_order` | Tamu tidak punya izin `UPDATE orders` | Hanya pesanan miliknya, hanya yang belum dibayar dan belum dimasak |
+| `claim_guest_orders` | Mengalihkan riwayat tamu ke akun | Email dibaca dari JWT sendiri; hanya baris berlabel `Tamu`; tidak melakukan apa pun bila email itu sudah punya riwayat |
+| `mark_order_paid` | Dipanggil webhook Xendit | Hanya dari fungsi edge berkunci service role |
+
+> **`claim_guest_orders` menolak email yang sudah berisi.** Bukan
+> pembatasan yang malas — kalau riwayat tamu ditumpahkan ke akun yang
+> sudah punya pesanan, tidak ada cara membedakan mana yang benar-benar
+> miliknya dan mana yang kebetulan ada di HP itu. HP dipinjam, dan
+> dipakai bergantian.
+
+---
+
+## 6. Buku Besar (GL)
+
+### 6.1 Kesepakatan arah
+
+**Kredit = uang masuk. Debit = uang keluar.**
+
+Ini kebalikan dari kesepakatan akuntansi baku untuk akun aset, dan itu
+disengaja: yang membaca layar Jurnal GL di sini adalah orang resto, dan
+"kredit" bagi mereka berarti uang bertambah — seperti di notifikasi
+bank. Konsistensinya yang penting, dan panah di layarnya mengikuti arah
+yang sama.
+
+### 6.2 Jenis akun
+
+Dua belas jenis, masing-masing punya nomor bawaan untuk resto baru:
+
+| Jenis | Nomor bawaan | Dipakai saat |
+|---|---|---|
+| `cash`, `qris`, `transfer` | 195xxxx | Pesanan lunas, per metode |
+| `income_aggregate` | 195xxxx | Ringkasan pemasukan |
+| `ppn`, `service` | 196xxxx | Dipisah dari pemasukan |
+| `petty_cash` | 198xxxx | Kas kecil |
+| `total_balance` | 199xxxx | Akun payung |
+| `suspense`, `suspense_petty` | 210xxxx | Titipan yang menunggu persetujuan |
+| `gateway_fee` | 220xxxx | Potongan MDR |
+| `discount` | 2200002 | Pengurang pendapatan |
+
+Tarif bawaan: PPN 11%, service 5%.
+
+Resto baru terisi lewat pemicu `after insert on restaurants`, bukan
+lewat kode aplikasi — resto bisa dibuat dari layar Super Admin, dari SQL
+saat memulihkan data, atau dari alat lain nanti.
+
+> **Kalau satu nomor GL kosong, jurnalnya tidak dibuat.** Pemicunya
+> melewatkan baris yang GL-nya belum dipetakan. Transaksinya tetap
+> terjadi, uangnya tetap berpindah — yang hilang cuma catatannya. Yang
+> menemukannya adalah Finance, berminggu-minggu kemudian, saat angkanya
+> tidak cocok dan tidak ada jejak kenapa.
+
+### 6.3 Diskon dicatat sebagai debit
+
+Diskon bukan biaya. Ia bukan uang yang keluar dari resto, melainkan uang
+yang tidak pernah masuk. Mencatatnya sebagai biaya membuat Pengeluaran
+terlihat naik pada bulan promo, padahal tidak ada satu rupiah pun yang
+berpindah.
+
+### 6.4 Akun suspense
+
+Setoran tunai dan top up petty cash tidak langsung mendarat di akun
+tujuannya. Keduanya duduk dulu di akun suspense sampai Finance
+menyetujui: **sudah tidak ada di laci, tapi belum diakui masuk**.
+
+Itu satu-satunya cara jujur menggambarkan uang yang sedang dalam
+perjalanan. Tanpa suspense, ada rentang waktu — kadang berhari-hari — di
+mana uangnya tercatat di dua tempat sekaligus, atau tidak di mana-mana.
+
+Saat disetujui, jurnalnya mencatat dua baris: titipannya dilepas, dan
+dananya masuk ke akun tujuan.
+
+### 6.5 Pemicu jurnal
+
+Tiap jenis pergerakan punya pemicunya sendiri, bukan satu fungsi besar:
+
+`log_order_paid_journal` · `log_order_discount_journal` ·
+`log_expense_journal` · `log_petty_cash_journal` ·
+`log_cash_deposit_journal` · `log_gateway_settlement_journal` — masing-
+masing berpasangan dengan fungsi pembalik untuk penghapusan.
+
+> **Kenapa terpisah, bukan satu fungsi.** `log_order_paid_journal` sudah
+> ditimpa empat berkas berbeda sepanjang umur proyek ini. Menimpanya
+> sekali lagi dari berkas kelima berarti urutan menjalankan berkas
+> menentukan versi mana yang akhirnya berlaku — dan urutan itu tidak
+> pernah tercatat di mana pun. Pemicu terpisah tidak punya masalah itu.
+
+Tiap pemicu memeriksa lebih dulu apakah barisnya sudah pernah dicatat.
+Pesanan bisa berpindah status lebih dari sekali — dilunasi, lalu
+diperbaiki metode bayarnya — dan tiap perpindahan tidak boleh menambah
+baris jurnal lagi.
+
+---
+
+## 7. Pembayaran
+
+### 7.1 QRIS lewat Xendit
+
+```
+Pelanggan → create-qris (Edge) → Xendit → QR
+                                    ↓
+                          (pelanggan membayar)
+                                    ↓
+Xendit → xendit-webhook (Edge) → mark_order_paid → orders.paid
+                                          ↓
+                                  pemicu jurnal + push
+```
+
+Dua hal yang menentukan keamanannya:
+
+**Nominalnya tidak dikirim dari aplikasi.** `create-qris` menerima nomor
+pesanan saja, lalu membaca sendiri nominalnya dari basis data. Kalau
+nominalnya ikut dikirim, siapa pun yang bisa memanggil API-nya bisa
+membuat QR seharga seribu rupiah untuk pesanan lima ratus ribu.
+
+**Hanya webhook yang boleh menyatakan lunas.** Tombol di HP pelanggan
+tidak, dan tidak akan pernah. Layar QRIS-nya berpindah sendiri karena
+mendengarkan perubahan baris pesanannya, bukan karena ada yang menekan
+sesuatu.
+
+Resto yang belum punya sub-akun tetap bisa memakai QR simulasi berikut
+konfirmasi manual. Begitu penyedianya aktif, tombol konfirmasi manual
+itu **dihilangkan** dari layar kasir — meninggalkannya berarti
+menyediakan jalan menyatakan lunas tanpa uang.
+
+### 7.2 Tunai
+
+Tidak lewat penyedia mana pun. Pesanan pelanggan yang memilih tunai
+diberi tenggat 30 menit; lewat itu `expire_unpaid_cash_orders` (pg_cron,
+tiap menit) mengubahnya jadi `expired`.
+
+Angka 30 menit ditulis di dua tempat — SQL dan
+`CustomerOrder.paymentWindow`. Keduanya harus diubah bersamaan.
+
+---
+
+## 8. Notifikasi Push
+
+FCM HTTP v1 dengan OAuth dari service account.
+
+```
+Pemicu basis data → push_outbox → pg_net → send-push (Edge) → FCM
+```
+
+**Outbox, bukan panggilan langsung dari pemicu.** Kalau pemicunya
+memanggil HTTP sendiri dan FCM sedang lambat, yang tertahan adalah
+transaksi basis datanya — pesanan gagal disimpan karena notifikasinya
+gagal terkirim. Outbox memutus keduanya: barisnya masuk, transaksinya
+selesai, pengirimannya menyusul.
+
+Lima jenis notifikasi terpisah, masing-masing bisa dibisukan sendiri
+lewat Setelan Android: Status Pesanan, Pesanan Baru, Hasil Pengajuan,
+Pengumuman, Unduhan Pembaruan.
+
+> **Pesan yang tiba saat aplikasi terbuka tidak muncul sendiri di
+> Android.** FCM hanya menampilkannya kalau aplikasinya di latar. Yang
+> di depan harus membangun notifikasinya sendiri lewat
+> `flutter_local_notifications` — kalau tidak, kasir yang sedang menatap
+> layarnya justru satu-satunya yang tidak dikabari.
+
+---
+
+## 9. Fungsi Edge
+
+Lima fungsi Deno di `supabase/functions/`:
+
+| Fungsi | Dipicu oleh | Tugas |
+|---|---|---|
+| `create-qris` | Aplikasi pelanggan | Membuat tagihan QRIS di Xendit |
+| `xendit-webhook` | Xendit | Menyatakan pesanan lunas |
+| `send-push` | `push_outbox` lewat pg_net | Memilih perangkat, mengirim ke FCM |
+| `send-receipt-email` | Webhook `mail_requests` | Mengirim struk lewat Resend |
+| `publish-release` | Skrip rilis | Menerbitkan pengumuman versi baru |
+
+Seluruh kunci disimpan lewat `supabase secrets set` dan dijalankan
+sendiri oleh pemilik proyek. Tidak ada kunci yang tertulis di repo.
+
+> **`publish-release` menggantikan dua langkah terpisah.** Pengumuman
+> versi dulu dikirim manual lewat akun Super Admin sesudah APK-nya
+> terbit. Dua langkah yang harus diingat berarti suatu hari yang kedua
+> terlupakan — APK-nya ada, tapi tidak ada yang tahu.
+
+---
+
+## 10. Penyimpanan Lokal & Luring
+
+`sqflite` versi skema **12**, empat tabel: `products`, `categories`,
+`transactions`, `transaction_items`.
+
+Katalog disimpan supaya menu tetap tampil tanpa sambungan. Pesanan yang
+dibuat saat luring tersimpan lokal dan dikirim saat sambungan kembali.
+
+Yang **tidak** bisa dilakukan luring: pembayaran QRIS. QR-nya
+dibangkitkan penyedia pembayaran, dan tidak ada cara jujur memalsukannya
+di perangkat.
+
+Riwayat pesanan tamu disimpan di perangkat lewat `GuestOrderStore` —
+satu-satunya jejak yang dia punya, karena dia tidak punya email untuk
+dijadikan penanda.
+
+---
+
+## 11. Migrasi Basis Data
+
+Berkas SQL di `supabase/`, dijalankan manual lewat SQL Editor.
+`scripts/gabung_sql.sh` menyatukannya jadi `JALANKAN-INI.sql` (27
+bagian) dengan urutan yang benar. Seluruhnya aman dijalankan berulang.
+
+### 11.1 Aturan daftar nilai batasan
+
+Tiga kali berturut-turut migrasi gagal dengan sebab yang sama:
+
+```
+check constraint "orders_payment_status_check" is violated by some row
+```
+
+Penyebabnya selalu sama. Berkas lama menuliskan daftar nilai sepanjang
+zamannya sendiri. Berkas baru menambah nilai. Lalu yang lama dijalankan
+ulang — daftarnya menyempit, dan baris yang terlanjur memakai nilai baru
+melanggarnya. **Tidak ada satu pun data yang salah di sana.** Yang salah
+adalah batasannya yang mundur.
+
+Aturannya sekarang: **satu nama batasan, satu bentuk daftar, di seluruh
+folder.** Tiap berkas yang menyentuh sebuah batasan menuliskan daftar
+lengkapnya, termasuk nilai yang diperkenalkan berkas lain.
+
+Ini dijaga tes, bukan ingatan — `test/default_gl_test.dart` membaca
+seluruh `supabase/*.sql` dan menolak nama batasan yang punya lebih dari
+satu bentuk daftar. Tes itu menemukan `employees_role_check` dengan tiga
+daftar berbeda yang belum sempat meledak.
+
+### 11.2 Kolom lama tidak langsung dihapus
+
+`min_qty` digantikan `product_rules`, tapi tetap ada. Pengguna tidak
+memperbarui aplikasinya serentak, dan versi yang masih membacanya akan
+gagal memuat layar diskon sama sekali kalau kolomnya hilang.
+
+---
+
+## 12. Pengujian
+
+22 berkas tes, **200 tes**. Seluruhnya berjalan tanpa perangkat maupun
+sambungan.
+
+| Yang diuji | Contoh berkas |
+|---|---|
+| Perhitungan | `discount_test`, `cash_balance_test` |
+| Aturan status | `cancel_order_test` |
+| Bentuk tema | `dark_mode_test`, `theme_switch_test` |
+| Isi berkas SQL | `default_gl_test` |
+
+Yang **tidak** diuji: alur ujung-ke-ujung dengan Supabase sungguhan, dan
+tampilan tiap layar. Keduanya butuh perangkat, dan tes yang butuh
+perangkat akhirnya tidak dijalankan.
+
+> **Tes yang membaca berkas SQL terlihat berlebihan sampai diingat apa
+> yang terjadi kalau salah satu nomor GL hilang** — lihat §6.2. Bentuk
+> kegagalan yang tidak menghasilkan galat apa pun layak dijaga tes,
+> justru karena tidak ada yang lain yang akan menangkapnya.
+
+---
+
+## 13. Rilis & Distribusi
+
+`scripts/release.sh` menjalankan seluruhnya sekali jalan:
+
+1. `flutter build apk --release`
+2. Salin ke `KaataGo Realase/` bernama versi
+3. Unggah sebagai aset GitHub Release
+4. Hapus rilis lama — hanya yang terbaru tersisa
+5. Perbarui nomor versi & ukuran di landing page, lalu push
+6. Panggil `publish-release` — pengumuman masuk ke kotak masuk
+
+**APK tidak di-commit ke Git.** Git menyimpan tiap versi berkas
+selamanya, jadi APK 83 MB yang "dihapus" di commit berikutnya tetap
+tinggal di riwayat — sepuluh rilis berarti repo 830 MB yang harus
+diunduh siapa pun yang clone. GitHub Release menyimpan asetnya di luar
+riwayat, dan URL `releases/latest/download/KaataGo.apk` selalu menunjuk
+ke yang terbaru sehingga tautan di landing page tidak pernah perlu
+diganti.
+
+---
+
+## 14. Utang Teknis yang Diketahui
+
+| Hal | Keadaan | Akibatnya |
+|---|---|---|
+| Terjemahan Inggris | ~90 dari ~1.400 teks | Pemilih bahasa dimatikan lewat `kLanguageSwitcherEnabled = false` |
+| Migrasi manual | Dijalankan lewat SQL Editor | Tidak ada catatan otomatis migrasi mana yang sudah jalan di mana |
+| `min_qty` | Digantikan tapi masih ada | Dua kolom untuk satu hal sampai 1.45.3 tidak lagi terpasang |
+| Tes ujung-ke-ujung | Tidak ada | Kegagalan integrasi baru ketahuan saat dipakai |
+| iOS | Tidak dibangun | Hanya Android |
+| Unduhan besar | Bisa terhenti | Kalau sistem kehabisan memori saat aplikasi di latar |
+
+---
+
+*Dokumen ini disusun dari kode aplikasi versi 1.45.4. Sisi
+fungsionalnya — peran, proses bisnis, aturan, dan tangkapan layar tiap
+peran — ada di `FSD-KAATAGO`.*

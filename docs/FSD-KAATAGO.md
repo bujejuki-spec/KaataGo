@@ -1,15 +1,15 @@
 # KaataGo — Functional Specification Document
 
 **Versi Aplikasi:** 1.45.4 (build 92)
-**Versi Dokumen:** 2.0
-**Tanggal Terbit:** 16 Agustus 2026
+**Versi Dokumen:** 2.1
+**Tanggal Terbit:** 17 Agustus 2026
 **Status:** Rilis
 **Jenis Dokumen:** FSD — sisi fungsional
 
 Dokumen ini menjelaskan **apa** yang dilakukan KaataGo: siapa memakainya,
 proses apa yang dijalankan, aturan apa yang berlaku, dan hasil apa yang
 diharapkan. Sisi teknisnya — arsitektur, tabel, kebijakan keamanan baris
-— ada di dokumen terpisah (`SPESIFIKASI-KAATAGO`).
+— ada di dokumen terpisah (`TSD-KAATAGO`).
 
 Isinya diambil dari aplikasi yang berjalan, bukan dari rencana. Setiap
 perbedaan antara dokumen ini dan aplikasinya adalah temuan yang layak
@@ -387,6 +387,69 @@ membacanya.
 | F-TM-03 | Pilihannya tersimpan di perangkat dan bertahan setelah aplikasi ditutup |
 | F-TM-04 | Pilihan tampilan menyusut jadi ikon saja saat ruangnya sempit |
 
+### 4.14 Super Admin
+
+Satu peran di luar seluruh resto. Ia tidak menjual, tidak memasak, dan
+tidak memegang uang siapa pun — yang dipegangnya adalah hal-hal yang
+kalau diserahkan ke tiap resto akan berbeda-beda di tempat yang
+seharusnya sama.
+
+| ID | Kebutuhan |
+|---|---|
+| F-SA-01 | Melihat dan mengelola **seluruh resto** yang terdaftar |
+| F-SA-02 | Mengelola karyawan lintas resto, termasuk menetapkan perannya |
+| F-SA-03 | Mengirim **pengumuman versi aplikasi** ke seluruh pengguna — satu-satunya peran yang boleh |
+| F-SA-04 | Mengirim pengumuman umum ke seluruh resto sekaligus |
+| F-SA-05 | Melihat dan mengubah **pengenal sub-akun penyedia pembayaran** tiap resto |
+| F-SA-06 | Tidak punya layar kasir, dapur, maupun keuangan resto mana pun |
+
+> **Kenapa pengumuman versi dikunci di sini.** Nomor versi yang beredar
+> harus satu untuk semua. Kalau tiap resto boleh mengumumkan versinya
+> sendiri, yang terjadi bukan kebebasan melainkan lima pengumuman
+> berbeda tentang versi yang sama, dan pelanggan yang membaca kotak
+> masuknya tidak tahu mana yang benar.
+
+### 4.15 Sesi Meja & Identitas Pelanggan
+
+Pelanggan boleh memesan tanpa mendaftar apa pun. Itu keputusan yang
+disengaja — meminta orang membuat akun sebelum memesan segelas kopi
+adalah cara tercepat kehilangan pesanan itu. Konsekuensinya harus
+ditangani: tamu tetap perlu bisa melihat pesanannya, dan kalau nanti dia
+membuat akun, riwayatnya tidak boleh hilang.
+
+| ID | Kebutuhan |
+|---|---|
+| F-SS-01 | Memindai QR meja membuka **sesi meja**: resto dan nomor mejanya terisi sendiri |
+| F-SS-02 | Pesanan tamu ditandai `Tamu` dan dilacak lewat daftar id di **HP-nya sendiri** |
+| F-SS-03 | Tamu yang kemudian login **mewarisi** riwayat pesanannya ke akun itu |
+| F-SS-04 | Pewarisan hanya terjadi bila emailnya **belum pernah** punya pesanan |
+| F-SS-05 | Bila emailnya sudah punya riwayat, keduanya dibiarkan terpisah — riwayat tamu tetap di HP |
+| F-SS-06 | Sesi meja berakhir sendiri **5 menit** setelah seluruh pesanannya selesai dimasak |
+| F-SS-07 | Pesanan yang belum selesai menahan sesinya tetap terbuka, berapa lama pun |
+
+> **Kenapa pewarisan menolak email yang sudah berisi.** Kalau riwayat
+> tamu ditumpahkan ke akun yang sudah punya pesanan, tidak ada cara
+> membedakan mana yang benar-benar miliknya dan mana yang kebetulan ada
+> di HP itu — HP yang mungkin dipinjam, atau dipakai bergantian di satu
+> keluarga. Menolak lebih aman daripada mencampur, dan yang ditolak
+> tidak kehilangan apa pun: daftarnya tetap ada di perangkatnya.
+
+### 4.16 Pembaruan Aplikasi
+
+KaataGo dibagikan sebagai APK, bukan lewat toko aplikasi. Tidak ada yang
+memperbarui aplikasinya diam-diam di latar belakang — jadi seluruh
+alurnya harus ada di dalam aplikasi itu sendiri.
+
+| ID | Kebutuhan |
+|---|---|
+| F-UP-01 | Pengumuman versi memuat tombol **Unduh Versi Terbaru** |
+| F-UP-02 | Unduhannya berjalan **di dalam aplikasi**, bukan membuka peramban |
+| F-UP-03 | Kemajuannya tampil di **bar notifikasi HP** berikut persennya |
+| F-UP-04 | Unduhan tetap berjalan saat aplikasi ditinggalkan atau HP dikunci |
+| F-UP-05 | Menekan tombol saat unduhan berjalan memunculkan pilihan **Batalkan** atau **Lanjutkan** |
+| F-UP-06 | Selesai mengunduh, pemasang Android dibuka otomatis |
+| F-UP-07 | Galat dibedakan: koneksi terputus, penyimpanan penuh, atau galat lain — dan tidak pernah menampilkan isi galat mentahnya |
+
 ---
 
 ## 5. Aturan Bisnis
@@ -470,6 +533,22 @@ laci, transaksinya lenyap dari riwayat.
 | Tanggal berakhir minimal besok | Promo yang berakhir hari ini juga tidak pernah sempat dipakai |
 | Hari terakhir berlaku **penuh** | "Sampai 31 Agustus" berarti sampai tutup toko tanggal 31 |
 | Batasnya ditegakkan di kalendernya | Tanggal yang tidak sah tidak bisa dipilih, bukan ditolak setelah dipilih |
+
+### 5.6 Perilaku saat luring
+
+Resto tidak berhenti berjualan ketika internetnya putus, jadi
+aplikasinya juga tidak boleh. Yang dijanjikan bukan "semuanya tetap
+jalan" — itu tidak mungkin untuk pembayaran QRIS — melainkan batas yang
+jelas antara yang jalan dan yang menunggu.
+
+| Bagian | Saat luring |
+|---|---|
+| Katalog menu, kategori, level | Tetap tampil — disimpan di perangkat |
+| Input pesanan & pembayaran tunai | Tetap jalan, tersimpan lokal, dikirim saat sambungan kembali |
+| Pembayaran QRIS | **Tidak bisa** — QR-nya dibangkitkan penyedia pembayaran |
+| Kotak masuk | Menampilkan yang sudah pernah dimuat |
+| Kotak masuk pelanggan | Jatuh ke resto yang sedang dibuka saja |
+| Riwayat & laporan | Angka terakhir yang sempat dimuat |
 
 ---
 
