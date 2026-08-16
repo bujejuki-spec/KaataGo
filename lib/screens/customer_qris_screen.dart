@@ -55,6 +55,15 @@ class _CustomerQrisScreenState extends State<CustomerQrisScreen> {
 
   StreamSubscription<CustomerOrder?>? _orderSub;
   Timer? _ticker;
+  Timer? _poller;
+
+  /// Layar suksesnya sudah dibuka.
+  ///
+  /// Sekarang ada dua sumber yang bisa memicunya — aliran realtime dan
+  /// penjaga tiga detik — dan keduanya bisa datang nyaris bersamaan.
+  /// Tanpa penanda ini, layar suksesnya ditumpuk dua kali, dan yang
+  /// menekan Selesai akan menemukan salinannya lagi di baliknya.
+  bool _navigated = false;
   Duration _remaining = Duration.zero;
 
   /// Nominal yang ditampilkan. Angka dari server dipakai begitu ada —
@@ -74,6 +83,7 @@ class _CustomerQrisScreenState extends State<CustomerQrisScreen> {
   void dispose() {
     _orderSub?.cancel();
     _ticker?.cancel();
+    _poller?.cancel();
     super.dispose();
   }
 
@@ -107,10 +117,35 @@ class _CustomerQrisScreenState extends State<CustomerQrisScreen> {
       if (!mounted || order == null) return;
       if (order.paymentStatus == OrderPaymentStatus.paid) _goToSuccess();
     });
+
+    // Penjaga kalau aliran realtime-nya tersendat.
+    //
+    // Layar ini menunggu kabar yang datangnya dari luar HP, dan sinyal
+    // yang putus sebentar di tengah resto sudah cukup membuat kabarnya
+    // tidak pernah sampai. Yang menunggu di depan kasir tidak tahu itu —
+    // yang dia lihat cuma layar yang diam padahal uangnya sudah keluar.
+    //
+    // Tiga detik: cukup rapat supaya perpindahannya terasa seketika,
+    // cukup jarang supaya menunggu setengah jam tidak berarti ribuan
+    // permintaan.
+    _poller = Timer.periodic(const Duration(seconds: 3), (_) async {
+      if (!mounted) return;
+      try {
+        final rows = await _orderRepo.getByIds([widget.orderId]);
+        if (!mounted || rows.isEmpty) return;
+        if (rows.first.paymentStatus == OrderPaymentStatus.paid) _goToSuccess();
+      } catch (_) {
+        // Sedang luring. Percobaan berikutnya tiga detik lagi.
+      }
+    });
   }
 
   void _goToSuccess() {
+    if (_navigated) return;
+    _navigated = true;
     _orderSub?.cancel();
+    _poller?.cancel();
+    _ticker?.cancel();
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => _OrderPlacedScreen(orderId: widget.orderId)),
       (route) => route.isFirst,
