@@ -12,6 +12,7 @@ import 'providers/settings_provider.dart';
 import 'providers/table_session_provider.dart';
 import 'screens/root_screen.dart';
 import 'widgets/order_notification_binder.dart';
+import 'widgets/update_download_banner.dart';
 import 'supabase_config.dart';
 import 'theme.dart';
 
@@ -44,7 +45,9 @@ class PosApp extends StatelessWidget {
         title: 'KaataGo',
         debugShowCheckedModeBanner: false,
         theme: KaataTheme.light(),
-        home: const OrderNotificationBinder(child: RootScreen()),
+        home: const UpdateDownloadBanner(
+          child: OrderNotificationBinder(child: RootScreen()),
+        ),
       ),
     );
   }

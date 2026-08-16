@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../utils/apk_updater.dart';
-import 'app_toast.dart';
+import '../services/app_updater.dart';
+import 'update_download_banner.dart';
 
 /// Tombol unduh versi terbaru di dalam pengumuman kotak masuk.
 ///
@@ -24,52 +24,30 @@ class UpdateDownloadButton extends StatefulWidget {
 }
 
 class _UpdateDownloadButtonState extends State<UpdateDownloadButton> {
-  ApkUpdater? _updater;
-  double? _progress;
-  bool _busy = false;
+  AppUpdater get _updater => AppUpdater.instance;
 
-  @override
-  void dispose() {
-    _updater?.cancel();
-    super.dispose();
-  }
+  // Sengaja tidak membatalkan apa pun saat dilepas. Unduhannya bukan
+  // milik tombol ini; menutup pengumumannya tidak boleh menghanguskan
+  // 80 MB yang sedang berjalan.
 
   Future<void> _start() async {
-    setState(() {
-      _busy = true;
-      _progress = 0;
-    });
-
-    final updater = ApkUpdater(
-      onProgress: (p) {
-        if (mounted) setState(() => _progress = p);
-      },
-    );
-    _updater = updater;
-
-    final error = await updater.downloadAndInstall(widget.url);
-
-    if (!mounted) return;
-    setState(() {
-      _busy = false;
-      _progress = null;
-      _updater = null;
-    });
-    if (error != null) showAppToast(context, error, isError: true);
-  }
-
-  void _cancel() {
-    _updater?.cancel();
-    setState(() {
-      _busy = false;
-      _progress = null;
-      _updater = null;
-    });
+    _updater.start(widget.url);
+    // Rinciannya dibuka begitu dimulai, supaya jelas prosesnya berjalan
+    // — dan boleh ditutup kapan saja tanpa menghentikannya.
+    if (mounted) showUpdateDownloadDialog(context);
   }
 
   @override
   Widget build(BuildContext context) {
-    final percent = _progress == null ? null : (_progress! * 100).round();
+    return AnimatedBuilder(
+      animation: _updater,
+      builder: (context, _) => _buildButton(context),
+    );
+  }
+
+  Widget _buildButton(BuildContext context) {
+    final busy = _updater.downloading;
+    final percent = _updater.percent;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -77,7 +55,7 @@ class _UpdateDownloadButtonState extends State<UpdateDownloadButton> {
         SizedBox(
           width: double.infinity,
           child: FilledButton.icon(
-            icon: _busy
+            icon: busy
                 ? const SizedBox(
                     width: 16,
                     height: 16,
@@ -85,32 +63,35 @@ class _UpdateDownloadButtonState extends State<UpdateDownloadButton> {
                   )
                 : const Icon(Icons.download_outlined),
             label: Text(
-              !_busy
+              !busy
                   ? 'Unduh Versi Terbaru'
                   : percent == null
                       ? 'Mengunduh…'
                       : 'Mengunduh $percent%',
             ),
-            onPressed: _busy ? null : _start,
+            onPressed: busy ? null : _start,
           ),
         ),
-        if (_busy) ...[
+        if (busy) ...[
           const SizedBox(height: 8),
           // Batangnya menyusul tombolnya, bukan menggantikannya: angka
           // persen di tombol menjawab "sudah sejauh mana", batang ini
           // menjawab "masih jalan atau menggantung".
           ClipRRect(
             borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(value: _progress, minHeight: 5),
+            child: LinearProgressIndicator(value: _updater.progress, minHeight: 5),
           ),
           const SizedBox(height: 4),
           Text(
-            'Berkasnya sekitar 80 MB. Layar pemasang terbuka sendiri '
-            'setelah selesai.',
+            'Berkasnya sekitar 80 MB. Unduhan tetap berjalan walau '
+            'kotak masuk ini ditutup.',
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
           ),
-          TextButton(onPressed: _cancel, child: const Text('Batalkan')),
+          TextButton(
+            onPressed: _updater.cancel,
+            child: const Text('Batalkan'),
+          ),
         ] else
           TextButton(
             onPressed: () => launchUrl(

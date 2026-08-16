@@ -64,6 +64,21 @@ class AnnouncementRepository {
     }, onConflict: 'email,announcement_id');
   }
 
+  /// Menandai banyak pesan sekaligus sudah dibaca.
+  ///
+  /// Ditulis dalam satu perintah, bukan satu per satu: menandai dua
+  /// puluh pesan berarti dua puluh perjalanan bolak-balik ke server, dan
+  /// yang menekan "tandai semua" justru sedang membereskan tumpukan yang
+  /// banyak.
+  Future<void> markManyRead(String email, List<String> announcementIds) async {
+    if (announcementIds.isEmpty) return;
+    final now = DateTime.now().toUtc().toIso8601String();
+    await _client.from('inbox_states').upsert([
+      for (final id in announcementIds)
+        {'email': email, 'announcement_id': id, 'read_at': now},
+    ], onConflict: 'email,announcement_id');
+  }
+
   Future<void> deleteForUser(String email, List<String> announcementIds) async {
     if (announcementIds.isEmpty) return;
     final now = DateTime.now().toUtc().toIso8601String();

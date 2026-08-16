@@ -143,6 +143,46 @@ class _InboxScreenState extends State<InboxScreen> {
     );
   }
 
+  /// Menandai sudah dibaca tanpa membuka pesannya satu per satu.
+  ///
+  /// [all] menandai seluruh isi tab yang sedang terbuka, bukan seluruh
+  /// kotak masuk. Yang sedang dilihat orangnya itulah yang dia maksud —
+  /// menandai tab sebelah yang tidak sedang dia lihat berarti menghapus
+  /// penanda yang justru dia pasang untuk dirinya sendiri.
+  Future<void> _markRead(AnnouncementCategory category, {bool all = false}) async {
+    final email = _email;
+    if (email == null) return;
+
+    final ids = (all ? _itemsIn(category) : _items.where((i) => _selected.contains(i.id)))
+        .where((i) => !i.read)
+        .map((i) => i.id)
+        .toList();
+    if (ids.isEmpty) {
+      showAppToast(context, 'Tidak ada pesan yang belum dibaca.');
+      return;
+    }
+
+    // Ditandai lebih dulu di layar, baru dikirim. Kalau penulisannya
+    // gagal, paling buruk penandanya muncul lagi saat dimuat ulang —
+    // jauh lebih baik daripada menahan seluruh daftar karena jaringan
+    // lambat.
+    setState(() {
+      _items = [
+        for (final i in _items) ids.contains(i.id) ? i.copyWith(read: true) : i,
+      ];
+      _selected.clear();
+      _selecting = false;
+    });
+
+    try {
+      await _repo.markManyRead(email, ids);
+    } catch (e) {
+      if (!mounted) return;
+      showAppToast(context, 'Gagal menandai: $e', isError: true);
+      _load();
+    }
+  }
+
   Future<void> _deleteSelected({bool all = false}) async {
     final email = _email;
     if (email == null) return;
@@ -243,6 +283,14 @@ class _InboxScreenState extends State<InboxScreen> {
               }),
             ),
             IconButton(
+              icon: const Icon(Icons.mark_email_read_outlined),
+              tooltip: 'Tandai sudah dibaca',
+              onPressed: _selected.isEmpty
+                  ? null
+                  : () => _markRead(AnnouncementCategory.values[
+                      DefaultTabController.of(context).index]),
+            ),
+            IconButton(
               icon: const Icon(Icons.delete_outline),
               tooltip: 'Hapus terpilih',
               onPressed: _selected.isEmpty ? null : () => _deleteSelected(),
@@ -312,11 +360,22 @@ class _InboxScreenState extends State<InboxScreen> {
               ),
             for (final item in items) _tile(item),
             const SizedBox(height: 14),
-            TextButton.icon(
-              icon: const Icon(Icons.delete_sweep_outlined, size: 18),
-              label: const Text('Hapus Semua'),
-              style: TextButton.styleFrom(foregroundColor: Colors.red),
-              onPressed: () => _deleteSelected(all: true),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                if (unread > 0)
+                  TextButton.icon(
+                    icon: const Icon(Icons.mark_email_read_outlined, size: 18),
+                    label: const Text('Tandai Semua Dibaca'),
+                    onPressed: () => _markRead(category, all: true),
+                  ),
+                TextButton.icon(
+                  icon: const Icon(Icons.delete_sweep_outlined, size: 18),
+                  label: const Text('Hapus Semua'),
+                  style: TextButton.styleFrom(foregroundColor: Colors.red),
+                  onPressed: () => _deleteSelected(all: true),
+                ),
+              ],
             ),
           ],
         ),
