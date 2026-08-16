@@ -7,6 +7,7 @@ import '../providers/settings_provider.dart';
 import '../widgets/edit_action_bar.dart';
 import '../utils/field_rules.dart';
 import '../widgets/app_toast.dart';
+import '../widgets/required_label.dart';
 
 /// Payment settings (QRIS + bank transfer info) — Finance only, since
 /// they're the only role allowed to change these. Admin gets
@@ -174,9 +175,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  InputDecoration _decoration(String label) {
+  /// [required] menambahkan bintang merah di belakang labelnya.
+  ///
+  /// Hanya saat sedang menyunting. Dalam keadaan hanya-lihat tidak ada
+  /// yang bisa dikosongkan siapa pun, dan tanda wajib di sana cuma
+  /// menandai hal yang tidak sedang diminta.
+  InputDecoration _decoration(String label, {bool required = false}) {
     return InputDecoration(
-      labelText: label,
+      labelText: required && _editing ? null : label,
+      label: required && _editing ? requiredLabel(label) : null,
       filled: !_editing,
       fillColor: _editing ? null : const Color(0xFFEEEEEE),
     );
@@ -226,7 +233,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               TextFormField(
                 controller: _merchantCtrl,
                 enabled: _editing,
-                decoration: _decoration('Nama Merchant'),
+                decoration: _decoration('Nama Merchant', required: true),
                 inputFormatters: nameFormatters,
                 textCapitalization: TextCapitalization.words,
                 validator: (v) =>
@@ -248,7 +255,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               TextFormField(
                 controller: _bankNameCtrl,
                 enabled: _editing,
-                decoration: _decoration('Nama Bank'),
+                decoration: _decoration('Nama Bank', required: true),
                 inputFormatters: nameFormatters,
                 textCapitalization: TextCapitalization.characters,
                 validator: (v) => _editing ? validateName(v, label: 'Nama bank') : null,
@@ -257,7 +264,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               TextFormField(
                 controller: _accountNumberCtrl,
                 enabled: _editing,
-                decoration: _decoration('Nomor Rekening'),
+                decoration: _decoration('Nomor Rekening', required: true),
                 keyboardType: TextInputType.number,
                 inputFormatters: accountNumberFormatters,
                 validator: (v) => _editing ? validateAccountNumber(v) : null,
@@ -266,7 +273,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               TextFormField(
                 controller: _accountHolderCtrl,
                 enabled: _editing,
-                decoration: _decoration('Atas Nama (a.n. ...)'),
+                decoration: _decoration('Atas Nama (a.n. ...)', required: true),
                 inputFormatters: nameFormatters,
                 textCapitalization: TextCapitalization.words,
                 validator: (v) =>

@@ -8,6 +8,7 @@ import '../widgets/dialog_actions.dart';
 import '../utils/field_rules.dart';
 import '../widgets/app_toast.dart';
 import '../widgets/responsive.dart';
+import '../widgets/required_label.dart';
 
 const _roleLabels = {
   'super_admin': 'Super Admin',
@@ -320,7 +321,7 @@ class _EmployeeFormDialogState extends State<_EmployeeFormDialog> {
             children: [
               TextFormField(
                 controller: _nameCtrl,
-                decoration: const InputDecoration(labelText: 'Nama'),
+                decoration: InputDecoration(label: requiredLabel('Nama')),
                 inputFormatters: nameFormatters,
                 textCapitalization: TextCapitalization.words,
                 validator: (v) => validateName(v, label: 'Nama'),
@@ -337,7 +338,7 @@ class _EmployeeFormDialogState extends State<_EmployeeFormDialog> {
               TextFormField(
                 controller: _emailCtrl,
                 decoration: InputDecoration(
-                  labelText: 'Email Gmail',
+                  label: requiredLabel('Email Gmail'),
                   helperText: isEditing
                       ? 'Mengubahnya juga mengubah akun yang bisa login'
                       : 'Harus @gmail.com — login aplikasi lewat Google',
@@ -349,7 +350,7 @@ class _EmployeeFormDialogState extends State<_EmployeeFormDialog> {
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 value: _role,
-                decoration: const InputDecoration(labelText: 'Role'),
+                decoration: InputDecoration(label: requiredLabel('Role')),
                 items: _roleLabels.entries
                     .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value)))
                     .toList(),
@@ -359,7 +360,7 @@ class _EmployeeFormDialogState extends State<_EmployeeFormDialog> {
               if (_role != 'super_admin')
                 DropdownButtonFormField<String>(
                   value: _restoId,
-                  decoration: const InputDecoration(labelText: 'Resto'),
+                  decoration: InputDecoration(label: requiredLabel('Resto')),
                   items: widget.restaurants
                       .map((r) => DropdownMenuItem(value: r.id, child: Text(r.name)))
                       .toList(),

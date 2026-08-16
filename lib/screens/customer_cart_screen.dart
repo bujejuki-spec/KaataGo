@@ -17,6 +17,7 @@ import '../widgets/quantity_dialog.dart';
 import '../widgets/cart_line_tile.dart';
 import '../models/cart_item.dart';
 import '../utils/field_rules.dart';
+import '../widgets/required_label.dart';
 
 /// Checkout screen. Lets the customer pick Dine In or Take Away first —
 /// for Take Away no table is needed at all, so the table-number field is
@@ -277,7 +278,7 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
                         textCapitalization: TextCapitalization.words,
                         inputFormatters: nameFormatters,
                         decoration: InputDecoration(
-                          labelText: 'Nama Customer',
+                          label: requiredLabel('Nama Customer'),
                           helperText: isDineIn
                               ? 'Wajib diisi — supaya pesananmu tidak tertukar dengan teman semeja'
                               : 'Wajib diisi — nama yang akan dipanggil saat pesanan siap',

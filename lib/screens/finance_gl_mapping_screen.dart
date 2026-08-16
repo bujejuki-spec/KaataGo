@@ -13,6 +13,7 @@ import '../models/restaurant.dart';
 import '../db/restaurant_repository.dart';
 import '../utils/field_rules.dart';
 import '../widgets/app_toast.dart';
+import '../widgets/required_label.dart';
 
 const _paymentMethods = ['cash', 'qris', 'transfer'];
 const _paymentLabels = {'cash': 'Tunai', 'qris': 'QRIS', 'transfer': 'Transfer'};
@@ -281,13 +282,13 @@ class _FinanceGlMappingScreenState extends State<FinanceGlMappingScreen> {
           children: [
             TextField(
               controller: codeCtrl,
-              decoration: const InputDecoration(labelText: 'Kode GL Account'),
+              decoration: InputDecoration(label: requiredLabel('Kode GL Account')),
               autofocus: true,
             ),
             const SizedBox(height: 12),
             TextField(
               controller: nameCtrl,
-              decoration: const InputDecoration(labelText: 'Nama GL Account'),
+              decoration: InputDecoration(label: requiredLabel('Nama GL Account')),
               inputFormatters: nameFormatters,
             ),
           ],

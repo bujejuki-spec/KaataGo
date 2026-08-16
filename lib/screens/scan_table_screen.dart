@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../providers/table_session_provider.dart';
 import '../widgets/dialog_actions.dart';
+import '../widgets/required_label.dart';
 
 /// Required before a customer can order: scan the QR code printed/shown
 /// at their table. The dummy QR codes encode "RESTO:<restoId>|TABLE:<n>"
@@ -59,15 +60,15 @@ class _ScanTableScreenState extends State<ScanTableScreen> {
           children: [
             TextField(
               controller: restoCtrl,
-              decoration: const InputDecoration(labelText: 'Resto ID'),
+              decoration: InputDecoration(label: requiredLabel('Resto ID')),
               autofocus: true,
             ),
             const SizedBox(height: 12),
             TextField(
               controller: tableCtrl,
               textCapitalization: TextCapitalization.characters,
-              decoration: const InputDecoration(
-                labelText: 'Nomor Meja',
+              decoration: InputDecoration(
+                label: requiredLabel('Nomor Meja'),
                 hintText: 'Contoh: 7 atau A01',
               ),
             ),

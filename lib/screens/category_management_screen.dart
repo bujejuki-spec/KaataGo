@@ -5,6 +5,7 @@ import '../providers/category_provider.dart';
 import '../widgets/dialog_actions.dart';
 import '../utils/field_rules.dart';
 import '../widgets/responsive.dart';
+import '../widgets/required_label.dart';
 
 /// Tab content (inside Kelola Produk) for managing the list of product
 /// categories — added/deleted here, then picked from a dropdown on the
@@ -21,7 +22,7 @@ class CategoryManagementScreen extends StatelessWidget {
         content: TextField(
           controller: controller,
           autofocus: true,
-          decoration: const InputDecoration(labelText: 'Nama Kategori'),
+          decoration: InputDecoration(label: requiredLabel('Nama Kategori')),
               inputFormatters: nameFormatters,
               textCapitalization: TextCapitalization.words,
         ),

@@ -9,6 +9,7 @@ import '../widgets/edit_action_bar.dart';
 import '../widgets/logo_picker.dart';
 import '../utils/field_rules.dart';
 import '../widgets/app_toast.dart';
+import '../widgets/required_label.dart';
 
 /// Super Admin only: creates a brand-new restaurant row (a new tenant),
 /// or — when [existing] is passed — edits one (from the "List Resto"
@@ -207,7 +208,7 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
                 controller: _nameCtrl,
                 enabled: _editing,
                 decoration: InputDecoration(
-                  labelText: 'Nama resto',
+                  label: requiredLabel('Nama resto'),
                   filled: !_editing,
                   fillColor: _editing ? null : const Color(0xFFEEEEEE),
                 ),
@@ -249,7 +250,7 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
                 controller: _addressCtrl,
                 enabled: _editing,
                 decoration: InputDecoration(
-                  labelText: 'Alamat',
+                  label: requiredLabel('Alamat'),
                   filled: !_editing,
                   fillColor: _editing ? null : const Color(0xFFEEEEEE),
                 ),

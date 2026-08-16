@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../utils/rupiah_input.dart';
 import 'dialog_actions.dart';
+import 'required_label.dart';
 
 /// Menerima uang tunai dari pelanggan: total tagihannya, nominal yang
 /// diserahkan, dan kembaliannya.
@@ -115,7 +116,7 @@ class _CashPaymentDialogState extends State<CashPaymentDialog> {
                 keyboardType: TextInputType.number,
                 inputFormatters: [ThousandsInputFormatter()],
                 autofocus: true,
-                decoration: const InputDecoration(labelText: 'Uang Diterima', prefixText: 'Rp '),
+                decoration: InputDecoration(label: requiredLabel('Uang Diterima'), prefixText: 'Rp '),
                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
                 onChanged: (_) => setState(() {}),
               ),

@@ -20,6 +20,7 @@ import '../utils/rupiah_input.dart';
 import '../widgets/dialog_actions.dart';
 import '../widgets/responsive.dart';
 import '../widgets/app_toast.dart';
+import '../widgets/required_label.dart';
 
 /// Menyetorkan uang tunai dari laci kasir ke rekening resto.
 ///
@@ -759,7 +760,7 @@ class _AddDepositDialogState extends State<_AddDepositDialog> {
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _amountCtrl,
-                  decoration: const InputDecoration(labelText: 'Jumlah Setoran', prefixText: 'Rp '),
+                  decoration: InputDecoration(label: requiredLabel('Jumlah Setoran'), prefixText: 'Rp '),
                   keyboardType: TextInputType.number,
                   inputFormatters: [ThousandsInputFormatter()],
                   style: const TextStyle(fontWeight: FontWeight.bold),

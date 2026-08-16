@@ -19,6 +19,7 @@ import '../db/restaurant_repository.dart';
 import '../providers/auth_provider.dart';
 import '../utils/field_rules.dart';
 import '../widgets/app_toast.dart';
+import '../widgets/required_label.dart';
 
 class ProductFormScreen extends StatefulWidget {
   final Product? existing;
@@ -378,7 +379,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                 controller: _nameCtrl,
                 enabled: _editing,
                 decoration: InputDecoration(
-                  labelText: 'Nama produk',
+                  label: requiredLabel('Nama produk'),
                   filled: !_editing,
                   fillColor: _editing ? null : const Color(0xFFEEEEEE),
                 ),
@@ -424,7 +425,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                 DropdownButtonFormField<String>(
                   value: _selectedCategory,
                   decoration: InputDecoration(
-                    labelText: 'Kategori',
+                    label: requiredLabel('Kategori'),
                     filled: !_editing,
                     fillColor: _editing ? null : const Color(0xFFEEEEEE),
                   ),
@@ -440,7 +441,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                 enabled: _editing,
                 onChanged: (_) => setState(() {}),
                 decoration: InputDecoration(
-                  labelText: 'Harga Original (Rp)',
+                  label: requiredLabel('Harga Original (Rp)'),
                   helperText: 'Harga bersih, belum termasuk PPN',
                   filled: !_editing,
                   fillColor: _editing ? null : const Color(0xFFEEEEEE),
@@ -463,7 +464,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                 controller: _stockCtrl,
                 enabled: _editing,
                 decoration: InputDecoration(
-                  labelText: 'Stok',
+                  label: requiredLabel('Stok'),
                   filled: !_editing,
                   fillColor: _editing ? null : const Color(0xFFEEEEEE),
                 ),

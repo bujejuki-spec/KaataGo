@@ -11,6 +11,7 @@ import '../widgets/app_toast.dart';
 import '../widgets/dialog_actions.dart';
 import '../widgets/journal_detail_dialog.dart';
 import '../widgets/responsive.dart';
+import '../widgets/required_label.dart';
 
 /// Mencatat dana payment gateway yang benar-benar cair ke rekening.
 ///
@@ -376,8 +377,8 @@ class _AddSettlementDialogState extends State<_AddSettlementDialog> {
                   controller: _grossCtrl,
                   keyboardType: TextInputType.number,
                   inputFormatters: [ThousandsInputFormatter()],
-                  decoration: const InputDecoration(
-                    labelText: 'Bruto (sebelum potongan)',
+                  decoration: InputDecoration(
+                    label: requiredLabel('Bruto (sebelum potongan)'),
                     prefixText: 'Rp ',
                     isDense: true,
                   ),
@@ -402,8 +403,8 @@ class _AddSettlementDialogState extends State<_AddSettlementDialog> {
                   controller: _netCtrl,
                   keyboardType: TextInputType.number,
                   inputFormatters: [ThousandsInputFormatter()],
-                  decoration: const InputDecoration(
-                    labelText: 'Neto (yang masuk rekening)',
+                  decoration: InputDecoration(
+                    label: requiredLabel('Neto (yang masuk rekening)'),
                     prefixText: 'Rp ',
                     isDense: true,
                     helperText: 'Sesuaikan dengan mutasi bank',

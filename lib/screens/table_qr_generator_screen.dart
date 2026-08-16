@@ -9,6 +9,7 @@ import '../theme.dart';
 import '../utils/table_qr_image.dart';
 import '../widgets/kaata_logo.dart';
 import '../widgets/responsive.dart';
+import '../widgets/required_label.dart';
 
 /// Builds the QR sticker a customer scans at their table. The Resto ID is
 /// taken from the logged-in employee's own account and shown read-only —
@@ -263,10 +264,10 @@ class _TableQrGeneratorScreenState extends State<TableQrGeneratorScreen> {
                     controller: _tableCtrl,
                     autofocus: true,
                     textCapitalization: TextCapitalization.characters,
-                    decoration: const InputDecoration(
-                      labelText: 'Nomor Meja',
+                    decoration: InputDecoration(
+                      label: requiredLabel('Nomor Meja'),
                       hintText: 'Contoh: 7, A01, VIP-2',
-                      prefixIcon: Icon(Icons.tag),
+                      prefixIcon: const Icon(Icons.tag),
                     ),
                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                     onChanged: (_) => setState(() {}),
@@ -361,10 +362,10 @@ class _BulkFields extends StatelessWidget {
           maxLength: 3,
           autofocus: true,
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-          decoration: const InputDecoration(
-            labelText: 'Jumlah Meja',
+          decoration: InputDecoration(
+            label: requiredLabel('Jumlah Meja'),
             hintText: 'Contoh: 10',
-            prefixIcon: Icon(Icons.tag),
+            prefixIcon: const Icon(Icons.tag),
             counterText: '',
             helperText: 'Nomornya dibuat urut mulai dari 1',
           ),

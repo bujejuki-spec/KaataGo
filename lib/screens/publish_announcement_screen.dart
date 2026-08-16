@@ -11,6 +11,7 @@ import '../providers/auth_provider.dart';
 import '../utils/photo_picker.dart';
 import '../widgets/app_toast.dart';
 import '../widgets/responsive.dart';
+import '../widgets/required_label.dart';
 
 /// Menerbitkan pengumuman ke kotak masuk.
 ///
@@ -202,14 +203,14 @@ class _AnnouncementFormState extends State<_AnnouncementForm>
             const SizedBox(height: 18),
             TextFormField(
               controller: _titleCtrl,
-              decoration: const InputDecoration(labelText: 'Judul'),
+              decoration: InputDecoration(label: requiredLabel('Judul')),
               maxLength: 80,
               validator: (v) => (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null,
             ),
             const SizedBox(height: 6),
             TextFormField(
               controller: _bodyCtrl,
-              decoration: const InputDecoration(labelText: 'Isi Pesan'),
+              decoration: InputDecoration(label: requiredLabel('Isi Pesan')),
               maxLines: 4,
               validator: (v) => (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null,
             ),

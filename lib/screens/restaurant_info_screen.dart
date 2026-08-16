@@ -13,6 +13,7 @@ import '../widgets/edit_action_bar.dart';
 import '../widgets/logo_picker.dart';
 import '../utils/field_rules.dart';
 import '../widgets/app_toast.dart';
+import '../widgets/required_label.dart';
 
 /// Lets the Admin update this restaurant's category and address —
 /// shown to customers at the top of their self-order screen once they
@@ -283,18 +284,18 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
                     TextFormField(
                       controller: _nameCtrl,
                       enabled: false,
-                      decoration: const InputDecoration(
-                        labelText: 'Nama Resto',
+                      decoration: InputDecoration(
+                        label: requiredLabel('Nama Resto'),
                         helperText: 'Cuma Super Admin yang bisa ubah nama resto',
                         filled: true,
-                        fillColor: Color(0xFFEEEEEE),
+                        fillColor: const Color(0xFFEEEEEE),
                       ),
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
                       value: _selectedCategory,
                       decoration: InputDecoration(
-                        labelText: 'Kategori Resto',
+                        label: requiredLabel('Kategori Resto'),
                         filled: !_editing,
                         fillColor: _editing ? null : const Color(0xFFEEEEEE),
                       ),
@@ -310,7 +311,7 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
                       controller: _addressCtrl,
                       enabled: _editing,
                       decoration: InputDecoration(
-                        labelText: 'Alamat',
+                        label: requiredLabel('Alamat'),
                         filled: !_editing,
                         fillColor: _editing ? null : const Color(0xFFEEEEEE),
                       ),

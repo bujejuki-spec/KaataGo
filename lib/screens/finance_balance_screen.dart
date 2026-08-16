@@ -24,6 +24,7 @@ import '../widgets/journal_detail_dialog.dart';
 import '../utils/rupiah_input.dart';
 import '../widgets/app_toast.dart';
 import '../widgets/count_badge.dart';
+import '../widgets/required_label.dart';
 
 /// Saldo Total = Saldo Penghasilan + Saldo Petty Cash − Saldo Pengeluaran.
 ///
@@ -1073,7 +1074,7 @@ class _AddExpenseDialogState extends State<_AddExpenseDialog> {
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _amountCtrl,
-                  decoration: const InputDecoration(labelText: 'Jumlah', prefixText: 'Rp '),
+                  decoration: InputDecoration(label: requiredLabel('Jumlah'), prefixText: 'Rp '),
                   keyboardType: TextInputType.number,
                   inputFormatters: [ThousandsInputFormatter()],
                   style: const TextStyle(fontWeight: FontWeight.bold),
@@ -1090,7 +1091,7 @@ class _AddExpenseDialogState extends State<_AddExpenseDialog> {
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _descCtrl,
-                  decoration: const InputDecoration(labelText: 'Deskripsi'),
+                  decoration: InputDecoration(label: requiredLabel('Deskripsi')),
                   maxLines: 2,
                   validator: (v) => (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null,
                 ),
@@ -1375,8 +1376,8 @@ class _AddPettyCashDialogState extends State<_AddPettyCashDialog> {
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _amountCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Jumlah',
+                  decoration: InputDecoration(
+                    label: requiredLabel('Jumlah'),
                     prefixText: 'Rp ',
                   ),
                   keyboardType: TextInputType.number,
