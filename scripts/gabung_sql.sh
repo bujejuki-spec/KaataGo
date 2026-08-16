@@ -31,6 +31,7 @@ FILES=(
   announcement_categories.sql
   fix_device_tokens_rls.sql
   push_trigger_pg_net.sql
+  payment_gateway.sql
 )
 
 {
