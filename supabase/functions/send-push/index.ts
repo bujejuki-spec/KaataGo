@@ -136,20 +136,29 @@ async function resolveTokens(row: OutboxRow): Promise<string[]> {
   const p = row.payload;
   let q = admin.from("device_tokens").select("token");
 
-  // Selalu dibatasi restonya. Tanpa ini, sebuah pesanan di cabang Dago
-  // akan membunyikan HP dapur cabang Bandung — dan itulah cara tercepat
-  // membuat orang mematikan notifikasi seluruhnya.
-  if (row.resto_id) q = q.eq("resto_id", row.resto_id);
-
   if (p.audience === "role") {
+    // Kabar untuk sebuah peran dibatasi restonya. Tanpa itu, pesanan di
+    // cabang Dago akan membunyikan HP dapur cabang sebelah — dan itulah
+    // cara tercepat membuat orang mematikan notifikasi seluruhnya.
+    if (row.resto_id) q = q.eq("resto_id", row.resto_id);
     q = q.in("role", p.roles ?? []);
   } else if (p.audience === "email") {
     if (!p.email) return [];
     q = q.eq("email", p.email);
   } else {
-    // Pemilik pesanannya: pelanggan yang login dikenali dari emailnya,
-    // tamu dari session id-nya. Keduanya diperiksa sekaligus karena satu
-    // pesanan hanya punya salah satunya.
+    // Pemilik pesanan TIDAK disaring restonya.
+    //
+    // Email dan session id sudah menunjuk satu orang; menambahkan resto
+    // hanya menambah satu syarat lagi yang bisa meleset. Dan itu memang
+    // meleset: perangkat pelanggan mendaftarkan resto yang sedang dia
+    // buka, sedangkan pesanannya menyebut resto tempat dia memesan tadi.
+    // Begitu dia menutup halaman menunya atau membuka resto lain,
+    // keduanya tidak lagi sama — dan kabar "pesanan kamu siap" berhenti
+    // sampai, justru pada saat yang paling dinanti.
+    //
+    // Pelanggan yang login dikenali dari emailnya, tamu dari session
+    // id-nya. Keduanya diperiksa sekaligus karena satu pesanan hanya
+    // punya salah satunya.
     const parts: string[] = [];
     if (p.email && p.email !== "Tamu") parts.push(`email.eq.${p.email}`);
     if (p.session_id) parts.push(`session_id.eq.${p.session_id}`);
