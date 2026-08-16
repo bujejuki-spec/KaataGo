@@ -78,6 +78,7 @@ class _PendingPaymentScreenState extends State<PendingPaymentScreen> {
         order.id,
         method: method,
         cashReceived: received,
+        settledBy: context.read<AuthProvider>().user?.email,
       );
       if (!mounted) return;
       final change = (received ?? 0) - order.total;

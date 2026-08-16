@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../db/customer_profile_repository.dart';
 import '../db/restaurant_repository.dart';
+import '../db/discount_repository.dart';
 import '../db/firestore_product_repository.dart';
 import '../models/product.dart';
 import '../models/restaurant.dart';
@@ -77,6 +78,23 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
   double get _ppnPercent => _resto?.ppnPercent ?? 0;
   double get _servicePercent => _resto?.servicePercent ?? 0;
 
+  /// Diskon yang berlaku hari ini di resto yang sedang dibuka.
+  ///
+  /// Dimuat di layar keranjang, bukan di layar menu: potongannya
+  /// dihitung dari total tagihan, dan tagihannya baru ada di sini.
+  Future<void> _loadDiscounts() async {
+    final restoId = context.read<TableSessionProvider>().restoId;
+    if (restoId == null) return;
+    try {
+      final live = await DiscountRepository().liveForResto(restoId);
+      if (!mounted) return;
+      context.read<CustomerCartProvider>().setDiscounts(live);
+    } catch (_) {
+      // Luring, atau tabelnya belum dimigrasi. Tanpa diskon, harganya
+      // kembali ke harga daftar — bukan pesanan yang gagal.
+    }
+  }
+
   Future<void> _loadResto() async {
     final restoId = context.read<TableSessionProvider>().restoId;
     if (restoId == null) return;
@@ -108,6 +126,7 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
     _tableCtrl = TextEditingController(text: known ?? '');
     _prefillNameFromProfile();
     _loadResto();
+    _loadDiscounts();
   }
 
   /// If logged in, use their saved profile name as a starting point —
@@ -238,7 +257,9 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
     // daripada yang ditagih QR-nya. Pada Take Away keduanya kebetulan
     // sama persis, dan justru itu yang membuat selisihnya lolos begitu
     // lama.
-    final amount = cart.chargesFor(_orderType).total;
+    // Sesudah potongan: inilah yang ditagihkan di layar QRIS dan yang
+    // disebutkan ke kasir untuk pembayaran tunai.
+    final amount = cart.payableFor(_orderType);
     final orderId = await cart.placeOrder(
       label,
       tableNumber: tableNumber,
@@ -432,6 +453,15 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
                         serviceApplies: isDineIn,
                         currency: currency,
                       ),
+                      if (cart.discountFor(_orderType) case final applied?) ...[
+                        const SizedBox(height: 8),
+                        _DiscountLine(
+                          name: applied.discount.name,
+                          amount: applied.amount,
+                          payable: cart.payableFor(_orderType),
+                          currency: currency,
+                        ),
+                      ],
                       const SizedBox(height: 14),
                       const Align(
                         alignment: Alignment.centerLeft,
@@ -488,6 +518,72 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+/// Baris potongan di bawah rincian tagihan.
+///
+/// Disebut namanya, bukan diam-diam mengecilkan totalnya. Pelanggan
+/// yang melihat angka berkurang tanpa keterangan akan mengira ada yang
+/// salah hitung — dan promo yang tidak dikenali namanya tidak pernah
+/// diceritakan ke siapa pun.
+class _DiscountLine extends StatelessWidget {
+  final String name;
+  final int amount;
+  final int payable;
+  final NumberFormat currency;
+
+  const _DiscountLine({
+    required this.name,
+    required this.amount,
+    required this.payable,
+    required this.currency,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      decoration: BoxDecoration(
+        color: KaataTheme.tintOf(context, Colors.green),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Icon(Icons.local_offer_outlined,
+                  size: 16, color: KaataTheme.onTintOf(context, Colors.green)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(name,
+                    style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                        color: KaataTheme.onTintOf(context, Colors.green)),
+                    overflow: TextOverflow.ellipsis),
+              ),
+              Text('− ${currency.format(amount)}',
+                  style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: KaataTheme.onTintOf(context, Colors.green))),
+            ],
+          ),
+          const Divider(height: 14),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('DIBAYAR',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+              Text(currency.format(payable),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 17)),
+            ],
+          ),
+        ],
       ),
     );
   }

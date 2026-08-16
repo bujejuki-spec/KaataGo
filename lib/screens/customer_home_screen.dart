@@ -784,7 +784,6 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                 );
               },
             ),
-            PromoBannerCarousel(restoId: session.restoId!),
             Expanded(
               child: StreamBuilder<List<Product>>(
                 stream: repo.watchAll(session.restoId!),
@@ -809,6 +808,9 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                         quantityOf: cart.quantityOf,
                         ppnPercent: cart.ppnPercent,
                         onTapProduct: (p) => _onTapProduct(context, cart, p),
+                        // Ikut tergulir bersama menunya, bukan diam di
+                        // atasnya.
+                        header: PromoBannerCarousel(restoId: session.restoId!),
                       );
                     },
                   );

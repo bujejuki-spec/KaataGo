@@ -143,6 +143,8 @@ class CustomerOrder {
     this.discountAmount = 0,
     this.discountId,
     this.discountName,
+    this.settledBy,
+    this.settledAt,
   }) : itemsDone = itemsDone ?? const {};
 
   /// Maps to Postgres `orders` table columns (snake_case). `id` and
@@ -231,15 +233,33 @@ class CustomerOrder {
       paymentStatus == OrderPaymentStatus.pending &&
       kitchenStatus == KitchenStatus.waiting;
 
+  /// Siapa yang menerima pembayarannya di meja kasir, dan kapan.
+  ///
+  /// Null untuk pesanan yang dibayar sendiri lewat HP — tidak ada
+  /// siapa pun yang menerimanya.
+  final String? settledBy;
+  final DateTime? settledAt;
+
   /// Pesanan mandiri yang uangnya diterima di meja kasir.
   ///
-  /// Ini yang membuatnya berhak masuk Riwayat Transaksi walau bukan
-  /// pesanan yang diinput kasir: uangnya benar-benar lewat laci, jadi
-  /// harus ikut dihitung saat tutup shift.
+  /// Ini yang membuatnya berhak masuk Riwayat Kasir walau bukan pesanan
+  /// yang diinput kasir: uangnya benar-benar lewat laci, jadi harus ikut
+  /// dihitung saat tutup shift.
+  ///
+  /// Dulu dikenali dengan menebak — "cara bayarnya tunai berarti
+  /// dibayar di kasir". Tebakan itu benar selama tunai satu-satunya
+  /// cara melunasi di sana. Sejak Pending Payment bisa mengganti cara
+  /// bayar ke QRIS atau transfer, tebakannya jadi salah: cara bayarnya
+  /// berubah, tebakannya tidak cocok, dan pesanannya lenyap dari
+  /// Riwayat Kasir tepat setelah uangnya diterima.
+  ///
+  /// [settledBy] yang menggantikannya. Tebakan lamanya disimpan sebagai
+  /// cadangan untuk baris yang terlanjur dilunasi sebelum kolom itu
+  /// ada — semuanya tunai, jadi masih benar untuk mereka.
   bool get settledAtCounter =>
       source == OrderSource.customer &&
       paymentStatus == OrderPaymentStatus.paid &&
-      paymentMethod == 'cash';
+      (settledBy != null || paymentMethod == 'cash');
 
   /// Kembalian yang harus diserahkan, atau null kalau uangnya belum
   /// diterima. Dihitung, tidak disimpan — supaya tidak pernah ada
@@ -286,6 +306,10 @@ class CustomerOrder {
       discountAmount: (data['discount_amount'] as num?)?.toInt() ?? 0,
       discountId: data['discount_id'] as String?,
       discountName: data['discount_name'] as String?,
+      settledBy: data['settled_by'] as String?,
+      settledAt: data['settled_at'] == null
+          ? null
+          : DateTime.parse(data['settled_at'] as String),
     );
   }
 }

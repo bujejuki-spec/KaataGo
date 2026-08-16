@@ -191,4 +191,48 @@ void main() {
       expect(error, isNotNull);
     });
   });
+
+  group('berlaku untuk pesanan mandiri pelanggan', () {
+    int subtotal(String id) => {'p1': 50000}[id] ?? 0;
+
+    test('aturan yang sama dipakai kasir maupun HP pelanggan', () {
+      // Promo yang cuma berlaku kalau kasir yang mengetikkan pesanannya
+      // bukan promo — ia janji yang gagal ditepati tepat di depan orang
+      // yang membacanya di layar menu.
+      //
+      // Keduanya memanggil bestDiscountFor yang sama persis; tes ini
+      // menjaga supaya tidak ada yang diam-diam menambahkan syarat
+      // "hanya dari kasir" di salah satunya.
+      final promo = _d(
+        basis: DiscountBasis.minPurchase,
+        minPurchase: 40000,
+        value: 10,
+      );
+
+      final hasil = bestDiscountFor(
+        discounts: [promo],
+        total: 50000,
+        subtotalOf: subtotal,
+        productIds: {'p1'},
+        now: _hariIni,
+      );
+
+      expect(hasil, isNotNull);
+      expect(hasil!.amount, 5000);
+    });
+
+    test('yang dibayar adalah total dikurangi potongan', () {
+      final promo = _d(kind: DiscountKind.amount, value: 7500);
+
+      final hasil = bestDiscountFor(
+        discounts: [promo],
+        total: 50000,
+        subtotalOf: subtotal,
+        productIds: {'p1'},
+        now: _hariIni,
+      );
+
+      expect(50000 - hasil!.amount, 42500);
+    });
+  });
 }

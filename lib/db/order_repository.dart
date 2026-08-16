@@ -60,10 +60,16 @@ class OrderRepository {
   /// nanti tetap bisa menyebut kembaliannya. Kembaliannya sendiri tidak
   /// disimpan — selalu bisa dihitung ulang, dan dua angka yang saling
   /// terikat hanya membuka peluang keduanya tidak lagi cocok.
-  Future<void> settleCashPayment(String orderId, {required int cashReceived}) async {
+  Future<void> settleCashPayment(
+    String orderId, {
+    required int cashReceived,
+    String? settledBy,
+  }) async {
     await _client.from('orders').update({
       'payment_status': OrderPaymentStatus.paid.name,
       'cash_received': cashReceived,
+      'settled_by': settledBy ?? 'kasir',
+      'settled_at': DateTime.now().toUtc().toIso8601String(),
     }).eq('id', orderId);
   }
 
@@ -85,11 +91,17 @@ class OrderRepository {
     String orderId, {
     required String method,
     int? cashReceived,
+    String? settledBy,
   }) async {
     await _client.from('orders').update({
       'payment_status': OrderPaymentStatus.paid.name,
       'payment_method': method,
       if (cashReceived != null) 'cash_received': cashReceived,
+      // Ditulis apa pun cara bayarnya. Inilah yang menentukan pesanan
+      // ini masuk Riwayat Kasir — bukan lagi cara bayarnya, yang justru
+      // baru saja diganti di layar ini.
+      'settled_by': settledBy ?? 'kasir',
+      'settled_at': DateTime.now().toUtc().toIso8601String(),
     }).eq('id', orderId);
   }
 

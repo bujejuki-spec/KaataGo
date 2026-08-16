@@ -20,6 +20,15 @@ class ProductCategoryList extends StatelessWidget {
   /// Diteruskan ke kartunya — mati untuk layar pelanggan.
   final bool showStock;
 
+  /// Ditempel di atas daftar, di dalam gulirannya.
+  ///
+  /// Dipakai layar pelanggan untuk banner promo. Ditaruh di luar
+  /// daftar, bannernya diam di tempat dan memakan sepertiga layar
+  /// selamanya — yang ingin melihat menu harus menggulir di sisa ruang
+  /// yang tinggal sedikit, dan promonya berubah dari tawaran jadi
+  /// halangan.
+  final Widget? header;
+
   const ProductCategoryList({
     super.key,
     required this.products,
@@ -27,6 +36,7 @@ class ProductCategoryList extends StatelessWidget {
     required this.onTapProduct,
     this.ppnPercent = 0,
     this.showStock = false,
+    this.header,
   });
 
   @override
@@ -45,8 +55,12 @@ class ProductCategoryList extends StatelessWidget {
 
         return ListView.builder(
           padding: const EdgeInsets.only(top: 4, bottom: 12),
-          itemCount: categoryNames.length,
+          itemCount: categoryNames.length + (header != null ? 1 : 0),
           itemBuilder: (context, index) {
+            if (header != null) {
+              if (index == 0) return header!;
+              index -= 1;
+            }
             final category = categoryNames[index];
             final items = byCategory[category]!;
 

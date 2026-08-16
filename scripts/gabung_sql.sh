@@ -47,6 +47,7 @@ FILES=(
   announcement_audience.sql
   kasir_journal_read.sql
   cancel_order.sql
+  settled_at_counter.sql
 )
 
 {

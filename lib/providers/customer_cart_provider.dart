@@ -5,6 +5,7 @@ import '../db/firestore_product_repository.dart';
 import '../db/order_repository.dart';
 import '../db/session_repository.dart';
 import '../models/cart_item.dart';
+import '../models/discount.dart';
 import '../models/customer_order.dart';
 import '../models/order_type.dart';
 import '../models/product.dart';
@@ -67,6 +68,36 @@ class CustomerCartProvider extends ChangeNotifier {
 
   /// Semua baris untuk satu produk — bisa lebih dari satu kalau menu
   /// yang sama dipesan dengan opsi berbeda.
+  /// Diskon yang berlaku hari ini di resto ini, dimuat layar keranjang.
+  ///
+  /// Promo yang cuma berlaku kalau kasir yang mengetikkan pesanannya
+  /// bukan promo — ia janji yang gagal ditepati tepat di depan orang
+  /// yang membacanya di layar menu.
+  List<Discount> discounts = const [];
+
+  void setDiscounts(List<Discount> value) {
+    discounts = value;
+    notifyListeners();
+  }
+
+  /// Diskon terbaik untuk isi keranjang sekarang, atau null.
+  ///
+  /// Dihitung dari total tagihan — sesudah service dan PPN — karena
+  /// itulah angka yang dilihat dan dijanjikan ke pelanggan.
+  AppliedDiscount? discountFor(OrderType orderType) => bestDiscountFor(
+        discounts: discounts,
+        total: chargesFor(orderType).total,
+        subtotalOf: (productId) => linesOf(productId)
+            .fold(0, (sum, line) => sum + menuSubtotalOf(line)),
+        productIds: _items.map((i) => i.product.id).toSet(),
+      );
+
+  /// Yang benar-benar harus dibayar setelah potongan.
+  int payableFor(OrderType orderType) {
+    final total = chargesFor(orderType).total;
+    return total - (discountFor(orderType)?.amount ?? 0);
+  }
+
   List<CartItem> linesOf(String productId) =>
       _items.where((i) => i.product.id == productId).toList();
 
@@ -182,6 +213,7 @@ class CustomerCartProvider extends ChangeNotifier {
     String paymentMethod = 'qris',
   }) async {
     final tax = chargesFor(orderType);
+    final applied = discountFor(orderType);
 
     final order = CustomerOrder(
       id: '', // assigned by Firestore
@@ -195,7 +227,10 @@ class CustomerCartProvider extends ChangeNotifier {
                 notes: i.noteSummary,
               ))
           .toList(),
-      total: tax.total,
+      // Yang tersimpan adalah yang benar-benar ditagihkan. Menyimpan
+      // harga sebelum potongan berarti kasir menagih angka yang tidak
+      // pernah dilihat pelanggannya.
+      total: tax.total - (applied?.amount ?? 0),
       paymentStatus: OrderPaymentStatus.pending,
       customerLabel: customerLabel,
       // Selalu diisi, tidak pernah dibiarkan kosong, supaya kolomnya
@@ -211,6 +246,9 @@ class CustomerCartProvider extends ChangeNotifier {
       baseAmount: tax.base,
       serviceAmount: tax.service,
       ppnAmount: tax.ppn,
+      discountAmount: applied?.amount ?? 0,
+      discountId: applied?.discount.id,
+      discountName: applied?.discount.name,
     );
     final id = await _orderRepo.create(order);
 

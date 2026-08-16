@@ -7,6 +7,7 @@ CustomerOrder _order({
   String? method,
   int total = 50000,
   int? cashReceived,
+  String? settledBy,
 }) {
   return CustomerOrder(
     id: 'abcdef12-3456-7890-abcd-ef1234567890',
@@ -19,6 +20,7 @@ CustomerOrder _order({
     source: source,
     paymentMethod: method,
     cashReceived: cashReceived,
+    settledBy: settledBy,
   );
 }
 
@@ -231,6 +233,58 @@ void main() {
         order.paymentDeadline.difference(order.createdAt),
         const Duration(minutes: 30),
       );
+    });
+  });
+
+  group('masuk Riwayat Kasir', () {
+    test('dilunasi di kasir dengan QRIS tetap masuk', () {
+      // Inilah yang hilang: sejak Pending Payment bisa mengganti cara
+      // bayar, cara bayarnya berubah jadi qris dan tebakan lamanya
+      // ("tunai berarti dibayar di kasir") tidak lagi cocok. Uangnya
+      // diterima, transaksinya lenyap dari riwayat.
+      final order = _order(
+        source: OrderSource.customer,
+        status: OrderPaymentStatus.paid,
+        method: 'qris',
+        settledBy: 'kasir@contoh.com',
+      );
+
+      expect(order.settledAtCounter, isTrue);
+    });
+
+    test('dilunasi di kasir dengan transfer juga masuk', () {
+      final order = _order(
+        source: OrderSource.customer,
+        status: OrderPaymentStatus.paid,
+        method: 'transfer',
+        settledBy: 'kasir@contoh.com',
+      );
+
+      expect(order.settledAtCounter, isTrue);
+    });
+
+    test('pesanan QRIS yang dibayar sendiri lewat HP tidak ikut', () {
+      // Tidak pernah menyentuh meja kasir. Memasukkannya berarti
+      // menggelembungkan rekap shift dengan uang yang tidak lewat laci.
+      final order = _order(
+        source: OrderSource.customer,
+        status: OrderPaymentStatus.paid,
+        method: 'qris',
+      );
+
+      expect(order.settledAtCounter, isFalse);
+    });
+
+    test('baris lama tanpa penanda tetap dikenali dari cara bayarnya', () {
+      // Semua yang lama dilunasi tunai — satu-satunya cara saat itu —
+      // jadi tebakan lamanya masih benar untuk mereka.
+      final lama = _order(
+        source: OrderSource.customer,
+        status: OrderPaymentStatus.paid,
+        method: 'cash',
+      );
+
+      expect(lama.settledAtCounter, isTrue);
     });
   });
 }
