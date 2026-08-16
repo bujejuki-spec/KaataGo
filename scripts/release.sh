@@ -131,4 +131,33 @@ releases/latest/download sehingga tidak perlu ikut berubah."
   fi
 fi
 
+# ── 4. Pengumuman di kotak masuk ─────────────────────────────────────
+#
+# Diumumkan dari sini, bukan diketik ulang lewat akun Super Admin.
+# Dua langkah terpisah yang harus diingat berurutan berarti suatu saat
+# yang kedua terlewat — dan pembaruan yang tidak diumumkan sama saja
+# dengan pembaruan yang tidak pernah dirilis.
+#
+# Kuncinya bukan service role key. Yang dititipkan ke laptop ini hanya
+# kunci bersama yang kemampuannya persis satu: menerbitkan pengumuman
+# versi. Kalau laptopnya bocor, yang bisa dilakukan orang paling jauh
+# mengumumkan versi palsu.
+ANNOUNCE_FN="https://xizpwtycczigjhzxegen.supabase.co/functions/v1/publish-release"
+ANNOUNCE_SECRET_FILE="$HOME/.config/kaatago/release-hook-secret"
+
+log "Mengumumkan ke kotak masuk"
+if $DRY_RUN; then
+  printf '  (dry-run) dilewati\n'
+elif [[ ! -f "$ANNOUNCE_SECRET_FILE" ]]; then
+  # Bukan kegagalan rilis. APK-nya sudah terbit dan bisa diunduh; yang
+  # belum cuma kabarnya, dan itu masih bisa dikirim manual.
+  printf '  dilewati — %s belum ada\n' "$ANNOUNCE_SECRET_FILE"
+else
+  ANNOUNCE_RESULT=$(curl -s -X POST "$ANNOUNCE_FN" \
+    -H "Content-Type: application/json" \
+    -H "x-kaata-release-secret: $(cat "$ANNOUNCE_SECRET_FILE")" \
+    -d "{\"version\":\"$VERSION\"}" || true)
+  printf '  %s\n' "${ANNOUNCE_RESULT:-tidak ada jawaban}"
+fi
+
 log "Selesai — KaataGo $VERSION"
