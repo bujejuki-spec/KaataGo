@@ -12,10 +12,6 @@ import '../widgets/app_toast.dart';
 import '../widgets/cash_payment_dialog.dart';
 import '../widgets/responsive.dart';
 
-/// Nomor pesanan versi pendek, sama dengan yang tercetak di struk.
-String refOf(String id) =>
-    id.length >= 8 ? id.substring(0, 8).toUpperCase() : id.toUpperCase();
-
 /// Antrean pesanan yang dipesan sendiri dari HP pelanggan, dipilih bayar
 /// tunai, dan menunggu dilunasi di meja kasir.
 ///

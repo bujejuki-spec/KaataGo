@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../db/order_repository.dart';
@@ -11,6 +10,8 @@ import '../services/payment_gateway_service.dart';
 import '../theme.dart';
 import '../utils/qris_image.dart';
 import '../widgets/app_toast.dart';
+import '../widgets/kaata_qr_card.dart';
+import '../utils/id_time.dart';
 
 /// Layar pembayaran QRIS untuk pesanan mandiri.
 ///
@@ -247,32 +248,14 @@ class _CustomerQrisScreenState extends State<CustomerQrisScreen> {
                     ),
                   )
                 else ...[
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 12),
-                      ],
-                    ),
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Opacity(
-                          opacity: expired ? 0.15 : 1,
-                          child: QrImageView(
-                            data: qrData,
-                            version: QrVersions.auto,
-                            size: 220,
-                          ),
-                        ),
-                        if (expired)
-                          const Text('Kedaluwarsa',
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 16)),
-                      ],
-                    ),
+                  KaataQrCard(
+                    data: qrData,
+                    title: merchantName,
+                    kicker: 'BAYAR DENGAN QRIS',
+                    subtitle: 'Scan pakai aplikasi bank atau e-wallet',
+                    badge: currency.format(_amount),
+                    footer: 'Nomor pesanan #${refOf(widget.orderId)}',
+                    overlayText: expired ? 'Kedaluwarsa' : null,
                   ),
                   const SizedBox(height: 14),
                   if (_gatewayActive)

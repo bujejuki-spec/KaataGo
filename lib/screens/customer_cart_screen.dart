@@ -258,12 +258,20 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
                           enabled: !tableKnown,
                           textCapitalization: TextCapitalization.characters,
                           decoration: InputDecoration(
-                            labelText: 'Nomor Meja',
+                            labelText: tableKnown ? 'Nomor Meja' : null,
+                            label: tableKnown ? null : requiredLabel('Nomor Meja'),
                             helperText: tableKnown
                                 ? 'Terisi otomatis dari QR yang kamu scan'
-                                : 'Wajib diisi — nomor meja tempat kamu duduk',
-                            filled: tableKnown,
-                            fillColor: tableKnown ? Colors.grey.shade200 : null,
+                                : 'Nomor meja tempat kamu duduk',
+                            // Putih saat bisa diketik, abu-abu hanya saat
+                            // memang tidak bisa diubah. Sebelumnya
+                            // `filled: false` justru membuat isian yang
+                            // aktif menembus ke latar halaman yang
+                            // keabu-abuan — terlihat mati, padahal justru
+                            // itu satu-satunya yang harus diisi.
+                            filled: true,
+                            fillColor:
+                                tableKnown ? Colors.grey.shade200 : Colors.white,
                           ),
                           validator: (v) {
                             if (tableKnown) return null;

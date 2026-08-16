@@ -8,3 +8,10 @@
 extension IndonesiaTime on DateTime {
   DateTime toWib() => toUtc().add(const Duration(hours: 7));
 }
+
+/// Nomor pesanan versi pendek, sama dengan yang tercetak di struk.
+///
+/// Delapan karakter pertama. Cukup untuk membedakan pesanan hari itu,
+/// cukup pendek untuk dibacakan orang di depan kasir tanpa salah sebut.
+String refOf(String id) =>
+    id.length >= 8 ? id.substring(0, 8).toUpperCase() : id.toUpperCase();

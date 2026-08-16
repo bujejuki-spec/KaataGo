@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 
 import '../db/restaurant_repository.dart';
 import '../providers/auth_provider.dart';
 import '../theme.dart';
 import '../utils/table_qr_image.dart';
-import '../widgets/kaata_logo.dart';
+import '../widgets/kaata_qr_card.dart';
 import '../widgets/responsive.dart';
 import '../widgets/required_label.dart';
 
@@ -443,172 +442,32 @@ class _TableChips extends StatelessWidget {
   }
 }
 
-/// Pratinjau kartu QR — bentuknya sengaja dibuat sama dengan yang
-/// dirender [renderTableQrPng] ke galeri, supaya yang dilihat di layar
-/// itulah yang tersimpan.
+/// Pratinjau kartu QR.
+///
+/// Bentuknya dipinjam dari [KaataQrCard], widget yang sama yang dipakai
+/// layar pembayaran pelanggan — jadi yang dilihat admin di sini memang
+/// bentuk yang sama dengan yang dikenali pelanggan di tempat lain.
 class _QrPreview extends StatelessWidget {
   final String restoName;
   final String table;
   final String payload;
 
-  const _QrPreview({required this.restoName, required this.table, required this.payload});
+  const _QrPreview({
+    required this.restoName,
+    required this.table,
+    required this.payload,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return AspectRatio(
-      // 384x512, sama dengan kartu PDF-nya.
-      aspectRatio: 384 / 512,
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [KaataTheme.brand, KaataTheme.brandDark],
-          ),
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: [
-            BoxShadow(
-              color: KaataTheme.brand.withOpacity(0.25),
-              blurRadius: 18,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            // Semua ukurannya diturunkan dari lebar kartu PDF-nya, jadi
-            // pratinjau di HP sempit dan di tablet tetap satu bentuk.
-            final k = constraints.maxWidth / 384;
-            return Stack(
-              children: [
-                ..._corners(k),
-                Padding(
-                  padding: EdgeInsets.all(26 * k),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          KaataLogo(size: 22 * k, showBadgeBackground: false),
-                          SizedBox(width: 7 * k),
-                          Text(
-                            'KaataGo',
-                            style: TextStyle(
-                              fontSize: 17 * k,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              letterSpacing: 0.3,
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 4 * k),
-                      Text(
-                        'PESAN SENDIRI DARI MEJA',
-                        style: TextStyle(
-                          fontSize: 7.5 * k,
-                          color: KaataTheme.accent,
-                          letterSpacing: 1.8 * k,
-                        ),
-                      ),
-                      SizedBox(height: 16 * k),
-                      Expanded(child: _inner(k)),
-                      SizedBox(height: 12 * k),
-                      Text(
-                        'Arahkan kamera HP ke kode di atas',
-                        style: TextStyle(fontSize: 8.5 * k, color: Colors.white),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
+    return Center(
+      child: KaataQrCard(
+        data: payload,
+        title: restoName,
+        badge: 'MEJA $table',
+        width: 300,
       ),
     );
-  }
-
-  Widget _inner(double k) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.symmetric(horizontal: 20 * k, vertical: 18 * k),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20 * k),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            restoName,
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: 15 * k, fontWeight: FontWeight.bold),
-          ),
-          SizedBox(height: 3 * k),
-          Text(
-            'Scan untuk pesan dari meja ini',
-            style: TextStyle(fontSize: 8.5 * k, color: Colors.grey.shade600),
-          ),
-          SizedBox(height: 14 * k),
-          QrImageView(
-            data: payload,
-            version: QrVersions.auto,
-            size: 196 * k,
-            padding: EdgeInsets.zero,
-            eyeStyle: const QrEyeStyle(
-              eyeShape: QrEyeShape.square,
-              color: KaataTheme.brandDark,
-            ),
-            dataModuleStyle: const QrDataModuleStyle(
-              dataModuleShape: QrDataModuleShape.square,
-              color: KaataTheme.brandDark,
-            ),
-          ),
-          SizedBox(height: 14 * k),
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 22 * k, vertical: 7 * k),
-            decoration: BoxDecoration(
-              color: KaataTheme.accent,
-              borderRadius: BorderRadius.circular(22 * k),
-            ),
-            child: Text(
-              'MEJA $table',
-              style: TextStyle(
-                fontSize: 19 * k,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  List<Widget> _corners(double k) {
-    Widget bar(double w, double h) => Container(
-          width: w * k,
-          height: h * k,
-          decoration: BoxDecoration(
-            color: KaataTheme.accent,
-            borderRadius: BorderRadius.circular(1.5 * k),
-          ),
-        );
-
-    final inset = 12.0 * k;
-    return [
-      Positioned(left: inset, top: inset, child: bar(34, 3)),
-      Positioned(left: inset, top: inset, child: bar(3, 34)),
-      Positioned(right: inset, top: inset, child: bar(34, 3)),
-      Positioned(right: inset, top: inset, child: bar(3, 34)),
-      Positioned(left: inset, bottom: inset, child: bar(34, 3)),
-      Positioned(left: inset, bottom: inset, child: bar(3, 34)),
-      Positioned(right: inset, bottom: inset, child: bar(34, 3)),
-      Positioned(right: inset, bottom: inset, child: bar(3, 34)),
-    ];
   }
 }
 
