@@ -205,8 +205,6 @@ class _RoleChoiceScreenState extends State<RoleChoiceScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 6),
-              const ThemeToggle(),
               const Spacer(),
               const KaataLogo(size: 96),
               const SizedBox(height: 20),
@@ -262,6 +260,15 @@ class _RoleChoiceScreenState extends State<RoleChoiceScreen> {
                   onPressed: _signingInEmployee ? null : _chooseEmployee,
                 ),
               ),
+              const SizedBox(height: 20),
+              // Di bawah kedua tombol masuk, bukan di atas logonya.
+              //
+              // Yang membuka layar ini datang untuk satu hal: masuk.
+              // Pemilih tema yang duduk di baris pertama menjadi hal
+              // pertama yang dibaca — dan sempat terbaca sebagai
+              // pilihan cara masuk, karena bentuknya memang tombol
+              // berderet sama seperti dua tombol di bawahnya.
+              const ThemeToggle(),
               const Spacer(),
               if (_versionLabel.isNotEmpty)
                 Text(

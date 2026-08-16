@@ -39,6 +39,7 @@ class EmployeeOrdersScreen extends StatelessWidget {
             return const Center(child: Text('Belum ada pesanan masuk.'));
           }
           return GroupedOrderList(
+            key: ValueKey(Theme.of(context).brightness),
             orders: orders,
             expandItems: false,
             collapsibleDays: true,

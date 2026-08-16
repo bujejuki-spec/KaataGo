@@ -83,38 +83,51 @@ class ThemeToggle extends StatelessWidget {
 
   const ThemeToggle({super.key, this.onChanged});
 
+  static const _pilihan = [
+    (ThemeMode.light, Icons.light_mode_outlined, 'Terang'),
+    (ThemeMode.dark, Icons.dark_mode_outlined, 'Gelap'),
+    (ThemeMode.system, Icons.brightness_auto_outlined, 'Ikuti HP'),
+  ];
+
   @override
   Widget build(BuildContext context) {
     final prefs = context.watch<AppPrefsProvider>();
 
-    return SegmentedButton<ThemeMode>(
-      showSelectedIcon: false,
-      segments: [
-        ButtonSegment(
-          value: ThemeMode.light,
-          icon: const Icon(Icons.light_mode_outlined, size: 17),
-          label: Text(context.tr('Terang')),
-        ),
-        ButtonSegment(
-          value: ThemeMode.dark,
-          icon: const Icon(Icons.dark_mode_outlined, size: 17),
-          label: Text(context.tr('Gelap')),
-        ),
-        ButtonSegment(
-          value: ThemeMode.system,
-          icon: const Icon(Icons.brightness_auto_outlined, size: 17),
-          label: Text(context.tr('Ikuti HP')),
-        ),
-      ],
-      selected: {prefs.themeMode},
-      onSelectionChanged: (v) {
-        prefs.setThemeMode(v.first);
-        onChanged?.call();
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Sempit berarti ikonnya saja.
+        //
+        // Dipaksa muat, tulisannya patah jadi dua baris di tengah
+        // tombol — "Ikut / i / HP" — dan yang tersisa bukan lagi
+        // pilihan yang bisa dibaca sekilas, melainkan tiga kotak berisi
+        // potongan kata. Ikonnya sendiri sudah jelas: matahari, bulan,
+        // dan huruf A yang otomatis.
+        final sempit = constraints.maxWidth < 300;
+
+        return SegmentedButton<ThemeMode>(
+          showSelectedIcon: false,
+          segments: [
+            for (final (mode, ikon, nama) in _pilihan)
+              ButtonSegment(
+                value: mode,
+                icon: Icon(ikon, size: sempit ? 19 : 17),
+                label: sempit ? null : Text(context.tr(nama)),
+                // Namanya tidak hilang, cuma pindah ke tekan-tahan —
+                // dan tetap terbaca pembaca layar.
+                tooltip: context.tr(nama),
+              ),
+          ],
+          selected: {prefs.themeMode},
+          onSelectionChanged: (v) {
+            prefs.setThemeMode(v.first);
+            onChanged?.call();
+          },
+          style: ButtonStyle(
+            visualDensity: VisualDensity.compact,
+            textStyle: WidgetStateProperty.all(const TextStyle(fontSize: 12)),
+          ),
+        );
       },
-      style: ButtonStyle(
-        visualDensity: VisualDensity.compact,
-        textStyle: WidgetStateProperty.all(const TextStyle(fontSize: 12)),
-      ),
     );
   }
 }

@@ -220,6 +220,7 @@ class OwnerHomeScreen extends StatelessWidget {
                       MaterialPageRoute(builder: (_) => const DiscountScreen()),
                     ),
                   ),
+                  const SizedBox(height: 12),
                   HubMenuTile(
                     icon: Icons.logout,
                     title: 'Keluar',

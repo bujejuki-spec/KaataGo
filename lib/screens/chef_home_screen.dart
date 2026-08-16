@@ -154,6 +154,15 @@ class _ChefHomeScreenState extends State<ChefHomeScreen> {
                 // kerja yang harus terbaca sekaligus.
                 final done = tab.$1 == KitchenStatus.done;
                 return GroupedOrderList(
+                  // Kunci yang ikut berganti saat temanya berganti.
+                  //
+                  // Warna kartunya dibaca sekali saat dibangun. Kalau
+                  // subtree-nya bertahan melewati pergantian tema —
+                  // dan di layar ini itu memang terjadi, meninggalkan
+                  // kartu gelap di halaman terang — warnanya tidak
+                  // pernah dihitung ulang. Kunci baru memaksa daftarnya
+                  // dibangun dari nol.
+                  key: ValueKey(Theme.of(context).brightness),
                   orders: orders,
                   actionsFor: _buildActions,
                   collapsibleDays: done,
