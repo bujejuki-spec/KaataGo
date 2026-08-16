@@ -37,10 +37,12 @@ interface OrderRow {
 
 Deno.serve(async (req) => {
   try {
-    const { order_id } = await req.json();
+    const { order_id, simulate } = await req.json();
     if (!order_id) {
       return json({ error: "order_id wajib diisi" }, 400);
     }
+
+    if (simulate === true) return await simulatePayment(order_id);
 
     const { data: order, error: orderError } = await admin
       .from("orders")
@@ -145,6 +147,60 @@ Deno.serve(async (req) => {
     return json({ error: e instanceof Error ? e.message : String(e) }, 500);
   }
 });
+
+/// Memalsukan pembayaran, hanya untuk pengujian.
+///
+/// Dashboard Xendit tidak selalu menyediakan tombol simulasi, dan
+/// jalan satu-satunya lewat API — yang berarti menyalin secret key ke
+/// terminal, lalu menebak QR mana yang dimaksud di antara sekian
+/// banyak. Kuncinya sudah ada di sini, dan nomor pesanannya sudah
+/// diketahui, jadi keduanya tidak perlu diulang di tempat lain.
+///
+/// Ditolak mentah-mentah kalau kunci yang terpasang bukan kunci Test.
+/// Fungsi yang bisa menyatakan sebuah tagihan terbayar tanpa uang
+/// benar-benar berpindah tidak boleh ada di lingkungan produksi, dan
+/// penjagaan yang mengandalkan "nanti diingat untuk dihapus" akan
+/// gagal pada rilis yang paling sibuk.
+async function simulatePayment(orderId: string) {
+  const secret = Deno.env.get("XENDIT_SECRET_KEY") ?? "";
+  if (!secret.startsWith("xnd_development_")) {
+    return json({ error: "simulasi hanya untuk kunci Test" }, 403);
+  }
+
+  const { data: charge } = await admin
+    .from("payment_charges")
+    .select("provider_charge_id, reference_id, amount, status")
+    .eq("order_id", orderId)
+    .eq("status", "pending")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!charge?.provider_charge_id) {
+    return json({ error: "tidak ada tagihan menunggu untuk pesanan ini" }, 404);
+  }
+
+  const res = await fetch(
+    `https://api.xendit.co/qr_codes/${charge.provider_charge_id}/payments/simulate`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${btoa(secret + ":")}`,
+        "Content-Type": "application/json",
+        "api-version": "2022-07-31",
+      },
+      body: JSON.stringify({ amount: charge.amount }),
+    },
+  );
+
+  const body = await res.text();
+  return json({
+    simulated: res.ok,
+    status: res.status,
+    reference_id: charge.reference_id,
+    response: body.slice(0, 400),
+  }, res.ok ? 200 : 502);
+}
 
 function json(payload: unknown, status = 200) {
   return new Response(JSON.stringify(payload), {
