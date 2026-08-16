@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
+import 'package:open_filex/open_filex.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'providers/app_prefs_provider.dart';
+import 'services/notification_service.dart';
 import 'providers/auth_provider.dart';
 import 'providers/cart_provider.dart';
 import 'providers/category_provider.dart';
@@ -27,6 +29,15 @@ Future<void> main() async {
     url: SupabaseConfig.url,
     publishableKey: SupabaseConfig.anonKey,
   );
+  // Notifikasi "pembaruan siap dipasang" harus bisa membuka layar
+  // pemasangnya saat diketuk — termasuk kalau aplikasinya baru dibuka
+  // lagi sesudah unduhannya selesai di latar. Karena itu pemasangannya
+  // di sini, sekali, bukan di layar mana pun.
+  NotificationService.instance.onNotificationTap = (payload) {
+    if (payload == null || payload.isEmpty) return;
+    OpenFilex.open(payload, type: 'application/vnd.android.package-archive');
+  };
+
   runApp(const PosApp());
 }
 

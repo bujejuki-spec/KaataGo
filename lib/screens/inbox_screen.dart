@@ -421,10 +421,19 @@ class _InboxScreenState extends State<InboxScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: item.read ? Colors.white : KaataTheme.brand.withOpacity(0.05),
+        // Yang sudah dibaca memakai warna kartu biasa; yang belum
+        // dibaca diberi semburat merek. Putih tetap di sini membuat
+        // pesan yang sudah dibaca justru jadi balok paling terang di
+        // layar gelap — kebalikan dari maksudnya.
+        color: item.read
+            ? KaataTheme.surfaceOf(context)
+            : Color.alphaBlend(
+                KaataTheme.brandOf(context).withOpacity(0.10),
+                KaataTheme.surfaceOf(context),
+              ),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: selected ? KaataTheme.brand : KaataTheme.borderOf(context),
+          color: selected ? KaataTheme.brandOf(context) : KaataTheme.borderOf(context),
           width: selected ? 1.6 : 1,
         ),
       ),
@@ -441,13 +450,13 @@ class _InboxScreenState extends State<InboxScreen> {
                 width: 38,
                 height: 38,
                 decoration: BoxDecoration(
-                  color: KaataTheme.brand.withOpacity(0.12),
+                  color: KaataTheme.brandOf(context).withOpacity(0.16),
                   borderRadius: BorderRadius.circular(11),
                 ),
                 child: Icon(
                   item.version != null ? Icons.system_update : Icons.campaign_outlined,
                   size: 19,
-                  color: KaataTheme.brand,
+                  color: KaataTheme.brandOf(context),
                 ),
               ),
         title: Row(
@@ -467,8 +476,8 @@ class _InboxScreenState extends State<InboxScreen> {
               Container(
                 width: 8,
                 height: 8,
-                decoration: const BoxDecoration(
-                  color: KaataTheme.brand,
+                decoration: BoxDecoration(
+                  color: KaataTheme.brandOf(context),
                   shape: BoxShape.circle,
                 ),
               ),

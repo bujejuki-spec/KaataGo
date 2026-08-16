@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../theme.dart';
+
 import '../widgets/language_theme_toggle.dart';
 import 'package:provider/provider.dart';
 
@@ -40,12 +42,11 @@ class _ChefHomeScreenState extends State<ChefHomeScreen> {
   /// Pesanan yang uangnya belum diterima ditarik keluar dari tiga tab
   /// kerja dan dikumpulkan di tab pertama.
   ///
-  /// Dapur tetap boleh memasaknya — tombolnya ada di sana, dan banyak
-  /// resto memang memilih begitu supaya pelanggan tidak menunggu dua
-  /// kali. Yang dihindari cuma satu: pesanan belum dibayar duduk
-  /// bercampur di antrean "Baru" tanpa penanda apa pun, lalu keluar
-  /// dari dapur, lalu tidak ada yang ingat menagihnya.
-  bool _awaitingPayment(CustomerOrder o) => o.isPendingCashPayment;
+  /// Semua yang belum lunas, bukan hanya yang memilih bayar tunai:
+  /// pesanan QRIS yang ditinggal tanpa dibayar sama belum lunasnya, dan
+  /// penanda yang lebih sempit membuatnya jatuh ke antrean "Baru"
+  /// seolah sudah beres — persis yang tidak boleh terjadi.
+  bool _awaitingPayment(CustomerOrder o) => o.isAwaitingPayment;
 
   @override
   Widget build(BuildContext context) {
@@ -116,12 +117,12 @@ class _ChefHomeScreenState extends State<ChefHomeScreen> {
                     textAlign: TextAlign.center),
               );
             }
-            // Pesanan yang hangus karena tidak dibayar tidak muncul di
-            // mana pun di dapur. Membiarkannya jatuh kembali ke "Baru"
+            // Pesanan yang hangus atau ditarik pelanggannya tidak muncul
+            // di mana pun di dapur. Membiarkannya jatuh kembali ke "Baru"
             // hanya karena status bayarnya bukan lagi 'pending' adalah
             // cara paling pasti memasak pesanan yang sudah dibatalkan.
             final allOrders =
-                (snapshot.data ?? []).where((o) => !o.isExpired).toList();
+                (snapshot.data ?? []).where((o) => !o.isVoid).toList();
 
             return TabBarView(
               children: _tabs.map((tab) {
@@ -184,6 +185,16 @@ class _ChefHomeScreenState extends State<ChefHomeScreen> {
   }
 
   Widget? _buildActions(CustomerOrder order) {
+    // Belum dibayar berarti belum boleh dimasak.
+    //
+    // Sebelumnya tombolnya tetap ada di sini, dengan alasan supaya
+    // pelanggan tidak menunggu dua kali. Tapi tombol yang tersedia akan
+    // ditekan — dan yang menanggung bahan yang terlanjur terpakai saat
+    // pesanannya batal adalah resto, bukan orang yang menekannya.
+    // Kalau memang mau dimasak duluan, kasir tinggal menerima
+    // pembayarannya lebih dulu.
+    if (order.isAwaitingPayment) return const _AwaitingPaymentNote();
+
     switch (order.kitchenStatus) {
       case KitchenStatus.waiting:
         return SizedBox(
@@ -238,5 +249,43 @@ class _ChefHomeScreenState extends State<ChefHomeScreen> {
       case KitchenStatus.done:
         return null;
     }
+  }
+}
+
+/// Keterangan pengganti tombol untuk pesanan yang belum dibayar.
+///
+/// Dituliskan, bukan dibiarkan kosong: baris tanpa tombol dan tanpa
+/// keterangan terbaca sebagai layar yang rusak, dan yang membacanya
+/// sedang berdiri di dapur menunggu pekerjaan.
+class _AwaitingPaymentNote extends StatelessWidget {
+  const _AwaitingPaymentNote();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: KaataTheme.tintOf(context, Colors.orange),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.hourglass_empty,
+              size: 14, color: KaataTheme.onTintOf(context, Colors.orange)),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              'Menunggu pembayaran — mulai masak setelah kasir menerima '
+              'pembayarannya.',
+              style: TextStyle(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w600,
+                color: KaataTheme.onTintOf(context, Colors.orange),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

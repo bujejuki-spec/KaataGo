@@ -43,6 +43,11 @@ class NotificationService {
       description: 'Setoran tunai & top up petty cash yang sudah diputus Finance',
     ),
     (
+      id: 'kaata_download',
+      name: 'Unduhan Pembaruan',
+      description: 'Kemajuan unduhan versi baru aplikasi',
+    ),
+    (
       id: 'kaata_announcement',
       name: 'Pengumuman',
       description: 'Kabar dari resto dan pemberitahuan versi baru aplikasi',
@@ -72,6 +77,10 @@ class NotificationService {
         android: AndroidInitializationSettings('ic_notification'),
         iOS: DarwinInitializationSettings(),
       ),
+      onDidReceiveNotificationResponse: (response) {
+        final handler = onNotificationTap;
+        if (handler != null) handler(response.payload);
+      },
     );
 
     final android = _plugin.resolvePlatformSpecificImplementation<
@@ -162,6 +171,110 @@ class NotificationService {
     required String body,
   }) =>
       _show(channel: _channels[3], id: id, title: title, body: body);
+
+  /// Dipanggil saat notifikasi diketuk, dengan payload-nya.
+  ///
+  /// Dipasang [AppUpdater] supaya notifikasi "siap dipasang" bisa
+  /// membuka layar pemasang — termasuk saat aplikasinya sedang tidak
+  /// dibuka, yang justru keadaan paling sering untuk unduhan 83 MB.
+  void Function(String? payload)? onNotificationTap;
+
+  /// Id tetap untuk notifikasi unduhan.
+  ///
+  /// Tetap, bukan acak: tiap pembaruan angka persen harus menimpa
+  /// notifikasi yang sama. Id baru tiap kali berarti seratus baris
+  /// notifikasi untuk satu unduhan.
+  static const _downloadId = 424242;
+
+  /// Baris kemajuan unduhan di bar notifikasi.
+  ///
+  /// Ada karena unduhan 83 MB bukan sesuatu yang ditunggui orang sambil
+  /// menatap layar. Dia akan mengunci HP-nya atau pindah aplikasi, dan
+  /// sejak itu penanda di dalam aplikasi tidak lagi terlihat oleh
+  /// siapa pun.
+  ///
+  /// [percent] null berarti panjang berkasnya tidak diberitahukan
+  /// server — batangnya berjalan tanpa ujung, dan itu jujur.
+  Future<void> showDownloadProgress(int? percent) async {
+    await init();
+    try {
+      await _plugin.show(
+        _downloadId,
+        'Mengunduh pembaruan KaataGo',
+        percent == null ? 'Sedang berjalan…' : '$percent%',
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            'kaata_download',
+            'Unduhan Pembaruan',
+            channelDescription: 'Kemajuan unduhan versi baru aplikasi',
+            icon: 'ic_notification',
+            // Tanpa suara dan tanpa getar: ini kabar yang menemani,
+            // bukan yang memanggil. Berbunyi tiap satu persen adalah
+            // cara tercepat membuat orang mematikan notifikasinya.
+            importance: Importance.low,
+            priority: Priority.low,
+            playSound: false,
+            enableVibration: false,
+            onlyAlertOnce: true,
+            // Tidak bisa disapu hilang selagi berjalan — kalau bisa,
+            // orangnya kehilangan satu-satunya jendela ke unduhan yang
+            // masih jalan.
+            ongoing: true,
+            autoCancel: false,
+            showProgress: true,
+            maxProgress: 100,
+            progress: percent ?? 0,
+            indeterminate: percent == null,
+          ),
+        ),
+      );
+    } catch (_) {
+      // Notifikasi tidak pernah cukup penting untuk menjatuhkan
+      // unduhannya sendiri.
+    }
+  }
+
+  /// Berkasnya sudah turun dan tinggal dipasang.
+  ///
+  /// Berbunyi dan bisa diketuk — kebalikan dari baris kemajuannya.
+  /// Inilah satu-satunya jalan yang tersisa kalau orangnya sedang
+  /// membuka aplikasi lain: Android tidak mengizinkan aplikasi latar
+  /// membuka layar sendiri, tapi notifikasi yang diketuk boleh.
+  Future<void> showDownloadReady(String filePath) async {
+    await init();
+    try {
+      await _plugin.show(
+        _downloadId,
+        'Pembaruan siap dipasang',
+        'Ketuk untuk memasang versi terbaru KaataGo',
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            'kaata_download',
+            'Unduhan Pembaruan',
+            icon: 'ic_notification',
+            importance: Importance.high,
+            priority: Priority.high,
+            sound: _customSoundWorks ? _sound : null,
+            ongoing: false,
+            autoCancel: true,
+          ),
+          iOS: const DarwinNotificationDetails(),
+        ),
+        payload: filePath,
+      );
+    } catch (_) {
+      // Diabaikan — pemasangnya tetap bisa dibuka dari dalam aplikasi.
+    }
+  }
+
+  Future<void> cancelDownloadNotification() async {
+    try {
+      await _plugin.cancel(_downloadId);
+    } catch (_) {
+      // Tidak ada yang perlu diselamatkan dari gagal menghapus
+      // notifikasi.
+    }
+  }
 
   Future<void> _show({
     required ({String id, String name, String description}) channel,

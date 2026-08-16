@@ -48,7 +48,10 @@ class ApkUpdater {
   ///
   /// Mengembalikan null kalau berhasil, atau keterangan galat yang layak
   /// dibaca orang biasa.
-  Future<String?> downloadAndInstall(String url) async {
+  Future<String?> downloadAndInstall(
+    String url, {
+    void Function(String filePath)? onDownloaded,
+  }) async {
     // Android menolak memasang aplikasi dari luar Play Store sampai izin
     // ini diberikan. Tanpa memintanya lebih dulu, unduhannya berhasil
     // lalu layar pemasangnya muncul kosong — terlihat persis seperti
@@ -74,6 +77,12 @@ class ApkUpdater {
       if (_cancelled) return null;
       return downloadErrorMessage(e);
     }
+
+    // Notifikasinya dipasang sebelum mencoba membuka pemasangnya.
+    // Kalau aplikasinya sedang di latar, panggilan di bawah tidak
+    // menghasilkan apa pun — dan tanpa notifikasi ini, berkas 83 MB
+    // yang sudah turun tidak punya satu pun jalan untuk dipasang.
+    onDownloaded?.call(file.path);
 
     final result = await OpenFilex.open(
       file.path,

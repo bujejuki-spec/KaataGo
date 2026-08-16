@@ -93,6 +93,25 @@ class OrderRepository {
     }).eq('id', orderId);
   }
 
+  /// Membatalkan pesanan atas permintaan pelanggannya sendiri.
+  ///
+  /// Mengembalikan null kalau berhasil, atau alasan penolakannya dalam
+  /// kalimat yang layak dibaca orang. Aturannya ditegakkan di database,
+  /// bukan di sini: layar ini bisa saja memakai data yang sudah basi —
+  /// dapur mungkin mulai memasak tepat saat tombolnya ditekan.
+  Future<String?> cancelMyOrder(
+    String orderId, {
+    String? sessionId,
+    String? email,
+  }) async {
+    final result = await _client.rpc('cancel_my_order', params: {
+      'p_order_id': orderId,
+      'p_session_id': sessionId,
+      'p_email': email,
+    });
+    return result as String?;
+  }
+
   /// Aliran langsung satu pesanan.
   ///
   /// Dipakai layar pembayaran untuk mengetahui pesanannya sudah lunas

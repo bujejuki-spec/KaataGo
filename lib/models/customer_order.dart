@@ -43,7 +43,12 @@ class CustomerOrderItem {
 /// [expired] — pesanan tunai dari HP pelanggan yang tidak pernah
 /// dilunasi di kasir sampai tenggangnya habis. Dibatalkan oleh database,
 /// bukan oleh siapa pun yang menekan tombol.
-enum OrderPaymentStatus { pending, paid, expired }
+///
+/// [cancelled] — ditarik sendiri oleh pelanggannya sebelum dibayar.
+/// Dibedakan dari [expired] dengan sengaja: yang satu pesanan yang
+/// ditinggalkan, yang satu lagi pesanan yang dibatalkan. Resto yang
+/// membaca angkanya nanti berhak tahu bedanya.
+enum OrderPaymentStatus { pending, paid, expired, cancelled }
 
 /// Who placed the order — shown to the Chef so they know whether it came
 /// from a walk-in rung up by a cashier, or a customer's own phone.
@@ -173,6 +178,19 @@ class CustomerOrder {
       paymentStatus == OrderPaymentStatus.pending &&
       paymentMethod == 'cash';
 
+  /// Pesanan mandiri yang uangnya belum diterima — apa pun cara
+  /// bayarnya.
+  ///
+  /// Lebih luas daripada [isPendingCashPayment], dan itu disengaja.
+  /// Yang dipakai layar dapur adalah pertanyaan "sudah dibayar atau
+  /// belum", bukan "akan dibayar dengan apa": pesanan QRIS yang
+  /// ditinggal tanpa dibayar sama belum lunasnya dengan yang memilih
+  /// bayar tunai di kasir, dan memakai penanda yang lebih sempit
+  /// membuatnya jatuh ke antrean "Baru" seolah sudah beres.
+  bool get isAwaitingPayment =>
+      source == OrderSource.customer &&
+      paymentStatus == OrderPaymentStatus.pending;
+
   /// Batas waktu melunasi pesanan tunai di kasir.
   ///
   /// Tanpa batas, pesanan yang orangnya berubah pikiran — atau tidak
@@ -195,6 +213,23 @@ class CustomerOrder {
   /// tidak menunggu dibayar lagi, tapi juga bukan pesanan yang harus
   /// dimasak.
   bool get isExpired => paymentStatus == OrderPaymentStatus.expired;
+
+  bool get isCancelled => paymentStatus == OrderPaymentStatus.cancelled;
+
+  /// Sudah tidak berjalan lagi — entah hangus atau dibatalkan. Tidak
+  /// muncul di dapur, tidak menunggu dibayar, tidak masuk laporan.
+  bool get isVoid => isExpired || isCancelled;
+
+  /// Masih bisa ditarik pelanggannya sendiri.
+  ///
+  /// Batasnya sama dengan yang ditegakkan di database: miliknya, belum
+  /// dibayar, dan dapur belum mulai memasak. Yang terakhir bukan soal
+  /// kerumitan teknis — bahan yang sudah terpakai adalah kerugian yang
+  /// nyata, dan yang menanggungnya bukan pihak yang menekan tombolnya.
+  bool get canBeCancelledByCustomer =>
+      source == OrderSource.customer &&
+      paymentStatus == OrderPaymentStatus.pending &&
+      kitchenStatus == KitchenStatus.waiting;
 
   /// Pesanan mandiri yang uangnya diterima di meja kasir.
   ///

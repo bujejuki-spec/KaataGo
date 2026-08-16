@@ -7,6 +7,10 @@ import '../db/order_repository.dart';
 import '../db/restaurant_repository.dart';
 import '../models/customer_order.dart';
 import '../providers/auth_provider.dart';
+import '../providers/table_session_provider.dart';
+import '../theme.dart';
+import '../widgets/app_toast.dart';
+import '../widgets/dialog_actions.dart';
 import '../utils/id_time.dart';
 import 'customer_receipt_screen.dart';
 
@@ -59,6 +63,71 @@ class _CustomerHistoryScreenState extends State<CustomerHistoryScreen> {
     KitchenStatus.onProgress: Colors.orange,
     KitchenStatus.done: Colors.green,
   };
+
+  /// Pesanan yang sedang dibatalkan. Tombolnya dimatikan selama itu
+  /// supaya dua ketukan beruntun tidak mengirim dua permintaan.
+  String? _cancelling;
+
+  Future<void> _cancel(CustomerOrder order) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        icon: const Icon(Icons.cancel_outlined, size: 38, color: Colors.red),
+        title: const Text('Batalkan pesanan ini?'),
+        content: const Text(
+          'Pesanan akan ditarik dan tidak perlu dibayar. Kalau mau pesan '
+          'lagi, tinggal buat pesanan baru.',
+          textAlign: TextAlign.center,
+        ),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          DialogActions(
+            cancelLabel: 'Tidak Jadi',
+            confirmLabel: 'Batalkan',
+            destructive: true,
+            onConfirm: () => Navigator.pop(dialogContext, true),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true || !mounted) return;
+
+    setState(() => _cancelling = order.id);
+    final session = context.read<TableSessionProvider>();
+    final email = context.read<AuthProvider>().user?.email;
+    try {
+      final error = await _orderRepo.cancelMyOrder(
+        order.id,
+        sessionId: order.sessionId ?? session.sessionId,
+        email: email,
+      );
+      if (!mounted) return;
+      if (error != null) {
+        // Ditolak database — biasanya karena dapur mulai memasak tepat
+        // di sela ketukan tadi. Alasannya disampaikan apa adanya; yang
+        // membacanya sedang berdiri di resto dan butuh tahu langkah
+        // berikutnya, bukan sekadar tahu bahwa gagal.
+        showAppToast(context, error, isError: true);
+      } else {
+        showAppToast(context, 'Pesanan dibatalkan.');
+      }
+      _refresh();
+    } catch (e) {
+      if (!mounted) return;
+      showAppToast(context, 'Gagal membatalkan: $e', isError: true);
+    } finally {
+      if (mounted) setState(() => _cancelling = null);
+    }
+  }
+
+  void _refresh() {
+    // Yang login memakai aliran realtime — barisnya berubah sendiri.
+    // Yang tamu memakai sekali ambil, jadi harus diminta ulang.
+    if (context.read<AuthProvider>().user?.email == null) {
+      setState(() => _guestFuture = _loadGuestOrders());
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -139,11 +208,11 @@ class _CustomerHistoryScreenState extends State<CustomerHistoryScreen> {
       itemBuilder: (context, index) {
         if (guestNotice && index == 0) return const _GuestNotice();
         final order = orders[index - (guestNotice ? 1 : 0)];
-        final paid = order.paymentStatus == OrderPaymentStatus.paid;
-
         return Card(
           margin: const EdgeInsets.only(bottom: 10),
-          child: ListTile(
+          child: Column(
+            children: [
+              ListTile(
             title: FutureBuilder<String>(
               future: _restoName(order.restoId),
               builder: (context, snap) => Text(
@@ -173,10 +242,19 @@ class _CustomerHistoryScreenState extends State<CustomerHistoryScreen> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      paid ? 'Sudah Dibayar' : 'Menunggu Pembayaran',
+                      switch (order.paymentStatus) {
+                        OrderPaymentStatus.paid => 'Sudah Dibayar',
+                        OrderPaymentStatus.cancelled => 'Dibatalkan',
+                        OrderPaymentStatus.expired => 'Hangus, tidak dibayar',
+                        OrderPaymentStatus.pending => 'Menunggu Pembayaran',
+                      },
                       style: TextStyle(
                         fontSize: 11,
-                        color: paid ? Colors.green : Colors.orange,
+                        color: switch (order.paymentStatus) {
+                          OrderPaymentStatus.paid => Colors.green,
+                          OrderPaymentStatus.pending => Colors.orange,
+                          _ => KaataTheme.mutedOf(context),
+                        },
                       ),
                     ),
                   ],
@@ -187,9 +265,39 @@ class _CustomerHistoryScreenState extends State<CustomerHistoryScreen> {
               currency.format(order.total),
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => CustomerReceiptScreen(order: order)),
-            ),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                      builder: (_) => CustomerReceiptScreen(order: order)),
+                ),
+              ),
+              // Tombolnya hanya muncul selagi benar-benar bisa dipakai.
+              // Tombol yang selalu ada lalu menolak saat ditekan membuat
+              // orang mengira aplikasinya rusak — padahal yang terjadi
+              // cuma dapur sudah mulai memasak.
+              if (order.canBeCancelledByCustomer)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      icon: _cancelling == order.id
+                          ? const SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(strokeWidth: 2))
+                          : const Icon(Icons.cancel_outlined, size: 16),
+                      label: const Text('Batalkan Pesanan'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.red,
+                        side: const BorderSide(color: Colors.red),
+                        minimumSize: const Size.fromHeight(38),
+                      ),
+                      onPressed:
+                          _cancelling == null ? () => _cancel(order) : null,
+                    ),
+                  ),
+                ),
+            ],
           ),
         );
       },

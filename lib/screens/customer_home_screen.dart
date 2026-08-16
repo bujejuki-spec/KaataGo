@@ -551,6 +551,19 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                   const SizedBox(height: 12),
                   const InboxTile(forCustomer: true),
                   const SizedBox(height: 12),
+                  // Tampilan diatur dari menu utama, bukan dari bilah
+                  // atas layar menu resto. Yang sedang memilih makanan
+                  // tidak sedang memikirkan tema aplikasinya — dan
+                  // tombol di sana cuma menambah barang di bilah yang
+                  // sudah penuh.
+                  HubMenuTile(
+                    icon: Icons.brightness_6_outlined,
+                    title: 'Tampilan',
+                    subtitle: 'Mode terang, gelap, atau ikut setelan HP',
+                    color: const Color(0xFF0EA5E9),
+                    onTap: () => showAppearanceDialog(context),
+                  ),
+                  const SizedBox(height: 12),
                   const NotificationTestTile(),
                   const SizedBox(height: 12),
                   HubMenuTile(
@@ -705,7 +718,6 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
             session.tableNumber != null ? 'Meja ${session.tableNumber}' : 'KaataGo (Customer)',
           ),
           actions: [
-            const AppearanceIconButton(),
             if (!session.enteredViaQr)
               IconButton(
                 icon: const Icon(Icons.storefront_outlined),

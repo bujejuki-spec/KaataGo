@@ -204,12 +204,19 @@ Future<void> showUpdateDownloadDialog(BuildContext context) {
                     },
                     child: const Text('Coba Lagi'),
                   ),
+                // "Lanjutkan", bukan "Tutup", selagi unduhannya jalan.
+                //
+                // Yang membuka dialog ini hampir selalu sedang menimbang
+                // satu hal: batal atau teruskan. "Tutup" tidak menjawab
+                // itu — ia cuma menyebut apa yang terjadi pada
+                // kotaknya, dan menyisakan keraguan apakah unduhannya
+                // ikut berhenti.
                 TextButton(
                   onPressed: () {
                     if (!updater.downloading) updater.clearError();
                     Navigator.pop(dialogContext);
                   },
-                  child: const Text('Tutup'),
+                  child: Text(updater.downloading ? 'Lanjutkan' : 'Tutup'),
                 ),
               ],
             );

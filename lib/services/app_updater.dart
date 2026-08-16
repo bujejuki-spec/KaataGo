@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../utils/apk_updater.dart';
+import 'notification_service.dart';
 
 /// Unduhan pembaruan aplikasi, hidup di luar layar mana pun.
 ///
@@ -45,18 +46,44 @@ class AppUpdater extends ChangeNotifier {
     downloading = true;
     notifyListeners();
 
+    // Notifikasi diperbarui hanya saat angka persennya benar-benar
+    // berubah. Tiap potongan data memanggil onProgress — ribuan kali
+    // untuk 83 MB — dan mengirim semuanya ke Android berarti membanjiri
+    // antrean notifikasi demi angka yang sama.
+    int? lastPercent;
+    NotificationService.instance.showDownloadProgress(0);
+
     final updater = ApkUpdater(onProgress: (p) {
       progress = p;
+      final now = p == null ? null : (p * 100).round();
+      if (now != lastPercent) {
+        lastPercent = now;
+        NotificationService.instance.showDownloadProgress(now);
+      }
       notifyListeners();
     });
     _updater = updater;
 
-    final failure = await updater.downloadAndInstall(url);
+    final failure = await updater.downloadAndInstall(
+      url,
+      // Berkasnya sudah turun, layar pemasang belum tentu terbuka.
+      //
+      // Android melarang aplikasi yang sedang di latar membuka layar
+      // sendiri — jadi kalau HP-nya terkunci atau orangnya sedang di
+      // aplikasi lain, panggilan membuka pemasang itu diam saja.
+      // Notifikasi ini jalan yang tersisa: satu ketukan, dan layar
+      // pemasangnya terbuka.
+      onDownloaded: (path) =>
+          NotificationService.instance.showDownloadReady(path),
+    );
 
     _updater = null;
     downloading = false;
     progress = null;
     error = failure;
+    if (failure != null) {
+      NotificationService.instance.cancelDownloadNotification();
+    }
     notifyListeners();
   }
 
@@ -78,6 +105,7 @@ class AppUpdater extends ChangeNotifier {
   Timer? _noticeTimer;
 
   void cancel() {
+    NotificationService.instance.cancelDownloadNotification();
     _updater?.cancel();
     _updater = null;
     downloading = false;

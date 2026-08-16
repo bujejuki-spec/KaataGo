@@ -89,6 +89,24 @@ class _JournalDetailDialogState extends State<_JournalDetailDialog> {
         .where((e) => e.entryType == JournalEntryType.credit)
         .fold<int>(0, (sum, e) => sum + e.amount);
 
+    // Berapa kali nilai transaksinya berpindah tangan.
+    //
+    // Setoran dan top up petty cash tidak berpindah sekali, tapi dua
+    // kali: dari sumbernya ke GL Suspense saat diajukan, lalu dari
+    // Suspense ke tujuannya saat disetujui. Dua perpindahan berarti dua
+    // pasang baris, dan totalnya dua kali lipat nilai transaksinya.
+    //
+    // Itu benar secara pembukuan — tapi yang membacanya melihat "Rp
+    // 100.000" di judul lalu "Debit Rp 200.000" di kaki, dan
+    // kesimpulan pertamanya adalah aplikasinya salah hitung. Angkanya
+    // tidak diubah; yang ditambahkan cuma keterangan kenapa.
+    // Tiap perpindahan menghasilkan sepasang baris — satu didebit, satu
+    // dikredit. Jumlah pasangannya itulah jumlah tahapnya.
+    final tahap = _entries.length ~/ 2;
+    final lewatSuspense = tahap > 1 &&
+        _entries.any((e) => (e.glName ?? '').toLowerCase().contains('suspense'));
+    final nilai = tahap > 0 ? debit ~/ tahap : debit;
+
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
@@ -160,6 +178,18 @@ class _JournalDetailDialogState extends State<_JournalDetailDialog> {
                   Expanded(child: _totalBox('Kredit', credit, const Color(0xFF10B981), currency)),
                 ],
               ),
+              if (lewatSuspense) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'Nilai transaksinya ${currency.format(nilai)}, tercatat '
+                  '$tahap tahap: dari sumbernya ke GL Suspense saat diajukan, '
+                  'lalu dari Suspense ke tujuannya saat disetujui. Karena itu '
+                  'total di bawah $tahap kali lipat — saldo Suspense sendiri '
+                  'kembali nol.',
+                  style: TextStyle(
+                      fontSize: 11.5, color: KaataTheme.mutedOf(context)),
+                ),
+              ],
               if (debit != credit) ...[
                 const SizedBox(height: 8),
                 Text(
