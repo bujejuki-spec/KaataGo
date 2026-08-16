@@ -1,16 +1,32 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../db/order_repository.dart';
+import '../models/customer_order.dart';
+import '../services/payment_gateway_service.dart';
+import '../theme.dart';
 import '../utils/qris_image.dart';
 import '../widgets/app_toast.dart';
 
-/// QR payment screen shown right after a customer places a self-order.
-/// The order already exists in Supabase with status "pending" (visible
-/// to the employee app immediately); confirming payment here flips it
-/// to "paid".
+/// Layar pembayaran QRIS untuk pesanan mandiri.
+///
+/// Dua keadaan yang sangat berbeda, dan layar ini melayani keduanya:
+///
+/// - **Gateway terpasang.** QR-nya terbit di penyedia pembayaran, punya
+///   masa berlaku, dan yang menyatakan lunas adalah webhook penyedia.
+///   Tidak ada tombol apa pun yang bisa ditekan untuk mengaku sudah
+///   membayar — apa pun yang bisa ditekan orang yang belum membayar
+///   bukan bukti pembayaran.
+///
+/// - **Belum terpasang.** Kembali ke QR simulasi seperti sebelumnya,
+///   lengkap dengan tombol konfirmasinya. Resto yang belum punya akun
+///   gateway tetap harus bisa menerima pesanan, dan layar pembayaran
+///   yang gagal terbuka jauh lebih merugikan daripada yang jatuh ke cara
+///   lama.
 class CustomerQrisScreen extends StatefulWidget {
   final String orderId;
   final int amount;
@@ -29,35 +45,95 @@ class CustomerQrisScreen extends StatefulWidget {
 
 class _CustomerQrisScreenState extends State<CustomerQrisScreen> {
   final _orderRepo = OrderRepository();
+  final _gateway = PaymentGatewayService();
+
+  QrisCharge? _charge;
+  bool _loadingCharge = true;
   bool _confirming = false;
   bool _downloading = false;
 
-  Future<void> _downloadQr({
-    required String qrData,
-    required String merchantName,
-  }) async {
+  StreamSubscription<CustomerOrder?>? _orderSub;
+  Timer? _ticker;
+  Duration _remaining = Duration.zero;
+
+  /// Nominal yang ditampilkan. Angka dari server dipakai begitu ada —
+  /// itu yang sama dengan yang dituntut QR-nya.
+  int get _amount => _charge?.amount ?? widget.amount;
+
+  bool get _gatewayActive => _charge != null;
+
+  @override
+  void initState() {
+    super.initState();
+    _createCharge();
+    _watchOrder();
+  }
+
+  @override
+  void dispose() {
+    _orderSub?.cancel();
+    _ticker?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _createCharge() async {
+    final charge = await _gateway.createQris(widget.orderId);
+    if (!mounted) return;
+    setState(() {
+      _charge = charge;
+      _loadingCharge = false;
+    });
+    if (charge != null) _startTicker();
+  }
+
+  void _startTicker() {
+    _ticker?.cancel();
+    setState(() => _remaining = _charge!.remaining);
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(() => _remaining = _charge!.remaining);
+      if (_remaining.isNegative) _ticker?.cancel();
+    });
+  }
+
+  /// Menunggu kabar dari server bahwa pesanannya lunas.
+  ///
+  /// Ini satu-satunya jalan pindah layar saat gateway terpasang: yang
+  /// menggerakkan statusnya adalah webhook penyedia, dan HP-nya hanya
+  /// menonton.
+  void _watchOrder() {
+    _orderSub = _orderRepo.watchOne(widget.orderId).listen((order) {
+      if (!mounted || order == null) return;
+      if (order.paymentStatus == OrderPaymentStatus.paid) _goToSuccess();
+    });
+  }
+
+  void _goToSuccess() {
+    _orderSub?.cancel();
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => _OrderPlacedScreen(orderId: widget.orderId)),
+      (route) => route.isFirst,
+    );
+  }
+
+  Future<void> _downloadQr({required String qrData, required String merchantName}) async {
     setState(() => _downloading = true);
     await saveQrisToGallery(
       context,
       qrData: qrData,
       merchantName: merchantName,
-      amount: widget.amount,
+      amount: _amount,
       orderId: widget.orderId,
     );
     if (mounted) setState(() => _downloading = false);
   }
 
+  /// Hanya dipakai saat gateway belum terpasang.
   Future<void> _confirmPaid() async {
     setState(() => _confirming = true);
     try {
       await _orderRepo.markPaid(widget.orderId);
-      if (!mounted) return;
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(
-          builder: (_) => _OrderPlacedScreen(orderId: widget.orderId),
-        ),
-        (route) => route.isFirst,
-      );
+      // Perpindahan layarnya ditangani pemantau pesanan.
     } catch (e) {
       if (!mounted) return;
       showAppToast(context, 'Gagal konfirmasi pembayaran: $e', isError: true);
@@ -65,13 +141,15 @@ class _CustomerQrisScreenState extends State<CustomerQrisScreen> {
     }
   }
 
+  Future<void> _renewCharge() async {
+    setState(() => _loadingCharge = true);
+    await _createCharge();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final currency = NumberFormat.currency(
-      locale: 'id_ID',
-      symbol: 'Rp ',
-      decimalDigits: 0,
-    );
+    final currency =
+        NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
 
     return Scaffold(
       appBar: AppBar(
@@ -86,72 +164,169 @@ class _CustomerQrisScreenState extends State<CustomerQrisScreen> {
           final data = snapshot.data?.isNotEmpty == true ? snapshot.data!.first : null;
           final merchantName = data?['merchant_name'] as String? ?? 'Toko';
           final qrisId = data?['qris_id'] as String? ?? '-';
-          final qrData =
-              'DUMMY-QRIS|MERCHANT:$merchantName|ID:$qrisId|AMOUNT:${widget.amount}|ORDER:${widget.orderId}';
 
-          return Padding(
+          final qrData = _charge?.qrString ??
+              'DUMMY-QRIS|MERCHANT:$merchantName|ID:$qrisId'
+                  '|AMOUNT:$_amount|ORDER:${widget.orderId}';
+          final expired = _gatewayActive && _remaining.isNegative;
+
+          return SingleChildScrollView(
             padding: const EdgeInsets.all(24),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(merchantName,
                     style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 4),
                 Text(
-                  currency.format(widget.amount),
+                  currency.format(_amount),
                   style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
-                const SizedBox(height: 24),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.08),
-                        blurRadius: 12,
+                const SizedBox(height: 20),
+                if (_loadingCharge)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 80),
+                    child: Column(
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 14),
+                        Text('Menyiapkan kode pembayaran…',
+                            style: TextStyle(color: Colors.grey)),
+                      ],
+                    ),
+                  )
+                else ...[
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 12),
+                      ],
+                    ),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Opacity(
+                          opacity: expired ? 0.15 : 1,
+                          child: QrImageView(
+                            data: qrData,
+                            version: QrVersions.auto,
+                            size: 220,
+                          ),
+                        ),
+                        if (expired)
+                          const Text('Kedaluwarsa',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 16)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  if (_gatewayActive)
+                    _StatusLine(remaining: _remaining)
+                  else
+                    const Text(
+                      '(QR simulasi — payment gateway belum dipasang di resto ini)',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey, fontSize: 12),
+                    ),
+                  const SizedBox(height: 22),
+                  if (expired)
+                    FilledButton.icon(
+                      onPressed: _renewCharge,
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Buat QR Baru'),
+                    )
+                  else ...[
+                    // Membayar biasanya berarti berpindah ke aplikasi
+                    // bank, yang membuat layar ini hilang dari pandangan
+                    // — jadi biarkan mereka menyimpan salinannya.
+                    OutlinedButton.icon(
+                      onPressed: _downloading
+                          ? null
+                          : () => _downloadQr(qrData: qrData, merchantName: merchantName),
+                      icon: _downloading
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2))
+                          : const Icon(Icons.download_outlined),
+                      label: const Text('Simpan QR ke Galeri'),
+                    ),
+                    // Tombol "sudah bayar" hanya ada saat belum ada
+                    // gateway. Dengan gateway terpasang, satu-satunya
+                    // yang boleh menyatakan lunas adalah penyedianya.
+                    if (!_gatewayActive) ...[
+                      const SizedBox(height: 12),
+                      FilledButton(
+                        onPressed: _confirming ? null : _confirmPaid,
+                        child: _confirming
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2))
+                            : const Text('Simulasikan: Sudah Dibayar'),
                       ),
                     ],
-                  ),
-                  child: QrImageView(data: qrData, version: QrVersions.auto, size: 220),
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  '(QR dummy — belum terhubung ke payment gateway sungguhan)',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey, fontSize: 12),
-                ),
-                const SizedBox(height: 24),
-                // Paying usually means switching to a banking app, which
-                // takes this screen out of view — so let them keep a copy.
-                OutlinedButton.icon(
-                  onPressed: _downloading
-                      ? null
-                      : () => _downloadQr(qrData: qrData, merchantName: merchantName),
-                  icon: _downloading
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Icon(Icons.download_outlined),
-                  label: const Text('Simpan QR ke Galeri'),
-                ),
-                const SizedBox(height: 12),
-                FilledButton(
-                  onPressed: _confirming ? null : _confirmPaid,
-                  child: _confirming
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Text('Simulasikan: Sudah Dibayar'),
-                ),
+                  ],
+                ],
               ],
             ),
           );
         },
       ),
+    );
+  }
+}
+
+/// Baris keadaan saat gateway terpasang: menunggu, berikut sisa waktunya.
+class _StatusLine extends StatelessWidget {
+  final Duration remaining;
+
+  const _StatusLine({required this.remaining});
+
+  @override
+  Widget build(BuildContext context) {
+    if (remaining.isNegative) {
+      return Text(
+        'Waktu pembayaran habis. Buat QR baru untuk melanjutkan.',
+        textAlign: TextAlign.center,
+        style: TextStyle(color: Colors.red.shade700, fontSize: 12.5),
+      );
+    }
+
+    final m = remaining.inMinutes.toString().padLeft(2, '0');
+    final s = (remaining.inSeconds % 60).toString().padLeft(2, '0');
+
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const SizedBox(
+              width: 13,
+              height: 13,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            const SizedBox(width: 8),
+            Text('Menunggu pembayaran…',
+                style: TextStyle(fontSize: 12.5, color: Colors.grey.shade700)),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Berlaku $m:$s',
+          style: const TextStyle(
+              fontSize: 13, fontWeight: FontWeight.bold, color: KaataTheme.brandDark),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Layar ini berpindah sendiri begitu pembayaranmu diterima.',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600),
+        ),
+      ],
     );
   }
 }

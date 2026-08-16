@@ -67,6 +67,20 @@ class OrderRepository {
     }).eq('id', orderId);
   }
 
+  /// Aliran langsung satu pesanan.
+  ///
+  /// Dipakai layar pembayaran untuk mengetahui pesanannya sudah lunas
+  /// tanpa perlu menanyakannya berulang. Dengan gateway sungguhan,
+  /// yang menyatakan lunas adalah webhook penyedia — jadi HP-nya
+  /// memang harus menunggu kabar, bukan memutuskan sendiri.
+  Stream<CustomerOrder?> watchOne(String orderId) {
+    return _client
+        .from('orders')
+        .stream(primaryKey: ['id'])
+        .eq('id', orderId)
+        .map((rows) => rows.isEmpty ? null : CustomerOrder.fromMap(rows.first));
+  }
+
   Future<void> updateKitchenStatus(String orderId, KitchenStatus status) async {
     await _client.from('orders').update({'kitchen_status': status.name}).eq('id', orderId);
   }
