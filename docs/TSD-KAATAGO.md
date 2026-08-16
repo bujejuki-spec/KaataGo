@@ -154,7 +154,81 @@ angka.
 
 27 tabel, seluruhnya di skema `public`.
 
-### 4.0 Daftar lengkap
+### 4.0 Peta relasi
+
+Dipecah per wilayah, bukan satu diagram berisi 27 tabel sekaligus. Satu
+gambar besar memang memuat semuanya, tapi pada lebar kertas tulisannya
+jadi terlalu kecil untuk dibaca — dan diagram yang tidak terbaca sama
+saja dengan tidak ada.
+
+Dua jenis garis, dan bedanya bukan hiasan:
+
+| Garis | Artinya |
+|---|---|
+| **Penuh** | Kunci asing sungguhan — database yang menegakkannya |
+| **Putus** | Cuma kesepakatan — tidak ada yang mencegahnya dilanggar |
+
+> **Yang putus adalah tempat data yatim bisa muncul.** Saat membaca
+> kode, `order.session_id` dan `order.resto_id` terlihat sama persis —
+> keduanya kolom berisi id. Bedanya baru terasa saat sesinya terhapus:
+> `resto_id` ditolak database, `session_id` dibiarkan menunjuk ke
+> sesuatu yang sudah tidak ada.
+
+![Peta seluruh tabel — hampir semuanya menggantung pada restaurants](gambar/erd-00-peta.png)
+
+Menghapus sebuah resto menghapus seluruh isinya, dan itu memang yang
+diinginkan. Yang perlu diingat: tidak ada satu pun tabel keuangan yang
+kebal dari itu. Jurnal GL sebuah resto ikut hilang bersama restonya.
+
+![Katalog & pengaturan resto](gambar/erd-01-katalog.png)
+
+`products.category` menyimpan **nama** kategorinya, bukan id-nya. Itu
+warisan dari sebelum tabel `categories` ada, dan akibatnya masih terasa:
+mengganti nama kategori tidak ikut mengganti nama di produknya.
+
+![Pesanan, sesi meja, dan pembayaran](gambar/erd-02-pesanan.png)
+
+**Tidak ada tabel baris pesanan.** Isi pesanan disimpan sebagai jsonb di
+`orders.items`. Itu keputusan yang disengaja: struk harus menyebut menu
+persis seperti saat dipesan — nama, harga, dan level yang dipilih —
+sementara menu di katalog boleh berubah besok. Baris pesanan yang
+merujuk `products.id` akan ikut berubah bersama produknya, dan struk
+lama jadi berbohong.
+
+Harganya juga: yang tersimpan adalah harga saat itu, bukan rujukan ke
+harga sekarang.
+
+![Buku besar — seluruhnya diisi pemicu, tidak ada kunci asing ke jurnal](gambar/erd-03-keuangan.png)
+
+Seluruh panah ke `gl_journal_entries` putus, dan itu bukan kelalaian.
+`reference_id` bisa menunjuk pesanan, pengeluaran, kas kecil, setoran,
+atau pencairan — lima tabel berbeda, dibedakan `reference_type`. Satu
+kolom tidak bisa berkunci asing ke lima tabel sekaligus.
+
+Harganya adalah jurnal yang bisa menunjuk baris yang sudah terhapus.
+Yang menutupi itu adalah fungsi pembalik: menghapus pengeluaran
+menuliskan jurnal balikannya, bukan menghapus jurnal aslinya. Jurnal
+tidak pernah dihapus — hanya ditambah.
+
+![Diskon & banner promo](gambar/erd-04-promo.png)
+
+`discounts` menunjuk produk lewat id **di dalam jsonb**, jadi tidak ada
+yang mencegah promo menunjuk menu yang sudah dihapus. Promo semacam itu
+tidak pernah mengenai apa pun dan tidak menimbulkan galat — ia hanya
+diam.
+
+Ke arah pesanan, hubungannya sengaja diputus: `orders.discount_amount`
+adalah salinan, bukan rujukan. Aturan promonya boleh disunting atau
+dihapus besok tanpa mengubah struk hari ini.
+
+![Pengumuman & notifikasi](gambar/erd-05-kabar.png)
+
+`inbox_states` memisahkan penanda "sudah dibaca" dari pengumumannya.
+Satu pengumuman dibaca banyak orang pada waktu berbeda — menaruh
+penandanya di barisnya sendiri berarti pengumuman itu hanya bisa
+"sudah dibaca" oleh satu orang.
+
+### 4.1 Daftar lengkap
 
 | Tabel | Untuk apa |
 |---|---|
@@ -200,7 +274,7 @@ yang boleh dikosongkan tanpa kehilangan apa pun.
 > kembali kalau dijalankan dua kali, dan berkasnya memang dirancang untuk
 > dijalankan berulang.
 
-### 4.1 Inti
+### 4.2 Inti
 
 | Tabel | Kunci | Catatan |
 |---|---|---|
@@ -211,7 +285,7 @@ yang boleh dikosongkan tanpa kehilangan apa pun.
 | `orders` | `id` (uuid) | Pusat segalanya |
 | `sessions` | `id` | Sesi meja; ditutup pg_cron 5 menit setelah pesanannya beres |
 
-### 4.2 Kolom `orders` yang menentukan perilaku
+### 4.3 Kolom `orders` yang menentukan perilaku
 
 | Kolom | Nilai | Arti |
 |---|---|---|
@@ -233,7 +307,7 @@ yang boleh dikosongkan tanpa kehilangan apa pun.
 > dilunasi kasir lewat QRIS hilang dari rekapnya sendiri. Sekarang yang
 > dicatat adalah faktanya, bukan petunjuknya.
 
-### 4.3 Keuangan
+### 4.4 Keuangan
 
 | Tabel | Isi |
 |---|---|
@@ -244,7 +318,7 @@ yang boleh dikosongkan tanpa kehilangan apa pun.
 | `gateway_settlements` | Pencairan dari penyedia pembayaran berikut potongan MDR |
 | `payment_charges` | Tagihan QRIS di sisi penyedia |
 
-### 4.4 Diskon
+### 4.5 Diskon
 
 `discounts` menyimpan aturan promo. Dua kolom menyimpan sasarannya, dan
 keduanya sengaja ada bersamaan:
