@@ -26,8 +26,18 @@ class ApkUpdater {
 
   http.Client? _client;
 
+  /// Unduhannya dihentikan orangnya sendiri.
+  ///
+  /// Dicatat terpisah dari galat, karena menutup koneksi di tengah
+  /// unduhan memang melempar galat jaringan sungguhan — "Connection
+  /// closed while receiving data" dan sejenisnya. Tanpa penanda ini,
+  /// menekan Batalkan dijawab dengan pesan galat sepanjang paragraf
+  /// untuk sesuatu yang justru diminta orangnya.
+  bool _cancelled = false;
+
   /// Membatalkan unduhan yang sedang berjalan.
   void cancel() {
+    _cancelled = true;
     _client?.close();
     _client = null;
   }
@@ -55,6 +65,11 @@ class ApkUpdater {
     } on _Cancelled {
       return null;
     } catch (e) {
+      // Pembatalan menang atas galat apa pun. Yang muncul saat koneksi
+      // ditutup di tengah jalan memang galat jaringan yang sah, tapi
+      // menyampaikannya ke orang yang baru saja menekan Batalkan cuma
+      // membuat tindakannya sendiri terlihat seperti kerusakan.
+      if (_cancelled) return null;
       return 'Gagal mengunduh: $e';
     }
 
@@ -72,6 +87,7 @@ class ApkUpdater {
   Future<File> _download(String url) async {
     final client = http.Client();
     _client = client;
+    _cancelled = false;
     try {
       final response = await client.send(http.Request('GET', Uri.parse(url)));
       if (response.statusCode != 200) {
@@ -94,7 +110,7 @@ class ApkUpdater {
       var received = 0;
 
       await for (final chunk in response.stream) {
-        if (_client == null) {
+        if (_cancelled) {
           await sink.close();
           await file.delete();
           throw const _Cancelled();
