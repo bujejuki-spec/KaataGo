@@ -1,5 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.CAMERA" />
+    <!-- Ubin peta OpenStreetMap diambil lewat jaringan. Selama ini izin
+         internet datang menumpang dari manifest paket lain; menulisnya
+         sendiri membuatnya tidak bergantung pada paket mana yang
+         kebetulan masih terpasang. -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <!-- Saving the receipt PNG to the gallery (gal). Android 10+ writes
          via MediaStore and needs no permission, but minSdk here is 23 so

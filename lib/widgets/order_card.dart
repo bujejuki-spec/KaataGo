@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../theme.dart';
 import 'package:intl/intl.dart';
 
 import '../models/customer_order.dart';
@@ -58,7 +60,7 @@ class _OrderCardState extends State<OrderCard> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: KaataTheme.surfaceOf(context),
         borderRadius: BorderRadius.circular(14),
         // Garis tepi, bukan sekadar bayangan: dengan banyak pesanan
         // beruntun, bayangan tipis membuat batas antar kartu nyaris tak

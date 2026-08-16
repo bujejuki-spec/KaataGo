@@ -9,7 +9,9 @@ import '../models/promo_banner.dart';
 import '../providers/auth_provider.dart';
 import '../theme.dart';
 import '../utils/photo_picker.dart';
+import '../utils/promo_period.dart';
 import '../widgets/dialog_actions.dart';
+import '../widgets/promo_period_fields.dart';
 import '../widgets/responsive.dart';
 import '../utils/field_rules.dart';
 import '../widgets/app_toast.dart';
@@ -250,7 +252,7 @@ class _BannerCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: KaataTheme.surfaceOf(context),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: Colors.grey.shade300),
       ),
@@ -370,6 +372,9 @@ class _BannerFormDialog extends StatefulWidget {
 }
 
 class _BannerFormDialogState extends State<_BannerFormDialog> {
+  late DateTime? _startsOn = widget.existing?.startsOn;
+  late DateTime? _endsOn = widget.existing?.endsOn;
+
   final _repo = PromoBannerRepository();
   late final _titleCtrl = TextEditingController(text: widget.existing?.title ?? '');
   late final _descCtrl = TextEditingController(text: widget.existing?.description ?? '');
@@ -398,6 +403,12 @@ class _BannerFormDialogState extends State<_BannerFormDialog> {
 
     final email = context.read<AuthProvider>().user?.email;
     setState(() => _saving = true);
+    final periodError = validatePeriod(startsOn: _startsOn, endsOn: _endsOn);
+    if (periodError != null) {
+      showAppToast(context, periodError, isError: true);
+      return;
+    }
+
     try {
       final image =
           _picked != null ? base64Encode(await _picked!.readAsBytes()) : _existingImage!;
@@ -409,6 +420,8 @@ class _BannerFormDialogState extends State<_BannerFormDialog> {
         description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
         active: widget.existing?.active ?? true,
         sortOrder: widget.existing?.sortOrder ?? widget.nextOrder,
+        startsOn: _startsOn,
+        endsOn: _endsOn,
         createdBy: widget.existing?.createdBy ?? email,
         createdAt: widget.existing?.createdAt ?? DateTime.now(),
       );
@@ -502,6 +515,15 @@ class _BannerFormDialogState extends State<_BannerFormDialog> {
                   isDense: true,
                 ),
                 maxLines: 2,
+              ),
+              const SizedBox(height: 18),
+              PromoPeriodFields(
+                startsOn: _startsOn,
+                endsOn: _endsOn,
+                onChanged: (s, e) => setState(() {
+                  _startsOn = s;
+                  _endsOn = e;
+                }),
               ),
               const SizedBox(height: 20),
               DialogActions(

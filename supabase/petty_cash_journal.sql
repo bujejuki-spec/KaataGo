@@ -21,11 +21,11 @@ alter table gl_accounts drop constraint if exists gl_accounts_payment_method_che
 alter table gl_accounts add constraint gl_accounts_payment_method_check
   check (payment_method in
     ('cash', 'qris', 'transfer', 'petty_cash', 'income_aggregate', 'total_balance',
-     'ppn', 'service', 'suspense', 'suspense_petty', 'gateway_fee'));
+     'ppn', 'service', 'suspense', 'suspense_petty', 'gateway_fee', 'discount'));
 
 alter table gl_journal_entries drop constraint if exists gl_journal_entries_reference_type_check;
 alter table gl_journal_entries add constraint gl_journal_entries_reference_type_check
-  check (reference_type in ('order', 'expense', 'petty_cash'));
+  check (reference_type in ('order', 'order_discount', 'expense', 'petty_cash', 'cash_deposit'));
 
 create or replace function log_petty_cash_journal()
 returns trigger

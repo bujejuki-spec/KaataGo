@@ -6,6 +6,7 @@ import '../db/order_repository.dart';
 import '../db/product_repository.dart';
 import '../db/transaction_repository.dart';
 import '../models/cart_item.dart';
+import '../models/discount.dart';
 import '../models/customer_order.dart';
 import '../models/order_type.dart';
 import '../models/product.dart';
@@ -61,6 +62,34 @@ class CartProvider extends ChangeNotifier {
         servicePercent: servicePercent,
         serviceApplies: orderType == OrderType.dineIn,
       );
+
+  /// Diskon yang berlaku hari ini di resto ini, dimuat layar kasir.
+  List<Discount> discounts = const [];
+
+  void setDiscounts(List<Discount> value) {
+    discounts = value;
+    notifyListeners();
+  }
+
+  /// Diskon terbaik untuk isi keranjang sekarang, atau null.
+  ///
+  /// Dihitung dari total tagihan — sesudah service dan PPN — karena
+  /// itulah angka yang dilihat dan dijanjikan ke pelanggan. "Belanja 200
+  /// ribu dapat diskon" dibaca orang sebagai yang tertulis di struk,
+  /// bukan sebagai subtotal sebelum pajak yang tidak pernah dia lihat.
+  AppliedDiscount? discountFor(OrderType orderType) => bestDiscountFor(
+        discounts: discounts,
+        total: chargesFor(orderType).total,
+        subtotalOf: (productId) => linesOf(productId)
+            .fold(0, (sum, line) => sum + menuSubtotalOf(line)),
+        productIds: _items.map((i) => i.product.id).toSet(),
+      );
+
+  /// Yang benar-benar harus dibayar setelah potongan.
+  int payableFor(OrderType orderType) {
+    final total = chargesFor(orderType).total;
+    return total - (discountFor(orderType)?.amount ?? 0);
+  }
 
   int get itemCount => _items.fold(0, (sum, item) => sum + item.quantity);
 
@@ -201,12 +230,17 @@ class CartProvider extends ChangeNotifier {
     int? cashReceived,
   }) async {
     final tax = chargesFor(orderType);
+    final applied = discountFor(orderType);
+    final payable = tax.total - (applied?.amount ?? 0);
 
     final tx = PosTransaction(
       id: _uuid.v4(),
       createdAt: DateTime.now(),
       paymentMethod: method,
-      total: tax.total,
+      // Yang tersimpan adalah yang benar-benar dibayar. Menyimpan harga
+      // sebelum potongan berarti Riwayat Kasir menjumlahkan uang yang
+      // tidak pernah masuk laci.
+      total: payable,
       orderType: orderType,
       customerName: customerName,
       cashierName: cashierName,
@@ -265,6 +299,9 @@ class CartProvider extends ChangeNotifier {
       baseAmount: tax.base,
       serviceAmount: tax.service,
       ppnAmount: tax.ppn,
+      discountAmount: applied?.amount ?? 0,
+      discountId: applied?.discount.id,
+      discountName: applied?.discount.name,
     )).catchError((_) {
       return '';
     });

@@ -146,7 +146,7 @@ class _InfoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: KaataTheme.surfaceOf(context),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(

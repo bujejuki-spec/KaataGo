@@ -9,6 +9,7 @@ import '../theme.dart';
 import '../utils/logout_confirm.dart';
 import '../widgets/badged_hub_tile.dart';
 import '../widgets/hub_menu_tile.dart';
+import 'discount_screen.dart';
 import '../widgets/inbox_tile.dart';
 import '../widgets/responsive.dart';
 import '../widgets/resto_switcher.dart';
@@ -155,6 +156,15 @@ class AdminHomeScreen extends StatelessWidget {
                   ),
                 ),
                 const InboxTile(),
+                HubMenuTile(
+                  icon: Icons.local_offer_outlined,
+                  title: 'Diskon',
+                  subtitle: 'Promo per menu, bundling, atau minimum belanja',
+                  color: const Color(0xFF10B981),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const DiscountScreen()),
+                  ),
+                ),
                 HubMenuTile(
                   icon: Icons.logout,
                   title: 'Keluar',

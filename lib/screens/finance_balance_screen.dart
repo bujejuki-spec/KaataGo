@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+
+import '../theme.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -17,6 +19,7 @@ import '../models/expense.dart';
 import '../models/expense_gl_account.dart';
 import '../models/petty_cash_entry.dart';
 import '../providers/auth_provider.dart';
+import '../utils/cash_balance.dart';
 import '../utils/id_time.dart';
 import '../utils/photo_picker.dart';
 import '../widgets/dialog_actions.dart';
@@ -172,17 +175,18 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
   /// Setoran yang ditolak tidak dihitung: uangnya dikembalikan menjadi
   /// tanggung jawab laci kasir. Yang masih menunggu persetujuan tetap
   /// dihitung, karena fisiknya memang sudah tidak ada di laci.
-  int get _depositedTotal => _deposits
-      .where((d) => d.status != DepositStatus.rejected)
-      .fold(0, (sum, d) => sum + d.amount);
+  int get _depositedTotal => depositedFromDrawer(_deposits);
 
   /// Bagian dari setoran yang masih mengendap di GL Suspense.
   int get _pendingDeposits =>
       _deposits.where((d) => d.isPending).fold(0, (sum, d) => sum + d.amount);
 
   /// Yang seharusnya masih ada di laci kasir sekarang.
-  int get _cashBalance =>
-      _cashIncome - _depositedTotal - _pettyCashFrom(PettyCashSource.cashWithdrawal);
+  int get _cashBalance => cashOnHand(
+        cashIncome: _cashIncome,
+        deposits: _deposits,
+        pettyCash: _pettyCashEntries,
+      );
 
   int get _nonCashBalance =>
       _nonCashIncome - _pettyCashFrom(PettyCashSource.incomeWithdrawal);
@@ -1587,7 +1591,7 @@ class _IncomeSplitCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: KaataTheme.surfaceOf(context),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: Colors.grey.shade200),
       ),

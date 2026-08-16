@@ -10,6 +10,7 @@ import '../providers/auth_provider.dart';
 import '../utils/resto_location.dart';
 import '../widgets/dialog_actions.dart';
 import '../widgets/edit_action_bar.dart';
+import '../widgets/resto_location_field.dart';
 import '../widgets/logo_picker.dart';
 import '../utils/field_rules.dart';
 import '../widgets/app_toast.dart';
@@ -357,7 +358,7 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
                       validator: (v) => validatePhone(v, required: false),
                     ),
                     const SizedBox(height: 16),
-                    _LocationField(
+                    RestoLocationField(
                       latitude: _latitude,
                       longitude: _longitude,
                       enabled: _editing,
@@ -367,6 +368,10 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
                       onClear: () => setState(() {
                         _latitude = null;
                         _longitude = null;
+                      }),
+                      onPicked: (lat, lng) => setState(() {
+                        _latitude = lat;
+                        _longitude = lng;
                       }),
                     ),
                     const SizedBox(height: 20),
@@ -431,109 +436,3 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
 }
 
 /// Titik lokasi resto pada layar Info Resto.
-class _LocationField extends StatelessWidget {
-  final double? latitude;
-  final double? longitude;
-  final bool enabled;
-  final bool busy;
-  final VoidCallback onUseCurrent;
-  final VoidCallback onPaste;
-  final VoidCallback onClear;
-
-  const _LocationField({
-    required this.latitude,
-    required this.longitude,
-    required this.enabled,
-    required this.busy,
-    required this.onUseCurrent,
-    required this.onPaste,
-    required this.onClear,
-  });
-
-  bool get _hasPoint => latitude != null && longitude != null;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-      decoration: BoxDecoration(
-        color: enabled ? Colors.white : const Color(0xFFEEEEEE),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.place_outlined, size: 17, color: Colors.grey.shade700),
-              const SizedBox(width: 7),
-              const Text('Lokasi Resto',
-                  style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
-              const Spacer(),
-              if (_hasPoint)
-                TextButton.icon(
-                  icon: const Icon(Icons.map_outlined, size: 16),
-                  label: const Text('Lihat'),
-                  style: TextButton.styleFrom(
-                    padding: EdgeInsets.zero,
-                    minimumSize: const Size(0, 30),
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  onPressed: () => openInMaps(latitude!, longitude!),
-                ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            _hasPoint
-                ? '${latitude!.toStringAsFixed(6)}, ${longitude!.toStringAsFixed(6)}'
-                : 'Belum diatur — customer belum bisa membuka lokasi resto di peta.',
-            style: TextStyle(
-              fontSize: 12.5,
-              fontWeight: _hasPoint ? FontWeight.w600 : FontWeight.normal,
-              color: _hasPoint ? Colors.black87 : Colors.grey.shade600,
-            ),
-          ),
-          if (enabled) ...[
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    icon: busy
-                        ? const SizedBox(
-                            width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
-                        : const Icon(Icons.my_location, size: 16),
-                    label: const Text('Lokasi Saya'),
-                    style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(40)),
-                    onPressed: busy ? null : onUseCurrent,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    icon: const Icon(Icons.content_paste, size: 16),
-                    label: const Text('Tempel'),
-                    style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(40)),
-                    onPressed: busy ? null : onPaste,
-                  ),
-                ),
-                if (_hasPoint) ...[
-                  const SizedBox(width: 8),
-                  IconButton(
-                    icon: const Icon(Icons.close, size: 18),
-                    color: Colors.red.shade400,
-                    tooltip: 'Hapus lokasi',
-                    onPressed: onClear,
-                  ),
-                ],
-              ],
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}

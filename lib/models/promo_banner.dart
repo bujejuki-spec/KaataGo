@@ -1,3 +1,5 @@
+import '../utils/promo_period.dart';
+
 /// Banner promo yang dipasang resto di halaman menunya.
 class PromoBanner {
   final String id;
@@ -16,6 +18,14 @@ class PromoBanner {
   final bool active;
 
   final int sortOrder;
+
+  /// Masa berlaku. Sebelumnya banner hanya punya saklar aktif/nonaktif,
+  /// dan itu berarti ada orang yang harus ingat mematikannya. Promo
+  /// Ramadan yang masih terpasang di bulan Juli bukan sekadar salah — ia
+  /// menjanjikan harga yang sudah tidak berlaku kepada orang yang sedang
+  /// memesan.
+  final DateTime? startsOn;
+  final DateTime? endsOn;
   final String? createdBy;
   final DateTime createdAt;
 
@@ -27,6 +37,8 @@ class PromoBanner {
     this.description,
     this.active = true,
     this.sortOrder = 0,
+    this.startsOn,
+    this.endsOn,
     this.createdBy,
     required this.createdAt,
   });
@@ -38,6 +50,8 @@ class PromoBanner {
         'description': description,
         'active': active,
         'sort_order': sortOrder,
+        'starts_on': startsOn?.toIso8601String().split('T').first,
+        'ends_on': endsOn?.toIso8601String().split('T').first,
         if (createdBy != null) 'created_by': createdBy,
       };
 
@@ -50,8 +64,19 @@ class PromoBanner {
       description: map['description'] as String?,
       active: map['active'] != false,
       sortOrder: (map['sort_order'] as num?)?.toInt() ?? 0,
+      startsOn: map['starts_on'] == null
+          ? null
+          : DateTime.parse(map['starts_on'].toString()),
+      endsOn: map['ends_on'] == null
+          ? null
+          : DateTime.parse(map['ends_on'].toString()),
       createdBy: map['created_by'] as String?,
       createdAt: DateTime.parse(map['created_at'] as String).toUtc(),
     );
   }
+
+  PromoPeriod get period => PromoPeriod(startsOn: startsOn, endsOn: endsOn);
+
+  /// Layak ditampilkan ke pelanggan sekarang.
+  bool isLive([DateTime? now]) => active && period.isLive(now);
 }

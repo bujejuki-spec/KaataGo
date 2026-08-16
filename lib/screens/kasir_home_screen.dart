@@ -9,6 +9,8 @@ import '../theme.dart';
 import '../utils/logout_confirm.dart';
 import '../widgets/badged_hub_tile.dart';
 import '../widgets/hub_menu_tile.dart';
+import 'discount_screen.dart';
+import '../widgets/language_theme_toggle.dart';
 import '../widgets/inbox_tile.dart';
 import '../widgets/responsive.dart';
 import '../widgets/kaata_logo.dart';
@@ -113,6 +115,22 @@ class KasirHomeScreen extends StatelessWidget {
                   destination: () => const CashDepositScreen(),
                 ),
                 const InboxTile(),
+                HubMenuTile(
+                  icon: Icons.local_offer_outlined,
+                  title: 'Diskon',
+                  subtitle: 'Promo per menu, bundling, atau minimum belanja',
+                  color: const Color(0xFF10B981),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const DiscountScreen()),
+                  ),
+                ),
+                HubMenuTile(
+                  icon: Icons.translate,
+                  title: 'Bahasa & Tampilan',
+                  subtitle: 'Indonesia/English, terang atau gelap',
+                  color: const Color(0xFF0EA5E9),
+                  onTap: () => showAppearanceDialog(context),
+                ),
                 HubMenuTile(
                   icon: Icons.logout,
                   title: 'Keluar',

@@ -412,7 +412,7 @@ class _TableChips extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: KaataTheme.surfaceOf(context),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.grey.shade200),
       ),
@@ -479,7 +479,7 @@ class _EmptyPreview extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: KaataTheme.surfaceOf(context),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.grey.shade200),
       ),
@@ -514,7 +514,7 @@ class _Card extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: KaataTheme.surfaceOf(context),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(

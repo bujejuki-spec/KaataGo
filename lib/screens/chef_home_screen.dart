@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../widgets/language_theme_toggle.dart';
 import 'package:provider/provider.dart';
 
 import '../db/order_repository.dart';
@@ -77,6 +79,7 @@ class _ChefHomeScreenState extends State<ChefHomeScreen> {
             tabs: _tabs.map((t) => Tab(text: t.$2)).toList(),
           ),
           actions: [
+            const AppearanceIconButton(),
             // Owner membukanya dari hub-nya sendiri, yang sudah punya
             // Kotak Masuk — sama alasannya dengan tombol Keluar di bawah.
             if (!auth.isOwner) const InboxIconButton(),

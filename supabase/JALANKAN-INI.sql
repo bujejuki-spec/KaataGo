@@ -17,7 +17,7 @@
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 1 dari 18 — employee_surrogate_key.sql
+-- BAGIAN 1 dari 21 — employee_surrogate_key.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — email karyawan jadi bisa diubah.
@@ -68,7 +68,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 2 dari 18 — promo_banner.sql
+-- BAGIAN 2 dari 21 — promo_banner.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — banner promo per resto.
@@ -130,7 +130,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 3 dari 18 — rilis_setor_petty_inbox.sql
+-- BAGIAN 3 dari 21 — rilis_setor_petty_inbox.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — setoran & top up petty cash berjenjang, GL Suspense, dan
@@ -372,7 +372,7 @@ alter table gl_accounts drop constraint if exists gl_accounts_payment_method_che
 alter table gl_accounts add constraint gl_accounts_payment_method_check
   check (payment_method in
     ('cash', 'qris', 'transfer', 'petty_cash', 'income_aggregate', 'total_balance',
-     'ppn', 'service', 'suspense', 'suspense_petty', 'gateway_fee'));
+     'ppn', 'service', 'suspense', 'suspense_petty', 'gateway_fee', 'discount'));
 
 -- ─────────────────────────────────────────────────────────────────────
 -- 4. Jurnal petty cash mengikuti statusnya
@@ -612,7 +612,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 4 dari 18 — customer_cash_payment.sql
+-- BAGIAN 4 dari 21 — customer_cash_payment.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pelanggan boleh memilih bayar tunai di kasir.
@@ -682,7 +682,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 5 dari 18 — push_notifications.sql
+-- BAGIAN 5 dari 21 — push_notifications.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — notifikasi yang tetap sampai walau aplikasinya tertutup.
@@ -1030,7 +1030,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 6 dari 18 — announcement_categories.sql
+-- BAGIAN 6 dari 21 — announcement_categories.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pengumuman dibagi dua jenis, dan admin resto boleh mengirim.
@@ -1119,7 +1119,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 7 dari 18 — fix_device_tokens_rls.sql
+-- BAGIAN 7 dari 21 — fix_device_tokens_rls.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pendaftaran token push lewat fungsi, bukan tulis langsung.
@@ -1238,7 +1238,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 8 dari 18 — push_trigger_pg_net.sql
+-- BAGIAN 8 dari 21 — push_trigger_pg_net.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — panggil Edge Function langsung dari database, tanpa webhook.
@@ -1351,7 +1351,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 9 dari 18 — payment_gateway.sql
+-- BAGIAN 9 dari 21 — payment_gateway.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — QRIS sungguhan lewat Xendit.
@@ -1505,7 +1505,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 10 dari 18 — gateway_settlement.sql
+-- BAGIAN 10 dari 21 — gateway_settlement.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pencairan dana dari payment gateway.
@@ -1540,7 +1540,7 @@ alter table gl_accounts drop constraint if exists gl_accounts_payment_method_che
 alter table gl_accounts add constraint gl_accounts_payment_method_check
   check (payment_method in
     ('cash', 'qris', 'transfer', 'petty_cash', 'income_aggregate', 'total_balance',
-     'ppn', 'service', 'suspense', 'suspense_petty', 'gateway_fee'));
+     'ppn', 'service', 'suspense', 'suspense_petty', 'gateway_fee', 'discount'));
 
 -- ─────────────────────────────────────────────────────────────────────
 -- 2. Catatan pencairan
@@ -1683,7 +1683,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 11 dari 18 — resto_payment_accounts.sql
+-- BAGIAN 11 dari 21 — resto_payment_accounts.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pencairan langsung ke rekening masing-masing resto.
@@ -1776,7 +1776,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 12 dari 18 — counter_charge.sql
+-- BAGIAN 12 dari 21 — counter_charge.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — tagihan QRIS di meja kasir.
@@ -1813,7 +1813,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 13 dari 18 — announcement_push.sql
+-- BAGIAN 13 dari 21 — announcement_push.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pengumuman ikut membunyikan HP.
@@ -1870,7 +1870,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 14 dari 18 — cash_payment_expiry.sql
+-- BAGIAN 14 dari 21 — cash_payment_expiry.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pesanan tunai yang tidak dilunasi di kasir hangus sendiri.
@@ -1944,7 +1944,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 15 dari 18 — level_groups.sql
+-- BAGIAN 15 dari 21 — level_groups.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — tiap resto menyusun sendiri kelompok levelnya.
@@ -2070,7 +2070,7 @@ create trigger trg_seed_level_groups
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 16 dari 18 — resto_order_types.sql
+-- BAGIAN 16 dari 21 — resto_order_types.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — resto menentukan sendiri melayani Dine In, Take Away, atau
@@ -2108,7 +2108,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 17 dari 18 — product_out_of_stock.sql
+-- BAGIAN 17 dari 21 — product_out_of_stock.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — ketersediaan produk ditandai, bukan dihitung.
@@ -2152,7 +2152,402 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 18 dari 18 — gateway_account_super_admin.sql
+-- BAGIAN 18 dari 21 — discounts.sql
+-- ═══════════════════════════════════════════════════════════════════
+
+-- KaataGo — diskon: per menu (termasuk bundling) atau minimum belanja.
+--
+-- Jalankan SETELAH gl_journal.sql dan orders_gl_code.sql. Aman diulang.
+--
+-- Diskon bukan sekadar angka yang dikurangi di layar kasir. Uang yang
+-- tidak jadi diterima tetap harus terlihat di pembukuan — kalau tidak,
+-- Penghasilan resto tercatat sebesar harga daftar sementara uang yang
+-- masuk lebih kecil, dan selisihnya muncul sebagai kas yang hilang
+-- tanpa sebab. Karena itu diskon punya GL-nya sendiri sebagai pengurang
+-- pendapatan.
+
+begin;
+
+create table if not exists discounts (
+  id text primary key,
+  resto_id text not null references restaurants (id) on delete cascade,
+  name text not null,
+
+  -- 'products'     → berlaku untuk menu yang disebut di product_ids
+  -- 'min_purchase' → berlaku untuk seluruh tagihan yang mencapai ambang
+  basis text not null default 'products'
+    check (basis in ('products', 'min_purchase')),
+
+  -- 'percent' → value 1..100, 'amount' → value dalam rupiah
+  kind text not null default 'percent'
+    check (kind in ('percent', 'amount')),
+  value integer not null check (value > 0),
+
+  -- Lebih dari satu menu dalam satu aturan: itulah cara bundling
+  -- dinyatakan. Potongannya dihitung dari jumlah seluruh menu yang ikut,
+  -- bukan per baris — kalau per baris, diskon rupiah tetap akan
+  -- terkalikan sebanyak menu yang ikut promo.
+  product_ids jsonb not null default '[]'::jsonb,
+
+  min_purchase bigint not null default 0,
+
+  -- '>' atau '>='. Dipilih sendiri karena keduanya berbeda di telinga
+  -- pelanggan, dan transaksi yang nilainya pas di batas adalah yang
+  -- paling sering jadi perselisihan di meja kasir.
+  compare_mode text not null default 'at_least'
+    check (compare_mode in ('at_least', 'more_than')),
+
+  -- Masa berlaku. Tanggal, bukan timestamp: resto berpikir dalam hari,
+  -- dan "sampai 31 Agustus" berarti sampai tutup toko tanggal 31.
+  starts_on date,
+  ends_on date,
+
+  active boolean not null default true,
+  created_by text,
+  created_at timestamptz not null default now(),
+
+  -- Yang berakhir sebelum dimulai bukan promo, itu salah ketik. Ditolak
+  -- di sini juga, bukan hanya di formulirnya: aturan yang cuma dijaga
+  -- aplikasi akan bocor lewat jalan lain suatu hari.
+  constraint discounts_period_check
+    check (ends_on is null or starts_on is null or ends_on > starts_on),
+
+  -- Diskon berbasis menu tanpa satu pun menu tidak pernah mengenai apa
+  -- pun; diskon minimum belanja dengan ambang nol mengenai semuanya,
+  -- termasuk tagihan seribu rupiah.
+  constraint discounts_target_check check (
+    (basis = 'products' and jsonb_array_length(product_ids) > 0)
+    or (basis = 'min_purchase' and min_purchase > 0)
+  ),
+
+  constraint discounts_percent_check
+    check (kind <> 'percent' or value between 1 and 100)
+);
+
+create index if not exists idx_discounts_resto on discounts (resto_id, active);
+
+alter table discounts enable row level security;
+
+-- Dibaca siapa saja termasuk pelanggan tamu: promonya harus terlihat di
+-- layar pesan, bukan baru muncul di struk.
+drop policy if exists "discounts: public read" on discounts;
+create policy "discounts: public read" on discounts for select using (true);
+
+-- Ditulis kasir, admin, dan owner — sesuai menunya.
+drop policy if exists "discounts: staff write" on discounts;
+create policy "discounts: staff write" on discounts
+  for all using (
+    is_super_admin() or is_resto_employee(resto_id, array['admin', 'kasir', 'owner'])
+  ) with check (
+    is_super_admin() or is_resto_employee(resto_id, array['admin', 'kasir', 'owner'])
+  );
+
+-- ─────────────────────────────────────────────────────────────────────
+-- Diskon pada pesanan
+-- ─────────────────────────────────────────────────────────────────────
+--
+-- Disimpan di barisnya sendiri, bukan dihitung ulang saat dibaca.
+-- Aturan diskonnya bisa diubah atau dihapus besok, sementara struk
+-- pesanan hari ini harus tetap menyebut potongan yang benar-benar
+-- diberikan saat itu.
+
+alter table orders add column if not exists discount_amount bigint not null default 0;
+alter table orders add column if not exists discount_id text;
+alter table orders add column if not exists discount_name text;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- GL Diskon
+-- ─────────────────────────────────────────────────────────────────────
+--
+-- Sebagai pengurang pendapatan, bukan sebagai biaya. Diskon tidak
+-- pernah menjadi uang yang keluar dari resto — ia adalah uang yang
+-- tidak pernah masuk. Mencatatnya sebagai biaya membuat Pengeluaran
+-- terlihat naik pada bulan promo, padahal tidak ada satu rupiah pun
+-- yang berpindah.
+
+alter table gl_accounts drop constraint if exists gl_accounts_payment_method_check;
+alter table gl_accounts add constraint gl_accounts_payment_method_check
+  check (payment_method in
+    ('cash', 'qris', 'transfer', 'petty_cash', 'income_aggregate', 'total_balance',
+     'ppn', 'service', 'suspense', 'suspense_petty', 'gateway_fee', 'discount'));
+
+insert into gl_accounts (resto_id, payment_method, gl_code, gl_name)
+select r.id, 'discount', '2200002', 'GL Diskon Penjualan'
+from restaurants r
+on conflict (resto_id, payment_method) do nothing;
+
+-- Jenis rujukan baru. Daftarnya ditulis lengkap di tiap berkas yang
+-- menyentuhnya — sama alasannya dengan gl_accounts: berkas lama yang
+-- dijalankan ulang sesudah yang baru akan menyempitkan daftarnya lagi
+-- dan menolak baris yang sudah terlanjur ada.
+alter table gl_journal_entries drop constraint if exists gl_journal_entries_reference_type_check;
+alter table gl_journal_entries add constraint gl_journal_entries_reference_type_check
+  check (reference_type in ('order', 'order_discount', 'expense', 'petty_cash', 'cash_deposit'));
+
+-- Jurnal diskon.
+--
+-- Ditambahkan sebagai pemicu terpisah, bukan dengan menulis ulang
+-- log_order_paid_journal(): fungsi itu sudah ditimpa oleh empat berkas
+-- berbeda sepanjang umur proyek ini, dan menimpanya sekali lagi dari
+-- sini berarti urutan menjalankan berkas menentukan versi mana yang
+-- akhirnya berlaku. Pemicu sendiri tidak punya masalah itu.
+--
+-- Didebit, bukan dikredit. Kesepakatan aplikasi ini: kredit = uang
+-- masuk ke akun itu, debit = uang keluar. Diskon adalah pendapatan yang
+-- tidak jadi diterima, jadi ia mengurangi — dan panah di layar Jurnal
+-- GL akan menunjuk arah yang sama dengan yang dilihat Finance.
+create or replace function log_order_discount_journal()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_gl record;
+  v_now timestamptz := now();
+  v_ref text := upper(substr(new.id::text, 1, 8));
+begin
+  if new.payment_status <> 'paid' or coalesce(new.discount_amount, 0) <= 0 then
+    return new;
+  end if;
+
+  -- Sudah pernah dicatat? Pesanan bisa berpindah status lebih dari
+  -- sekali — dilunasi di kasir, lalu diperbaiki cara bayarnya — dan
+  -- tiap perpindahan tidak boleh menambah satu baris diskon lagi.
+  if exists (
+    select 1 from gl_journal_entries
+    where reference_type = 'order_discount' and reference_id = new.id::text
+  ) then
+    return new;
+  end if;
+
+  select * into v_gl from _gl_account_for(new.resto_id, 'discount');
+  if v_gl.gl_code is not null and v_gl.gl_code <> '' then
+    insert into gl_journal_entries (
+      resto_id, entry_date, entry_time, gl_code, gl_name,
+      reference_type, reference_id, amount, entry_type, description
+    ) values (
+      new.resto_id,
+      (v_now at time zone 'Asia/Jakarta')::date,
+      (v_now at time zone 'Asia/Jakarta')::time,
+      v_gl.gl_code, v_gl.gl_name,
+      'order_discount', new.id::text, new.discount_amount, 'debit',
+      coalesce(nullif(new.discount_name, ''), 'Diskon') || ' — pesanan #' || v_ref
+    );
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_log_order_discount_insert on orders;
+create trigger trg_log_order_discount_insert
+  after insert on orders
+  for each row execute function log_order_discount_journal();
+
+drop trigger if exists trg_log_order_discount_update on orders;
+create trigger trg_log_order_discount_update
+  after update of payment_status on orders
+  for each row execute function log_order_discount_journal();
+
+commit;
+
+
+-- ═══════════════════════════════════════════════════════════════════
+-- BAGIAN 19 dari 21 — promo_banner_period.sql
+-- ═══════════════════════════════════════════════════════════════════
+
+-- KaataGo — banner promo punya masa berlaku.
+--
+-- Aman dijalankan berulang kali.
+--
+-- Sebelumnya banner hanya punya saklar aktif/nonaktif, dan itu berarti
+-- ada orang yang harus ingat mematikannya. Promo Ramadan yang masih
+-- terpasang di bulan Juli bukan sekadar salah — ia menjanjikan harga
+-- yang sudah tidak berlaku kepada orang yang sedang memesan.
+--
+-- Tanggal, bukan timestamp: resto berpikir dalam hari, dan "sampai 31
+-- Agustus" berarti sampai tutup toko tanggal 31.
+
+begin;
+
+alter table promo_banners add column if not exists starts_on date;
+alter table promo_banners add column if not exists ends_on date;
+
+alter table promo_banners drop constraint if exists promo_banners_period_check;
+alter table promo_banners add constraint promo_banners_period_check
+  check (ends_on is null or starts_on is null or ends_on > starts_on);
+
+commit;
+
+
+-- ═══════════════════════════════════════════════════════════════════
+-- BAGIAN 20 dari 21 — default_gl_accounts.sql
+-- ═══════════════════════════════════════════════════════════════════
+
+-- KaataGo — resto baru langsung punya bagan akun dan tarif pajaknya.
+--
+-- Aman dijalankan berulang kali.
+--
+-- Sampai sekarang resto yang baru dibuat lahir tanpa satu pun GL
+-- account. Akibatnya bukan sekadar merepotkan: pemicu jurnal melewatkan
+-- baris yang GL-nya kosong, jadi transaksi hari-hari pertama benar-benar
+-- terjadi, uangnya benar-benar diterima, tapi tidak pernah masuk Jurnal
+-- GL. Yang menemukan lubangnya adalah Finance, berminggu-minggu
+-- kemudian, saat mencari ke mana perginya penjualan minggu pembukaan.
+--
+-- Semua yang diisi di sini tetap bisa diubah Finance lewat Mapping GL
+-- Account. Yang diberikan cuma titik berangkat yang masuk akal.
+--
+-- Pengelompokan nomornya:
+--
+--   195xxxx  Pemasukan (tunai, QRIS, transfer, agregat)
+--   196xxxx  Pajak & service
+--   198xxxx  Petty cash
+--   199xxxx  Total saldo
+--   210xxxx  Suspense & pengeluaran
+--   220xxxx  Payment gateway & diskon
+
+begin;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- 1. Tarif bawaan
+-- ─────────────────────────────────────────────────────────────────────
+--
+-- PPN 11% dan service 5% — yang paling lazim dipakai restoran di
+-- Indonesia. Nol sebagai bawaan terlihat aman, tapi artinya tiap resto
+-- baru menjual dengan harga yang belum memuat pajak sampai ada yang
+-- ingat menyetelnya, dan selisih itu tidak bisa ditagih ulang ke
+-- pelanggan yang sudah pulang.
+--
+-- Hanya berlaku untuk resto yang dibuat SESUDAH ini. Resto yang sudah
+-- ada tidak disentuh: mengubah tarif pajak resto yang sedang berjalan
+-- akan mengubah harga jual seluruh menunya dalam satu perintah.
+alter table restaurants alter column ppn_percent set default 11;
+alter table restaurants alter column service_percent set default 5;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- 2. Bagan akun bawaan
+-- ─────────────────────────────────────────────────────────────────────
+
+create or replace function _default_gl_accounts()
+returns table (payment_method text, gl_code text, gl_name text)
+language sql
+immutable
+as $$
+  values
+    -- Pemasukan
+    ('cash',             '1950001', 'GL Kas Tunai'),
+    ('qris',             '1950002', 'GL Penerimaan QRIS'),
+    ('transfer',         '1950003', 'GL Penerimaan Transfer'),
+    ('income_aggregate', '1950000', 'GL Pemasukan'),
+    -- Pajak & service
+    ('ppn',              '1960001', 'GL PPN Keluaran'),
+    ('service',          '1960002', 'GL Biaya Service'),
+    -- Petty cash
+    ('petty_cash',       '1980001', 'GL Petty Cash'),
+    -- Total saldo
+    ('total_balance',    '1990001', 'GL Total Saldo'),
+    -- Suspense — titipan yang belum diakui masuk ke mana pun
+    ('suspense',         '2100001', 'GL Suspense Setoran'),
+    ('suspense_petty',   '2100002', 'GL Suspense Petty Cash'),
+    -- Payment gateway & diskon
+    ('gateway_fee',      '2200001', 'GL Biaya Payment Gateway'),
+    ('discount',         '2200002', 'GL Diskon Penjualan');
+$$;
+
+-- Akun biaya bawaan. Terpisah dari yang di atas karena pengeluaran
+-- memang berkategori banyak, dan tiap resto akan menambah sendiri
+-- sesudahnya.
+create or replace function _default_expense_gl_accounts()
+returns table (gl_code text, gl_name text)
+language sql
+immutable
+as $$
+  values
+    ('2101001', 'GL Biaya Operasional'),
+    ('2101002', 'GL Biaya Bahan Baku'),
+    ('2101003', 'GL Biaya Gaji'),
+    ('2101004', 'GL Biaya Sewa'),
+    ('2101005', 'GL Biaya Listrik & Air'),
+    ('2101009', 'GL Biaya Lain-lain');
+$$;
+
+create or replace function seed_gl_accounts(p_resto_id text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  -- `do nothing`, bukan `do update`: resto yang sudah menyetel
+  -- nomornya sendiri tidak boleh dikembalikan ke bawaan hanya karena
+  -- berkas ini dijalankan lagi. Yang diisi cuma yang belum ada.
+  insert into gl_accounts (resto_id, payment_method, gl_code, gl_name)
+  select p_resto_id, d.payment_method, d.gl_code, d.gl_name
+  from _default_gl_accounts() d
+  on conflict (resto_id, payment_method) do nothing;
+
+  insert into expense_gl_accounts (resto_id, gl_code, gl_name)
+  select p_resto_id, d.gl_code, d.gl_name
+  from _default_expense_gl_accounts() d
+  where not exists (
+    select 1 from expense_gl_accounts e
+    where e.resto_id = p_resto_id and e.gl_code = d.gl_code
+  );
+end;
+$$;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- 3. Resto baru langsung terisi
+-- ─────────────────────────────────────────────────────────────────────
+--
+-- Lewat pemicu, bukan lewat aplikasi. Resto bisa dibuat dari layar Super
+-- Admin, dari SQL saat memulihkan data, atau dari alat lain nanti — dan
+-- yang lahir tanpa bagan akun akan diam-diam kehilangan jurnalnya.
+create or replace function seed_gl_accounts_for_new_resto()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  perform seed_gl_accounts(new.id);
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_seed_gl_accounts on restaurants;
+create trigger trg_seed_gl_accounts
+  after insert on restaurants
+  for each row execute function seed_gl_accounts_for_new_resto();
+
+-- ─────────────────────────────────────────────────────────────────────
+-- 4. Resto yang sudah ada ikut dilengkapi
+-- ─────────────────────────────────────────────────────────────────────
+--
+-- Hanya yang belum punya. Nomor yang sudah disetel Finance tetap seperti
+-- adanya — lihat `do nothing` di atas.
+do $$
+declare
+  r record;
+begin
+  for r in select id from restaurants loop
+    perform seed_gl_accounts(r.id);
+  end loop;
+end $$;
+
+commit;
+
+-- Memeriksa hasilnya:
+--
+--   select r.name, count(g.*) as akun
+--   from restaurants r
+--   left join gl_accounts g on g.resto_id = r.id
+--   group by r.name order by akun;
+
+
+-- ═══════════════════════════════════════════════════════════════════
+-- BAGIAN 21 dari 21 — gateway_account_super_admin.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pengenal sub-akun Xendit jadi urusan Super Admin saja.

@@ -104,6 +104,15 @@ class CustomerOrder {
   /// selama pesanannya belum dibayar tunai di sana.
   final int? cashReceived;
 
+  /// Potongan yang benar-benar diberikan pada pesanan ini.
+  ///
+  /// Disimpan di barisnya sendiri, bukan dihitung ulang dari aturan
+  /// diskonnya: aturannya bisa diubah atau dihapus besok, sementara
+  /// struk hari ini harus tetap menyebut angka yang sama selamanya.
+  final int discountAmount;
+  final String? discountId;
+  final String? discountName;
+
   CustomerOrder({
     required this.id,
     required this.createdAt,
@@ -126,6 +135,9 @@ class CustomerOrder {
     this.serviceAmount,
     this.ppnAmount,
     this.cashReceived,
+    this.discountAmount = 0,
+    this.discountId,
+    this.discountName,
   }) : itemsDone = itemsDone ?? const {};
 
   /// Maps to Postgres `orders` table columns (snake_case). `id` and
@@ -148,6 +160,9 @@ class CustomerOrder {
         if (serviceAmount != null) 'service_amount': serviceAmount,
         if (ppnAmount != null) 'ppn_amount': ppnAmount,
         if (cashReceived != null) 'cash_received': cashReceived,
+        'discount_amount': discountAmount,
+        if (discountId != null) 'discount_id': discountId,
+        if (discountName != null) 'discount_name': discountName,
       };
 
   /// Pesanan yang dipesan sendiri dari HP, dipilih bayar tunai, dan
@@ -233,6 +248,9 @@ class CustomerOrder {
       serviceAmount: (data['service_amount'] as num?)?.toInt(),
       ppnAmount: (data['ppn_amount'] as num?)?.toInt(),
       cashReceived: (data['cash_received'] as num?)?.toInt(),
+      discountAmount: (data['discount_amount'] as num?)?.toInt() ?? 0,
+      discountId: data['discount_id'] as String?,
+      discountName: data['discount_name'] as String?,
     );
   }
 }

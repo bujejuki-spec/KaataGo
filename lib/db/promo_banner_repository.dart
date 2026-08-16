@@ -13,7 +13,14 @@ class PromoBannerRepository {
         .eq('resto_id', restoId)
         .order('sort_order')
         .order('created_at');
-    return rows.map((r) => PromoBanner.fromMap(r)).toList();
+    // Masa berlakunya disaring di sini, bukan lewat `where` tanggal:
+    // aturan "hari terakhir ikut berlaku penuh" sudah tertulis satu kali
+    // di PromoPeriod, dan menulis ulang aturan yang sama sebagai SQL
+    // berarti dua tempat yang harus selalu sepakat.
+    return rows
+        .map((r) => PromoBanner.fromMap(r))
+        .where((b) => b.isLive())
+        .toList();
   }
 
   /// Hanya yang aktif — untuk customer.

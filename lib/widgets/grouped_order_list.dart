@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../theme.dart';
 import 'package:intl/intl.dart';
 
 import '../models/customer_order.dart';
@@ -83,7 +85,7 @@ class GroupedOrderList extends StatelessWidget {
           return Container(
             margin: const EdgeInsets.only(bottom: 10),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: KaataTheme.surfaceOf(context),
               borderRadius: BorderRadius.circular(14),
               border: Border.all(color: Colors.grey.shade300),
             ),

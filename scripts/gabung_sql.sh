@@ -40,6 +40,9 @@ FILES=(
   level_groups.sql
   resto_order_types.sql
   product_out_of_stock.sql
+  discounts.sql
+  promo_banner_period.sql
+  default_gl_accounts.sql
   gateway_account_super_admin.sql
 )
 

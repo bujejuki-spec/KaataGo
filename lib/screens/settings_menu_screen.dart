@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../providers/auth_provider.dart';
+import '../l10n/strings.dart';
 import '../theme.dart';
+import '../widgets/language_theme_toggle.dart';
+
+import '../providers/auth_provider.dart';
 import '../widgets/hub_menu_tile.dart';
 import '../widgets/kaata_logo.dart';
 import 'restaurant_info_screen.dart';
@@ -101,6 +104,27 @@ class SettingsMenuScreen extends StatelessWidget {
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => const PaymentInfoScreen()),
                   ),
+                ),
+                const SizedBox(height: 22),
+                // Bahasa dan tema ditaruh langsung di sini, bukan di
+                // balik satu menu lagi. Keduanya cuma dua ketukan
+                // sekali seumur pemakaian — menyembunyikannya di layar
+                // terpisah menambah langkah untuk sesuatu yang justru
+                // dicari orang saat pertama kali membuka Pengaturan.
+                Text(context.tr('Tampilan'),
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                        color: KaataTheme.mutedOf(context))),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: KaataTheme.surfaceOf(context),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: KaataTheme.borderOf(context)),
+                  ),
+                  child: const LanguageThemeSection(),
                 ),
               ],
             ),

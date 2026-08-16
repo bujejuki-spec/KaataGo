@@ -5,7 +5,9 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../theme.dart';
 import '../utils/customer_login_flow.dart';
+import '../l10n/strings.dart';
 import '../widgets/kaata_logo.dart';
+import '../widgets/language_theme_toggle.dart';
 import '../widgets/loading_overlay.dart';
 import 'about_screen.dart';
 import 'customer_home_screen.dart';
@@ -176,7 +178,7 @@ class _RoleChoiceScreenState extends State<RoleChoiceScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: KaataTheme.surfaceOf(context),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -184,34 +186,44 @@ class _RoleChoiceScreenState extends State<RoleChoiceScreen> {
             children: [
               // Deliberately understated next to the two role buttons —
               // it's a "what is this?" affordance, not a third choice.
-              Align(
-                alignment: Alignment.centerRight,
-                child: IconButton(
-                  icon: const Icon(Icons.info_outline),
-                  color: Colors.grey.shade500,
-                  tooltip: 'Tentang KaataGo',
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const AboutScreen()),
+              Row(
+                children: [
+                  // Bahasa dipilih di sini, sebelum masuk — dan pilihan
+                  // itu ikut ke seluruh menu setelah login. Sesudah
+                  // keluar akun tidak ada lagi menu Pengaturan yang bisa
+                  // dibuka, jadi tombolnya harus tetap ada di halaman
+                  // yang selalu bisa dicapai siapa pun.
+                  const LanguageToggle(compact: true),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.info_outline),
+                    color: KaataTheme.mutedOf(context),
+                    tooltip: context.tr('Tentang KaataGo'),
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const AboutScreen()),
+                    ),
                   ),
-                ),
+                ],
               ),
+              const SizedBox(height: 6),
+              const ThemeToggle(),
               const Spacer(),
               const KaataLogo(size: 96),
               const SizedBox(height: 20),
-              const Text(
+              Text(
                 'KaataGo',
                 style: TextStyle(
                   fontSize: 30,
                   fontWeight: FontWeight.bold,
-                  color: KaataTheme.brandDark,
+                  color: KaataTheme.brandOf(context),
                   letterSpacing: -0.5,
                 ),
               ),
               const SizedBox(height: 6),
-              const Text(
+              Text(
                 'Order Cepat, Resto Hebat',
                 style: TextStyle(
-                  color: KaataTheme.brand,
+                  color: KaataTheme.brandOf(context),
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   fontStyle: FontStyle.italic,
@@ -220,8 +232,9 @@ class _RoleChoiceScreenState extends State<RoleChoiceScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                'Kamu masuk sebagai apa?',
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 15),
+                context.tr('Masuk sebagai'),
+                style: TextStyle(
+                    color: KaataTheme.mutedOf(context), fontSize: 15),
               ),
               const SizedBox(height: 40),
               SizedBox(
@@ -229,7 +242,7 @@ class _RoleChoiceScreenState extends State<RoleChoiceScreen> {
                 height: 52,
                 child: FilledButton.icon(
                   icon: const Icon(Icons.person_outline),
-                  label: const Text('Customer'),
+                  label: Text(context.tr('Pelanggan')),
                   onPressed: _chooseCustomer,
                 ),
               ),
@@ -245,7 +258,7 @@ class _RoleChoiceScreenState extends State<RoleChoiceScreen> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(Icons.storefront_outlined),
-                  label: const Text('Resto'),
+                  label: Text(context.tr('Karyawan Resto')),
                   onPressed: _signingInEmployee ? null : _chooseEmployee,
                 ),
               ),
@@ -253,7 +266,8 @@ class _RoleChoiceScreenState extends State<RoleChoiceScreen> {
               if (_versionLabel.isNotEmpty)
                 Text(
                   _versionLabel,
-                  style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
+                  style: TextStyle(
+                      color: KaataTheme.mutedOf(context), fontSize: 12),
                 ),
             ],
           ),

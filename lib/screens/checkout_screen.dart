@@ -11,6 +11,7 @@ import 'payment_qris_screen.dart';
 import 'payment_transfer_screen.dart';
 import 'receipt_screen.dart';
 import '../widgets/cash_payment_dialog.dart';
+import '../db/discount_repository.dart';
 import '../db/restaurant_repository.dart';
 import '../models/restaurant.dart';
 import '../widgets/charge_summary.dart';
@@ -35,6 +36,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   void initState() {
     super.initState();
     _loadResto();
+    _loadDiscounts();
   }
 
   @override
@@ -55,6 +57,20 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   /// device splits identically.
   double get _ppnPercent => _resto?.ppnPercent ?? 0;
   double get _servicePercent => _resto?.servicePercent ?? 0;
+
+  /// Diskon yang berlaku hari ini, dimuat sekali saat layar dibuka.
+  Future<void> _loadDiscounts() async {
+    final restoId = context.read<AuthProvider>().restoId;
+    if (restoId == null) return;
+    try {
+      final live = await DiscountRepository().liveForResto(restoId);
+      if (!mounted) return;
+      context.read<CartProvider>().setDiscounts(live);
+    } catch (_) {
+      // Luring, atau tabelnya belum dimigrasi. Tanpa diskon, harganya
+      // kembali ke harga daftar — bukan transaksi yang gagal.
+    }
+  }
 
   Future<void> _loadResto() async {
     final restoId = context.read<AuthProvider>().restoId;
@@ -265,6 +281,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       serviceApplies: _isDineIn,
                       currency: currency,
                     ),
+                    if (cart.discountFor(_orderType) case final applied?) ...[
+                      const SizedBox(height: 8),
+                      _DiscountLine(
+                        name: applied.discount.name,
+                        amount: applied.amount,
+                        payable: cart.payableFor(_orderType),
+                        currency: currency,
+                      ),
+                    ],
                     const SizedBox(height: 16),
                     Row(
                       children: [
@@ -388,7 +413,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     // lama: hanya Dine In yang salah, dan salahnya selalu kurang.
     // QR yang menagih kurang berarti lacinya kurang tiap hari, dan
     // baru ketahuan saat tutup buku.
-    final amount = cart.chargesFor(_orderType).total;
+    // Sesudah potongan: inilah yang ditagihkan, dicetak di QR, dan
+    // dihitung kembaliannya.
+    final amount = cart.payableFor(_orderType);
 
     // Cash: the cashier keys in what the customer handed over so the
     // change is worked out here instead of in their head — and so the
@@ -449,3 +476,69 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 /// Quick-pick chips cover what a cashier reaches for most — exact money,
 /// then the next round notes up from the total — because typing the full
 /// amount on every sale is the slowest part of taking cash.
+
+/// Baris potongan di bawah rincian tagihan.
+///
+/// Ditampilkan sebagai baris tersendiri berikut nama promonya, bukan
+/// dengan diam-diam mengecilkan totalnya. Kasir harus bisa menjawab
+/// "kenapa jadi segini" tanpa membuka menu lain — dan pelanggan yang
+/// bertanya sedang berdiri di depannya.
+class _DiscountLine extends StatelessWidget {
+  final String name;
+  final int amount;
+  final int payable;
+  final NumberFormat currency;
+
+  const _DiscountLine({
+    required this.name,
+    required this.amount,
+    required this.payable,
+    required this.currency,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      decoration: BoxDecoration(
+        color: Colors.green.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.local_offer_outlined,
+                  size: 16, color: Color(0xFF15803D)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(name,
+                    style: const TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF15803D)),
+                    overflow: TextOverflow.ellipsis),
+              ),
+              Text('− ${currency.format(amount)}',
+                  style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF15803D))),
+            ],
+          ),
+          const Divider(height: 14),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('DIBAYAR',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+              Text(currency.format(payable),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 17)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}

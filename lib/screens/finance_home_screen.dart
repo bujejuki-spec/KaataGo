@@ -8,6 +8,7 @@ import '../theme.dart';
 import '../utils/logout_confirm.dart';
 import '../widgets/badged_hub_tile.dart';
 import '../widgets/hub_menu_tile.dart';
+import '../widgets/language_theme_toggle.dart';
 import '../widgets/inbox_tile.dart';
 import '../widgets/responsive.dart';
 import '../widgets/resto_switcher.dart';
@@ -142,6 +143,13 @@ class FinanceHomeScreen extends StatelessWidget {
                   ),
                 ),
                 const InboxTile(),
+                HubMenuTile(
+                  icon: Icons.translate,
+                  title: 'Bahasa & Tampilan',
+                  subtitle: 'Indonesia/English, terang atau gelap',
+                  color: const Color(0xFF0EA5E9),
+                  onTap: () => showAppearanceDialog(context),
+                ),
                 HubMenuTile(
                   icon: Icons.logout,
                   title: 'Keluar',

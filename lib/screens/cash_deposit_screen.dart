@@ -12,6 +12,7 @@ import '../db/petty_cash_repository.dart';
 import '../models/cash_deposit.dart';
 import '../models/customer_order.dart';
 import '../models/petty_cash_entry.dart';
+import '../utils/cash_balance.dart';
 import '../providers/auth_provider.dart';
 import '../theme.dart';
 import '../utils/id_time.dart';
@@ -74,9 +75,7 @@ class _CashDepositScreenState extends State<CashDepositScreen> {
 
   /// Setoran yang sudah keluar dari laci — termasuk yang masih menunggu
   /// persetujuan, karena uangnya memang sudah tidak ada di laci.
-  int get _deposited => _deposits
-      .where((d) => d.status != DepositStatus.rejected)
-      .fold(0, (sum, d) => sum + d.amount);
+  int get _deposited => depositedFromDrawer(_deposits);
 
   /// Masih mengendap di GL Suspense: sudah disetor, belum diakui masuk
   /// kas resto.
@@ -84,6 +83,7 @@ class _CashDepositScreenState extends State<CashDepositScreen> {
 
   /// Yang seharusnya masih ada di laci.
   int get _cashOnHand => _cashIncome - _deposited - _pettyCashFromCash;
+
 
   @override
   void initState() {
@@ -117,9 +117,7 @@ class _CashDepositScreenState extends State<CashDepositScreen> {
         _cashIncome =
             orders.where((o) => o.paymentMethod == 'cash').fold(0, (sum, o) => sum + o.total);
         _deposits = results[1] as List<CashDeposit>;
-        _pettyCashFromCash = pettyCash
-            .where((e) => e.source == PettyCashSource.cashWithdrawal)
-            .fold(0, (sum, e) => sum + e.amount);
+        _pettyCashFromCash = pettyCashFromDrawer(pettyCash);
         _loading = false;
       });
     } catch (e) {
@@ -475,7 +473,7 @@ class _DepositTile extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: KaataTheme.surfaceOf(context),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: Colors.grey.shade200),
       ),

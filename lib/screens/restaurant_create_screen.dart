@@ -6,7 +6,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../db/restaurant_repository.dart';
 import '../models/restaurant.dart';
+import '../utils/resto_location.dart';
+import '../widgets/dialog_actions.dart';
 import '../widgets/edit_action_bar.dart';
+import '../widgets/resto_location_field.dart';
 import '../widgets/logo_picker.dart';
 import '../utils/field_rules.dart';
 import '../widgets/app_toast.dart';
@@ -48,6 +51,9 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
   bool _takeAway = true;
   bool _snapshotDineIn = true;
   bool _snapshotTakeAway = true;
+  double? _latitude;
+  double? _longitude;
+  bool _locating = false;
   String? _existingLogo;
   File? _pickedLogo;
   bool _logoRemoved = false;
@@ -69,9 +75,16 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
     _nameCtrl = TextEditingController(text: r?.name ?? '');
     _addressCtrl = TextEditingController(text: r?.address ?? '');
     _phoneCtrl = TextEditingController(text: r?.phone ?? '');
-    _ppnCtrl = TextEditingController(text: _pctText(r?.ppnPercent ?? 0));
-    _serviceCtrl = TextEditingController(text: _pctText(r?.servicePercent ?? 0));
+    // Resto baru berangkat dari tarif yang paling lazim dipakai
+    // restoran di Indonesia, sama dengan bawaan kolomnya di database.
+    // Nol terlihat aman, tapi artinya menjual tanpa memuat pajak sampai
+    // ada yang ingat menyetelnya — dan selisih itu tidak bisa ditagih
+    // ulang ke pelanggan yang sudah pulang.
+    _ppnCtrl = TextEditingController(text: _pctText(r?.ppnPercent ?? 11));
+    _serviceCtrl = TextEditingController(text: _pctText(r?.servicePercent ?? 5));
     _category = r?.category;
+    _latitude = r?.latitude;
+    _longitude = r?.longitude;
     _dineIn = r?.dineInEnabled ?? true;
     _takeAway = r?.takeAwayEnabled ?? true;
     _existingLogo = r?.logoBase64;
@@ -141,6 +154,8 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
 
   /// Logo state at the moment Edit was tapped, alongside the text
   /// fields, so Batal also undoes an upload or a staged removal.
+  double? _snapshotLat;
+  double? _snapshotLng;
   File? _snapshotPickedLogo;
   String? _snapshotExistingLogo;
   bool _snapshotLogoRemoved = false;
@@ -156,6 +171,8 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
     };
     _snapshotDineIn = _dineIn;
     _snapshotTakeAway = _takeAway;
+    _snapshotLat = _latitude;
+    _snapshotLng = _longitude;
     _snapshotPickedLogo = _pickedLogo;
     _snapshotExistingLogo = _existingLogo;
     _snapshotLogoRemoved = _logoRemoved;
@@ -175,11 +192,95 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
     _category = _snapshot['category'];
     _dineIn = _snapshotDineIn;
     _takeAway = _snapshotTakeAway;
+    _latitude = _snapshotLat;
+    _longitude = _snapshotLng;
     _pickedLogo = _snapshotPickedLogo;
     _existingLogo = _snapshotExistingLogo;
     _logoRemoved = _snapshotLogoRemoved;
     _formKey.currentState?.reset();
     setState(() => _editing = false);
+  }
+
+  Future<void> _useCurrentLocation() async {
+    setState(() => _locating = true);
+    final toast = AppToast.of(context);
+    try {
+      final position = await currentPosition();
+      final address = await addressOf(position.latitude, position.longitude);
+      if (!mounted) return;
+      setState(() {
+        _latitude = position.latitude;
+        _longitude = position.longitude;
+        if (address != null && _addressCtrl.text.trim().isEmpty) {
+          _addressCtrl.text = address;
+        }
+        _locating = false;
+      });
+      toast.show(address == null
+              ? 'Lokasi tersimpan. Alamatnya silakan diisi manual.'
+              : 'Lokasi & alamat terisi. Silakan lengkapi detailnya.');
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _locating = false);
+      toast.show('$e');
+    }
+  }
+
+  /// Menerima koordinat atau tautan Google Maps yang ditempel.
+  ///
+  /// Berguna saat yang mengisi tidak sedang berada di restonya — mereka
+  /// tinggal meminta pemiliknya "share lokasi" lalu menempelkannya.
+  Future<void> _pasteCoordinates() async {
+    final toast = AppToast.of(context);
+    final ctrl = TextEditingController();
+    final result = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Tempel Koordinat'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Tempel koordinat (mis. -6.2088, 106.8456) atau tautan Google Maps '
+              'yang dibagikan.',
+              style: TextStyle(fontSize: 12.5),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: ctrl,
+              autofocus: true,
+              decoration: const InputDecoration(isDense: true, hintText: 'lat, lng'),
+              maxLines: 2,
+            ),
+          ],
+        ),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          DialogActions(
+            confirmLabel: 'Pakai Titik Ini',
+            onConfirm: () => Navigator.pop(dialogContext, ctrl.text),
+          ),
+        ],
+      ),
+    );
+    if (result == null) return;
+
+    final point = parseCoordinates(result);
+    if (!mounted) return;
+    if (point == null) {
+      toast.show('Koordinat tidak terbaca. Contoh: -6.2088, 106.8456');
+      return;
+    }
+
+    setState(() {
+      _latitude = point.latitude;
+      _longitude = point.longitude;
+    });
+
+    final address = await addressOf(point.latitude, point.longitude);
+    if (!mounted || address == null || _addressCtrl.text.trim().isNotEmpty) return;
+    setState(() => _addressCtrl.text = address);
   }
 
   Future<void> _save() async {
@@ -213,6 +314,8 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
         ppnPercent: double.tryParse(_ppnCtrl.text.trim().replaceAll(',', '.')) ?? 0,
         servicePercent: double.tryParse(_serviceCtrl.text.trim().replaceAll(',', '.')) ?? 0,
         category: _category,
+        latitude: _latitude,
+        longitude: _longitude,
         dineInEnabled: _dineIn,
         takeAwayEnabled: _takeAway,
         logoBase64: logoBase64,
@@ -382,6 +485,23 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
                 'Harga menu ditampilkan sudah termasuk keduanya. Service hanya '
                 'dikenakan untuk Dine In.',
                 style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600),
+              ),
+              const SizedBox(height: 20),
+              RestoLocationField(
+                latitude: _latitude,
+                longitude: _longitude,
+                enabled: _editing,
+                busy: _locating,
+                onUseCurrent: _useCurrentLocation,
+                onPaste: _pasteCoordinates,
+                onClear: () => setState(() {
+                  _latitude = null;
+                  _longitude = null;
+                }),
+                onPicked: (lat, lng) => setState(() {
+                  _latitude = lat;
+                  _longitude = lng;
+                }),
               ),
               const SizedBox(height: 20),
               const Text('Cara Makan yang Dilayani',

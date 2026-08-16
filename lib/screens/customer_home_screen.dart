@@ -34,6 +34,7 @@ import '../widgets/loading_overlay.dart';
 import '../widgets/product_category_list.dart';
 import '../widgets/product_lines_sheet.dart';
 import '../widgets/promo_banner_carousel.dart';
+import '../widgets/language_theme_toggle.dart';
 import '../widgets/resto_announcement_strip.dart';
 import '../widgets/quantity_dialog.dart';
 import 'customer_cart_screen.dart';
@@ -705,6 +706,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
             session.tableNumber != null ? 'Meja ${session.tableNumber}' : 'KaataGo (Customer)',
           ),
           actions: [
+            const AppearanceIconButton(),
             if (!session.enteredViaQr)
               IconButton(
                 icon: const Icon(Icons.storefront_outlined),

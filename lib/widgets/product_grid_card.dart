@@ -57,7 +57,7 @@ class ProductGridCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: KaataTheme.surfaceOf(context),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: selected ? KaataTheme.brand : Colors.grey.shade200,
