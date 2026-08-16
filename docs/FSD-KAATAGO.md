@@ -332,7 +332,9 @@ membacanya.
 |---|---|
 | F-DS-01 | Diskon berbasis **menu tertentu**: satu menu, atau beberapa sekaligus untuk bundling |
 | F-DS-02 | Diskon berbasis **minimum belanja** dengan indikator **≥** atau **>** yang dipilih sendiri |
-| F-DS-10 | Diskon berbasis menu dapat mensyaratkan **jumlah minimum pembelian** — "beli 2 lebih murah"; bawaannya 1 |
+| F-DS-10 | Tiap menu dalam promo membawa **syarat jumlahnya sendiri**, bukan satu angka untuk seluruh promo |
+| F-DS-11 | Syarat jumlah berbentuk **Minimal** (lebih banyak tetap dapat) atau **Tepat** (kurang maupun lebih tidak dapat) |
+| F-DS-12 | Pada bundling, **seluruh** menu yang disebut harus terpenuhi — kurang satu berarti promonya tidak berlaku sama sekali |
 | F-DS-03 | Potongan berbentuk **persen** (1–100) atau **rupiah** |
 | F-DS-04 | Masa berlaku: mulai tidak boleh mundur ke belakang, berakhir minimal besok |
 | F-DS-05 | Lencana status: **Berjalan**, **Terjadwal**, **Sudah lewat**, **Nonaktif** |
@@ -347,8 +349,9 @@ membacanya.
 |---|---|
 | Hanya **satu** diskon dipakai — yang paling menguntungkan pelanggan | Menumpuk terdengar murah hati sampai dua promo berlaku bersamaan dan totalnya melebihi harga barangnya |
 | Bundling menjumlahkan seluruh menu yang ikut, baru dipotong | Kalau dipotong per baris, diskon rupiah tetap terkalikan sebanyak menu yang ikut |
-| Syarat jumlah dihitung **per menu**, bukan per keranjang | Kalau dijumlahkan lintas menu, keranjang apa pun berisi dua barang lolos "beli 2" — bukan itu yang dijanjikan spanduknya |
-| Menu yang belum memenuhi syarat jumlah tidak ikut dihitung, tapi tidak menggugurkan yang sudah | Satu menu yang kurang tidak membatalkan promo untuk menu lain yang sudah memenuhi |
+| Syarat jumlah menempel di **menunya**, bukan di promonya | Satu angka untuk seluruh promo membuat "Nasi Goreng + Es Teh, beli 2" lolos oleh keranjang berisi dua Nasi Goreng dan segelas kopi |
+| Bundling menuntut **seluruh** menunya terpenuhi | Sebagian-cukup berarti paket yang dijanjikan tidak pernah benar-benar dibeli, tapi restonya tetap membayar potongannya |
+| Menu di luar promo tidak ikut dipotong sekalipun ada di keranjang | Potongannya dihitung dari menu yang memang ikut promo |
 | Potongan tidak pernah melebihi tagihannya | Kalau tidak, totalnya negatif — resto berutang kepada orang yang belum membayar apa pun |
 | Diskon dihitung dari **total setelah service dan PPN** | Itulah angka yang dilihat dan dijanjikan ke pelanggan |
 
@@ -793,7 +796,7 @@ bayar tunai. Keduanya bertemu di layar yang sama.
 | **Riwayat Kasir** | Rekap per hari berikut rincian per cara bayar, dan mencetak ulang struk |
 | **Saldo & Pengeluaran** | Melihat saldo total, cash dan non-cash, petty cash, dan rekening resto; mengajukan Top Up Petty Cash yang menunggu persetujuan Finance |
 | **Setor Saldo Cash** | Melihat tunai di laci berikut rinciannya; mengisi formulir setoran dengan rekening tujuan yang terisi sendiri dari Pengaturan Pembayaran, dan melampirkan buktinya |
-| **Diskon** | Membuat dan mengubah promo — per menu, bundling, atau minimum belanja — berikut syarat jumlah dan masa berlakunya |
+| **Diskon** | Membuat dan mengubah promo — per menu, bundling, atau minimum belanja; tiap menu diberi syarat jumlahnya sendiri, Minimal atau Tepat |
 
 
 **Mode Terang** — 18 tangkapan
@@ -916,7 +919,7 @@ angka akuntansinya: Info Pembayaran dan Mapping GL milik Finance.
 | **Saldo & Pengeluaran** | Melihat saldo dan petty cash; pengajuan yang menunggu persetujuan Finance ikut terlihat berikut penandanya |
 | **Setor Saldo Cash** | Melihat setoran yang sudah dikonfirmasi maupun yang masih menunggu approval |
 | **Kirim Pengumuman** | Menulis pengumuman dan memilih sasarannya: Karyawan, Customer, atau Semua |
-| **Diskon** | Membuat promo per menu, bundling beberapa menu sekaligus, atau minimum belanja; menetapkan syarat jumlah, bentuk potongan, dan masa berlakunya |
+| **Diskon** | Membuat promo per menu, bundling beberapa menu sekaligus, atau minimum belanja; tiap menu diberi syarat jumlahnya sendiri (Minimal atau Tepat), lalu bentuk potongan dan masa berlakunya |
 
 
 **Mode Terang** — 19 tangkapan

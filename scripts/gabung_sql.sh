@@ -49,6 +49,7 @@ FILES=(
   cancel_order.sql
   settled_at_counter.sql
   discount_min_qty.sql
+  discount_product_rules.sql
 )
 
 {

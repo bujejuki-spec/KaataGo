@@ -83,7 +83,6 @@ class CartProvider extends ChangeNotifier {
         subtotalOf: (productId) => linesOf(productId)
             .fold(0, (sum, line) => sum + menuSubtotalOf(line)),
         qtyOf: quantityOf,
-        productIds: _items.map((i) => i.product.id).toSet(),
       );
 
   /// Yang benar-benar harus dibayar setelah potongan.

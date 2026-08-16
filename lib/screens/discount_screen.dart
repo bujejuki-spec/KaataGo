@@ -242,9 +242,9 @@ class _DiscountCard extends StatelessWidget {
                       discount.basis == DiscountBasis.minPurchase
                           ? 'Belanja ${discount.compare == MinCompare.atLeast ? '≥' : '>'} '
                               '${currency.format(discount.minPurchase)}'
-                          : discount.minQty > 1
-                              ? '${discount.productIds.length} menu · min ${discount.minQty} pcs'
-                              : '${discount.productIds.length} menu',
+                          : discount.items.length == 1
+                              ? discount.items.first.label
+                              : '${discount.items.length} menu · semua harus ada',
                       style: TextStyle(
                           fontSize: 12.5, color: KaataTheme.mutedOf(context)),
                       overflow: TextOverflow.ellipsis,
@@ -365,13 +365,13 @@ class _DiscountFormScreenState extends State<_DiscountFormScreen> {
         : formatRupiahInput(widget.existing!.minPurchase),
   );
 
-  late final _qtyCtrl =
-      TextEditingController(text: '${widget.existing?.minQty ?? 1}');
-
   late DiscountBasis _basis = widget.existing?.basis ?? DiscountBasis.products;
   late DiscountKind _kind = widget.existing?.kind ?? DiscountKind.percent;
   late MinCompare _compare = widget.existing?.compare ?? MinCompare.atLeast;
-  late Set<String> _productIds = {...?widget.existing?.productIds};
+  /// Menu yang ikut promo, berikut syarat jumlahnya masing-masing.
+  /// Urutannya dipertahankan supaya barisnya tidak melompat-lompat
+  /// setiap kali salah satu angkanya diubah.
+  late final List<DiscountItem> _items = [...?widget.existing?.items];
   late DateTime? _startsOn = widget.existing?.startsOn;
   late DateTime? _endsOn = widget.existing?.endsOn;
   bool _saving = false;
@@ -381,14 +381,13 @@ class _DiscountFormScreenState extends State<_DiscountFormScreen> {
     _nameCtrl.dispose();
     _valueCtrl.dispose();
     _minCtrl.dispose();
-    _qtyCtrl.dispose();
     super.dispose();
   }
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
-    if (_basis == DiscountBasis.products && _productIds.isEmpty) {
+    if (_basis == DiscountBasis.products && _items.isEmpty) {
       showAppToast(context, 'Pilih minimal satu menu.', isError: true);
       return;
     }
@@ -413,14 +412,11 @@ class _DiscountFormScreenState extends State<_DiscountFormScreen> {
         basis: _basis,
         kind: _kind,
         value: value,
-        productIds: _productIds.toList(),
+        items: _basis == DiscountBasis.products ? _items : const [],
         minPurchase: _basis == DiscountBasis.minPurchase
             ? (parseRupiah(_minCtrl.text) ?? 0)
             : 0,
         compare: _compare,
-        minQty: _basis == DiscountBasis.products
-            ? (int.tryParse(_qtyCtrl.text.trim()) ?? 1).clamp(1, 999)
-            : 1,
         startsOn: _startsOn,
         endsOn: _endsOn,
         active: widget.existing?.active ?? true,
@@ -475,19 +471,14 @@ class _DiscountFormScreenState extends State<_DiscountFormScreen> {
               ),
               const SizedBox(height: 18),
 
-              if (_basis == DiscountBasis.products) ...[
+              if (_basis == DiscountBasis.products)
                 _ProductPicker(
                   products: products,
                   memuat: _memuatProduk,
-                  selected: _productIds,
-                  onChanged: (ids) => setState(() => _productIds = ids),
-                ),
-                const SizedBox(height: 14),
-                _MinQtyField(
-                  controller: _qtyCtrl,
+                  items: _items,
                   onChanged: () => setState(() {}),
-                ),
-              ] else
+                )
+              else
                 _MinPurchaseFields(
                   controller: _minCtrl,
                   compare: _compare,
@@ -574,21 +565,30 @@ class _DiscountFormScreenState extends State<_DiscountFormScreen> {
 
 /// Pemilih menu — bisa lebih dari satu, dan itulah cara bundling
 /// dinyatakan.
+///
+/// Tiap menu yang dipilih membawa syarat jumlahnya sendiri, dan
+/// SELURUHNYA harus terpenuhi. Itu perbedaan yang paling mudah salah
+/// dibaca dari formulir ini, jadi kalimatnya ditulis apa adanya di
+/// bawah judulnya alih-alih dibiarkan disimpulkan sendiri.
 class _ProductPicker extends StatelessWidget {
   final List<Product> products;
   final bool memuat;
-  final Set<String> selected;
-  final ValueChanged<Set<String>> onChanged;
+  final List<DiscountItem> items;
+  final VoidCallback onChanged;
 
   const _ProductPicker({
     required this.products,
     required this.memuat,
-    required this.selected,
+    required this.items,
     required this.onChanged,
   });
 
+  int _indexOf(String productId) =>
+      items.indexWhere((i) => i.productId == productId);
+
   @override
   Widget build(BuildContext context) {
+    final muted = KaataTheme.mutedOf(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -597,16 +597,19 @@ class _ProductPicker extends StatelessWidget {
             const Text('Menu yang Didiskon',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
             const Spacer(),
-            Text('${selected.length} dipilih',
-                style: TextStyle(
-                    fontSize: 11.5, color: KaataTheme.mutedOf(context))),
+            Text('${items.length} dipilih',
+                style: TextStyle(fontSize: 11.5, color: muted)),
           ],
         ),
         const SizedBox(height: 2),
         Text(
-          'Pilih beberapa sekaligus untuk bundling — potongannya dihitung '
-          'dari jumlah menu yang ikut, bukan per menu.',
-          style: TextStyle(fontSize: 11.5, color: KaataTheme.mutedOf(context)),
+          items.length > 1
+              ? 'Semua menu di bawah harus ada di keranjang dengan jumlah '
+                  'yang diminta. Kalau salah satu kurang, promonya tidak '
+                  'berlaku sama sekali.'
+              : 'Pilih beberapa sekaligus untuk bundling. Tiap menu punya '
+                  'syarat jumlahnya sendiri.',
+          style: TextStyle(fontSize: 11.5, color: muted),
         ),
         const SizedBox(height: 10),
         if (products.isEmpty && memuat)
@@ -615,22 +618,20 @@ class _ProductPicker extends StatelessWidget {
               SizedBox(
                 width: 14,
                 height: 14,
-                child: CircularProgressIndicator(
-                    strokeWidth: 2, color: KaataTheme.mutedOf(context)),
+                child: CircularProgressIndicator(strokeWidth: 2, color: muted),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: Text('Memuat daftar menu…',
-                    style: TextStyle(color: KaataTheme.mutedOf(context))),
+                    style: TextStyle(color: muted)),
               ),
             ],
           )
         else if (products.isEmpty)
-          Text('Belum ada produk di resto ini.',
-              style: TextStyle(color: KaataTheme.mutedOf(context)))
+          Text('Belum ada produk di resto ini.', style: TextStyle(color: muted))
         else
           Container(
-            constraints: const BoxConstraints(maxHeight: 260),
+            constraints: const BoxConstraints(maxHeight: 340),
             decoration: BoxDecoration(
               border: Border.all(color: KaataTheme.borderOf(context)),
               borderRadius: BorderRadius.circular(12),
@@ -639,21 +640,11 @@ class _ProductPicker extends StatelessWidget {
               shrinkWrap: true,
               children: [
                 for (final p in products)
-                  CheckboxListTile(
-                    dense: true,
-                    value: selected.contains(p.id),
-                    title: Text(p.name, style: const TextStyle(fontSize: 13.5)),
-                    subtitle: Text(p.category,
-                        style: const TextStyle(fontSize: 11)),
-                    onChanged: (v) {
-                      final next = {...selected};
-                      if (v == true) {
-                        next.add(p.id);
-                      } else {
-                        next.remove(p.id);
-                      }
-                      onChanged(next);
-                    },
+                  _ProductRow(
+                    product: p,
+                    index: _indexOf(p.id),
+                    items: items,
+                    onChanged: onChanged,
                   ),
               ],
             ),
@@ -663,65 +654,100 @@ class _ProductPicker extends StatelessWidget {
   }
 }
 
-/// Berapa banyak menunya harus dibeli supaya promonya berlaku.
+/// Satu baris menu di pemilih: centang, lalu syarat jumlahnya.
 ///
-/// Isinya angka, tapi yang dibaca orang yang mengisi formulir ini adalah
-/// kalimat promonya. Karena itu kalimat itu ditulis balik ke layar
-/// begitu angkanya berubah — "berlaku kalau menu yang dipilih dipesan
-/// minimal 2" salah dibaca jauh lebih sulit daripada kotak isian
-/// bertuliskan "Qty".
-class _MinQtyField extends StatelessWidget {
-  final TextEditingController controller;
+/// Kolom jumlah baru muncul setelah menunya dicentang. Menampilkannya
+/// untuk seluruh menu resto berarti belasan kotak isian yang tidak
+/// satu pun perlu diisi — dan yang perlu diisi jadi tenggelam.
+class _ProductRow extends StatelessWidget {
+  final Product product;
+
+  /// Posisinya di daftar promo, atau -1 kalau belum dipilih.
+  final int index;
+  final List<DiscountItem> items;
   final VoidCallback onChanged;
 
-  const _MinQtyField({required this.controller, required this.onChanged});
+  const _ProductRow({
+    required this.product,
+    required this.index,
+    required this.items,
+    required this.onChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final qty = int.tryParse(controller.text.trim()) ?? 1;
+    final dipilih = index >= 0;
+    final item = dipilih ? items[index] : null;
+
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Minimum Jumlah',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            SizedBox(
-              width: 110,
-              child: TextFormField(
-                controller: controller,
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                decoration: const InputDecoration(
-                  labelText: 'Jumlah',
-                  suffixText: 'pcs',
-                ),
-                onChanged: (_) => onChanged(),
-                validator: (v) {
-                  final n = int.tryParse((v ?? '').trim()) ?? 0;
-                  return n < 1 ? 'Minimal 1' : null;
-                },
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                qty <= 1
-                    ? 'Berlaku berapa pun jumlah yang dibeli.'
-                    : 'Berlaku kalau menu yang dipilih dipesan minimal '
-                        '$qty pcs. Kalau ada beberapa menu, tiap menu '
-                        'dihitung sendiri.',
-                style: TextStyle(
-                    fontSize: 11.5, color: KaataTheme.mutedOf(context)),
-              ),
-            ),
-          ],
+        CheckboxListTile(
+          dense: true,
+          value: dipilih,
+          title: Text(product.name, style: const TextStyle(fontSize: 13.5)),
+          subtitle: Text(product.category,
+              style: const TextStyle(fontSize: 11)),
+          onChanged: (v) {
+            if (v == true) {
+              items.add(DiscountItem(productId: product.id));
+            } else if (dipilih) {
+              items.removeAt(index);
+            }
+            onChanged();
+          },
         ),
+        if (item != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(52, 0, 16, 12),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 148,
+                  child: SegmentedButton<QtyMode>(
+                    segments: [
+                      for (final m in QtyMode.values)
+                        ButtonSegment(
+                            value: m, label: Text(kQtyModeLabels[m]!)),
+                    ],
+                    selected: {item.mode},
+                    showSelectedIcon: false,
+                    onSelectionChanged: (v) {
+                      items[index] = item.copyWith(mode: v.first);
+                      onChanged();
+                    },
+                    style: ButtonStyle(
+                      visualDensity: VisualDensity.compact,
+                      textStyle: WidgetStateProperty.all(
+                          const TextStyle(fontSize: 11)),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                SizedBox(
+                  width: 78,
+                  child: TextFormField(
+                    initialValue: '${item.qty}',
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    decoration: const InputDecoration(
+                      isDense: true,
+                      suffixText: 'pcs',
+                    ),
+                    onChanged: (v) {
+                      final n = int.tryParse(v.trim()) ?? 0;
+                      if (n < 1) return;
+                      items[index] = item.copyWith(qty: n);
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
       ],
     );
   }
 }
+
 
 class _MinPurchaseFields extends StatelessWidget {
   final TextEditingController controller;

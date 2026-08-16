@@ -52,6 +52,76 @@ const kMinCompareLabels = {
   MinCompare.moreThan: '> (harus lebih dari)',
 };
 
+/// Bagaimana jumlah sebuah menu dibandingkan.
+enum QtyMode {
+  /// Minimal sekian — lebih banyak tetap dapat.
+  atLeast,
+
+  /// Tepat sekian — kurang maupun lebih tidak dapat.
+  ///
+  /// Dipakai promo paket yang isinya sudah pasti: "paket 2 ayam + 1 nasi"
+  /// dengan tiga ayam bukan lagi paket itu, dan kalau tetap diberi
+  /// potongan, harga paketnya jadi tidak berarti apa-apa.
+  exactly,
+}
+
+const _qtyModeDb = {
+  QtyMode.atLeast: 'at_least',
+  QtyMode.exactly: 'exactly',
+};
+
+const kQtyModeLabels = {
+  QtyMode.atLeast: 'Minimal',
+  QtyMode.exactly: 'Tepat',
+};
+
+/// Satu menu di dalam sebuah promo, berikut syarat jumlahnya sendiri.
+///
+/// Syaratnya menempel di menunya, bukan di promonya. Satu angka untuk
+/// seluruh promo terdengar lebih sederhana sampai dipakai: "beli 2"
+/// pada promo berisi Nasi Goreng dan Es Teh akan lolos oleh keranjang
+/// berisi dua Nasi Goreng saja — paket yang dijanjikan spanduknya tidak
+/// pernah benar-benar dibeli, tapi potongannya tetap keluar.
+class DiscountItem {
+  final String productId;
+  final int qty;
+  final QtyMode mode;
+
+  const DiscountItem({
+    required this.productId,
+    this.qty = 1,
+    this.mode = QtyMode.atLeast,
+  });
+
+  /// Terpenuhi oleh [ordered] buah menu ini di keranjang.
+  bool satisfiedBy(int ordered) =>
+      mode == QtyMode.exactly ? ordered == qty : ordered >= qty;
+
+  String get label =>
+      mode == QtyMode.exactly ? 'tepat $qty pcs' : 'min $qty pcs';
+
+  Map<String, dynamic> toMap() => {
+        'product_id': productId,
+        'qty': qty,
+        'mode': _qtyModeDb[mode],
+      };
+
+  factory DiscountItem.fromMap(Map<String, dynamic> map) => DiscountItem(
+        productId: map['product_id'].toString(),
+        qty: (map['qty'] as num?)?.toInt() ?? 1,
+        mode: _qtyModeDb.entries
+            .firstWhere((e) => e.value == map['mode'],
+                orElse: () => _qtyModeDb.entries.first)
+            .key,
+      );
+
+  DiscountItem copyWith({int? qty, QtyMode? mode}) => DiscountItem(
+        productId: productId,
+        qty: qty ?? this.qty,
+        mode: mode ?? this.mode,
+      );
+}
+
 /// Satu aturan diskon milik sebuah resto.
 class Discount {
   final String id;
@@ -64,27 +134,18 @@ class Discount {
   /// Persen (1–100) atau rupiah, tergantung [kind].
   final int value;
 
-  /// Id menu yang kena diskon — hanya untuk [DiscountBasis.products].
-  /// Boleh lebih dari satu: itulah cara bundling dinyatakan.
-  final List<String> productIds;
+  /// Menu yang kena diskon — hanya untuk [DiscountBasis.products].
+  /// Boleh lebih dari satu: itulah cara bundling dinyatakan, dan tiap
+  /// menu membawa syarat jumlahnya sendiri.
+  final List<DiscountItem> items;
+
+  /// Id menunya saja. Masih ditulis ke database supaya baris ini tetap
+  /// terbaca oleh versi aplikasi yang lebih lama.
+  List<String> get productIds => [for (final i in items) i.productId];
 
   /// Ambang minimum belanja — hanya untuk [DiscountBasis.minPurchase].
   final int minPurchase;
   final MinCompare compare;
-
-  /// Berapa banyak menunya harus dipesan supaya promonya berlaku.
-  ///
-  /// "Beli 2 Mont Blanc diskon 30%" — tanpa ini, promo yang dimaksud
-  /// untuk pembelian kedua ikut terpakai oleh yang membeli satu, dan
-  /// alasan promonya ada (mendorong orang menambah satu lagi) hilang.
-  ///
-  /// Dihitung per menu, bukan per keranjang: pada bundling, tiap menu
-  /// yang ikut harus mencapai jumlah ini sendiri. Dua Mont Blanc tidak
-  /// menutupi Nasi Goreng yang tidak dipesan.
-  ///
-  /// Bawaannya 1 — promo lama yang tidak menyebut jumlah tetap berlaku
-  /// persis seperti sebelumnya.
-  final int minQty;
 
   final DateTime? startsOn;
   final DateTime? endsOn;
@@ -100,10 +161,9 @@ class Discount {
     required this.basis,
     required this.kind,
     required this.value,
-    this.productIds = const [],
+    this.items = const [],
     this.minPurchase = 0,
     this.compare = MinCompare.atLeast,
-    this.minQty = 1,
     this.startsOn,
     this.endsOn,
     this.active = true,
@@ -144,9 +204,9 @@ class Discount {
         'kind': _kindDb[kind],
         'value': value,
         'product_ids': productIds,
+        'product_rules': [for (final i in items) i.toMap()],
         'min_purchase': minPurchase,
         'compare_mode': _compareDb[compare],
-        'min_qty': minQty,
         'starts_on': startsOn?.toIso8601String().split('T').first,
         'ends_on': endsOn?.toIso8601String().split('T').first,
         'active': active,
@@ -166,22 +226,39 @@ class Discount {
                 orElse: () => _kindDb.entries.first)
             .key,
         value: (map['value'] as num?)?.toInt() ?? 0,
-        productIds: [
-          for (final id in (map['product_ids'] as List<dynamic>? ?? const []))
-            id.toString(),
-        ],
+        items: _items(map),
         minPurchase: (map['min_purchase'] as num?)?.toInt() ?? 0,
         compare: _compareDb.entries
             .firstWhere((e) => e.value == map['compare_mode'],
                 orElse: () => _compareDb.entries.first)
             .key,
-        minQty: (map['min_qty'] as num?)?.toInt() ?? 1,
         startsOn: _date(map['starts_on']),
         endsOn: _date(map['ends_on']),
         active: map['active'] != false,
         createdBy: map['created_by'] as String?,
         createdAt: DateTime.parse(map['created_at'] as String),
       );
+
+  /// Menu berikut syarat jumlahnya.
+  ///
+  /// Baris yang ditulis versi lama tidak punya product_rules — cuma
+  /// daftar id, dan mungkin satu min_qty untuk seluruh promo. Keduanya
+  /// dibaca sebagai aturan per menu supaya promo lama tetap berarti
+  /// persis seperti saat dibuat.
+  static List<DiscountItem> _items(Map<String, dynamic> map) {
+    final rules = map['product_rules'] as List<dynamic>?;
+    if (rules != null && rules.isNotEmpty) {
+      return [
+        for (final r in rules)
+          DiscountItem.fromMap(Map<String, dynamic>.from(r as Map)),
+      ];
+    }
+    final qty = (map['min_qty'] as num?)?.toInt() ?? 1;
+    return [
+      for (final id in (map['product_ids'] as List<dynamic>? ?? const []))
+        DiscountItem(productId: id.toString(), qty: qty),
+    ];
+  }
 
   static DateTime? _date(Object? v) =>
       v == null ? null : DateTime.parse(v.toString());
@@ -191,10 +268,9 @@ class Discount {
     DiscountBasis? basis,
     DiscountKind? kind,
     int? value,
-    List<String>? productIds,
+    List<DiscountItem>? items,
     int? minPurchase,
     MinCompare? compare,
-    int? minQty,
     Object? startsOn = _unset,
     Object? endsOn = _unset,
     bool? active,
@@ -206,10 +282,9 @@ class Discount {
         basis: basis ?? this.basis,
         kind: kind ?? this.kind,
         value: value ?? this.value,
-        productIds: productIds ?? this.productIds,
+        items: items ?? this.items,
         minPurchase: minPurchase ?? this.minPurchase,
         compare: compare ?? this.compare,
-        minQty: minQty ?? this.minQty,
         startsOn:
             identical(startsOn, _unset) ? this.startsOn : startsOn as DateTime?,
         endsOn: identical(endsOn, _unset) ? this.endsOn : endsOn as DateTime?,
@@ -240,14 +315,13 @@ class AppliedDiscount {
 /// diskon berbasis menu supaya potongannya hanya mengenai menu yang
 /// memang ikut promo, bukan seluruh tagihan.
 ///
-/// [qtyOf] mengembalikan jumlah menu itu di keranjang — dipakai promo
-/// yang mensyaratkan pembelian lebih dari satu.
+/// [qtyOf] mengembalikan jumlah menu itu di keranjang, nol kalau tidak
+/// ada — dipakai memeriksa syarat jumlah tiap menu.
 AppliedDiscount? bestDiscountFor({
   required List<Discount> discounts,
   required int total,
   required int Function(String productId) subtotalOf,
   required int Function(String productId) qtyOf,
-  required Iterable<String> productIds,
   DateTime? now,
 }) {
   AppliedDiscount? terbaik;
@@ -260,17 +334,23 @@ AppliedDiscount? bestDiscountFor({
       if (!d.meetsMinimum(total)) continue;
       potongan = d.amountFor(total);
     } else {
-      // Jumlahnya diperiksa per menu. Promo "beli 2" yang lolos karena
-      // keranjangnya kebetulan berisi dua menu berbeda bukan promo yang
-      // dijanjikan spanduknya.
-      final kena = productIds
-          .where((id) => d.productIds.contains(id) && qtyOf(id) >= d.minQty);
-      if (kena.isEmpty) continue;
+      if (d.items.isEmpty) continue;
+
+      // Seluruh menu yang disebut promo harus terpenuhi, bukan salah
+      // satunya. Sebagian-cukup terdengar murah hati sampai dilihat apa
+      // artinya: promo "Nasi Goreng + Es Teh" akan keluar untuk
+      // keranjang berisi dua Nasi Goreng dan segelas kopi — paket yang
+      // dijanjikan spanduknya tidak pernah benar-benar dibeli, tapi
+      // restonya tetap membayar potongannya.
+      final lengkap = d.items.every((i) => i.satisfiedBy(qtyOf(i.productId)));
+      if (!lengkap) continue;
+
       // Bundling: semua menu yang ikut promo dijumlahkan dulu, baru
       // dipotong. Memotong tiap baris sendiri-sendiri membuat diskon
       // rupiah tetap (misal "potong 10.000") terkalikan sebanyak menu
       // yang ikut.
-      final dasar = kena.fold<int>(0, (sum, id) => sum + subtotalOf(id));
+      final dasar =
+          d.items.fold<int>(0, (sum, i) => sum + subtotalOf(i.productId));
       potongan = d.amountFor(dasar);
     }
 

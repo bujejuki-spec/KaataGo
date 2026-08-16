@@ -9,10 +9,9 @@ Discount _d({
   DiscountBasis basis = DiscountBasis.products,
   DiscountKind kind = DiscountKind.percent,
   int value = 10,
-  List<String> productIds = const ['p1'],
+  List<DiscountItem> items = const [DiscountItem(productId: 'p1')],
   int minPurchase = 0,
   MinCompare compare = MinCompare.atLeast,
-  int minQty = 1,
   DateTime? startsOn,
   DateTime? endsOn,
   bool active = true,
@@ -24,10 +23,9 @@ Discount _d({
       basis: basis,
       kind: kind,
       value: value,
-      productIds: productIds,
+      items: items,
       minPurchase: minPurchase,
       compare: compare,
-      minQty: minQty,
       startsOn: startsOn,
       endsOn: endsOn,
       active: active,
@@ -103,7 +101,7 @@ void main() {
       final bundling = _d(
         kind: DiscountKind.amount,
         value: 10000,
-        productIds: ['p1', 'p2'],
+        items: const [DiscountItem(productId: 'p1'), DiscountItem(productId: 'p2')],
       );
 
       final hasil = bestDiscountFor(
@@ -111,7 +109,6 @@ void main() {
         total: 80000,
         subtotalOf: subtotal,
         qtyOf: (_) => 1,
-        productIds: {'p1', 'p2'},
         now: _hariIni,
       );
 
@@ -119,14 +116,13 @@ void main() {
     });
 
     test('diskon menu hanya mengenai menu yang ikut promo', () {
-      final d = _d(value: 50, productIds: ['p2']);
+      final d = _d(value: 50, items: const [DiscountItem(productId: 'p2')]);
 
       final hasil = bestDiscountFor(
         discounts: [d],
         total: 80000,
         subtotalOf: subtotal,
         qtyOf: (_) => 1,
-        productIds: {'p1', 'p2'},
         now: _hariIni,
       );
 
@@ -137,7 +133,7 @@ void main() {
     test('hanya satu diskon yang dipakai — yang paling menguntungkan', () {
       // Menumpuk terdengar murah hati sampai dua promo yang kebetulan
       // berlaku bersamaan melebihi harga barangnya.
-      final kecil = _d(id: 'a', value: 10, productIds: ['p1']);
+      final kecil = _d(id: 'a', value: 10);
       final besar = _d(
         id: 'b',
         basis: DiscountBasis.minPurchase,
@@ -150,7 +146,6 @@ void main() {
         total: 80000,
         subtotalOf: subtotal,
         qtyOf: (_) => 1,
-        productIds: {'p1'},
         now: _hariIni,
       );
 
@@ -160,11 +155,10 @@ void main() {
 
     test('tidak ada yang cocok berarti tidak ada potongan', () {
       final hasil = bestDiscountFor(
-        discounts: [_d(productIds: ['p9'])],
+        discounts: [_d(items: const [DiscountItem(productId: 'p9')])],
         total: 80000,
         subtotalOf: subtotal,
         qtyOf: (_) => 1,
-        productIds: {'p1'},
         now: _hariIni,
       );
       expect(hasil, isNull);
@@ -220,7 +214,6 @@ void main() {
         total: 50000,
         subtotalOf: subtotal,
         qtyOf: (_) => 1,
-        productIds: {'p1'},
         now: _hariIni,
       );
 
@@ -236,7 +229,6 @@ void main() {
         total: 50000,
         subtotalOf: subtotal,
         qtyOf: (_) => 1,
-        productIds: {'p1'},
         now: _hariIni,
       );
 
@@ -244,77 +236,156 @@ void main() {
     });
   });
 
-  group('syarat jumlah pembelian', () {
-    // "Beli 2 Mont Blanc diskon 30%". Tanpa syarat jumlah, promo yang
-    // dimaksudkan untuk mendorong pembelian kedua ikut terpakai oleh
-    // yang membeli satu — dan alasan promonya ada hilang.
-    int subtotal(String id) => {'p1': 50000, 'p2': 30000}[id] ?? 0;
+  group('syarat jumlah per menu', () {
+    int harga(String id) => {'p1': 50000, 'p2': 30000, 'p3': 5000}[id] ?? 0;
 
     AppliedDiscount? jalankan(Discount d, Map<String, int> qty) =>
         bestDiscountFor(
           discounts: [d],
-          total: 80000,
-          subtotalOf: (id) => subtotal(id) * (qty[id] ?? 0),
+          total: 200000,
+          subtotalOf: (id) => harga(id) * (qty[id] ?? 0),
           qtyOf: (id) => qty[id] ?? 0,
-          productIds: qty.keys,
           now: _hariIni,
         );
 
-    test('beli satu belum dapat kalau syaratnya dua', () {
-      expect(jalankan(_d(value: 30, minQty: 2), {'p1': 1}), isNull);
+    Discount promo(List<DiscountItem> items, {int value = 30}) =>
+        _d(value: value, items: items);
+
+    test('minimal: beli satu belum dapat kalau syaratnya dua', () {
+      final d = promo(const [DiscountItem(productId: 'p1', qty: 2)]);
+      expect(jalankan(d, {'p1': 1}), isNull);
     });
 
-    test('beli dua dapat, dihitung dari seluruh baris', () {
-      final hasil = jalankan(_d(value: 30, minQty: 2), {'p1': 2});
-      expect(hasil!.amount, 30000); // 30% dari 100.000
+    test('minimal: beli dua dapat, dan lebih dari dua tetap dapat', () {
+      final d = promo(const [DiscountItem(productId: 'p1', qty: 2)]);
+      expect(jalankan(d, {'p1': 2})!.amount, 30000);
+      expect(jalankan(d, {'p1': 3})!.amount, 45000);
     });
 
-    test('lebih dari syaratnya tetap dapat', () {
-      final hasil = jalankan(_d(value: 30, minQty: 2), {'p1': 3});
-      expect(hasil!.amount, 45000);
+    test('tepat: lebih banyak justru tidak dapat', () {
+      // Paket yang isinya sudah pasti. Tiga ayam bukan lagi paket itu,
+      // dan kalau tetap diberi potongan, harga paketnya tidak berarti
+      // apa-apa.
+      final d = promo(const [
+        DiscountItem(productId: 'p1', qty: 2, mode: QtyMode.exactly),
+      ]);
+      expect(jalankan(d, {'p1': 1}), isNull);
+      expect(jalankan(d, {'p1': 2})!.amount, 30000);
+      expect(jalankan(d, {'p1': 3}), isNull);
     });
 
-    test('jumlahnya dihitung per menu, bukan per keranjang', () {
-      // Dua menu berbeda masing-masing satu tidak memenuhi "beli 2".
-      // Kalau dijumlahkan lintas menu, keranjang apa pun berisi dua
-      // barang akan lolos — bukan itu yang dijanjikan spanduknya.
-      expect(jalankan(_d(value: 30, minQty: 2, productIds: ['p1', 'p2']),
-          {'p1': 1, 'p2': 1}), isNull);
+    group('bundling harus lengkap', () {
+      // Inilah yang bocor sebelumnya: satu angka jumlah untuk seluruh
+      // promo, dan cukup salah satu menunya terpenuhi. Keranjang berisi
+      // 2 nasi goreng, 1 teh manis, dan 1 kopi lolos promo yang
+      // sebenarnya menjanjikan paket lain sama sekali.
+      final paket = promo(const [
+        DiscountItem(productId: 'p1', qty: 2),
+        DiscountItem(productId: 'p2', qty: 1),
+      ]);
+
+      test('kurang satu menu berarti tidak berlaku sama sekali', () {
+        expect(jalankan(paket, {'p1': 2}), isNull);
+      });
+
+      test('menu lain di keranjang tidak menggantikan yang kurang', () {
+        expect(jalankan(paket, {'p1': 2, 'p3': 5}), isNull);
+      });
+
+      test('jumlahnya kurang di salah satu menu juga menggugurkan', () {
+        expect(jalankan(paket, {'p1': 1, 'p2': 1}), isNull);
+      });
+
+      test('lengkap semuanya baru dapat', () {
+        // 30% dari (2 × 50.000 + 1 × 30.000).
+        expect(jalankan(paket, {'p1': 2, 'p2': 1})!.amount, 39000);
+      });
+
+      test('menu di luar promo tidak ikut dipotong', () {
+        final hasil = jalankan(paket, {'p1': 2, 'p2': 1, 'p3': 10});
+        expect(hasil!.amount, 39000);
+      });
+
+      test('mencampur minimal dan tepat dalam satu paket', () {
+        final campur = promo(const [
+          DiscountItem(productId: 'p1', qty: 2, mode: QtyMode.exactly),
+          DiscountItem(productId: 'p2', qty: 1),
+        ]);
+        expect(jalankan(campur, {'p1': 3, 'p2': 1}), isNull);
+        expect(jalankan(campur, {'p1': 2, 'p2': 4})!.amount, 66000);
+      });
     });
 
-    test('yang memenuhi ikut, yang belum tidak menumpang', () {
-      final hasil = jalankan(
-        _d(value: 50, minQty: 2, productIds: ['p1', 'p2']),
-        {'p1': 2, 'p2': 1},
-      );
-      // Hanya p1 yang masuk hitungan: 50% dari 100.000.
-      expect(hasil!.amount, 50000);
-    });
-
-    test('bawaannya satu — promo lama tidak berubah artinya', () {
-      expect(_d().minQty, 1);
-      expect(jalankan(_d(value: 10), {'p1': 1})!.amount, 5000);
-    });
-
-    test('diskon minimum belanja tidak terpengaruh jumlah', () {
+    test('diskon minimum belanja tidak terpengaruh jumlah menu', () {
       final d = _d(
         basis: DiscountBasis.minPurchase,
         minPurchase: 50000,
         value: 10,
-        minQty: 9,
+        items: const [],
       );
-      expect(jalankan(d, {'p1': 1})!.amount, 8000);
+      expect(jalankan(d, {'p1': 1})!.amount, 20000);
     });
 
-    test('jumlahnya ikut tersimpan dan terbaca kembali', () {
-      final map = _d(minQty: 3).toMap();
-      expect(map['min_qty'], 3);
-      expect(Discount.fromMap({...map, 'created_at': _hariIni.toIso8601String()}).minQty, 3);
+    test('promo tanpa satu pun menu tidak pernah mengenai apa pun', () {
+      expect(jalankan(promo(const []), {'p1': 9}), isNull);
     });
 
-    test('baris lama tanpa kolom jumlah dibaca sebagai satu', () {
-      final map = _d().toMap()..remove('min_qty');
-      expect(Discount.fromMap({...map, 'created_at': _hariIni.toIso8601String()}).minQty, 1);
+    group('tersimpan dan terbaca kembali', () {
+      Discount baca(Map<String, dynamic> map) => Discount.fromMap(
+          {...map, 'created_at': _hariIni.toIso8601String()});
+
+      test('aturan tiap menu ikut tersimpan', () {
+        final map = promo(const [
+          DiscountItem(productId: 'p1', qty: 2, mode: QtyMode.exactly),
+          DiscountItem(productId: 'p2', qty: 3),
+        ]).toMap();
+
+        final lagi = baca(map);
+        expect(lagi.items.first.qty, 2);
+        expect(lagi.items.first.mode, QtyMode.exactly);
+        expect(lagi.items.last.qty, 3);
+        expect(lagi.items.last.mode, QtyMode.atLeast);
+      });
+
+      test('daftar id polos tetap ditulis untuk versi aplikasi lama', () {
+        final map = promo(const [
+          DiscountItem(productId: 'p1', qty: 2),
+          DiscountItem(productId: 'p2'),
+        ]).toMap();
+        expect(map['product_ids'], ['p1', 'p2']);
+      });
+
+      test('baris lama tanpa aturan dibaca sebagai minimal satu', () {
+        final lagi = baca({
+          'id': 'x',
+          'resto_id': 'r1',
+          'name': 'Promo lama',
+          'basis': 'products',
+          'kind': 'percent',
+          'value': 10,
+          'product_ids': ['p1', 'p2'],
+        });
+        expect(lagi.items.map((i) => i.productId), ['p1', 'p2']);
+        expect(lagi.items.every((i) => i.qty == 1), isTrue);
+        expect(lagi.items.every((i) => i.mode == QtyMode.atLeast), isTrue);
+      });
+
+      test('baris dari 1.45.3 memakai min_qty untuk seluruh menunya', () {
+        // Versi itu menyimpan satu angka untuk seluruh promo. Dibaca
+        // sebagai syarat tiap menu — arti yang paling dekat dengan apa
+        // yang dimaksud orang yang membuatnya.
+        final lagi = baca({
+          'id': 'x',
+          'resto_id': 'r1',
+          'name': 'Beli 2',
+          'basis': 'products',
+          'kind': 'percent',
+          'value': 30,
+          'product_ids': ['p1'],
+          'min_qty': 2,
+        });
+        expect(lagi.items.single.qty, 2);
+      });
     });
   });
 
