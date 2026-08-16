@@ -152,8 +152,53 @@ angka.
 
 ## 4. Model Data
 
-27 tabel. Yang di bawah ini yang paling sering disentuh; sisanya
-pendukung.
+27 tabel, seluruhnya di skema `public`.
+
+### 4.0 Daftar lengkap
+
+| Tabel | Untuk apa |
+|---|---|
+| `restaurants` | Induk semuanya |
+| `employees` | Karyawan berikut peran dan restonya |
+| `customers` | Profil pelanggan yang punya akun |
+| `sessions` | Sesi meja hasil pindai QR |
+| `products` | Menu |
+| `categories` | Kategori menu |
+| `level_groups` | Kelompok varian (Level Pedas, Ukuran, …) |
+| `orders` | Pesanan — pusat segalanya |
+| `payment_charges` | Tagihan QRIS di sisi penyedia |
+| `discounts` | Aturan promo |
+| `promo_banners` | Banner di layar menu pelanggan |
+| `settings` | Tarif pajak dan setelan resto |
+| `resto_payment_accounts` | QRIS, rekening transfer, sub-akun gateway |
+| `gl_accounts` | Nomor akun per resto per jenis |
+| `gl_journal_entries` | Jurnal — satu baris satu pergerakan |
+| `expenses` | Pengeluaran |
+| `expense_gl_accounts` | Akun tujuan tiap jenis pengeluaran |
+| `petty_cash_entries` | Kas kecil berikut alur persetujuannya |
+| `cash_deposits` | Setoran tunai ke rekening |
+| `gateway_settlements` | Pencairan penyedia berikut potongan MDR |
+| `app_announcements` | Pengumuman — versi aplikasi maupun promo resto |
+| `inbox_states` | Penanda sudah dibaca / terhapus, per orang |
+| `device_tokens` | Token FCM tiap perangkat |
+| `push_config` | Kunci dan setelan pengirim push |
+| `push_outbox` | Antrean notifikasi yang menunggu dikirim |
+| `mail_requests` | Permintaan kirim struk lewat email |
+| `applied_migrations` | Penanda perbaikan data sekali-jalan — bukan catatan migrasi umum |
+
+Enam di antaranya tidak menyimpan data resto sama sekali —
+`device_tokens`, `push_config`, `push_outbox`, `mail_requests`,
+`inbox_states`, `applied_migrations` adalah perkakas: antrean, token,
+dan penanda. Membedakannya sejak awal memudahkan saat memutuskan mana
+yang boleh dikosongkan tanpa kehilangan apa pun.
+
+> **`applied_migrations` mudah disalahpahami dari namanya.** Ia tidak
+> mencatat berkas SQL mana yang sudah dijalankan — lihat §11. Isinya
+> sejauh ini satu baris, penanda bahwa satu perbaikan data sekali-jalan
+> (`flip_transfer_journal_direction`) sudah dikerjakan dan tidak boleh
+> dikerjakan lagi. Perbaikan yang membalik arah jurnal akan membalikkannya
+> kembali kalau dijalankan dua kali, dan berkasnya memang dirancang untuk
+> dijalankan berulang.
 
 ### 4.1 Inti
 
@@ -477,6 +522,13 @@ dijadikan penanda.
 Berkas SQL di `supabase/`, dijalankan manual lewat SQL Editor.
 `scripts/gabung_sql.sh` menyatukannya jadi `JALANKAN-INI.sql` (27
 bagian) dengan urutan yang benar. Seluruhnya aman dijalankan berulang.
+
+Aman-diulang itu ditanggung tiap berkasnya sendiri — `if not exists`,
+`or replace`, `on conflict do nothing` — bukan oleh catatan pusat yang
+melacak apa yang sudah jalan. Tidak ada catatan semacam itu. Satu-satunya
+pengecualian adalah perbaikan yang tidak bisa dibuat idempoten dengan
+cara itu, dan hanya perbaikan seperti itulah yang memakai penanda di
+`applied_migrations`.
 
 ### 11.1 Aturan daftar nilai batasan
 
