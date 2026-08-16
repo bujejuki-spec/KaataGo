@@ -1,7 +1,7 @@
 // KaataGo — pengirim notifikasi push.
 //
-// Dipanggil Database Webhook setiap kali sebuah baris masuk ke
-// `push_outbox`. Tugasnya tiga: menentukan perangkat mana yang pantas
+// Dipanggil trigger `push_outbox` lewat pg_net setiap kali sebuah baris
+// masuk ke sana. Tugasnya tiga: menentukan perangkat mana yang pantas
 // dikabari, mengirimnya ke FCM, lalu menuliskan hasilnya kembali ke
 // baris itu.
 //
@@ -12,7 +12,10 @@
 // selalu bisa dijawab dengan satu query.
 //
 // Deploy:
-//   supabase functions deploy send-push --project-ref xizpwtycczigjhzxegen
+//   supabase functions deploy send-push --project-ref xizpwtycczigjhzxegen --no-verify-jwt
+//
+// --no-verify-jwt wajib: pemanggilnya database, yang tidak punya sesi
+// pengguna. Yang menjaga pintunya adalah PUSH_HOOK_SECRET di bawah.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 
@@ -204,6 +207,19 @@ async function send(token: string, row: OutboxRow, bearer: string) {
 }
 
 Deno.serve(async (req) => {
+  // Fungsinya di-deploy tanpa verifikasi JWT supaya bisa dipanggil
+  // trigger database, dan itu berarti siapa pun yang tahu URL-nya bisa
+  // memanggilnya juga — termasuk mengirim notifikasi palsu ke perangkat
+  // pengguna. Kunci bersama ini yang menutupnya.
+  //
+  // Kalau secret-nya belum diset, pemeriksaannya dilewati: memaksakannya
+  // akan mematikan pengiriman yang sudah berjalan hanya karena satu
+  // langkah pemasangan belum dilakukan.
+  const expected = Deno.env.get("PUSH_HOOK_SECRET");
+  if (expected && req.headers.get("x-kaata-hook-secret") !== expected) {
+    return new Response("ditolak", { status: 401 });
+  }
+
   let row: OutboxRow | null = null;
   try {
     const payload = await req.json();
