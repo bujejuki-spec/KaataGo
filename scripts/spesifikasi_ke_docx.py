@@ -12,6 +12,7 @@ serta penegasan tebal/miring/kode di dalam baris.
 
 import os
 import re
+import sys
 
 from docx import Document
 from docx.enum.section import WD_SECTION
@@ -24,12 +25,20 @@ from docx.shared import Cm, Pt, RGBColor
 # Jalur dihitung dari letak berkas ini, bukan ditulis mutlak — supaya
 # repo yang di-clone ke folder lain tetap bisa membangun dokumennya.
 #
-#   /usr/bin/python3 scripts/spesifikasi_ke_docx.py
+#   /usr/bin/python3 scripts/spesifikasi_ke_docx.py [nama-berkas-md]
+#
+# Tanpa argumen: membangun SPESIFIKASI-KAATAGO.md. Judul sampul dan
+# keterangan versinya dibaca dari berkas Markdown-nya sendiri, jadi satu
+# skrip ini melayani semua dokumen tanpa perlu disunting tiap kali ada
+# dokumen baru.
 #
 # Butuh: python3 -m pip install --user python-docx
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SRC = os.path.join(REPO, "docs", "SPESIFIKASI-KAATAGO.md")
-OUT = os.path.join(REPO, "docs", "SPESIFIKASI-KAATAGO.docx")
+DOC = sys.argv[1] if len(sys.argv) > 1 else "SPESIFIKASI-KAATAGO.md"
+if not DOC.endswith(".md"):
+    DOC += ".md"
+SRC = os.path.join(REPO, "docs", DOC)
+OUT = SRC[:-3] + ".docx"
 IMG_ROOT = os.path.dirname(SRC)
 
 BRAND = RGBColor(0x4F, 0x46, 0xE5)
@@ -147,8 +156,33 @@ def page_break(doc):
     p.add_run().add_break(WD_BREAK.PAGE)
 
 
+def read_front_matter(path):
+    """Judul, subjudul, dan keterangan versi dari kepala Markdown-nya.
+
+    Dibaca dari berkasnya, bukan ditulis di skrip ini: dokumen kedua yang
+    memaksa skripnya disunting adalah dokumen yang sampulnya akan salah
+    pada perubahan berikutnya.
+    """
+    title, subtitle, meta = "KaataGo", "", []
+    for line in open(path, encoding="utf-8").read().split("\n"):
+        st = line.strip()
+        if st.startswith("# ") and title == "KaataGo":
+            heading = st[2:].strip()
+            if "—" in heading:
+                title, subtitle = [x.strip() for x in heading.split("—", 1)]
+            else:
+                title = heading
+        m = re.match(r"^\*\*(.+?):\*\*\s*(.+)$", st)
+        if m:
+            meta.append((m.group(1), m.group(2)))
+        if st.startswith("## "):
+            break
+    return title, subtitle, meta
+
+
 def build():
     doc = Document()
+    doc_title, doc_subtitle, doc_meta = read_front_matter(SRC)
 
     # ── Gaya dasar ────────────────────────────────────────────────────
     normal = doc.styles["Normal"]
@@ -195,35 +229,26 @@ def build():
 
     p = doc.add_paragraph()
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r = p.add_run("SPECIFICATION DOCUMENT")
+    r = p.add_run(doc_subtitle.upper() or "SPECIFICATION DOCUMENT")
     r.font.size = Pt(15)
     r.bold = True
     r.font.color.rgb = INK
 
-    p = doc.add_paragraph()
-    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r = p.add_run("Functional & Technical Specification")
-    r.font.size = Pt(11.5)
-    r.font.color.rgb = MUTED
+    # Baris kecil di bawah judulnya hanya muncul kalau memang menambah
+    # keterangan. Mengulang nama mereknya persis di bawah nama merek
+    # yang sudah tercetak besar cuma jadi gema.
+    if doc_title and doc_title.lower() != "kaatago":
+        p = doc.add_paragraph()
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        r = p.add_run(doc_title)
+        r.font.size = Pt(11.5)
+        r.font.color.rgb = MUTED
 
-    p = doc.add_paragraph()
-    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    p.paragraph_format.space_before = Pt(30)
-    r = p.add_run("Acuan Pengujian — UAT & Regression")
-    r.font.size = Pt(11)
-    r.bold = True
-    r.font.color.rgb = BRAND
+    doc.add_paragraph().paragraph_format.space_before = Pt(24)
 
     # Kendali dokumen
-    ctrl = [
-        ("Nama Aplikasi", "KaataGo — Kasir & Self-Order untuk Resto"),
-        ("Versi Aplikasi", "1.34.0 (build 72)"),
-        ("Versi Dokumen", "1.0"),
-        ("Tanggal Terbit", "14 Agustus 2026"),
-        ("Status", "Rilis — acuan pengujian"),
-        ("Platform", "Android (Flutter 3.24.5)"),
-        ("Backend", "Supabase — PostgreSQL, Auth, Realtime, RLS"),
-    ]
+    ctrl = [("Nama Aplikasi", "KaataGo — Kasir & Self-Order untuk Resto")]
+    ctrl += doc_meta
     t = doc.add_table(rows=0, cols=2)
     t.style = "Table Grid"
     t.alignment = WD_TABLE_ALIGNMENT.CENTER
@@ -246,7 +271,13 @@ def build():
     # ── Kepala & kaki halaman ─────────────────────────────────────────
     hp = sec.header.paragraphs[0]
     hp.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-    r = hp.add_run("KaataGo — Specification Document  |  v1.34.0")
+    version = next((v for k, v in doc_meta if "Versi Aplikasi" in k), "")
+    r = hp.add_run(
+        "KaataGo — ${}{}".format(
+            doc_subtitle or "Specification Document",
+            "  |  v" + version.split(" ")[0] if version else "",
+        ).replace("$", "")
+    )
     r.font.size = Pt(8.5)
     r.font.color.rgb = MUTED
 
@@ -285,6 +316,7 @@ def build():
     lines = open(SRC, encoding="utf-8").read().split("\n")
     i = 0
     skip_toc = False
+    seen_section = False
 
     while i < len(lines):
         line = lines[i]
@@ -295,7 +327,10 @@ def build():
         if stripped.startswith("# "):
             i += 1
             continue
-        if stripped.startswith(("**Versi aplikasi:**", "**Tanggal:**", "**Status:**")):
+        # Keterangan versi/tanggal/status sudah tercetak di tabel kendali
+        # dokumen pada sampulnya; mengulangnya di badan dokumen membuat
+        # dua tempat yang harus diperbarui bersamaan.
+        if re.match(r"^\*\*[^*]+:\*\*\s", stripped) and not seen_section:
             i += 1
             continue
         if stripped == "## Daftar Isi":
@@ -343,6 +378,7 @@ def build():
             i += 1
             continue
         if stripped.startswith("## "):
+            seen_section = True
             doc.add_heading(clean(stripped[3:]), level=1)
             i += 1
             continue
