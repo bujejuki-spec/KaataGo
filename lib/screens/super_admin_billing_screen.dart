@@ -461,19 +461,30 @@ class _DialogSetelanState extends State<_DialogSetelan> {
               ),
             ),
             const SizedBox(height: 16),
-            // Dibatasi 1–28 supaya artinya sama di bulan mana pun.
-            // "Tanggal 31" tidak ada di Februari, dan menggesernya
-            // diam-diam ke 28 membuat tagihan datang di hari yang tidak
-            // dijanjikan ke restonya.
+            // Tanggal 29–31 boleh dipilih, dan di bulan yang lebih
+            // pendek jatuh di hari terakhirnya — 31 jadi 30 di April,
+            // 28 di Februari biasa, 29 di Februari kabisat.
+            //
+            // Dulu daftarnya berhenti di 28 supaya artinya sama di
+            // bulan mana pun. Itu menghindari pertanyaannya dengan cara
+            // melarang resto memilih tanggal tagihnya sendiri; resto
+            // yang siklus kasnya di akhir bulan terpaksa menagih di
+            // tanggal yang bukan tanggalnya.
             DropdownButtonFormField<int>(
               value: _tanggalTagih,
               decoration: const InputDecoration(
                 labelText: 'Tanggal Tagihan',
-                helperText: 'Tiap bulan pada tanggal ini',
+                helperText: 'Tiap bulan pada tanggal ini. Tanggal 29–31 '
+                    'jatuh di hari terakhir bulan yang lebih pendek.',
+                helperMaxLines: 2,
               ),
               items: [
-                for (var d = 1; d <= 28; d++)
-                  DropdownMenuItem(value: d, child: Text('Tanggal $d')),
+                for (var d = 1; d <= 31; d++)
+                  DropdownMenuItem(
+                    value: d,
+                    child: Text(d > 28 ? 'Tanggal $d (atau akhir bulan)'
+                        : 'Tanggal $d'),
+                  ),
               ],
               onChanged: (v) => setState(() => _tanggalTagih = v ?? 1),
             ),

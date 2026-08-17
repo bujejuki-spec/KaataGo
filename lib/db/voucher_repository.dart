@@ -39,6 +39,7 @@ class VoucherRepository {
     required DateTime expiresOn,
     int minPurchase = 0,
     List<String> restoIds = const [],
+    String? banner,
   }) async {
     final id = await _client.rpc('generate_voucher_batch', params: {
       'p_code': code,
@@ -48,8 +49,27 @@ class VoucherRepository {
       'p_expires_on': expiresOn.toIso8601String().split('T').first,
       'p_min_purchase': minPurchase,
       'p_resto_ids': restoIds,
+      'p_banner': banner,
     });
     return id?.toString() ?? '';
+  }
+
+  /// Membuang batch yang tidak jadi.
+  ///
+  /// Syaratnya ditegakkan server: harus sudah ditutup, dan belum ada
+  /// yang menebus. Dananya dikembalikan ke saldo di sana juga.
+  Future<void> delete(String id) async {
+    await _client.rpc('delete_voucher_batch', params: {'p_id': id});
+  }
+
+  /// Siapa saja yang sudah menebus sebuah batch.
+  Future<List<VoucherClaim>> claimsOf(String voucherId) async {
+    final rows = await _client
+        .from('voucher_claims')
+        .select('*, vouchers(code, name, expires_on, min_purchase, resto_ids)')
+        .eq('voucher_id', voucherId)
+        .order('created_at', ascending: false);
+    return rows.map((r) => VoucherClaim.fromMap(r)).toList();
   }
 
   Future<void> setActive(String id, bool active) async {

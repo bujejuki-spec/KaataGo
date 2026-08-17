@@ -55,6 +55,9 @@ class Voucher {
   final String? createdBy;
   final DateTime createdAt;
 
+  /// Gambar 16:9 yang ikut tampil di kotak masuk pelanggan.
+  final String? bannerBase64;
+
   /// Sudah ditebus berapa — hanya terisi di layar Super Admin.
   final int claimed;
 
@@ -72,8 +75,19 @@ class Voucher {
     this.settledAt,
     this.createdBy,
     required this.createdAt,
+    this.bannerBase64,
     this.claimed = 0,
   });
+
+  bool get punyaBanner => bannerBase64 != null && bannerBase64!.isNotEmpty;
+
+  /// Batch yang sudah ditutup dan belum ada penebusnya boleh dihapus.
+  ///
+  /// Kodenya yang sudah tersebar tidak boleh tiba-tiba hilang, dan
+  /// klaim yang sudah menggantung di tangan orang tidak boleh
+  /// kehilangan induknya — server menegakkan keduanya, ini cuma yang
+  /// menentukan tombolnya menyala atau tidak.
+  bool get bisaDihapus => !active && claimed == 0;
 
   bool get berlakuDiSemuaResto => restoIds.isEmpty;
 
@@ -230,5 +244,6 @@ Voucher voucherFromMap(Map<String, dynamic> map, {int claimed = 0}) => Voucher(
           : DateTime.parse(map['settled_at'].toString()).toLocal(),
       createdBy: map['created_by'] as String?,
       createdAt: DateTime.parse(map['created_at'].toString()).toLocal(),
+      bannerBase64: map['banner_base64'] as String?,
       claimed: claimed,
     );

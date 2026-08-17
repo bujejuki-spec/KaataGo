@@ -181,7 +181,13 @@ class BillingInvoice {
   bool get hasProof => proofBase64 != null && proofBase64!.isNotEmpty;
 
   /// Punya VA yang masih bisa dipakai.
+  ///
+  /// Tagihan yang sudah lunas tidak punya, apa pun isi kolomnya.
+  /// Nomor VA yang masih terpampang di bawah tulisan "Lunas" adalah
+  /// undangan untuk mentransfer dua kali — dan uang kedua itu tidak
+  /// punya tagihan untuk dilunasi.
   bool get vaHidup =>
+      open &&
       vaNumber != null &&
       vaNumber!.isNotEmpty &&
       (vaExpiresAt == null || vaExpiresAt!.isAfter(DateTime.now()));
@@ -237,6 +243,15 @@ class BillingState {
   final int billingDay;
   final bool active;
 
+  /// Kapan tagihan berikutnya jatuh tempo.
+  ///
+  /// Dihitung server, bukan di sini. Aturan pemotongan tanggal akhir
+  /// bulan ada di satu tempat; menyalinnya ke Dart berarti dua
+  /// perhitungan yang suatu saat berpisah, dan yang terlihat adalah
+  /// layar yang menjanjikan tanggal berbeda dari yang benar-benar
+  /// ditagih.
+  final DateTime? nextDueDate;
+
   const BillingState({
     this.locked = false,
     this.dueDate,
@@ -247,6 +262,7 @@ class BillingState {
     this.monthlyPrice = 0,
     this.billingDay = 1,
     this.active = false,
+    this.nextDueDate,
   });
 
   /// Tidak ada yang perlu dikabarkan: gratis, dimatikan, atau tidak ada
@@ -284,6 +300,9 @@ class BillingState {
         monthlyPrice: (map['monthly_price'] as num?)?.toInt() ?? 0,
         billingDay: (map['billing_day'] as num?)?.toInt() ?? 1,
         active: map['active'] == true,
+        nextDueDate: map['next_due_date'] == null
+            ? null
+            : DateTime.parse(map['next_due_date'].toString()),
       );
 }
 

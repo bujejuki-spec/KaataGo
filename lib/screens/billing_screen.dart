@@ -1,3 +1,5 @@
+import '../db/restaurant_repository.dart';
+import '../utils/invoice_pdf.dart';
 import 'dart:convert';
 import 'dart:io';
 
@@ -35,6 +37,8 @@ class _BillingScreenState extends State<BillingScreen> {
   final _repo = BillingRepository();
 
   RestoBilling? _setelan;
+  BillingState? _keadaan;
+  String? _namaResto;
   List<BillingInvoice> _tagihan = const [];
   bool _memuat = true;
   String? _galat;
@@ -56,6 +60,23 @@ class _BillingScreenState extends State<BillingScreen> {
     _muat();
   }
 
+  Future<void> _cetak(BillingInvoice t) async {
+    try {
+      await cetakInvoiceLangganan(
+        invoice: t,
+        restoName: _namaResto ?? widget.restoId,
+        // Harga daftar dan potongannya ditulis terpisah di dokumennya.
+        // Netto tanpa rincian membuat bagian keuangan resto mengira
+        // harganya berubah diam-diam.
+        listPrice: t.amount + t.discountAmount,
+        discountLabel: t.discountName,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      AppToast.show(context, 'Gagal membuat PDF: $e', isError: true);
+    }
+  }
+
   Future<void> _muat() async {
     setState(() {
       _memuat = true;
@@ -64,10 +85,16 @@ class _BillingScreenState extends State<BillingScreen> {
     try {
       final setelan = await _repo.settingsOf(widget.restoId);
       final tagihan = await _repo.invoicesOf(widget.restoId);
+      final keadaan = await _repo.stateOf(widget.restoId);
+      // Namanya untuk dicetak di invoice. Id resto di dokumen resmi
+      // tidak berarti apa-apa bagi yang membacanya.
+      final resto = await RestaurantRepository().getOnce(widget.restoId);
       if (!mounted) return;
       setState(() {
         _setelan = setelan;
         _tagihan = tagihan;
+        _keadaan = keadaan;
+        _namaResto = resto?.name;
         _memuat = false;
       });
     } catch (e) {
@@ -171,6 +198,8 @@ class _BillingScreenState extends State<BillingScreen> {
                           potongan: terbuka.isEmpty
                               ? 0
                               : terbuka.first.discountAmount,
+                          berikutnya: _keadaan?.nextDueDate,
+                          adaTunggakan: terbuka.isNotEmpty,
                         ),
                         const SizedBox(height: 18),
                         if (terbuka.isNotEmpty) ...[
@@ -196,7 +225,13 @@ class _BillingScreenState extends State<BillingScreen> {
                                     color: KaataTheme.mutedOf(context))),
                           )
                         else
-                          for (final t in lunas) _KartuTagihan(invoice: t),
+                          for (final t in lunas)
+                            _KartuTagihan(
+                              invoice: t,
+                              onCetak: t.status == InvoiceStatus.paid
+                                  ? () => _cetak(t)
+                                  : null,
+                            ),
                       ],
                     ),
                   ),
@@ -223,7 +258,18 @@ class _KartuPaket extends StatelessWidget {
   /// Potongan pada tagihan yang sedang berjalan, kalau ada.
   final int potongan;
 
-  const _KartuPaket({this.setelan, this.potongan = 0});
+  /// Jatuh tempo tagihan berikutnya, dihitung server.
+  final DateTime? berikutnya;
+
+  /// Masih ada yang belum lunas.
+  final bool adaTunggakan;
+
+  const _KartuPaket({
+    this.setelan,
+    this.potongan = 0,
+    this.berikutnya,
+    this.adaTunggakan = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -268,6 +314,38 @@ class _KartuPaket extends StatelessWidget {
                         '${_rupiah.format(potongan)} pada tagihan berjalan.' : ''}',
             style: const TextStyle(color: Colors.white70, fontSize: 12),
           ),
+          // Tanggal 31 tidak ada di setiap bulan, jadi menyebut
+          // "tiap tanggal 31" saja membuat orang menunggu tanggal yang
+          // tidak akan datang. Yang ditampilkan tanggal sungguhannya.
+          if (!gratis && berikutnya != null) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.14),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.event_outlined,
+                      size: 15, color: Colors.white70),
+                  const SizedBox(width: 7),
+                  Expanded(
+                    child: Text(
+                      adaTunggakan
+                          ? 'Setelah tagihan berjalan lunas, berikutnya '
+                              '${_tanggal.format(berikutnya!)}.'
+                          : 'Tagihan berikutnya '
+                              '${_tanggal.format(berikutnya!)}.',
+                      style: const TextStyle(
+                          color: Colors.white, fontSize: 11.5),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -279,6 +357,7 @@ class _KartuTagihan extends StatelessWidget {
   final VoidCallback? onBayar;
   final VoidCallback? onMintaVa;
   final VoidCallback? onSimulasi;
+  final VoidCallback? onCetak;
   final bool menerbitkanVa;
 
   const _KartuTagihan({
@@ -286,6 +365,7 @@ class _KartuTagihan extends StatelessWidget {
     this.onBayar,
     this.onMintaVa,
     this.onSimulasi,
+    this.onCetak,
     this.menerbitkanVa = false,
   });
 
@@ -390,6 +470,17 @@ class _KartuTagihan extends StatelessWidget {
           if (invoice.vaHidup) ...[
             const SizedBox(height: 12),
             _KartuVa(invoice: invoice),
+          ],
+          if (onCetak != null) ...[
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: onCetak,
+                icon: const Icon(Icons.picture_as_pdf_outlined, size: 17),
+                label: const Text('Unduh Invoice PDF'),
+              ),
+            ),
           ],
           if (onSimulasi != null) ...[
             const SizedBox(height: 8),

@@ -61,6 +61,10 @@ FILES=(
   product_toppings.sql
   vouchers.sql
   voucher_payouts.sql
+  voucher_announcement.sql
+  voucher_manage.sql
+  market_report.sql
+  billing_due_day.sql
 )
 
 {

@@ -13,8 +13,8 @@ void main() {
   const jumlahMenu = {
     'kasir': 9,
     'admin': 12,
-    'finance': 11,
-    'super_admin': 8,
+    'finance': 12,
+    'super_admin': 9,
     'owner': 19,
   };
 

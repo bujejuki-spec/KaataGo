@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -7,6 +10,7 @@ import '../db/voucher_repository.dart';
 import '../models/restaurant.dart';
 import '../models/voucher.dart';
 import '../theme.dart';
+import '../utils/photo_picker.dart';
 import '../utils/rupiah_input.dart';
 import '../widgets/app_toast.dart';
 import '../widgets/required_label.dart';
@@ -76,6 +80,58 @@ class _VoucherScreenState extends State<VoucherScreen> {
       if (!mounted) return;
       AppToast.show(context, 'Gagal: $e', isError: true);
     }
+  }
+
+  Future<void> _hapus(Voucher v) async {
+    final yakin = await showDialog<bool>(
+      context: context,
+      builder: (d) => AlertDialog(
+        title: const Text('Hapus voucher ini?'),
+        content: Text(
+          'Batch ${v.code} akan dibuang dan '
+          '${_rupiah.format(v.totalAmount)} kembali ke saldo KaataGo. '
+          'Pengumumannya di kotak masuk pelanggan ikut dicabut.',
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(d, false),
+              child: const Text('Batal')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(d, true),
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+    if (yakin != true || !mounted) return;
+    try {
+      await _repo.delete(v.id);
+      if (!mounted) return;
+      AppToast.show(context, 'Voucher ${v.code} dihapus.');
+      _muat();
+    } catch (e) {
+      if (!mounted) return;
+      AppToast.show(context, _pesanGalat(e), isError: true);
+    }
+  }
+
+  /// Alasan penolakan dari server dibiarkan apa adanya.
+  ///
+  /// Server menolak dengan kalimat yang sudah menjelaskan sebabnya —
+  /// "Sudah ada 3 pelanggan yang menebus". Menggantinya dengan "gagal
+  /// menghapus" membuang satu-satunya keterangan yang berguna.
+  String _pesanGalat(Object e) {
+    final teks = '$e';
+    final m = RegExp(r'message: ([^,}]+)').firstMatch(teks);
+    return m?.group(1)?.trim() ?? teks;
+  }
+
+  Future<void> _lihatPenebus(Voucher v) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => _PenebusScreen(voucher: v)),
+    );
   }
 
   Future<void> _terbitkan() async {
@@ -164,6 +220,8 @@ class _VoucherScreenState extends State<VoucherScreen> {
                             voucher: v,
                             resto: _resto,
                             onToggle: () => _tutupBuka(v),
+                            onHapus: () => _hapus(v),
+                            onPenebus: () => _lihatPenebus(v),
                           ),
                       ],
                     ),
@@ -177,11 +235,15 @@ class _Kartu extends StatelessWidget {
   final Voucher voucher;
   final List<Restaurant> resto;
   final VoidCallback onToggle;
+  final VoidCallback onHapus;
+  final VoidCallback onPenebus;
 
   const _Kartu({
     required this.voucher,
     required this.resto,
     required this.onToggle,
+    required this.onHapus,
+    required this.onPenebus,
   });
 
   @override
@@ -206,6 +268,20 @@ class _Kartu extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (voucher.punyaBanner) ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(9),
+              child: AspectRatio(
+                aspectRatio: 16 / 9,
+                child: Image.memory(
+                  base64Decode(voucher.bannerBase64!),
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+          ],
           Row(
             children: [
               Container(
@@ -277,12 +353,32 @@ class _Kartu extends StatelessWidget {
               ),
             ),
           const SizedBox(height: 6),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: voucher.kedaluwarsa ? null : onToggle,
-              child: Text(voucher.active ? 'Tutup' : 'Buka lagi'),
-            ),
+          Row(
+            children: [
+              TextButton.icon(
+                onPressed: onPenebus,
+                icon: const Icon(Icons.group_outlined, size: 16),
+                label: Text('Penebus (${voucher.claimed})',
+                    style: const TextStyle(fontSize: 12.5)),
+                style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 8)),
+              ),
+              const Spacer(),
+              // Menyalakannya untuk batch yang masih berjalan cuma
+              // memindahkan penolakannya dari mata ke server — dan
+              // tombol yang selalu menolak lebih membingungkan
+              // daripada tombol yang jelas mati.
+              if (voucher.bisaDihapus)
+                TextButton(
+                  onPressed: onHapus,
+                  style: TextButton.styleFrom(foregroundColor: Colors.red),
+                  child: const Text('Hapus'),
+                ),
+              TextButton(
+                onPressed: voucher.kedaluwarsa ? null : onToggle,
+                child: Text(voucher.active ? 'Tutup' : 'Buka lagi'),
+              ),
+            ],
           ),
         ],
       ),
@@ -309,12 +405,50 @@ class _FormBatchState extends State<_FormBatch> {
   final _jumlah = TextEditingController(text: '10');
   final _minBelanja = TextEditingController();
   final Set<String> _sasaran = {};
+  final _cariResto = TextEditingController();
+  String? _banner;
   DateTime? _kedaluwarsa;
   bool _menyimpan = false;
 
+  /// Resto yang cocok dengan kata kunci pencarian.
+  ///
+  /// Yang tersaring keluar tetap terpilih kalau sudah dicentang —
+  /// mengetik pencarian bukan pernyataan bahwa yang tidak muncul tidak
+  /// jadi dipakai.
+  List<Restaurant> get _restoTampil {
+    final q = _cariResto.text.trim().toLowerCase();
+    if (q.isEmpty) return widget.resto;
+    return [
+      for (final r in widget.resto)
+        if (r.name.toLowerCase().contains(q)) r,
+    ];
+  }
+
+  /// Semua yang sedang tampil sudah tercentang.
+  bool get _semuaTampilTerpilih =>
+      _restoTampil.isNotEmpty &&
+      _restoTampil.every((r) => _sasaran.contains(r.id));
+
+  /// Mencentang atau melepas seluruh yang sedang tampil.
+  ///
+  /// Terbatas pada yang tampil, bukan seluruh daftar: kalau pencarian
+  /// sedang menyaring, "pilih semua" yang diam-diam ikut mencentang
+  /// resto yang tidak terlihat adalah voucher yang berlaku di tempat
+  /// yang tidak pernah dimaksud.
+  void _pilihSemuaTampil() {
+    setState(() {
+      final tampil = _restoTampil.map((r) => r.id);
+      if (_semuaTampilTerpilih) {
+        _sasaran.removeAll(tampil);
+      } else {
+        _sasaran.addAll(tampil);
+      }
+    });
+  }
+
   @override
   void dispose() {
-    for (final c in [_kode, _nama, _total, _jumlah, _minBelanja]) {
+    for (final c in [_kode, _nama, _total, _jumlah, _minBelanja, _cariResto]) {
       c.dispose();
     }
     super.dispose();
@@ -338,6 +472,14 @@ class _FormBatchState extends State<_FormBatch> {
     return total - (_nilaiPer * n);
   }
 
+  Future<void> _pilihBanner() async {
+    final file = await pickProofPhoto(context);
+    if (file == null || !mounted) return;
+    final bytes = await File(file.path).readAsBytes();
+    if (!mounted) return;
+    setState(() => _banner = base64Encode(bytes));
+  }
+
   Future<void> _simpan() async {
     if (!_formKey.currentState!.validate()) return;
     if (_kedaluwarsa == null) {
@@ -355,6 +497,7 @@ class _FormBatchState extends State<_FormBatch> {
         expiresOn: _kedaluwarsa!,
         minPurchase: parseRupiah(_minBelanja.text) ?? 0,
         restoIds: _sasaran.toList(),
+        banner: _banner,
       );
       if (!mounted) return;
       Navigator.pop(context, true);
@@ -551,6 +694,55 @@ class _FormBatchState extends State<_FormBatch> {
                 ],
               ),
               const SizedBox(height: 8),
+              // Kosong berarti semua resto, dan itu tidak sama dengan
+              // mencentang semuanya satu per satu: daftar yang
+              // dicentang membeku pada resto yang ada hari ini, resto
+              // yang bergabung bulan depan tidak ikut.
+              Row(
+                children: [
+                  Expanded(
+                    child: SizedBox(
+                      height: 40,
+                      child: TextField(
+                        controller: _cariResto,
+                        onChanged: (_) => setState(() {}),
+                        style: const TextStyle(fontSize: 13.5),
+                        decoration: InputDecoration(
+                          isDense: true,
+                          hintText: 'Cari resto',
+                          prefixIcon: const Icon(Icons.search, size: 18),
+                          suffixIcon: _cariResto.text.isEmpty
+                              ? null
+                              : IconButton(
+                                  icon: const Icon(Icons.close, size: 16),
+                                  onPressed: () => setState(
+                                      () => _cariResto.clear()),
+                                ),
+                          contentPadding:
+                              const EdgeInsets.symmetric(horizontal: 10),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  TextButton(
+                    onPressed:
+                        _restoTampil.isEmpty ? null : _pilihSemuaTampil,
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      minimumSize: const Size(0, 40),
+                    ),
+                    child: Text(
+                      _semuaTampilTerpilih ? 'Lepas semua' : 'Pilih semua',
+                      style: const TextStyle(fontSize: 12.5),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
               Container(
                 constraints: const BoxConstraints(maxHeight: 240),
                 decoration: BoxDecoration(
@@ -560,7 +752,19 @@ class _FormBatchState extends State<_FormBatch> {
                 child: ListView(
                   shrinkWrap: true,
                   children: [
-                    for (final r in widget.resto)
+                    if (_restoTampil.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 18),
+                        child: Center(
+                          child: Text(
+                            'Tidak ada resto bernama itu',
+                            style: TextStyle(
+                                fontSize: 12.5,
+                                color: KaataTheme.mutedOf(context)),
+                          ),
+                        ),
+                      ),
+                    for (final r in _restoTampil)
                       CheckboxListTile(
                         dense: true,
                         value: _sasaran.contains(r.id),
@@ -577,6 +781,63 @@ class _FormBatchState extends State<_FormBatch> {
                   ],
                 ),
               ),
+              const SizedBox(height: 18),
+              const Text('Banner 16:9 (opsional)',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+              const SizedBox(height: 4),
+              Text(
+                'Ikut tampil di Kotak Masuk pelanggan bersama kabar '
+                'vouchernya.',
+                style: TextStyle(
+                    fontSize: 11.5, color: KaataTheme.mutedOf(context)),
+              ),
+              const SizedBox(height: 8),
+              if (_banner == null)
+                OutlinedButton.icon(
+                  onPressed: _pilihBanner,
+                  icon: const Icon(Icons.add_photo_alternate_outlined,
+                      size: 18),
+                  label: const Text('Pilih Gambar'),
+                  style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(48)),
+                )
+              else
+                Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      // Dipotong ke 16:9 di sini juga, supaya yang
+                      // terlihat sekarang sama dengan yang nanti
+                      // muncul di kotak masuk — pratinjau yang berbeda
+                      // dari hasilnya bukan pratinjau.
+                      child: AspectRatio(
+                        aspectRatio: 16 / 9,
+                        child: Image.memory(
+                          base64Decode(_banner!),
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: 6,
+                      right: 6,
+                      child: Material(
+                        color: Colors.black54,
+                        shape: const CircleBorder(),
+                        child: InkWell(
+                          customBorder: const CircleBorder(),
+                          onTap: () => setState(() => _banner = null),
+                          child: const Padding(
+                            padding: EdgeInsets.all(6),
+                            child: Icon(Icons.close,
+                                color: Colors.white, size: 18),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               const SizedBox(height: 22),
               SizedBox(
                 height: 48,
@@ -605,4 +866,203 @@ class _FormBatchState extends State<_FormBatch> {
       ),
     );
   }
+}
+
+/// Siapa saja yang sudah menebus sebuah batch, dan sampai mana
+/// vouchernya.
+///
+/// Yang ditanya Super Admin biasanya bukan "berapa yang menebus" —
+/// angka itu sudah ada di kartunya — melainkan berapa yang benar-benar
+/// dipakai. Selisih antara keduanya adalah uang yang masih menggantung
+/// dan bisa kembali sendiri kalau sampai hangus.
+class _PenebusScreen extends StatefulWidget {
+  final Voucher voucher;
+
+  const _PenebusScreen({required this.voucher});
+
+  @override
+  State<_PenebusScreen> createState() => _PenebusScreenState();
+}
+
+class _PenebusScreenState extends State<_PenebusScreen> {
+  final _repo = VoucherRepository();
+  List<VoucherClaim> _items = const [];
+  bool _memuat = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _muat();
+  }
+
+  Future<void> _muat() async {
+    try {
+      final rows = await _repo.claimsOf(widget.voucher.id);
+      if (!mounted) return;
+      setState(() {
+        _items = rows;
+        _memuat = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _memuat = false);
+      AppToast.show(context, 'Gagal memuat penebus: $e', isError: true);
+    }
+  }
+
+  /// Kedaluwarsa ditentukan tanggalnya, bukan hanya status tersimpan.
+  ///
+  /// Penjadwal berjalan sekali sehari; di antara dua jalannya ada
+  /// voucher yang statusnya masih `claimed` padahal tanggalnya sudah
+  /// lewat. Menampilkannya sebagai "Siap Dipakai" berarti layar ini
+  /// menjanjikan sesuatu yang akan ditolak kasir.
+  (String, Color) _status(VoucherClaim c) {
+    if (c.status == VoucherClaimStatus.used) {
+      return ('Sudah dipakai', Colors.green);
+    }
+    if (c.status == VoucherClaimStatus.expired || c.kedaluwarsa) {
+      return ('Hangus', Colors.grey);
+    }
+    return ('Belum dipakai', Colors.orange);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final dipakai =
+        _items.where((c) => c.status == VoucherClaimStatus.used).length;
+    final hangus = _items
+        .where((c) => c.status == VoucherClaimStatus.expired || c.kedaluwarsa)
+        .length;
+    final menggantung = _items.length - dipakai - hangus;
+
+    return Scaffold(
+      backgroundColor: KaataTheme.backgroundOf(context),
+      appBar: AppBar(title: Text('Penebus ${widget.voucher.code}')),
+      body: _memuat
+          ? const Center(child: CircularProgressIndicator())
+          : RefreshIndicator(
+              onRefresh: _muat,
+              child: ResponsiveCenter(
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
+                  children: [
+                    Row(
+                      children: [
+                        _Angka(
+                            label: 'Dipakai',
+                            nilai: '$dipakai',
+                            warna: Colors.green),
+                        const SizedBox(width: 8),
+                        _Angka(
+                            label: 'Menggantung',
+                            nilai: '$menggantung',
+                            warna: Colors.orange),
+                        const SizedBox(width: 8),
+                        _Angka(
+                            label: 'Hangus',
+                            nilai: '$hangus',
+                            warna: Colors.grey),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    if (_items.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.all(30),
+                        child: Text(
+                          'Belum ada yang menebus voucher ini.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: KaataTheme.mutedOf(context)),
+                        ),
+                      ),
+                    for (final c in _items)
+                      Builder(builder: (_) {
+                        final (label, warna) = _status(c);
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: KaataTheme.surfaceOf(context),
+                            borderRadius: BorderRadius.circular(11),
+                            border:
+                                Border.all(color: KaataTheme.borderOf(context)),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Text(c.customerLabel,
+                                        style: const TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600)),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Ditebus ${_tanggal.format(c.createdAt)}'
+                                      '${c.usedAt == null ? '' : ' · dipakai ${_tanggal.format(c.usedAt!)}'}',
+                                      style: TextStyle(
+                                          fontSize: 11.5,
+                                          color: KaataTheme.mutedOf(context)),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: warna.withOpacity(0.13),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(label,
+                                    style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                        color: warna)),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                  ],
+                ),
+              ),
+            ),
+    );
+  }
+}
+
+class _Angka extends StatelessWidget {
+  final String label;
+  final String nilai;
+  final Color warna;
+
+  const _Angka({required this.label, required this.nilai, required this.warna});
+
+  @override
+  Widget build(BuildContext context) => Expanded(
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: warna.withOpacity(0.10),
+            borderRadius: BorderRadius.circular(11),
+          ),
+          child: Column(
+            children: [
+              Text(nilai,
+                  style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: warna)),
+              const SizedBox(height: 2),
+              Text(label,
+                  style: TextStyle(
+                      fontSize: 11, color: KaataTheme.mutedOf(context))),
+            ],
+          ),
+        ),
+      );
 }

@@ -151,6 +151,181 @@ void main() {
     });
   });
 
+  group('terbitnya voucher langsung dikabarkan', () {
+    final sql = File('supabase/voucher_announcement.sql').readAsStringSync();
+
+    test('pengumumannya ditulis dalam transaksi yang sama', () {
+      // Dua langkah terpisah yang harus diingat berurutan berarti
+      // suatu saat yang kedua terlewat — dan voucher yang tidak
+      // diumumkan adalah uang yang keluar untuk sesuatu yang tidak
+      // ada yang tahu.
+      expect(sql, contains('function generate_voucher_batch'));
+      expect(sql, contains('insert into app_announcements'));
+    });
+
+    test('masuk tab Umum, ditujukan ke pelanggan', () {
+      expect(sql, contains("'general',"));
+      expect(sql, contains("'customers',"));
+    });
+
+    test('kodenya ikut supaya bisa disalin dari notifikasi', () {
+      expect(sql, contains("'Kode voucher: ' || v_code"));
+    });
+
+    test('kuota dan tenggatnya disebut', () {
+      expect(sql, contains("p_quantity"));
+      expect(sql, contains("to_char(p_expires_on"));
+    });
+
+    test('nominalnya diformat, bukan angka telanjang', () {
+      // Angka telanjang terbaca salah sekilas, dan sekilas adalah
+      // satu-satunya waktu yang dipunya notifikasi.
+      expect(sql, contains("to_char(v_amount, 'FM999G999G999G999')"));
+    });
+
+    test('minimal belanja hanya disebut kalau ada', () {
+      expect(sql, contains('case when p_min_purchase > 0'));
+    });
+
+    test('pushnya menumpang pemicu yang sudah ada', () {
+      // Berkas ini sengaja tidak tahu apa-apa soal FCM.
+      final push = File('supabase/announcement_push.sql').readAsStringSync();
+      expect(push, contains('after insert on app_announcements'));
+      expect(sql, isNot(contains('push_outbox (resto_id')));
+    });
+
+    test('satu akun satu kali tetap ditegakkan basis data', () {
+      final vc = File('supabase/vouchers.sql').readAsStringSync();
+      expect(vc, contains('unique (voucher_id, customer_label)'));
+    });
+  });
+
+  group('akun voucher terlihat di pemetaan GL', () {
+    final layar =
+        File('lib/screens/finance_gl_mapping_screen.dart').readAsStringSync();
+
+    test('keduanya ikut dihitung dan ditampilkan', () {
+      // Akun yang tidak ada di layar ini tidak bisa diperbaiki kalau
+      // nomornya salah — dan pemicu jurnal melewatkan baris yang
+      // GL-nya kosong tanpa mengeluh.
+      expect(layar, contains("const _voucherMethod = 'voucher';"));
+      expect(layar, contains("const _voucherRedeemMethod = 'voucher_redeem';"));
+      expect(layar, contains('_voucherMethod,\n  _voucherRedeemMethod,\n];'));
+      expect(layar, contains("title: 'GL Voucher',"));
+    });
+
+    test('hanya muncul di pembukuan KaataGo', () {
+      // Resto tidak menerbitkan voucher; menghitungnya untuk mereka
+      // membuat penanda "belum dipetakan" berbunyi selamanya.
+      expect(layar, contains('_platformOnlyMethods'));
+      expect(layar, contains('if (!_platformOnlyMethods.contains(m)) m,'));
+    });
+
+    test('nomornya disemai saat SQL-nya dijalankan', () {
+      final vc = File('supabase/vouchers.sql').readAsStringSync();
+      expect(vc, contains("('kaatago', 'voucher',        '1100073'"));
+      expect(vc, contains("('kaatago', 'voucher_redeem', '1100074'"));
+    });
+  });
+
+  group('banner, hapus, dan daftar penebus', () {
+    final sql = File('supabase/voucher_manage.sql').readAsStringSync();
+    final layar = File('lib/screens/voucher_screen.dart').readAsStringSync();
+
+    test('banner ikut ke pengumuman, bukan cuma tersimpan', () {
+      expect(sql, contains('banner_base64 text'));
+      expect(sql, contains('image_base64, created_by'));
+      expect(sql, contains("nullif(p_banner, '')"));
+    });
+
+    test('pratinjaunya 16:9, sama dengan hasilnya', () {
+      expect(layar, contains('aspectRatio: 16 / 9'));
+      expect(layar, contains('fit: BoxFit.cover'));
+    });
+
+    test('yang masih berjalan tidak bisa dihapus', () {
+      expect(sql, contains('Tutup dulu vouchernya sebelum dihapus'));
+      final model = File('lib/models/voucher.dart').readAsStringSync();
+      expect(model, contains('bool get bisaDihapus => !active && claimed == 0;'));
+    });
+
+    test('yang sudah ada penebusnya tidak bisa dihapus', () {
+      // Klaim adalah uang yang menggantung di tangan orang, dan
+      // barisnya dirujuk jurnal penebusan serta antrean pencairan.
+      expect(sql, contains('pelanggan yang menebus'));
+    });
+
+    test('dananya pulang sebelum barisnya dibuang', () {
+      // Batch yang dihapus tanpa mengembalikan alokasinya adalah saldo
+      // KaataGo yang berkurang selamanya untuk voucher yang tak ada.
+      final blok = sql.substring(sql.indexOf('function delete_voucher_batch'));
+      expect(blok.indexOf("_jurnal_kaatago('total_balance'"),
+          lessThan(blok.indexOf('delete from vouchers')));
+      expect(blok, contains('if v.settled_at is null then'));
+    });
+
+    test('pengumumannya ikut dicabut', () {
+      expect(sql, contains('delete from app_announcements'));
+    });
+
+    test('hanya Super Admin yang menghapus', () {
+      expect(sql, contains('Hanya Super Admin yang dapat menghapus voucher'));
+    });
+
+    test('tombol hapus hanya muncul saat memang boleh', () {
+      // Tombol yang selalu menolak lebih membingungkan daripada
+      // tombol yang jelas mati.
+      expect(layar, contains('if (voucher.bisaDihapus)'));
+    });
+
+    test('alasan penolakan server tidak ditelan', () {
+      expect(layar, contains('String _pesanGalat(Object e)'));
+    });
+
+    test('daftar penebus memisahkan dipakai, menggantung, dan hangus', () {
+      expect(layar, contains("'Sudah dipakai'"));
+      expect(layar, contains("'Belum dipakai'"));
+      expect(layar, contains("'Hangus'"));
+      expect(layar, contains('final menggantung = _items.length - dipakai - hangus;'));
+    });
+
+    test('kedaluwarsa dinilai dari tanggal, bukan hanya status', () {
+      // Penjadwal berjalan sekali sehari; di antara dua jalannya ada
+      // voucher yang statusnya masih claimed padahal sudah lewat.
+      expect(layar, contains('c.status == VoucherClaimStatus.expired || c.kedaluwarsa'));
+    });
+
+    test('emailnya yang ditampilkan', () {
+      expect(layar, contains('Text(c.customerLabel,'));
+    });
+  });
+
+  group('memilih resto sasaran', () {
+    final layar =
+        File('lib/screens/voucher_screen.dart').readAsStringSync();
+
+    test('daftarnya bisa dicari', () {
+      expect(layar, contains('hintText: \'Cari resto\''));
+      expect(layar, contains('r.name.toLowerCase().contains(q)'));
+    });
+
+    test('pilih semua terbatas pada yang sedang tampil', () {
+      // "Pilih semua" yang diam-diam mencentang resto yang sedang
+      // tersaring keluar adalah voucher yang berlaku di tempat yang
+      // tidak pernah dimaksud.
+      expect(layar, contains('final tampil = _restoTampil.map((r) => r.id);'));
+      expect(layar, contains('_sasaran.removeAll(tampil)'));
+    });
+
+    test('yang tersaring keluar tetap terpilih', () {
+      expect(layar, contains('if (q.isEmpty) return widget.resto;'));
+    });
+
+    test('pencarian tanpa hasil mengatakannya', () {
+      expect(layar, contains('Tidak ada resto bernama itu'));
+    });
+  });
+
   group('pencairan sungguhan ke resto', () {
     final sql = File('supabase/voucher_payouts.sql').readAsStringSync();
     final fn =

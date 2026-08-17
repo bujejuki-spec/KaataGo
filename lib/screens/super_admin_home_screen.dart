@@ -1,20 +1,21 @@
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
 import '../theme.dart';
 import '../utils/logout_confirm.dart';
 import '../widgets/hub_group_tile.dart';
 import '../widgets/hub_menu_tile.dart';
-import '../widgets/language_theme_toggle.dart';
 import '../widgets/inbox_tile.dart';
-import '../widgets/responsive.dart';
 import '../widgets/kaata_logo.dart';
+import '../widgets/language_theme_toggle.dart';
+import '../widgets/responsive.dart';
 import 'employee_management_screen.dart';
+import 'market_report_screen.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'publish_announcement_screen.dart';
 import 'restaurant_manage_list_screen.dart';
 import 'super_admin_billing_screen.dart';
 import 'super_admin_finance_screen.dart';
-import 'publish_announcement_screen.dart';
 
 /// Home screen for the 'super_admin' role — not scoped to any single
 /// restaurant. Two jobs: manage employees across every resto (the app
@@ -106,6 +107,17 @@ class SuperAdminHomeScreen extends StatelessWidget {
                       ),
                     ),
                   ],
+                ),
+                HubMenuTile(
+                  icon: Icons.insights_outlined,
+                  title: 'Analisa Pasar',
+                  subtitle:
+                      'Pelanggan & resto teratas, dan yang belum bergerak',
+                  color: const Color(0xFF6366F1),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                        builder: (_) => const MarketReportScreen()),
+                  ),
                 ),
                 HubMenuTile(
                     icon: Icons.campaign_outlined,

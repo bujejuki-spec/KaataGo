@@ -1,3 +1,4 @@
+import 'billing_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -144,6 +145,22 @@ class FinanceHomeScreen extends StatelessWidget {
                       ),
                     ),
                   ],
+                ),
+                // Berdiri sendiri, bukan di dalam Pembukuan: ini
+                // satu-satunya uang yang keluar dari resto ke KaataGo,
+                // dan yang membayarnya memang bagian Finance.
+                HubMenuTile(
+                  icon: Icons.receipt_long_outlined,
+                  title: 'Tagihan Langganan',
+                  subtitle: 'Biaya bulanan KaataGo & bukti pembayaran',
+                  color: const Color(0xFF6366F1),
+                  onTap: () {
+                    final restoId = context.read<AuthProvider>().restoId;
+                    if (restoId == null) return;
+                    Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => BillingScreen(restoId: restoId),
+                    ));
+                  },
                 ),
                 HubMenuTile(
                     icon: Icons.payments_outlined,

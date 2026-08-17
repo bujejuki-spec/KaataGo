@@ -79,6 +79,15 @@ const _discountMethod = 'discount';
 const _subscriptionMethod = 'subscription';
 const _subscriptionDiscountMethod = 'subscription_discount';
 
+// Dua kantong voucher, juga milik KaataGo sendiri. Dipisah karena
+// keduanya menjawab pertanyaan yang berbeda: 'voucher' menahan dana yang
+// sudah diumumkan tapi belum ada yang menebus, 'voucher_redeem' menahan
+// yang sudah menggantung di tangan pelanggan. Menyatukannya membuat
+// keduanya tidak bisa dibedakan justru saat yang ditanya adalah berapa
+// yang masih bisa ditarik kembali.
+const _voucherMethod = 'voucher';
+const _voucherRedeemMethod = 'voucher_redeem';
+
 // PPN and service charge collected are money owed onward, not revenue,
 // so they're journaled to their own accounts instead of being folded
 // into the payment-method income mapping.
@@ -102,7 +111,22 @@ const _allMethods = [
   _discountMethod,
   _subscriptionMethod,
   _subscriptionDiscountMethod,
+  _voucherMethod,
+  _voucherRedeemMethod,
 ];
+
+/// Akun yang hanya ada di pembukuan KaataGo sendiri.
+///
+/// Resto tidak menagih langganan dan tidak menerbitkan voucher, jadi
+/// menghitungnya untuk mereka membuat penanda "belum dipetakan"
+/// berbunyi selamanya — dan peringatan yang tidak pernah bisa
+/// dihilangkan mengajari orang mengabaikan seluruh penandanya.
+const _platformOnlyMethods = {
+  _subscriptionMethod,
+  _subscriptionDiscountMethod,
+  _voucherMethod,
+  _voucherRedeemMethod,
+};
 
 /// Drops a trailing ".0" so a rate of 11 shows as "11", not "11.00".
 String _pctText(double value) =>
@@ -238,16 +262,13 @@ class _FinanceGlMappingScreenState extends State<FinanceGlMappingScreen> {
 
   /// Akun yang benar-benar berlaku di layar ini.
   ///
-  /// Dua akun langganan hanya ada di pembukuan KaataGo. Menghitungnya
-  /// untuk resto biasa membuat penanda di atas selamanya berbunyi "2
-  /// akun belum dipetakan" — peringatan yang tidak pernah bisa
-  /// dihilangkan, dan peringatan semacam itu mengajari orang
-  /// mengabaikan seluruh penandanya.
+  /// Akun langganan dan voucher hanya ada di pembukuan KaataGo — lihat
+  /// [_platformOnlyMethods].
   List<String> get _metodeLayarIni => _untukPlatform
       ? _allMethods
       : [
           for (final m in _allMethods)
-            if (m != _subscriptionMethod && m != _subscriptionDiscountMethod) m,
+            if (!_platformOnlyMethods.contains(m)) m,
         ];
 
   void _startEdit() {
@@ -643,6 +664,36 @@ class _FinanceGlMappingScreenState extends State<FinanceGlMappingScreen> {
                                   _codeCtrls[_subscriptionDiscountMethod]!,
                               nameCtrl:
                                   _nameCtrls[_subscriptionDiscountMethod]!,
+                              editing: _editing,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+                        _GlSectionCard(
+                          icon: Icons.card_giftcard_outlined,
+                          color: const Color(0xFFF59E0B),
+                          title: 'GL Voucher',
+                          subtitle: 'Promo KaataGo — dananya keluar sejak '
+                              'vouchernya diterbitkan',
+                          children: [
+                            _GlAccountRow(
+                              icon: Icons.confirmation_number_outlined,
+                              label: 'GL Voucher',
+                              hint: 'Sudah diterbitkan, belum ada yang '
+                                  'menebus',
+                              color: const Color(0xFFF59E0B),
+                              codeCtrl: _codeCtrls[_voucherMethod]!,
+                              nameCtrl: _nameCtrls[_voucherMethod]!,
+                              editing: _editing,
+                            ),
+                            _GlAccountRow(
+                              icon: Icons.redeem_outlined,
+                              label: 'GL Voucher Redeem',
+                              hint: 'Sudah ditebus pelanggan, menunggu '
+                                  'dipakai atau hangus',
+                              color: const Color(0xFFF59E0B),
+                              codeCtrl: _codeCtrls[_voucherRedeemMethod]!,
+                              nameCtrl: _nameCtrls[_voucherRedeemMethod]!,
                               editing: _editing,
                             ),
                           ],

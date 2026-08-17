@@ -1,7 +1,7 @@
 # KaataGo — Test Case
 
-**Versi Aplikasi:** 2.2.0 (build 98)
-**Versi Dokumen:** 1.1
+**Versi Aplikasi:** 2.3.0 (build 99)
+**Versi Dokumen:** 1.2
 **Tanggal Terbit:** 17 Agustus 2026
 **Status:** Rilis
 **Jenis Dokumen:** Test Case — pengujian manual
@@ -526,6 +526,23 @@ sudah membayar berhenti berjualan.
 | TC-BL-28 | P1 | Pasang kunci produksi Xendit, buka layar yang sama | Tombol simulasi **hilang sendiri** | TSD §7.3 |
 | TC-BL-29 | P1 | Buat diskon langganan setelah tagihan terbit → ketuk segarkan di Super Admin | Nominal tagihan turun; nomor VA lama **dibuang** | F-BL-05 |
 | TC-BL-30 | P1 | Buat VA baru setelah nominalnya berubah | Nominalnya sesuai yang sudah dipotong | F-BL-20 |
+| TC-BL-31 | P1 | Set tanggal tagih 31, lihat jatuh tempo di April | 30 April | F-BL-19 |
+| TC-BL-32 | P1 | Set tanggal tagih 31, lihat jatuh tempo di Februari 2026 | 28 Februari | F-BL-19 |
+| TC-BL-33 | P1 | Set tanggal tagih 31, lihat jatuh tempo di Februari 2028 | 29 Februari — tahun kabisat | F-BL-19 |
+| TC-BL-34 | P1 | Set tanggal tagih 29, Februari 2026 | 28 Februari, bukan gagal terbit | F-BL-19 |
+| TC-BL-35 | P2 | Buka dropdown Tanggal Tagihan di Super Admin | Tersedia sampai 31; di atas 28 diberi keterangan akhir bulan | F-BL-19 |
+| TC-BL-36 | P1 | Lunasi tagihan 18 Agustus, lihat kartu paket | Menyebut tagihan berikutnya 18 September | F-BL-20 |
+| TC-BL-37 | P1 | Ada tagihan belum lunas, lihat kartu paket | Menyebut "setelah tagihan berjalan lunas" lebih dulu | F-BL-20 |
+| TC-BL-38 | P2 | Resto gratis (harga 0) | Tidak menampilkan tanggal berikutnya | F-BL-20 |
+| TC-BL-39 | P1 | Lihat tagihan yang sudah lunas | Nomor Virtual Account **tidak** tampil | F-BL-21 |
+| TC-BL-40 | P1 | Lihat tagihan yang menunggu verifikasi | VA masih tampil | F-BL-21 |
+| TC-BL-41 | P1 | Ketuk Unduh Invoice PDF pada tagihan lunas | PDF terbuka, bertanda LUNAS, tanpa nomor VA | F-BL-22 |
+| TC-BL-42 | P1 | Periksa PDF tagihan berdiskon | Harga daftar, nama potongan, dan total dibayar tertulis terpisah | F-BL-22 |
+| TC-BL-43 | P2 | Cari tombol PDF pada tagihan belum lunas | Tidak ada | F-BL-22 |
+| TC-BL-44 | P1 | Masuk sebagai Finance, buka beranda | Ada menu **Tagihan Langganan** | F-BL-23 |
+| TC-BL-45 | P1 | Finance mengunggah bukti bayar | Diterima — RPC mengizinkan peran finance | F-BL-23 |
+| TC-BL-46 | P2 | Finance membuat Virtual Account | Berhasil, sama seperti Owner | F-BL-23 |
+| TC-BL-47 | P2 | Kasir/Chef mencari menu itu | Tidak ada | F-BL-23 |
 | TC-BL-15 | P1 | Coba kirim bukti tanpa melampirkan foto | Tombol Kirim mati | F-BL-11 |
 | TC-BL-16 | P1 | Super Admin → tab Tagihan → **Terima** | Status jadi Lunas; resto tetap terbuka; pita hilang | F-BL-13 |
 | TC-BL-17 | P1 | Super Admin → **Tolak** tanpa mengisi alasan | Tombol Tolak tidak menyelesaikan apa-apa — alasan wajib | F-BL-14 |
@@ -644,6 +661,50 @@ sudah membayar berhenti berjualan.
 | TC-VC-42 | P1 | Bandingkan total `sent` dengan mutasi transfer di dashboard Xendit | Cocok baris per baris lewat `transfer_id` | F-VC-16 |
 | TC-VC-43 | P1 | Jalankan pencairan saat xenPlatform belum aktif | Seluruh antrean tetap `pending`, `attempts` nol, tidak ada galat | F-VC-19 |
 | TC-VC-44 | P2 | Aktifkan xenPlatform + pasang sub-akun, lalu tunggu penjadwal | Tunggakan lama ikut terangkut tanpa dijalankan ulang manual | F-VC-16, F-VC-17 |
+| TC-VC-45 | P1 | Super Admin → Finance → Pemetaan GL | Ada bagian **GL Voucher** berisi GL Voucher dan GL Voucher Redeem | F-VC-13 |
+| TC-VC-46 | P1 | Buka Pemetaan GL sebagai Finance resto biasa | Bagian GL Voucher **tidak** muncul, penanda "belum dipetakan" tidak berbunyi | F-VC-13 |
+| TC-VC-47 | P2 | Ubah nomor GL Voucher lalu simpan | Tersimpan, dan jurnal voucher berikutnya memakai nomor baru | F-VC-13 |
+| TC-VC-48 | P1 | Terbitkan batch, lalu buka Kotak Masuk pelanggan | Ada kabar di tab **Umum** berisi kode, nilai, kuota, dan tenggat | F-VC-20, F-VC-21 |
+| TC-VC-49 | P1 | Terbitkan batch dengan HP pelanggan terkunci | Push muncul di layar kunci | F-VC-20 |
+| TC-VC-50 | P2 | Terbitkan batch tanpa minimal belanja | Kalimat minimal belanja **tidak** muncul di pengumuman | F-VC-21 |
+| TC-VC-51 | P2 | Buka Kotak Masuk sebagai pegawai resto | Kabar voucher **tidak** muncul — audiensnya pelanggan | F-VC-20 |
+| TC-VC-52 | P2 | Ketik nama resto di kolom cari pada form terbit | Daftarnya menyusut sesuai kata kuncinya | F-VC-22 |
+| TC-VC-53 | P1 | Centang 3 resto, lalu cari kata yang menyaringnya keluar | Ketiganya tetap terpilih; hitungannya tidak berubah | F-VC-22 |
+| TC-VC-54 | P1 | Saring daftarnya, lalu ketuk **Pilih semua** | Hanya yang tampil tercentang, bukan seluruh resto | F-VC-22 |
+| TC-VC-55 | P2 | Ketuk **Lepas semua** saat semua yang tampil tercentang | Yang tampil terlepas; pilihan di luar saringan tetap | F-VC-22 |
+| TC-VC-56 | P2 | Cari nama resto yang tidak ada | Muncul "Tidak ada resto bernama itu" | F-VC-22 |
+| TC-VC-57 | P1 | Terbitkan batch berbanner, lalu buka Kotak Masuk pelanggan | Gambarnya tampil bersama kabarnya | F-VC-23 |
+| TC-VC-58 | P2 | Pilih gambar potret, lihat pratinjaunya | Dipotong 16:9, sama dengan yang nanti muncul di kotak masuk | F-VC-23 |
+| TC-VC-59 | P2 | Terbitkan batch tanpa banner | Kabarnya tetap terkirim, tanpa gambar | F-VC-23 |
+| TC-VC-60 | P1 | Cari tombol Hapus pada batch yang masih berjalan | Tidak ada — harus ditutup dulu | F-VC-24 |
+| TC-VC-61 | P1 | Tutup batch yang belum ada penebusnya, lalu hapus | Terhapus; dananya kembali ke GL Total Saldo | F-VC-24 |
+| TC-VC-62 | P1 | Periksa Kotak Masuk pelanggan sesudah batch dihapus | Kabar vouchernya ikut hilang | F-VC-24 |
+| TC-VC-63 | P1 | Panggil `delete_voucher_batch` untuk batch yang sudah ada penebusnya | Ditolak, dengan jumlah penebusnya disebut | F-VC-24 |
+| TC-VC-64 | P1 | Panggil `delete_voucher_batch` sebagai bukan Super Admin | Ditolak | F-VC-24 |
+| TC-VC-65 | P2 | Hapus batch yang sudah pernah disettle penjadwal | Dananya **tidak** dikembalikan dua kali | F-VC-24 |
+| TC-VC-66 | P1 | Ketuk **Penebus** pada sebuah batch | Daftar email penebut berikut tanggal tebus dan statusnya | F-VC-25 |
+| TC-VC-67 | P1 | Periksa ringkasan di atas daftar penebus | Dipakai / Menggantung / Hangus berjumlah sama dengan barisnya | F-VC-25 |
+| TC-VC-68 | P1 | Lewati tanggal kedaluwarsa sebelum penjadwal berjalan | Statusnya sudah **Hangus**, bukan Belum Dipakai | F-VC-25 |
+
+---
+
+## 19e. Analisa Pasar
+
+| ID | P | Skenario | Hasil yang diharapkan | Rujukan |
+|---|---|---|---|---|
+| TC-MR-01 | P1 | Super Admin → Analisa Pasar | Empat bagian termuat tanpa galat | F-MR-01…04 |
+| TC-MR-02 | P1 | Bandingkan Top 5 Pelanggan dengan jumlah manual dari `orders` | Cocok nominal dan jumlah pesanannya | F-MR-01 |
+| TC-MR-03 | P1 | Batalkan sebuah pesanan besar, muat ulang | Nominalnya berkurang — yang batal tidak dihitung | F-MR-05 |
+| TC-MR-04 | P1 | Buat akun pelanggan baru tanpa memesan | Muncul di daftar Belum Pernah Memesan | F-MR-02 |
+| TC-MR-05 | P1 | Pelanggan itu menyelesaikan satu pesanan, muat ulang | Hilang dari daftar tersebut | F-MR-02 |
+| TC-MR-06 | P1 | Bandingkan Top 5 Resto dengan Jurnal GL resto bersangkutan | Nominalnya sejalan | F-MR-03 |
+| TC-MR-07 | P1 | Resto yang seluruh pesanannya batal | Muncul di Belum Ada Penghasilan, jumlah pesanan **0** | F-MR-04 |
+| TC-MR-08 | P2 | Resto baru tanpa pesanan sama sekali | Muncul dengan "Belum ada pesanan" | F-MR-04 |
+| TC-MR-09 | P1 | Periksa apakah resto KaataGo ikut terhitung | Tidak — resto platform dikecualikan | F-MR-06 |
+| TC-MR-10 | P1 | Hapus lunak sebuah resto, muat ulang | Hilang dari keempat daftar | F-MR-06 |
+| TC-MR-11 | P1 | Panggil `report_top_customers` sebagai Owner resto | Daftar kosong, bukan pesan galat | F-MR-07 |
+| TC-MR-12 | P2 | Panggil salah satu RPC dengan `p_limit` 99999 | Dijepit ke batas atasnya | F-MR-07 |
+| TC-MR-13 | P2 | Pesanan kasir atas nama tamu | Tidak ikut peringkat pelanggan — bukan akun terdaftar | F-MR-01 |
 
 ---
 
@@ -820,10 +881,11 @@ Tiap kelompok kebutuhan di FSD, dan kasus uji yang menjaganya.
 | Super Admin (SA) | 12 | TC-SA-01…17 |
 | Sesi Meja (SS) | 7 | TC-SS-01…07 |
 | Pembaruan (UP) | 7 | TC-UP-01…09 |
-| Langganan (BL) | 24 | TC-BL-01…30, E2E-09 |
+| Langganan (BL) | 41 | TC-BL-01…47, E2E-09 |
 | Finance KaataGo (PF) | 21 | TC-PF-01…34 |
-| Voucher (VC) | 44 | TC-VC-01…44 |
-| **Total** | **275** | **267 kasus + 8 alur ujung-ke-ujung** |
+| Voucher (VC) | 68 | TC-VC-01…68 |
+| Analisa Pasar (MR) | 13 | TC-MR-01…13 |
+| **Total** | **329** | **321 kasus + 8 alur ujung-ke-ujung** |
 
 Kriteria penerimaan A-01…A-20 di FSD §9 seluruhnya terpetakan lewat
 kolom Rujukan di atas. Bab TSD yang diuji: §1.2, §4, §5, §6, §7, §8,

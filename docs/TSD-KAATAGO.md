@@ -1,7 +1,7 @@
 # KaataGo — Technical Specification Document
 
-**Versi Aplikasi:** 2.2.0 (build 98)
-**Versi Dokumen:** 1.1
+**Versi Aplikasi:** 2.3.0 (build 99)
+**Versi Dokumen:** 1.2
 **Tanggal Terbit:** 17 Agustus 2026
 **Status:** Rilis
 **Jenis Dokumen:** TSD — sisi teknis
@@ -640,6 +640,32 @@ depan tidak mendarat di tagihan bulan ini.
 
 ---
 
+### 7.3b Tanggal tagih akhir bulan
+
+`supabase/billing_due_day.sql` melonggarkan `billing_day` ke 1–31.
+`_billing_day_in_month(day, month)` memotongnya ke hari terakhir lewat
+`least(day, extract(day from date_trunc('month', m) + interval '1 month
+- 1 day'))` — umur bulannya dihitung, bukan didaftar; tabel hari-per-
+bulan benar sampai seseorang lupa tahun kabisat.
+
+`_billing_due_on` menghitung ulang tanggalnya **di bulan berikutnya**,
+bukan menggeser tanggalnya sekian hari: 31 Januari yang digeser satu
+bulan bukan 28 Februari di semua penanggalan.
+
+`resto_billing_state` bertambah kolom `next_due_date` — dan karena itu
+mengubah tipe kembalian, fungsinya di-`drop` dulu (§11.2). Nilainya
+dihitung server supaya aturan pemotongan tanggal hanya ada di satu
+tempat; menyalinnya ke Dart berarti dua perhitungan yang suatu saat
+berpisah, dan yang terlihat adalah layar yang menjanjikan tanggal
+berbeda dari yang benar-benar ditagih.
+
+`BillingInvoice.vaHidup` kini menuntut `open`. Nomor VA yang masih
+terbaca di bawah tulisan "Lunas" adalah undangan untuk mentransfer dua
+kali. `lib/utils/invoice_pdf.dart` mencetak bukti bayar tanpa nomor VA,
+dengan harga daftar dan potongannya sebagai baris terpisah.
+
+---
+
 ### 7.4 Pembukuan KaataGo sendiri
 
 Pendapatan langganan harus tercatat di suatu tempat, dan tempat itu
@@ -741,6 +767,29 @@ tanpa penanda itu, penjadwal yang berjalan dua kali mengembalikan
 dananya dua kali. Ingatan penjadwal bukan penjaga yang bisa dipercaya;
 kolomnya yang menjaga.
 
+**Pengumumannya terbit di dalam RPC yang sama.**
+`supabase/voucher_announcement.sql` mengganti `generate_voucher_batch`
+supaya ia juga menulis satu baris `app_announcements` berkategori
+`general` dan beraudiens `customers`. Push-nya tidak diurus di sana:
+`trg_queue_push_announcement` sudah menyala pada setiap baris baru dan
+mengantre ke `push_outbox`, jadi RPC-nya tidak perlu tahu apa pun soal
+FCM. Nominalnya diformat `to_char(…, 'FM999G999G999G999')` — angka
+telanjang terbaca salah sekilas, dan sekilas adalah satu-satunya waktu
+yang dipunya notifikasi.
+
+`supabase/voucher_manage.sql` menambah `vouchers.banner_base64` —
+base64 di kolom, sependekatan dengan banner promo resto dan gambar
+pengumuman, supaya satu voucher tetap satu baris. Nilainya diteruskan
+ke `app_announcements.image_base64` dalam RPC yang sama.
+
+`delete_voucher_batch(id)` menolak batch yang masih `active` dan batch
+yang sudah punya klaim, lalu mengembalikan alokasinya ke `total_balance`
+**sebelum** barisnya dibuang — dijaga `settled_at` supaya tidak
+mengembalikan dua kali pada batch yang sudah disettle penjadwal.
+Pengumumannya dicabut lewat pencocokan `body like '%Kode voucher: …%'`;
+kabar yang menyuruh menebus kode yang sudah tidak ada lebih buruk
+daripada tidak ada kabar.
+
 **Tahap 3 diikuti uang sungguhan.** `supabase/voucher_payouts.sql`.
 Pemicunya tidak memanggil Xendit — ia menulis satu baris ke
 `voucher_payouts` berstatus `pending`. Memanggil penyedia dari dalam
@@ -790,6 +839,27 @@ lima tempat. Nomornya sederet dengan GL Diskon: **1100073** Voucher,
 **1100074** Voucher Redeem.
 
 ---
+
+---
+
+### 7.6 Analisa pasar
+
+`supabase/market_report.sql` — empat fungsi SQL `security definer`
+dengan `is_super_admin()` sebagai **syarat WHERE**, bukan `raise`. Yang
+bukan Super Admin menerima daftar kosong; pesan galat mengonfirmasi
+bahwa datanya ada.
+
+Semuanya menyaring `payment_status = 'paid'` dan mengecualikan resto
+`is_platform` serta `is_deleted`. `p_limit` dijepit
+`greatest(1, least(…))` — batas yang datang dari pemanggil dan
+dipercaya apa adanya berarti satu panggilan bisa meminta seluruh tabel.
+
+Peringkat pelanggan menuntut `exists (select 1 from customers …)`:
+pesanan kasir memakai nama tamu yang diketik di tempat, dan dua "Budi"
+di dua resto bukan satu orang. `report_idle_restos` memakai LEFT JOIN
+dengan `having sum = 0`, bukan `NOT IN` — resto yang seluruh pesanannya
+batal punya baris di `orders` tapi nol rupiah, dan itu justru yang
+paling perlu ditengok.
 
 ---
 

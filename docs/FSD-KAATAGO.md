@@ -1,7 +1,7 @@
 # KaataGo — Functional Specification Document
 
-**Versi Aplikasi:** 2.2.0 (build 98)
-**Versi Dokumen:** 2.2
+**Versi Aplikasi:** 2.3.0 (build 99)
+**Versi Dokumen:** 2.3
 **Tanggal Terbit:** 17 Agustus 2026
 **Status:** Rilis
 **Jenis Dokumen:** FSD — sisi fungsional
@@ -499,6 +499,32 @@ mencatat uang masuk ke resto, bukan uang keluar dari resto ke kami.
 | F-BL-20 | Nomor VA **tertutup di nominal tagihan** — kurang bayar tidak melunasi |
 | F-BL-21 | Nomor VA **sekali pakai**, dan berlaku sampai 7 hari sesudah jatuh tempo |
 | F-BL-22 | Tagihan lunas **otomatis** begitu transfernya masuk — tanpa mengirim bukti |
+
+> **Kenapa Finance ikut memegangnya.** Yang membayar tagihan di
+> kebanyakan resto memang bagian Finance, bukan Owner. Basis datanya
+> sejak awal sudah mengizinkan — hanya pintunya yang belum ada, dan
+> menyuruh Finance meminjam akun Owner untuk membayar adalah cara
+> tercepat membuat satu akun dipakai dua orang.
+
+> **Kenapa tanggal 29–31 sekarang boleh.** Batas lama 1–28 menghindari
+> pertanyaan "tanggal 31 di Februari itu kapan" dengan cara melarang
+> resto memilih tanggal tagihnya sendiri — dan resto yang siklus kasnya
+> jatuh di akhir bulan terpaksa menagih di tanggal yang bukan
+> tanggalnya. Sekarang pertanyaannya dijawab: bulannya yang dilihat,
+> bukan angka yang dipatok.
+
+> **Kenapa tanggal berikutnya ditampilkan, bukan cuma "tiap tanggal
+> 31".** Tanggal 31 tidak ada di setiap bulan. Menyebut angkanya saja
+> membuat orang menunggu tanggal yang tidak akan datang.
+
+> **Kenapa VA hilang begitu lunas.** Nomor yang masih terbaca di bawah
+> tulisan "Lunas" adalah undangan untuk mentransfer dua kali — dan uang
+> kedua itu tidak punya tagihan untuk dilunasi.
+
+> **Kenapa invoice PDF memisahkan harga daftar dan potongannya.**
+> Bagian keuangan resto mencocokkan angka itu dengan harga yang
+> disepakati; netto tanpa rinciannya membuat mereka mengira harganya
+> berubah diam-diam.
 | F-BL-23 | VA yang masih hidup dipakai ulang, tidak diterbitkan ulang tiap dibuka |
 | F-BL-24 | Tersedia jalur cadangan: unggah bukti transfer manual untuk diperiksa |
 | F-BL-12 | Bukti manual yang sudah diunggah menahan penguncian selama diperiksa |
@@ -508,6 +534,11 @@ mencatat uang masuk ke resto, bukan uang keluar dari resto ke kami.
 | F-BL-16 | Layar terkunci tetap menyediakan **Lihat & Bayar Tagihan** dan **Keluar** |
 | F-BL-17 | Super Admin tidak pernah terkunci |
 | F-BL-18 | Penguncian ditegakkan di **basis data**, bukan hanya di layar |
+| F-BL-19 | Tanggal tagih boleh **1–31**; tanggal yang melebihi umur bulannya jatuh di **hari terakhir** bulan itu |
+| F-BL-20 | Layar tagihan menampilkan **kapan tagihan berikutnya** jatuh tempo |
+| F-BL-21 | Nomor Virtual Account **hilang begitu tagihannya lunas** |
+| F-BL-22 | Tagihan lunas dapat **diunduh sebagai invoice PDF**, memuat harga daftar dan potongannya terpisah |
+| F-BL-23 | **Finance** punya menu Tagihan Langganan dengan akses yang sama dengan Owner |
 
 **Kapan terkunci, kapan tidak:**
 
@@ -617,6 +648,12 @@ satunya.
 | F-VC-17 | Pencairannya diantre dan dicoba ulang; kegagalan tidak menggagalkan pesanan pelanggan |
 | F-VC-18 | Satu voucher hanya bisa dicairkan **sekali**, dijaga di sisi Xendit maupun basis data |
 | F-VC-19 | Resto tanpa sub-akun Xendit tetap tercatat sebagai utang, tidak hilang |
+| F-VC-20 | Batch yang terbit **langsung diumumkan** ke Kotak Masuk pelanggan tab **Umum**, berikut push ke layar kunci |
+| F-VC-21 | Pengumumannya memuat **kode**, nilai per voucher, kuota, tenggat, dan minimal belanja bila ada |
+| F-VC-22 | Daftar resto sasaran dapat **dicari** dan dipilih sekaligus lewat **Pilih semua** |
+| F-VC-23 | Batch dapat dibekali **banner 16:9** yang ikut tampil di Kotak Masuk pelanggan |
+| F-VC-24 | Batch dapat **dihapus** hanya bila sudah **ditutup** dan **belum ada penebusnya**; dananya kembali ke saldo dan pengumumannya dicabut |
+| F-VC-25 | Super Admin dapat melihat **daftar penebus**: email, tanggal tebus, tanggal pakai, dan statusnya |
 
 > **Kenapa nominalnya exact, bukan persentase.** Anggaran promo yang
 > ditetapkan di muka bisa dihitung sampai habis. "Diskon 20%" pada
@@ -640,6 +677,31 @@ satunya.
 > **Kenapa setiap penolakan menyebutkan alasannya.** "Voucher tidak
 > berlaku" tanpa sebab membuat orang mencoba lagi dengan kode yang sama,
 > lalu menyalahkan aplikasinya.
+
+> **Kenapa pengumumannya terbit bersama vouchernya, bukan langkah
+> terpisah.** Voucher yang diterbitkan tapi tidak diumumkan adalah uang
+> yang sudah keluar dari saldo KaataGo untuk sesuatu yang tidak ada yang
+> tahu — kuotanya habis oleh siapa pun yang kebetulan membuka layarnya,
+> sisanya hangus tanpa pernah dilihat orang. Dua langkah yang harus
+> diingat berurutan berarti suatu saat yang kedua terlewat.
+
+> **Kenapa batch berjalan tidak bisa dihapus.** Kodenya sudah tersebar
+> lewat pengumuman. Menghapusnya berarti kode itu tiba-tiba tidak ada,
+> dan yang menemukannya adalah pelanggan yang mengetik kode dari
+> notifikasi lalu diberi tahu kodenya tidak ditemukan.
+
+> **Kenapa batch yang sudah ada penebusnya tidak bisa dihapus sama
+> sekali.** Klaim adalah uang yang sudah menggantung di tangan orang,
+> dan barisnya dirujuk jurnal penebusan serta antrean pencairan.
+> Menghapus induknya membuat catatan itu kehilangan namanya — yang
+> tersisa angka di buku besar tanpa keterangan dari mana asalnya.
+
+> **Kenapa "Pilih semua" hanya mencentang yang sedang tampil.** Kalau
+> pencariannya sedang menyaring, mencentang diam-diam resto yang tidak
+> terlihat berarti voucher berlaku di tempat yang tidak pernah
+> dimaksud. Dan mencentang seluruh resto tidak sama dengan
+> mengosongkannya: daftar yang dicentang membeku pada resto yang ada
+> hari ini, yang bergabung bulan depan tidak ikut.
 
 > **Kenapa pencairannya diantre, bukan langsung saat pesanan.** Kalau
 > panggilan ke Xendit ikut di dalam transaksi yang menyimpan pesanan,
@@ -667,6 +729,43 @@ satunya.
 > KaataGo lewat perpindahan tahap 3 ke GL Transfer restonya, bukan
 > ditanggung restonya — dan sejak §4.19 ini, pembayarannya bukan lagi
 > dilakukan di luar aplikasi.
+
+### 4.20 Analisa Pasar (Super Admin)
+
+Empat pertanyaan yang selama ini hanya bisa dijawab dengan membuka satu
+per satu resto. Dua di antaranya sengaja tentang yang **belum** terjadi.
+
+| ID | Kebutuhan |
+|---|---|
+| F-MR-01 | **Top 5 pelanggan** lintas resto, berikut jumlah pesanan dan total transaksinya |
+| F-MR-02 | **Pelanggan terdaftar yang belum pernah memesan**, berikut nama dan kontaknya |
+| F-MR-03 | **Top 5 resto** berdasarkan penghasilan, berikut nominalnya |
+| F-MR-04 | **Resto yang belum menghasilkan**, berikut jumlah pesanan terbayarnya |
+| F-MR-05 | Hanya pesanan **terbayar** yang dihitung |
+| F-MR-06 | Resto platform dan resto terhapus tidak ikut dihitung |
+| F-MR-07 | Seluruh perhitungannya di server; hanya Super Admin yang bisa membacanya |
+
+> **Kenapa daftar yang diam justru yang paling berguna.** Peringkat
+> teratas menyenangkan dilihat tapi tidak menyuruh melakukan apa pun.
+> Pelanggan yang sudah memasang aplikasinya lalu berhenti sudah
+> melewati bagian tersulit dan cuma belum punya alasan untuk kembali —
+> dan resto yang punya pesanan tapi nol rupiah adalah resto yang
+> mencoba memakainya dan gagal menyelesaikan.
+
+> **Kenapa hanya pesanan terbayar yang dihitung.** Pesanan batal pernah
+> ada di layar kasir, tapi tidak pernah jadi uang. Memasukkannya membuat
+> resto yang banyak pesanan batal terlihat lebih besar daripada resto
+> yang benar-benar berjualan.
+
+> **Kenapa peringkat pelanggan hanya menghitung akun terdaftar.**
+> Pesanan kasir memakai nama tamu yang diketik di tempat, dan dua tamu
+> bernama "Budi" di dua resto berbeda bukan satu orang. Memeringkatnya
+> sebagai satu orang bukan angka yang kasar — itu angka yang salah.
+
+> **Kenapa perhitungannya di server.** Mengunduh seluruh pesanan
+> seluruh resto ke sebuah HP berarti batas 1.000 baris PostgREST
+> memotongnya diam-diam, dan yang tampil adalah peringkat yang salah
+> tanpa satu pun tanda ada yang hilang.
 
 ---
 
