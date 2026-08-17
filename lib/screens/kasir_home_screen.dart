@@ -8,6 +8,7 @@ import '../providers/auth_provider.dart';
 import '../theme.dart';
 import '../utils/logout_confirm.dart';
 import '../widgets/badged_hub_tile.dart';
+import '../widgets/hub_group_tile.dart';
 import '../widgets/hub_menu_tile.dart';
 import 'discount_screen.dart';
 import '../widgets/language_theme_toggle.dart';
@@ -59,87 +60,105 @@ class KasirHomeScreen extends StatelessWidget {
           ),
           Expanded(
             child: HubMenuLayout(
-              sections: [
-                HubMenuSection('Penjualan', [
-                  HubMenuTile(
-                    icon: Icons.point_of_sale_outlined,
-                    title: 'Kasir / Input Pesanan',
-                    subtitle: 'Pilih produk, checkout, terima pembayaran',
-                    color: const Color(0xFF10B981),
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const PosHomeScreen()),
+              tiles: [
+                HubGroupTile(
+                  icon: Icons.point_of_sale_outlined,
+                  title: 'Penjualan',
+                  subtitle: 'Input pesanan, pending payment, riwayat',
+                  color: const Color(0xFF10B981),
+                  loadCount: () => restoId == null ? Future.value(0) : OrderRepository().pendingCashPaymentCount(restoId),
+                  tiles: () => [
+                    HubMenuTile(
+                      icon: Icons.point_of_sale_outlined,
+                      title: 'Kasir / Input Pesanan',
+                      subtitle: 'Pilih produk, checkout, terima pembayaran',
+                      color: const Color(0xFF10B981),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const PosHomeScreen()),
+                      ),
                     ),
-                  ),
-                  BadgedHubTile(
-                    icon: Icons.pending_actions_outlined,
-                    title: 'Pending Payment',
-                    subtitle: 'Pesanan dari HP customer yang bayar tunai di kasir',
-                    color: const Color(0xFFF59E0B),
-                    loadCount: () => restoId == null
-                        ? Future.value(0)
-                        : OrderRepository().pendingCashPaymentCount(restoId),
-                    destination: () => const PendingPaymentScreen(),
-                  ),
-                  HubMenuTile(
-                    icon: Icons.receipt_long_outlined,
-                    title: 'Riwayat Kasir',
-                    subtitle: 'Transaksi yang diinput kasir — rekap per hari',
-                    color: const Color(0xFF0EA5E9),
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const TransactionHistoryScreen()),
+                    BadgedHubTile(
+                      icon: Icons.pending_actions_outlined,
+                      title: 'Pending Payment',
+                      subtitle: 'Pesanan dari HP customer yang bayar tunai di kasir',
+                      color: const Color(0xFFF59E0B),
+                      loadCount: () => restoId == null
+                          ? Future.value(0)
+                          : OrderRepository().pendingCashPaymentCount(restoId),
+                      destination: () => const PendingPaymentScreen(),
                     ),
-                  ),
-                ]),
-                HubMenuSection('Keuangan', [
-                  BadgedHubTile(
-                    icon: Icons.account_balance_wallet_outlined,
-                    title: 'Saldo & Pengeluaran',
-                    subtitle: 'Lihat saldo, catat pengeluaran dari Petty Cash',
-                    color: const Color(0xFF6366F1),
-                    loadCount: () => restoId == null
-                        ? Future.value(0)
-                        : PettyCashRepository().pendingCount(restoId),
-                    destination: () => const FinanceBalanceScreen(),
-                  ),
-                  BadgedHubTile(
-                    icon: Icons.account_balance_outlined,
-                    title: 'Setor Saldo Cash',
-                    subtitle: 'Setor tunai di laci ke rekening resto',
-                    color: const Color(0xFF0EA5E9),
-                    loadCount: () => restoId == null
-                        ? Future.value(0)
-                        : CashDepositRepository().pendingCount(restoId),
-                    destination: () => const CashDepositScreen(),
-                  ),
-                ]),
-                HubMenuSection('Pengelolaan', [
-                  HubMenuTile(
-                    icon: Icons.local_offer_outlined,
-                    title: 'Diskon',
-                    subtitle: 'Promo per menu, bundling, atau minimum belanja',
-                    color: const Color(0xFF10B981),
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const DiscountScreen()),
+                    HubMenuTile(
+                      icon: Icons.receipt_long_outlined,
+                      title: 'Riwayat Kasir',
+                      subtitle: 'Transaksi yang diinput kasir — rekap per hari',
+                      color: const Color(0xFF0EA5E9),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const TransactionHistoryScreen()),
+                      ),
                     ),
-                  ),
-                  const InboxTile(),
-                ]),
-                HubMenuSection('Akun', [
-                  HubMenuTile(
+                  ],
+                ),
+                HubGroupTile(
+                  icon: Icons.account_balance_wallet_outlined,
+                  title: 'Keuangan',
+                  subtitle: 'Saldo, pengeluaran, setor tunai',
+                  color: const Color(0xFF6366F1),
+                  loadCount: () => _penandaKeuangan(restoId),
+                  tiles: () => [
+                    BadgedHubTile(
+                      icon: Icons.account_balance_wallet_outlined,
+                      title: 'Saldo & Pengeluaran',
+                      subtitle: 'Lihat saldo, catat pengeluaran dari Petty Cash',
+                      color: const Color(0xFF6366F1),
+                      loadCount: () => restoId == null
+                          ? Future.value(0)
+                          : PettyCashRepository().pendingCount(restoId),
+                      destination: () => const FinanceBalanceScreen(),
+                    ),
+                    BadgedHubTile(
+                      icon: Icons.account_balance_outlined,
+                      title: 'Setor Saldo Cash',
+                      subtitle: 'Setor tunai di laci ke rekening resto',
+                      color: const Color(0xFF0EA5E9),
+                      loadCount: () => restoId == null
+                          ? Future.value(0)
+                          : CashDepositRepository().pendingCount(restoId),
+                      destination: () => const CashDepositScreen(),
+                    ),
+                  ],
+                ),
+                HubGroupTile(
+                  icon: Icons.tune,
+                  title: 'Pengelolaan',
+                  subtitle: 'Promo per menu, bundling, minimum belanja',
+                  color: const Color(0xFF8B5CF6),
+                  tiles: () => [
+                    HubMenuTile(
+                      icon: Icons.local_offer_outlined,
+                      title: 'Diskon',
+                      subtitle: 'Promo per menu, bundling, atau minimum belanja',
+                      color: const Color(0xFF10B981),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const DiscountScreen()),
+                      ),
+                    ),
+                  ],
+                ),
+                const InboxTile(),
+                HubMenuTile(
                     icon: Icons.brightness_6_outlined,
                     title: 'Tampilan',
                     subtitle: 'Mode terang, gelap, atau ikut setelan HP',
                     color: const Color(0xFF0EA5E9),
                     onTap: () => showAppearanceDialog(context),
                   ),
-                  HubMenuTile(
+                HubMenuTile(
                     icon: Icons.logout,
                     title: 'Keluar',
                     subtitle: 'Logout dari akun ini',
                     color: const Color(0xFFEF4444),
                     onTap: () => _logout(context),
                   ),
-                ]),
               ],
             ),
           ),
@@ -147,4 +166,19 @@ class KasirHomeScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Jumlah pengajuan yang menunggu keputusan di kelompok Keuangan.
+///
+/// Dijumlahkan supaya penandanya ikut naik ke halaman awal. Menyembunyikan
+/// menu di balik pintu juga menyembunyikan titik merahnya — dan titik
+/// merah itu satu-satunya cara orang tahu ada yang menunggu tanpa membuka
+/// apa pun.
+Future<int> _penandaKeuangan(String? restoId) async {
+  if (restoId == null) return 0;
+  final hasil = await Future.wait([
+    PettyCashRepository().pendingCount(restoId),
+    CashDepositRepository().pendingCount(restoId),
+  ]);
+  return hasil.fold<int>(0, (a, b) => a + b);
 }
