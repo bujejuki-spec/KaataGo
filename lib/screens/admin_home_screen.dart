@@ -64,114 +64,116 @@ class AdminHomeScreen extends StatelessWidget {
           ),
           Expanded(
             child: HubMenuLayout(
-              header: const [
-                Text('Menu',
-                    style:
-                        TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.grey)),
-                SizedBox(height: 10),
-              ],
-              tiles: [
-                HubMenuTile(
-                  icon: Icons.point_of_sale_outlined,
-                  title: 'Kasir / Input Pesanan',
-                  subtitle: 'Pilih produk, checkout, terima pembayaran',
-                  color: const Color(0xFF10B981),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const PosHomeScreen()),
+              sections: [
+                HubMenuSection('Penjualan', [
+                  HubMenuTile(
+                    icon: Icons.point_of_sale_outlined,
+                    title: 'Kasir / Input Pesanan',
+                    subtitle: 'Pilih produk, checkout, terima pembayaran',
+                    color: const Color(0xFF10B981),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const PosHomeScreen()),
+                    ),
                   ),
-                ),
-                HubMenuTile(
-                  icon: Icons.inventory_2_outlined,
-                  title: 'Kelola Produk',
-                  subtitle: 'Tambah/edit produk, kategori, level/varian',
-                  color: const Color(0xFF6366F1),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const ProductListScreen()),
+                  HubMenuTile(
+                    icon: Icons.list_alt_outlined,
+                    title: 'Pesanan Masuk',
+                    subtitle: 'Pantau pesanan kasir & customer, status dapur',
+                    color: const Color(0xFFF59E0B),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const EmployeeOrdersScreen()),
+                    ),
                   ),
-                ),
-                HubMenuTile(
-                  icon: Icons.list_alt_outlined,
-                  title: 'Pesanan Masuk',
-                  subtitle: 'Pantau pesanan kasir & customer, status dapur',
-                  color: const Color(0xFFF59E0B),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const EmployeeOrdersScreen()),
+                  BadgedHubTile(
+                    icon: Icons.pending_actions_outlined,
+                    title: 'Pending Payment',
+                    subtitle: 'Pesanan dari HP customer yang bayar tunai di kasir',
+                    color: const Color(0xFFF59E0B),
+                    loadCount: () => restoId == null
+                        ? Future.value(0)
+                        : OrderRepository().pendingCashPaymentCount(restoId),
+                    destination: () => const PendingPaymentScreen(),
                   ),
-                ),
-                BadgedHubTile(
-                  icon: Icons.pending_actions_outlined,
-                  title: 'Pending Payment',
-                  subtitle: 'Pesanan dari HP customer yang bayar tunai di kasir',
-                  color: const Color(0xFFF59E0B),
-                  loadCount: () => restoId == null
-                      ? Future.value(0)
-                      : OrderRepository().pendingCashPaymentCount(restoId),
-                  destination: () => const PendingPaymentScreen(),
-                ),
-                HubMenuTile(
-                  icon: Icons.receipt_long_outlined,
-                  title: 'Riwayat Kasir',
-                  subtitle: 'Transaksi yang diinput kasir — rekap per hari',
-                  color: const Color(0xFF0EA5E9),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const TransactionHistoryScreen()),
+                  HubMenuTile(
+                    icon: Icons.receipt_long_outlined,
+                    title: 'Riwayat Kasir',
+                    subtitle: 'Transaksi yang diinput kasir — rekap per hari',
+                    color: const Color(0xFF0EA5E9),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const TransactionHistoryScreen()),
+                    ),
                   ),
-                ),
-                HubMenuTile(
-                  icon: Icons.settings_outlined,
-                  title: 'Pengaturan',
-                  subtitle: 'Info resto, QR meja, pengaturan pembayaran',
-                  color: const Color(0xFFEC4899),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const SettingsMenuScreen()),
+                ]),
+                HubMenuSection('Keuangan', [
+                  BadgedHubTile(
+                    icon: Icons.account_balance_wallet_outlined,
+                    title: 'Saldo & Pengeluaran',
+                    subtitle: 'Lihat saldo, catat pengeluaran dari Petty Cash',
+                    color: const Color(0xFF6366F1),
+                    loadCount: () => restoId == null
+                        ? Future.value(0)
+                        : PettyCashRepository().pendingCount(restoId),
+                    destination: () => const FinanceBalanceScreen(),
                   ),
-                ),
-                BadgedHubTile(
-                  icon: Icons.account_balance_wallet_outlined,
-                  title: 'Saldo & Pengeluaran',
-                  subtitle: 'Lihat saldo, catat pengeluaran dari Petty Cash',
-                  color: const Color(0xFF6366F1),
-                  loadCount: () => restoId == null
-                      ? Future.value(0)
-                      : PettyCashRepository().pendingCount(restoId),
-                  destination: () => const FinanceBalanceScreen(),
-                ),
-                BadgedHubTile(
-                  icon: Icons.account_balance_outlined,
-                  title: 'Setor Saldo Cash',
-                  subtitle: 'Setor tunai di laci ke rekening resto',
-                  color: const Color(0xFF0EA5E9),
-                  loadCount: () => restoId == null
-                      ? Future.value(0)
-                      : CashDepositRepository().pendingCount(restoId),
-                  destination: () => const CashDepositScreen(),
-                ),
-                HubMenuTile(
-                  icon: Icons.campaign_outlined,
-                  title: 'Kirim Pengumuman',
-                  subtitle: 'Blast info & promo ke kotak masuk resto ini',
-                  color: const Color(0xFF8B5CF6),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const PublishAnnouncementScreen()),
+                  BadgedHubTile(
+                    icon: Icons.account_balance_outlined,
+                    title: 'Setor Saldo Cash',
+                    subtitle: 'Setor tunai di laci ke rekening resto',
+                    color: const Color(0xFF0EA5E9),
+                    loadCount: () => restoId == null
+                        ? Future.value(0)
+                        : CashDepositRepository().pendingCount(restoId),
+                    destination: () => const CashDepositScreen(),
                   ),
-                ),
-                const InboxTile(),
-                HubMenuTile(
-                  icon: Icons.local_offer_outlined,
-                  title: 'Diskon',
-                  subtitle: 'Promo per menu, bundling, atau minimum belanja',
-                  color: const Color(0xFF10B981),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const DiscountScreen()),
+                ]),
+                HubMenuSection('Pengelolaan', [
+                  HubMenuTile(
+                    icon: Icons.inventory_2_outlined,
+                    title: 'Kelola Produk',
+                    subtitle: 'Tambah/edit produk, kategori, level/varian',
+                    color: const Color(0xFF6366F1),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const ProductListScreen()),
+                    ),
                   ),
-                ),
-                HubMenuTile(
-                  icon: Icons.logout,
-                  title: 'Keluar',
-                  subtitle: 'Logout dari akun ini',
-                  color: const Color(0xFFEF4444),
-                  onTap: () => _logout(context),
-                ),
+                  HubMenuTile(
+                    icon: Icons.settings_outlined,
+                    title: 'Pengaturan',
+                    subtitle: 'Info resto, QR meja, pengaturan pembayaran',
+                    color: const Color(0xFFEC4899),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const SettingsMenuScreen()),
+                    ),
+                  ),
+                  HubMenuTile(
+                    icon: Icons.local_offer_outlined,
+                    title: 'Diskon',
+                    subtitle: 'Promo per menu, bundling, atau minimum belanja',
+                    color: const Color(0xFF10B981),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const DiscountScreen()),
+                    ),
+                  ),
+                  HubMenuTile(
+                    icon: Icons.campaign_outlined,
+                    title: 'Kirim Pengumuman',
+                    subtitle: 'Blast info & promo ke kotak masuk resto ini',
+                    color: const Color(0xFF8B5CF6),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const PublishAnnouncementScreen()),
+                    ),
+                  ),
+                  const InboxTile(),
+                ]),
+                HubMenuSection('Akun', [
+                  HubMenuTile(
+                    icon: Icons.logout,
+                    title: 'Keluar',
+                    subtitle: 'Logout dari akun ini',
+                    color: const Color(0xFFEF4444),
+                    onTap: () => _logout(context),
+                  ),
+                ]),
               ],
             ),
           ),

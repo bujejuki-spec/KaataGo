@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../theme.dart';
+
 /// Ambang lebar layar.
 ///
 /// Angkanya diambil dari perangkat yang benar-benar dipakai di resto:
@@ -76,8 +78,50 @@ class ResponsiveCenter extends StatelessWidget {
 /// bawah butuh gulir — padahal seluruhnya muat sekaligus kalau dibagi
 /// dua. Pada HP tetap satu kolom, karena kartu berdampingan di layar
 /// sempit menyisakan terlalu sedikit ruang untuk keterangannya.
+/// Judul kelompok menu.
+///
+/// Dipakai bersama oleh seluruh hub supaya kelompok yang sama terbaca
+/// sama di peran mana pun — "Keuangan" di layar Admin dan di layar Owner
+/// harus terlihat sebagai hal yang sama, karena memang hal yang sama.
+class HubSectionLabel extends StatelessWidget {
+  final String text;
+
+  const HubSectionLabel(this.text, {super.key});
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(top: 18, bottom: 10),
+        child: Text(
+          text.toUpperCase(),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 12,
+            letterSpacing: 0.8,
+            color: KaataTheme.mutedOf(context),
+          ),
+        ),
+      );
+}
+
+/// Satu kelompok menu berikut isinya.
+class HubMenuSection {
+  final String label;
+  final List<Widget> tiles;
+
+  const HubMenuSection(this.label, this.tiles);
+}
+
 class HubMenuLayout extends StatelessWidget {
   final List<Widget> tiles;
+
+  /// Menu yang dikelompokkan per fungsi.
+  ///
+  /// Kalau diisi, [tiles] diabaikan. Dipisah jadi dua jalur, bukan satu
+  /// daftar berisi label sebagai "tile": pada layar lebar tiap tile
+  /// dibungkus SizedBox selebar satu kolom, dan label yang ikut terjepit
+  /// di sana berhenti terbaca sebagai judul — ia jadi kartu tak
+  /// bergambar di tengah barisan kartu.
+  final List<HubMenuSection> sections;
   final EdgeInsetsGeometry padding;
 
   /// Isi tambahan di atas daftar menu (mis. judul "Menu").
@@ -85,7 +129,8 @@ class HubMenuLayout extends StatelessWidget {
 
   const HubMenuLayout({
     super.key,
-    required this.tiles,
+    this.tiles = const [],
+    this.sections = const [],
     this.header = const [],
     this.padding = const EdgeInsets.all(20),
   });
@@ -105,7 +150,13 @@ class HubMenuLayout extends StatelessWidget {
             padding: padding,
             children: [
               ...header,
-              for (final tile in tiles) ...[tile, const SizedBox(height: 12)],
+              if (sections.isEmpty)
+                for (final tile in tiles) ...[tile, const SizedBox(height: 12)]
+              else
+                for (final s in sections) ...[
+                  HubSectionLabel(s.label),
+                  for (final tile in s.tiles) ...[tile, const SizedBox(height: 12)],
+                ],
             ],
           );
         }
@@ -121,11 +172,26 @@ class HubMenuLayout extends StatelessWidget {
               builder: (context, inner) {
                 const gap = 12.0;
                 final width = (inner.maxWidth - gap * (columns - 1)) / columns;
-                return Wrap(
-                  spacing: gap,
-                  runSpacing: gap,
+
+                Widget petak(List<Widget> isi) => Wrap(
+                      spacing: gap,
+                      runSpacing: gap,
+                      children: [
+                        for (final tile in isi)
+                          SizedBox(width: width, child: tile),
+                      ],
+                    );
+
+                if (sections.isEmpty) return petak(tiles);
+
+                // Labelnya di luar Wrap, jadi ia tetap selebar layar.
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    for (final tile in tiles) SizedBox(width: width, child: tile),
+                    for (final s in sections) ...[
+                      HubSectionLabel(s.label),
+                      petak(s.tiles),
+                    ],
                   ],
                 );
               },

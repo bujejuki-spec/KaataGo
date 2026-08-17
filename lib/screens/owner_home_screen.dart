@@ -79,7 +79,7 @@ class OwnerHomeScreen extends StatelessWidget {
               child: ListView(
                 padding: const EdgeInsets.all(20),
                 children: [
-                  const _SectionLabel('Penjualan'),
+                  const HubSectionLabel('Penjualan'),
                   HubMenuTile(
                     icon: Icons.point_of_sale,
                     title: 'Kasir / Input Pesanan',
@@ -122,7 +122,7 @@ class OwnerHomeScreen extends StatelessWidget {
                     color: const Color(0xFF6366F1),
                     onTap: () => _open(context, const TransactionHistoryScreen()),
                   ),
-                  const _SectionLabel('Keuangan'),
+                  const HubSectionLabel('Keuangan'),
                   HubMenuTile(
                     icon: Icons.trending_up,
                     title: 'Pemasukan',
@@ -185,7 +185,7 @@ class OwnerHomeScreen extends StatelessWidget {
                     color: const Color(0xFF0EA5E9),
                     onTap: () => _open(context, const FinanceReportScreen()),
                   ),
-                  const _SectionLabel('Pengelolaan'),
+                  const HubSectionLabel('Pengelolaan'),
                   HubMenuTile(
                     icon: Icons.inventory_2_outlined,
                     title: 'Kelola Produk',
@@ -259,24 +259,3 @@ class OwnerHomeScreen extends StatelessWidget {
   }
 }
 
-class _SectionLabel extends StatelessWidget {
-  final String text;
-
-  const _SectionLabel(this.text);
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 18, bottom: 10),
-      child: Text(
-        text.toUpperCase(),
-        style: TextStyle(
-          fontWeight: FontWeight.bold,
-          fontSize: 12,
-          letterSpacing: 0.8,
-          color: KaataTheme.mutedOf(context),
-        ),
-      ),
-    );
-  }
-}

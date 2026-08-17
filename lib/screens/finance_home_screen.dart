@@ -61,102 +61,104 @@ class FinanceHomeScreen extends StatelessWidget {
           ),
           Expanded(
             child: HubMenuLayout(
-              header: const [
-                Text('Menu',
-                    style:
-                        TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.grey)),
-                SizedBox(height: 10),
-              ],
-              tiles: [
-                HubMenuTile(
-                  icon: Icons.trending_up,
-                  title: 'Pemasukan',
-                  subtitle: 'Rekap harian, breakdown Tunai/QRIS/Transfer',
-                  color: const Color(0xFF10B981),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const FinanceIncomeScreen()),
+              sections: [
+                HubMenuSection('Pemasukan & Saldo', [
+                  HubMenuTile(
+                    icon: Icons.trending_up,
+                    title: 'Pemasukan',
+                    subtitle: 'Rekap harian, breakdown Tunai/QRIS/Transfer',
+                    color: const Color(0xFF10B981),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const FinanceIncomeScreen()),
+                    ),
                   ),
-                ),
-                // Penandanya menghitung pengajuan yang menunggu, bukan
-                // sekadar "ada yang baru": yang membuat Finance harus
-                // ke sini adalah keputusan yang belum dia ambil.
-                BadgedHubTile(
-                  icon: Icons.account_balance_wallet_outlined,
-                  title: 'Saldo & Pengeluaran',
-                  subtitle: 'Lihat saldo total, catat pengeluaran',
-                  color: const Color(0xFF6366F1),
-                  loadCount: () => restoId == null ? Future.value(0) : PettyCashRepository().pendingCount(restoId),
-                  destination: () => const FinanceBalanceScreen(),
-                ),
-                BadgedHubTile(
-                  icon: Icons.account_balance_outlined,
-                  title: 'Setor Saldo Cash',
-                  subtitle: 'Riwayat setoran tunai berikut buktinya',
-                  color: const Color(0xFF0EA5E9),
-                  loadCount: () => restoId == null ? Future.value(0) : CashDepositRepository().pendingCount(restoId),
-                  destination: () => const CashDepositScreen(),
-                ),
-                HubMenuTile(
-                  icon: Icons.numbers,
-                  title: 'Mapping GL Account',
-                  subtitle: 'Nomor akun untuk pemasukan & pengeluaran',
-                  color: const Color(0xFFF59E0B),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const FinanceGlMappingScreen()),
+                  // Penandanya menghitung pengajuan yang menunggu, bukan
+                  // sekadar "ada yang baru": yang membuat Finance harus
+                  // ke sini adalah keputusan yang belum dia ambil.
+                  BadgedHubTile(
+                    icon: Icons.account_balance_wallet_outlined,
+                    title: 'Saldo & Pengeluaran',
+                    subtitle: 'Lihat saldo total, catat pengeluaran',
+                    color: const Color(0xFF6366F1),
+                    loadCount: () => restoId == null ? Future.value(0) : PettyCashRepository().pendingCount(restoId),
+                    destination: () => const FinanceBalanceScreen(),
                   ),
-                ),
-                HubMenuTile(
-                  icon: Icons.credit_card_outlined,
-                  title: 'Pencairan Gateway',
-                  subtitle: 'Catat dana QRIS yang masuk rekening & potongannya',
-                  color: const Color(0xFFEC4899),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                        builder: (_) => const FinanceGatewaySettlementScreen()),
+                  BadgedHubTile(
+                    icon: Icons.account_balance_outlined,
+                    title: 'Setor Saldo Cash',
+                    subtitle: 'Riwayat setoran tunai berikut buktinya',
+                    color: const Color(0xFF0EA5E9),
+                    loadCount: () => restoId == null ? Future.value(0) : CashDepositRepository().pendingCount(restoId),
+                    destination: () => const CashDepositScreen(),
                   ),
-                ),
-                HubMenuTile(
-                  icon: Icons.menu_book_outlined,
-                  title: 'Jurnal GL',
-                  subtitle: 'Audit trail semua pergerakan uang per GL account',
-                  color: const Color(0xFF14B8A6),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const FinanceJournalScreen()),
+                ]),
+                HubMenuSection('Pembukuan', [
+                  HubMenuTile(
+                    icon: Icons.numbers,
+                    title: 'Mapping GL Account',
+                    subtitle: 'Nomor akun untuk pemasukan & pengeluaran',
+                    color: const Color(0xFFF59E0B),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const FinanceGlMappingScreen()),
+                    ),
                   ),
-                ),
-                HubMenuTile(
-                  icon: Icons.receipt_long_outlined,
-                  title: 'Laporan Transaksi',
-                  subtitle: 'Export/cetak laporan seperti rekening koran',
-                  color: const Color(0xFF0EA5E9),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const FinanceReportScreen()),
+                  HubMenuTile(
+                    icon: Icons.menu_book_outlined,
+                    title: 'Jurnal GL',
+                    subtitle: 'Audit trail semua pergerakan uang per GL account',
+                    color: const Color(0xFF14B8A6),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const FinanceJournalScreen()),
+                    ),
                   ),
-                ),
-                HubMenuTile(
-                  icon: Icons.payments_outlined,
-                  title: 'Pengaturan Pembayaran',
-                  subtitle: 'Atur QRIS & rekening bank resto',
-                  color: const Color(0xFFEC4899),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                  HubMenuTile(
+                    icon: Icons.receipt_long_outlined,
+                    title: 'Laporan Transaksi',
+                    subtitle: 'Export/cetak laporan seperti rekening koran',
+                    color: const Color(0xFF0EA5E9),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const FinanceReportScreen()),
+                    ),
                   ),
-                ),
-                const InboxTile(),
-                HubMenuTile(
-                  icon: Icons.brightness_6_outlined,
-                  title: 'Tampilan',
-                  subtitle: 'Mode terang, gelap, atau ikut setelan HP',
-                  color: const Color(0xFF0EA5E9),
-                  onTap: () => showAppearanceDialog(context),
-                ),
-                HubMenuTile(
-                  icon: Icons.logout,
-                  title: 'Keluar',
-                  subtitle: 'Logout dari akun ini',
-                  color: const Color(0xFFEF4444),
-                  onTap: () => _logout(context),
-                ),
+                  HubMenuTile(
+                    icon: Icons.credit_card_outlined,
+                    title: 'Pencairan Gateway',
+                    subtitle: 'Catat dana QRIS yang masuk rekening & potongannya',
+                    color: const Color(0xFFEC4899),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                          builder: (_) => const FinanceGatewaySettlementScreen()),
+                    ),
+                  ),
+                ]),
+                HubMenuSection('Pengaturan', [
+                  HubMenuTile(
+                    icon: Icons.payments_outlined,
+                    title: 'Pengaturan Pembayaran',
+                    subtitle: 'Atur QRIS & rekening bank resto',
+                    color: const Color(0xFFEC4899),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                    ),
+                  ),
+                  const InboxTile(),
+                ]),
+                HubMenuSection('Akun', [
+                  HubMenuTile(
+                    icon: Icons.brightness_6_outlined,
+                    title: 'Tampilan',
+                    subtitle: 'Mode terang, gelap, atau ikut setelan HP',
+                    color: const Color(0xFF0EA5E9),
+                    onTap: () => showAppearanceDialog(context),
+                  ),
+                  HubMenuTile(
+                    icon: Icons.logout,
+                    title: 'Keluar',
+                    subtitle: 'Logout dari akun ini',
+                    color: const Color(0xFFEF4444),
+                    onTap: () => _logout(context),
+                  ),
+                ]),
               ],
             ),
           ),

@@ -391,6 +391,8 @@ membacanya.
 | F-TM-02 | Dapat diatur sebelum masuk, di halaman awal, maupun sesudah masuk dari tiap peran |
 | F-TM-03 | Pilihannya tersimpan di perangkat dan bertahan setelah aplikasi ditutup |
 | F-TM-04 | Pilihan tampilan menyusut jadi ikon saja saat ruangnya sempit |
+| F-TM-05 | Menu tiap peran **dikelompokkan per fungsi** berikut judul kelompoknya |
+| F-TM-06 | Judul kelompok tetap selebar layar saat menunya tersusun banyak kolom |
 
 ### 4.14 Super Admin
 

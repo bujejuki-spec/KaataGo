@@ -53,73 +53,75 @@ class SuperAdminHomeScreen extends StatelessWidget {
           ),
           Expanded(
             child: HubMenuLayout(
-              header: const [
-                Text('Menu',
-                    style:
-                        TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.grey)),
-                SizedBox(height: 10),
-              ],
-              tiles: [
-                HubMenuTile(
-                  icon: Icons.badge_outlined,
-                  title: 'Kelola Karyawan',
-                  subtitle: 'Tambah/edit/hapus akun Admin, Kasir, Chef, Finance — semua resto',
-                  color: const Color(0xFF6366F1),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const EmployeeManagementScreen()),
+              sections: [
+                HubMenuSection('Resto & Karyawan', [
+                  HubMenuTile(
+                    icon: Icons.storefront_outlined,
+                    title: 'List Resto',
+                    subtitle: 'Lihat & edit semua resto terdaftar di KaataGo',
+                    color: const Color(0xFF0EA5E9),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const RestaurantManageListScreen()),
+                    ),
                   ),
-                ),
-                HubMenuTile(
-                  icon: Icons.storefront_outlined,
-                  title: 'List Resto',
-                  subtitle: 'Lihat & edit semua resto terdaftar di KaataGo',
-                  color: const Color(0xFF0EA5E9),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const RestaurantManageListScreen()),
+                  HubMenuTile(
+                    icon: Icons.badge_outlined,
+                    title: 'Kelola Karyawan',
+                    subtitle: 'Tambah/edit/hapus akun Admin, Kasir, Chef, Finance — semua resto',
+                    color: const Color(0xFF6366F1),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const EmployeeManagementScreen()),
+                    ),
                   ),
-                ),
-                HubMenuTile(
-                  icon: Icons.receipt_long_outlined,
-                  title: 'Billing Resto',
-                  subtitle: 'Harga & tanggal langganan tiap resto, verifikasi pembayaran',
-                  color: const Color(0xFF10B981),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const SuperAdminBillingScreen()),
+                ]),
+                HubMenuSection('Langganan & Keuangan', [
+                  HubMenuTile(
+                    icon: Icons.receipt_long_outlined,
+                    title: 'Billing Resto',
+                    subtitle: 'Harga & tanggal langganan tiap resto, verifikasi pembayaran',
+                    color: const Color(0xFF10B981),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const SuperAdminBillingScreen()),
+                    ),
                   ),
-                ),
-                HubMenuTile(
-                  icon: Icons.account_balance_outlined,
-                  title: 'Finance',
-                  subtitle: 'Pendapatan langganan, pembukuan KaataGo, jurnal semua resto',
-                  color: const Color(0xFF14B8A6),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const SuperAdminFinanceScreen()),
+                  HubMenuTile(
+                    icon: Icons.account_balance_outlined,
+                    title: 'Finance',
+                    subtitle: 'Pendapatan langganan, pembukuan KaataGo, jurnal semua resto',
+                    color: const Color(0xFF14B8A6),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const SuperAdminFinanceScreen()),
+                    ),
                   ),
-                ),
-                HubMenuTile(
-                  icon: Icons.campaign_outlined,
-                  title: 'Kirim Pengumuman',
-                  subtitle: 'Blast info versi baru ke semua kotak masuk',
-                  color: const Color(0xFFF59E0B),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const PublishAnnouncementScreen()),
+                ]),
+                HubMenuSection('Komunikasi', [
+                  HubMenuTile(
+                    icon: Icons.campaign_outlined,
+                    title: 'Kirim Pengumuman',
+                    subtitle: 'Blast info versi baru ke semua kotak masuk',
+                    color: const Color(0xFFF59E0B),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const PublishAnnouncementScreen()),
+                    ),
                   ),
-                ),
-                const InboxTile(),
-                HubMenuTile(
-                  icon: Icons.brightness_6_outlined,
-                  title: 'Tampilan',
-                  subtitle: 'Mode terang, gelap, atau ikut setelan HP',
-                  color: const Color(0xFF0EA5E9),
-                  onTap: () => showAppearanceDialog(context),
-                ),
-                HubMenuTile(
-                  icon: Icons.logout,
-                  title: 'Keluar',
-                  subtitle: 'Logout dari akun ini',
-                  color: const Color(0xFFEF4444),
-                  onTap: () => _logout(context),
-                ),
+                  const InboxTile(),
+                ]),
+                HubMenuSection('Akun', [
+                  HubMenuTile(
+                    icon: Icons.brightness_6_outlined,
+                    title: 'Tampilan',
+                    subtitle: 'Mode terang, gelap, atau ikut setelan HP',
+                    color: const Color(0xFF0EA5E9),
+                    onTap: () => showAppearanceDialog(context),
+                  ),
+                  HubMenuTile(
+                    icon: Icons.logout,
+                    title: 'Keluar',
+                    subtitle: 'Logout dari akun ini',
+                    color: const Color(0xFFEF4444),
+                    onTap: () => _logout(context),
+                  ),
+                ]),
               ],
             ),
           ),

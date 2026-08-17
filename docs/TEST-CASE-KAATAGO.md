@@ -420,6 +420,10 @@ dibaca. Tiap kasus di bawah menguji satu perbedaan yang halus.
 | TC-TM-06 | P2 | Hal yang sama dalam mode terang | Sama | A-18 |
 | TC-TM-07 | P3 | Perkecil lebar layar / perangkat sempit | Pilihan tema menyusut jadi ikon saja | F-TM-04 |
 | TC-TM-08 | P3 | Buka daftar panjang mana pun sampai ujung bawah | Tombol aksi tidak menutupi baris terakhir | A-11 |
+| TC-TM-09 | P2 | Buka menu utama Kasir, Admin, Finance, Super Admin, Owner | Menunya berkelompok berikut judul tiap kelompok | F-TM-05 |
+| TC-TM-10 | P2 | Hitung menu di tiap peran, bandingkan dengan sebelum dikelompokkan | Tidak ada satu pun yang hilang | F-TM-05 |
+| TC-TM-11 | P3 | Buka di layar lebar / tablet | Judul kelompok selebar layar, bukan terjepit selebar satu kartu | F-TM-06 |
+| TC-TM-12 | P3 | Periksa nama kelompok lintas peran | "Keuangan" di Admin dan di Owner terbaca sama | F-TM-05 |
 
 ---
 
@@ -737,13 +741,13 @@ Tiap kelompok kebutuhan di FSD, dan kasus uji yang menjaganya.
 | Diskon (DS) | 12 | TC-DS-01…21, E2E-06 |
 | QRIS (PG) | 7 | TC-PG-01…10, TC-TS-15, TC-TS-16 |
 | Pembatalan (CN) | 6 | TC-CN-01…09, E2E-07 |
-| Tampilan (TM) | 4 | TC-TM-01…08 |
+| Tampilan (TM) | 6 | TC-TM-01…12 |
 | Super Admin (SA) | 12 | TC-SA-01…17 |
 | Sesi Meja (SS) | 7 | TC-SS-01…07 |
 | Pembaruan (UP) | 7 | TC-UP-01…09 |
 | Langganan (BL) | 24 | TC-BL-01…30, E2E-09 |
 | Finance KaataGo (PF) | 21 | TC-PF-01…34 |
-| **Total** | **218** | **235 kasus + 8 alur ujung-ke-ujung** |
+| **Total** | **220** | **235 kasus + 8 alur ujung-ke-ujung** |
 
 Kriteria penerimaan A-01…A-20 di FSD §9 seluruhnya terpetakan lewat
 kolom Rujukan di atas. Bab TSD yang diuji: §1.2, §4, §5, §6, §7, §8,
