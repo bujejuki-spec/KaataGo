@@ -57,6 +57,7 @@ FILES=(
   billing_discount_apply.sql
   billing_journal_gross.sql
   gl_discount_backfill.sql
+  platform_gl_renumber.sql
 )
 
 {

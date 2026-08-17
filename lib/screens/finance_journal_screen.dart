@@ -136,14 +136,40 @@ class _FinanceJournalScreenState extends State<FinanceJournalScreen> {
   int get _saldoTotal {
     final effective = _effectiveEntries;
 
+    // Pendapatan datang dari dua sumber, tergantung siapa yang
+    // dibukukan: penjualan resto ('order') dan biaya langganan yang
+    // dibayar resto ke KaataGo ('billing'). Menyebut 'order' saja
+    // membuat pembukuan KaataGo berbunyi Rp 0 selamanya — seluruh
+    // pendapatannya memang tidak pernah berasal dari pesanan.
+    const sumberPemasukan = {'order', 'billing'};
+
+    // Yang mengurangi: pengeluaran, dan diskon langganan.
+    //
+    // `order_discount` sengaja TIDAK ikut. Kedua sisi mencatat diskon
+    // dengan cara yang berbeda, dan itu menentukan mana yang boleh
+    // dikurangi di sini:
+    //
+    //   pesanan resto  → `orders.total` sudah BERSIH sesudah potongan,
+    //                    jadi kreditnya sudah dikurangi. Menguranginya
+    //                    lagi di sini menghitung potongan yang sama dua
+    //                    kali, dan tiap resto berdiskon akan terlihat
+    //                    lebih miskin daripada isi lacinya.
+    //
+    //   langganan      → dikredit sebesar HARGA DAFTAR, potongannya
+    //                    berdiri sebagai debit tersendiri. Di sini
+    //                    justru harus dikurangi.
+    const sumberPengurang = {'expense', 'billing_discount'};
+
     final income = effective
         .where((e) =>
-            e.referenceType == 'order' && e.entryType == JournalEntryType.credit)
+            sumberPemasukan.contains(e.referenceType) &&
+            e.entryType == JournalEntryType.credit)
         .fold(0, (sum, e) => sum + e.amount);
 
     final expenses = effective
         .where((e) =>
-            e.referenceType == 'expense' && e.entryType == JournalEntryType.debit)
+            sumberPengurang.contains(e.referenceType) &&
+            e.entryType == JournalEntryType.debit)
         .fold(0, (sum, e) => sum + e.amount);
 
     // Pemindahan antar kantong sendiri membukukan dua kaki sekaligus —

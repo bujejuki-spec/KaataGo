@@ -424,4 +424,67 @@ void main() {
     });
   });
 
+
+  group('saldo pembukuan KaataGo', () {
+    final layar =
+        File('lib/screens/finance_journal_screen.dart').readAsStringSync();
+
+    test('pendapatan langganan ikut dihitung', () {
+      // Menyebut 'order' saja membuat pembukuan KaataGo berbunyi Rp 0
+      // selamanya — seluruh pendapatannya memang tidak pernah berasal
+      // dari pesanan.
+      expect(layar, contains("sumberPemasukan = {'order', 'billing'}"));
+    });
+
+    test('diskon pesanan TIDAK ikut dikurangi', () {
+      // orders.total sudah bersih sesudah potongan, jadi kreditnya sudah
+      // dikurangi. Menguranginya lagi menghitung potongan yang sama dua
+      // kali, dan tiap resto berdiskon terlihat lebih miskin daripada
+      // isi lacinya.
+      expect(layar, contains("sumberPengurang = {'expense', 'billing_discount'}"));
+      expect(layar, isNot(contains("'order_discount'}")));
+    });
+
+    test('diskon langganan ikut dikurangi', () {
+      // Yang ini dikredit sebesar harga daftar, potongannya berdiri
+      // sebagai debit tersendiri.
+      expect(layar, contains("'billing_discount'"));
+    });
+  });
+
+  group('nomor akun platform', () {
+    final sql = File('supabase/platform_gl_renumber.sql').readAsStringSync();
+
+    test('dipindah ke golongan 11xxxxx', () {
+      // Pemicu penyemai resto baru sudah mengisi bawaan resto lebih
+      // dulu, dan `on conflict do nothing` membuat nomor platform tidak
+      // pernah terpasang.
+      expect(sql, contains("('total_balance',    '1990001', '1100040'"));
+      expect(sql, contains("('cash',             '1950001', '1100010'"));
+    });
+
+    test('jurnal yang sudah tercatat ikut dipindah nomornya', () {
+      // Kalau tidak, baris lama dan baru menunjuk akun yang berbeda
+      // untuk hal yang sama.
+      expect(sql, contains('update gl_journal_entries j'));
+      expect(sql, contains("j.resto_id = 'kaatago'"));
+    });
+
+    test('hanya yang masih bawaan yang dipindah', () {
+      // Nomor yang sudah disunting lewat Mapping GL adalah keputusan
+      // orang; menimpanya berarti mengembalikan pekerjaannya tanpa dia
+      // tahu.
+      expect(sql, contains('and a.gl_code = p.dari'));
+      expect(sql, contains('and j.gl_code = p.dari'));
+    });
+
+    test('nominal dan arah jurnalnya tidak disentuh', () {
+      final blokUpdate = sql.substring(sql.indexOf('update gl_journal_entries j'));
+      expect(blokUpdate.substring(0, blokUpdate.indexOf(';')),
+          isNot(contains('amount')));
+      expect(blokUpdate.substring(0, blokUpdate.indexOf(';')),
+          isNot(contains('entry_type')));
+    });
+  });
+
 }
