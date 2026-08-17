@@ -271,6 +271,12 @@ if __name__ == "__main__":
     #
     # Tidak ada satu pun nama teknologi. Yang digambarkan adalah apa
     # yang berpindah tangan: pesanan, uang, dan catatannya.
+    #
+    # Urutan kotak di lajur RESTO mengikuti urutan kejadian dari kiri ke
+    # kanan — Pending Payment, lalu Kasir, lalu Dapur. Uang tunai
+    # berpindah tangan di Kasir, dan itu titik yang tidak boleh dilompati:
+    # dari sanalah pesanannya lanjut ke dapur dan catatannya masuk
+    # pembukuan.
     render(
         [
             Lajur("PELANGGAN", "HP sendiri, tanpa perlu akun", [
@@ -281,12 +287,13 @@ if __name__ == "__main__":
                                "atau tunai di kasir"], "ungu", 2, span=2),
             ]),
             Lajur("RESTO", "Yang melayani pesanan", [
-                Blok("Kasir", ["Input pesanan di konter",
-                               "Terima uang, cetak struk"], "kuning", 0),
                 Blok("Pending Payment", ["Pesanan dari HP yang",
-                                         "bayar di kasir"], "kuning", 1),
-                Blok("Dapur", ["Masuk antrean sesudah lunas",
-                               "Cek menu sebelum selesai"], "kuning", 2),
+                                         "memilih bayar tunai"], "kuning", 0),
+                Blok("Kasir", ["Menerima uang tunai",
+                               "Input pesanan di konter",
+                               "Cetak struk"], "kuning", 1),
+                Blok("Dapur", ["Masuk antrean hanya",
+                               "sesudah lunas"], "kuning", 2),
                 Blok("Admin", ["Menu, harga, stok",
                                "Banner, QR meja, promo"], "hijau", 3),
             ]),
@@ -294,8 +301,8 @@ if __name__ == "__main__":
                 Blok("Setor & kas kecil", ["Kasir mengajukan,",
                                            "Finance menyetujui"], "biru", 0,
                      span=2),
-                Blok("Pembukuan", ["Jurnal, laporan,",
-                                   "pemetaan nomor akun"], "biru", 2, span=2),
+                Blok("Pembukuan", ["Jurnal GL tercatat sendiri",
+                                   "saat pesanan lunas"], "biru", 2, span=2),
             ]),
             Lajur("PEMILIK", "Yang melihat semuanya", [
                 Blok("Owner", ["Seluruh layar di atas, untuk tiap resto",
@@ -306,10 +313,13 @@ if __name__ == "__main__":
             ]),
         ],
         [
+            ("Pesan dari meja", "Bayar", None),
             ("Bayar", "Pending Payment", "kalau tunai"),
-            ("Pesan dari meja", "Kasir", "pesanan masuk"),
-            ("Kasir", "Setor & kas kecil", "uang tunai"),
-            ("Pending Payment", "Dapur", None),
+            ("Bayar", "Dapur", "kalau QRIS — lunas seketika"),
+            ("Pending Payment", "Kasir", None),
+            ("Kasir", "Dapur", None),
+            ("Kasir", "Setor & kas kecil", "uang tunai di laci"),
+            ("Kasir", "Pembukuan", "jurnal saat lunas"),
             ("Setor & kas kecil", "Pembukuan", None),
         ],
         f"{OUT}/arsitektur-01-pengguna.png",
