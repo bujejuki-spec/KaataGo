@@ -15,6 +15,11 @@
 > ```
 > /usr/bin/python3 scripts/test_case_ke_xlsx.py
 > ```
+>
+> Lima lembar: **Rekap** (menghitung sendiri), **Kasus Uji**,
+> **Defect** (daftar temuan berikut tombol pembuka folder capture),
+> **Prasyarat**, dan **Tombol Makro** untuk yang memakai Excel desktop.
+> Temuan dicatat di lembar Defect, bukan di dokumen ini.
 
 Dokumen ini menerjemahkan `FSD-KAATAGO` dan `TSD-KAATAGO` jadi langkah
 yang bisa dijalankan orang. Tiap kasus uji menyebut kebutuhan yang
