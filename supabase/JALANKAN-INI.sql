@@ -17,7 +17,7 @@
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 1 dari 30 — employee_surrogate_key.sql
+-- BAGIAN 1 dari 31 — employee_surrogate_key.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — email karyawan jadi bisa diubah.
@@ -68,7 +68,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 2 dari 30 — promo_banner.sql
+-- BAGIAN 2 dari 31 — promo_banner.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — banner promo per resto.
@@ -130,7 +130,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 3 dari 30 — rilis_setor_petty_inbox.sql
+-- BAGIAN 3 dari 31 — rilis_setor_petty_inbox.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — setoran & top up petty cash berjenjang, GL Suspense, dan
@@ -613,7 +613,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 4 dari 30 — customer_cash_payment.sql
+-- BAGIAN 4 dari 31 — customer_cash_payment.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pelanggan boleh memilih bayar tunai di kasir.
@@ -683,7 +683,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 5 dari 30 — push_notifications.sql
+-- BAGIAN 5 dari 31 — push_notifications.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — notifikasi yang tetap sampai walau aplikasinya tertutup.
@@ -1031,7 +1031,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 6 dari 30 — announcement_categories.sql
+-- BAGIAN 6 dari 31 — announcement_categories.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pengumuman dibagi dua jenis, dan admin resto boleh mengirim.
@@ -1120,7 +1120,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 7 dari 30 — fix_device_tokens_rls.sql
+-- BAGIAN 7 dari 31 — fix_device_tokens_rls.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pendaftaran token push lewat fungsi, bukan tulis langsung.
@@ -1239,7 +1239,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 8 dari 30 — push_trigger_pg_net.sql
+-- BAGIAN 8 dari 31 — push_trigger_pg_net.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — panggil Edge Function langsung dari database, tanpa webhook.
@@ -1352,7 +1352,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 9 dari 30 — payment_gateway.sql
+-- BAGIAN 9 dari 31 — payment_gateway.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — QRIS sungguhan lewat Xendit.
@@ -1506,7 +1506,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 10 dari 30 — gateway_settlement.sql
+-- BAGIAN 10 dari 31 — gateway_settlement.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pencairan dana dari payment gateway.
@@ -1685,7 +1685,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 11 dari 30 — resto_payment_accounts.sql
+-- BAGIAN 11 dari 31 — resto_payment_accounts.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pencairan langsung ke rekening masing-masing resto.
@@ -1778,7 +1778,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 12 dari 30 — counter_charge.sql
+-- BAGIAN 12 dari 31 — counter_charge.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — tagihan QRIS di meja kasir.
@@ -1815,7 +1815,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 13 dari 30 — announcement_push.sql
+-- BAGIAN 13 dari 31 — announcement_push.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pengumuman ikut membunyikan HP.
@@ -1872,7 +1872,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 14 dari 30 — cash_payment_expiry.sql
+-- BAGIAN 14 dari 31 — cash_payment_expiry.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pesanan tunai yang tidak dilunasi di kasir hangus sendiri.
@@ -1958,7 +1958,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 15 dari 30 — level_groups.sql
+-- BAGIAN 15 dari 31 — level_groups.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — tiap resto menyusun sendiri kelompok levelnya.
@@ -2084,7 +2084,7 @@ create trigger trg_seed_level_groups
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 16 dari 30 — resto_order_types.sql
+-- BAGIAN 16 dari 31 — resto_order_types.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — resto menentukan sendiri melayani Dine In, Take Away, atau
@@ -2122,7 +2122,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 17 dari 30 — product_out_of_stock.sql
+-- BAGIAN 17 dari 31 — product_out_of_stock.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — ketersediaan produk ditandai, bukan dihitung.
@@ -2166,7 +2166,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 18 dari 30 — discounts.sql
+-- BAGIAN 18 dari 31 — discounts.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — diskon: per menu (termasuk bundling) atau minimum belanja.
@@ -2370,7 +2370,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 19 dari 30 — promo_banner_period.sql
+-- BAGIAN 19 dari 31 — promo_banner_period.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — banner promo punya masa berlaku.
@@ -2398,7 +2398,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 20 dari 30 — default_gl_accounts.sql
+-- BAGIAN 20 dari 31 — default_gl_accounts.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — resto baru langsung punya bagan akun dan tarif pajaknya.
@@ -2564,7 +2564,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 21 dari 30 — gateway_account_super_admin.sql
+-- BAGIAN 21 dari 31 — gateway_account_super_admin.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pengenal sub-akun Xendit jadi urusan Super Admin saja.
@@ -2605,7 +2605,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 22 dari 30 — announcement_audience.sql
+-- BAGIAN 22 dari 31 — announcement_audience.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pengumuman resto memilih sasarannya: karyawan, pelanggan,
@@ -2678,7 +2678,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 23 dari 30 — kasir_journal_read.sql
+-- BAGIAN 23 dari 31 — kasir_journal_read.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — kasir boleh melihat jurnal dari catatan yang dia buat.
@@ -2714,7 +2714,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 24 dari 30 — cancel_order.sql
+-- BAGIAN 24 dari 31 — cancel_order.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pelanggan boleh membatalkan pesanannya sendiri selama
@@ -2806,7 +2806,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 25 dari 30 — settled_at_counter.sql
+-- BAGIAN 25 dari 31 — settled_at_counter.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — menandai pesanan mandiri yang uangnya diterima di meja
@@ -2848,7 +2848,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 26 dari 30 — discount_min_qty.sql
+-- BAGIAN 26 dari 31 — discount_min_qty.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — diskon dengan syarat jumlah pembelian.
@@ -2878,7 +2878,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 27 dari 30 — discount_product_rules.sql
+-- BAGIAN 27 dari 31 — discount_product_rules.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — syarat jumlah menempel di tiap menu, bukan di promonya.
@@ -2931,7 +2931,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 28 dari 30 — billing.sql
+-- BAGIAN 28 dari 31 — billing.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — langganan bulanan resto.
@@ -3338,7 +3338,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 29 dari 30 — billing_va.sql
+-- BAGIAN 29 dari 31 — billing_va.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — tagihan langganan dibayar lewat Virtual Account Xendit.
@@ -3508,7 +3508,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 30 dari 30 — platform_finance.sql
+-- BAGIAN 30 dari 31 — platform_finance.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — keuangan KaataGo sendiri, terpisah dari keuangan resto.
@@ -3859,5 +3859,184 @@ create policy "orders: super admin read" on orders
 drop policy if exists "cash_deposits: super admin read" on cash_deposits;
 create policy "cash_deposits: super admin read" on cash_deposits
   for select using (is_super_admin());
+
+commit;
+
+
+-- ═══════════════════════════════════════════════════════════════════
+-- BAGIAN 31 dari 31 — resto_soft_delete.sql
+-- ═══════════════════════════════════════════════════════════════════
+
+-- KaataGo — menghapus resto tanpa membuang datanya.
+--
+-- Jalankan SETELAH platform_finance.sql. Aman diulang.
+--
+-- `delete from restaurants` akan bekerja — dan membawa serta seluruh
+-- isinya, karena hampir semua tabel menggantung padanya dengan
+-- `on delete cascade`. Termasuk jurnal GL-nya.
+--
+-- Itu bukan yang dimaksud orang saat menghapus resto dari daftar.
+-- Restonya berhenti berjualan, tapi pembukuan tahun berjalan masih
+-- harus bisa dibaca, tagihan langganannya masih harus bisa ditelusuri,
+-- dan kalau ternyata salah pencet — resto yang mirip namanya — harus
+-- ada jalan kembali.
+--
+-- Jadi yang dihapus cuma penandanya.
+
+begin;
+
+alter table restaurants add column if not exists is_deleted boolean not null default false;
+alter table restaurants add column if not exists deleted_at timestamptz;
+alter table restaurants add column if not exists deleted_by text;
+
+create index if not exists idx_restaurants_hidup
+  on restaurants (id) where is_deleted = false;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- Yang terhapus benar-benar berhenti
+-- ─────────────────────────────────────────────────────────────────────
+--
+-- Menyembunyikannya dari daftar saja tidak cukup. Pelanggan yang
+-- terlanjur menyimpan tautan mejanya, atau memindai QR meja yang masih
+-- tertempel, akan tetap sampai ke menunya — dan memesan dari resto yang
+-- sudah tidak melayani siapa pun.
+--
+-- RESTRICTIVE, sama alasannya dengan penguncian tagihan: kebijakan
+-- permissive digabung dengan OR, jadi menambah satu justru
+-- melonggarkan. Yang restrictive digabung dengan AND.
+
+create or replace function is_resto_deleted(p_resto_id text)
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select coalesce((select is_deleted from restaurants where id = p_resto_id), false);
+$$;
+
+drop policy if exists "orders: deleted resto" on orders;
+create policy "orders: deleted resto" on orders
+  as restrictive for insert
+  with check (not is_resto_deleted(resto_id));
+
+drop policy if exists "products: deleted resto" on products;
+create policy "products: deleted resto" on products
+  as restrictive for all
+  using (not is_resto_deleted(resto_id))
+  with check (not is_resto_deleted(resto_id));
+
+-- ─────────────────────────────────────────────────────────────────────
+-- Berhenti ditagih
+-- ─────────────────────────────────────────────────────────────────────
+--
+-- Resto yang sudah dihapus tidak boleh menerima tagihan bulan depan.
+-- Tagihan yang sudah terbit dibiarkan apa adanya — itu utang yang
+-- benar-benar pernah ada, dan menghapusnya berarti menghapus catatan
+-- pendapatan yang mungkin sudah masuk.
+
+create or replace function generate_billing_invoices()
+returns integer
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_count integer := 0;
+  b record;
+  v_due date;
+  v_disc record;
+  v_amount bigint;
+begin
+  for b in
+    select rb.* from resto_billing rb
+    join restaurants r on r.id = rb.resto_id
+    where rb.active = true
+      and rb.monthly_price > 0
+      and r.is_deleted = false
+  loop
+    v_due := _billing_due_on(b.billing_day, current_date);
+    continue when v_due - current_date > 7;
+
+    select * into v_disc from _best_billing_discount(b.resto_id, b.monthly_price);
+    v_amount := b.monthly_price - coalesce(v_disc.amount, 0);
+
+    insert into billing_invoices (
+      id, resto_id, period_start, period_end, due_date,
+      amount, gross_amount, discount_id, discount_name, discount_amount
+    ) values (
+      'INV-' || upper(substr(md5(b.resto_id || v_due::text), 1, 10)),
+      b.resto_id,
+      (v_due - interval '1 month')::date,
+      (v_due - interval '1 day')::date,
+      v_due,
+      v_amount,
+      b.monthly_price,
+      v_disc.id,
+      v_disc.name,
+      coalesce(v_disc.amount, 0)
+    )
+    on conflict (resto_id, period_start) do nothing;
+
+    if found then
+      v_count := v_count + 1;
+    end if;
+  end loop;
+  return v_count;
+end;
+$$;
+
+-- Resto terhapus juga tidak dikunci karena tagihan: layar penguncian
+-- menawarkan membayar, dan tidak ada gunanya menagih resto yang sudah
+-- kita hentikan sendiri.
+create or replace function is_resto_billing_locked(p_resto_id text)
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select case
+    when is_super_admin() then false
+    when is_resto_deleted(p_resto_id) then false
+    else coalesce((select locked from resto_billing_state(p_resto_id)), false)
+  end;
+$$;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- Menghapus dan mengembalikan
+-- ─────────────────────────────────────────────────────────────────────
+--
+-- Lewat RPC, bukan UPDATE langsung: penandanya ikut mencatat siapa dan
+-- kapan. Penghapusan tanpa jejak siapa yang melakukannya adalah
+-- pertanyaan yang tidak akan pernah terjawab saat ada yang menanyakannya
+-- enam bulan kemudian.
+
+create or replace function set_resto_deleted(p_resto_id text, p_deleted boolean)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not is_super_admin() then
+    raise exception 'Hanya Super Admin yang dapat menghapus resto';
+  end if;
+
+  if p_resto_id = 'kaatago' then
+    raise exception 'Penyewa platform tidak dapat dihapus';
+  end if;
+
+  update restaurants
+  set is_deleted = p_deleted,
+      deleted_at = case when p_deleted then now() else null end,
+      deleted_by = case when p_deleted then auth.jwt() ->> 'email' else null end,
+      -- Ikut dinonaktifkan supaya seluruh saringan `active` yang sudah
+      -- ada di aplikasi langsung berlaku, tanpa menunggu tiap layar
+      -- diajari mengenali penanda baru ini.
+      active = case when p_deleted then false else active end
+  where id = p_resto_id;
+end;
+$$;
 
 commit;

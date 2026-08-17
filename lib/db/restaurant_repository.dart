@@ -21,12 +21,10 @@ class RestaurantRepository {
   /// baris itu tidak boleh pernah muncul sebagai pilihan resto di layar
   /// mana pun. Menyaringnya di satu tempat berarti tidak ada layar baru
   /// yang bisa lupa menyaringnya.
-  Future<List<Restaurant>> getAll() async {
-    final rows = await _client
-        .from('restaurants')
-        .select()
-        .eq('is_platform', false)
-        .order('name');
+  Future<List<Restaurant>> getAll({bool includeDeleted = false}) async {
+    var q = _client.from('restaurants').select().eq('is_platform', false);
+    if (!includeDeleted) q = q.eq('is_deleted', false);
+    final rows = await q.order('name');
     return rows.map((r) => Restaurant.fromMap(r['id'] as String, r)).toList();
   }
 
@@ -38,8 +36,22 @@ class RestaurantRepository {
         .select()
         .eq('active', true)
         .eq('is_platform', false)
+        .eq('is_deleted', false)
         .order('name');
     return rows.map((r) => Restaurant.fromMap(r['id'] as String, r)).toList();
+  }
+
+  /// Menghapus resto dari daftar — atau mengembalikannya.
+  ///
+  /// Lewat RPC, bukan update langsung: penandanya ikut mencatat siapa
+  /// dan kapan. Penghapusan tanpa jejak pelakunya adalah pertanyaan yang
+  /// tidak akan pernah terjawab saat ada yang menanyakannya enam bulan
+  /// kemudian.
+  Future<void> setDeleted(String id, bool deleted) async {
+    await _client.rpc('set_resto_deleted', params: {
+      'p_resto_id': id,
+      'p_deleted': deleted,
+    });
   }
 
   Future<void> setActive(String id, bool active) async {

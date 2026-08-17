@@ -53,6 +53,7 @@ FILES=(
   billing.sql
   billing_va.sql
   platform_finance.sql
+  resto_soft_delete.sql
 )
 
 {

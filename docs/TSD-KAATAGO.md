@@ -1,6 +1,6 @@
 # KaataGo — Technical Specification Document
 
-**Versi Aplikasi:** 1.45.4 (build 92)
+**Versi Aplikasi:** 1.46.0 (build 93)
 **Versi Dokumen:** 1.0
 **Tanggal Terbit:** 17 Agustus 2026
 **Status:** Rilis
@@ -872,6 +872,6 @@ diganti.
 
 ---
 
-*Dokumen ini disusun dari kode aplikasi versi 1.45.4. Sisi
+*Dokumen ini disusun dari kode aplikasi versi 1.46.0. Sisi
 fungsionalnya — peran, proses bisnis, aturan, dan tangkapan layar tiap
 peran — ada di `FSD-KAATAGO`.*

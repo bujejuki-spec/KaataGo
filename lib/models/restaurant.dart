@@ -35,6 +35,15 @@ class Restaurant {
   final String? category;
   final bool active;
 
+  /// Dihapus dari daftar, tapi datanya tetap ada.
+  ///
+  /// Penghapusan sungguhan akan membawa serta seluruh isi restonya —
+  /// hampir semua tabel menggantung padanya dengan `on delete cascade`,
+  /// termasuk jurnal GL. Itu bukan yang dimaksud orang saat menghapus
+  /// resto dari daftar.
+  final bool isDeleted;
+  final DateTime? deletedAt;
+
   /// Contact number printed on the receipt. Optional.
   final String? phone;
 
@@ -74,6 +83,8 @@ class Restaurant {
     required this.address,
     this.category,
     this.active = true,
+    this.isDeleted = false,
+    this.deletedAt,
     this.logoBase64,
     this.phone,
     this.latitude,
@@ -112,6 +123,10 @@ class Restaurant {
       address: map['address'] as String? ?? '',
       category: map['category'] as String?,
       active: map['active'] as bool? ?? true,
+      isDeleted: map['is_deleted'] as bool? ?? false,
+      deletedAt: map['deleted_at'] == null
+          ? null
+          : DateTime.parse(map['deleted_at'].toString()).toLocal(),
       logoBase64: map['logo_base64'] as String?,
       phone: map['phone'] as String?,
       latitude: (map['latitude'] as num?)?.toDouble(),

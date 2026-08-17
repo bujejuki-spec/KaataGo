@@ -1,6 +1,6 @@
 # KaataGo — Test Case
 
-**Versi Aplikasi:** 1.45.4 (build 92)
+**Versi Aplikasi:** 1.46.0 (build 93)
 **Versi Dokumen:** 1.0
 **Tanggal Terbit:** 17 Agustus 2026
 **Status:** Rilis
@@ -433,6 +433,17 @@ dibaca. Tiap kasus di bawah menguji satu perbedaan yang halus.
 | TC-SA-04 | P1 | Buka layar Kirim Pengumuman sebagai Admin resto | Pilihan kategori **Update Aplikasi** tidak tersedia | F-SA-03, F-IN-08 |
 | TC-SA-05 | P2 | Kirim pengumuman umum ke seluruh resto | Muncul di kotak masuk semua resto | F-SA-04 |
 | TC-SA-06 | P2 | Telusuri menu Super Admin | Tidak ada layar kasir, dapur, maupun keuangan resto | F-SA-06 |
+| TC-SA-07 | P1 | List Resto → hapus sebuah resto | Hilang dari daftar; datanya tidak dibuang | F-SA-07 |
+| TC-SA-08 | P1 | Buka Pilih Resto sebagai pelanggan | Resto terhapus **tidak muncul** | F-SA-10 |
+| TC-SA-09 | P1 | Pindai QR meja resto yang sudah dihapus, coba pesan | Ditolak database, bukan hanya disembunyikan layarnya | F-SA-10 |
+| TC-SA-10 | P1 | Coba ubah harga produk resto terhapus | Ditolak | F-SA-10 |
+| TC-SA-11 | P1 | Terbitkan tagihan setelah resto dihapus | Tidak ada tagihan baru untuk resto itu | F-SA-11 |
+| TC-SA-12 | P1 | Periksa tagihan lama resto terhapus | Masih ada dan bisa ditelusuri | F-SA-11 |
+| TC-SA-13 | P2 | Nyalakan saklar **Tampilkan yang dihapus** | Resto terhapus muncul, hanya dengan tombol Kembalikan | F-SA-09 |
+| TC-SA-14 | P1 | Ketuk **Kembalikan** | Kembali ke daftar, tapi **belum aktif** — harus dinyalakan sendiri | F-SA-08 |
+| TC-SA-15 | P1 | Coba hapus penyewa platform (KaataGo) | Ditolak | TSD §7.4 |
+| TC-SA-16 | P1 | Coba `set_resto_deleted` sebagai Owner resto | Ditolak — hanya Super Admin | F-SA-07 |
+| TC-SA-17 | P2 | Periksa baris resto terhapus di database | `deleted_by` dan `deleted_at` terisi | F-SA-12 |
 
 ---
 
@@ -707,12 +718,12 @@ Tiap kelompok kebutuhan di FSD, dan kasus uji yang menjaganya.
 | QRIS (PG) | 7 | TC-PG-01…10, TC-TS-15, TC-TS-16 |
 | Pembatalan (CN) | 6 | TC-CN-01…09, E2E-07 |
 | Tampilan (TM) | 4 | TC-TM-01…08 |
-| Super Admin (SA) | 6 | TC-SA-01…06 |
+| Super Admin (SA) | 12 | TC-SA-01…17 |
 | Sesi Meja (SS) | 7 | TC-SS-01…07 |
 | Pembaruan (UP) | 7 | TC-UP-01…09 |
 | Langganan (BL) | 24 | TC-BL-01…25, E2E-09 |
 | Finance KaataGo (PF) | 12 | TC-PF-01…19 |
-| **Total** | **201** | **235 kasus + 8 alur ujung-ke-ujung** |
+| **Total** | **207** | **235 kasus + 8 alur ujung-ke-ujung** |
 
 Kriteria penerimaan A-01…A-20 di FSD §9 seluruhnya terpetakan lewat
 kolom Rujukan di atas. Bab TSD yang diuji: §1.2, §4, §5, §6, §7, §8,
@@ -720,7 +731,7 @@ kolom Rujukan di atas. Bab TSD yang diuji: §1.2, §4, §5, §6, §7, §8,
 
 ---
 
-*Dokumen ini disusun dari aplikasi versi 1.45.4 berikut `FSD-KAATAGO`
+*Dokumen ini disusun dari aplikasi versi 1.46.0 berikut `FSD-KAATAGO`
 dan `TSD-KAATAGO` pada tanggal yang sama. Kasus uji yang tidak lagi
 cocok dengan aplikasinya adalah temuan — entah pada aplikasinya, entah
 pada dokumennya.*
