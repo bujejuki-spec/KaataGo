@@ -1,6 +1,6 @@
 # KaataGo — Technical Specification Document
 
-**Versi Aplikasi:** 1.46.1 (build 94)
+**Versi Aplikasi:** 1.46.2 (build 95)
 **Versi Dokumen:** 1.0
 **Tanggal Terbit:** 17 Agustus 2026
 **Status:** Rilis
@@ -798,6 +798,21 @@ seluruh `supabase/*.sql` dan menolak nama batasan yang punya lebih dari
 satu bentuk daftar. Tes itu menemukan `employees_role_check` dengan tiga
 daftar berbeda yang belum sempat meledak.
 
+### 11.1b Dua layar yang membaca data sama harus menyebut angka sama
+
+Jurnal GL per resto mengeluarkan baris pembatalan dari totalnya; layar
+Jurnal Semua Resto semula tidak. Selisihnya muncul **persis sama di sisi
+debit dan kredit** — karena pembatalan memang cermin dari baris yang
+dibatalkannya, jadi menghitungnya menaikkan keduanya sekaligus.
+
+Bentuk kegagalan ini sulit dilihat dari kodenya: dua layar itu benar
+sendiri-sendiri, dan yang salah cuma kesepakatan di antara keduanya.
+Yang menemukannya adalah orang yang kebetulan membandingkan dua angka
+yang seharusnya sama.
+
+Aturannya sekarang dikunci tes yang membaca **kedua berkas layar
+sekaligus** dan menuntut keduanya memakai kunci pasangan yang sama.
+
 ### 11.2 Mengubah tipe kembalian fungsi butuh DROP lebih dulu
 
 `create or replace function` bisa mengubah isi fungsi, tapi **tidak bisa
@@ -882,10 +897,11 @@ diganti.
 | `min_qty` | Digantikan tapi masih ada | Dua kolom untuk satu hal sampai 1.45.3 tidak lagi terpasang |
 | Tes ujung-ke-ujung | Tidak ada | Kegagalan integrasi baru ketahuan saat dipakai |
 | iOS | Tidak dibangun | Hanya Android |
+| Jurnal lintas resto dibatasi 1.000 baris | Tidak ada penanda saat terpotong | Angka bisa kurang tanpa terlihat kalau data melewati batas itu |
 | Unduhan besar | Bisa terhenti | Kalau sistem kehabisan memori saat aplikasi di latar |
 
 ---
 
-*Dokumen ini disusun dari kode aplikasi versi 1.46.1. Sisi
+*Dokumen ini disusun dari kode aplikasi versi 1.46.2. Sisi
 fungsionalnya — peran, proses bisnis, aturan, dan tangkapan layar tiap
 peran — ada di `FSD-KAATAGO`.*

@@ -1,6 +1,6 @@
 # KaataGo — Functional Specification Document
 
-**Versi Aplikasi:** 1.46.1 (build 94)
+**Versi Aplikasi:** 1.46.2 (build 95)
 **Versi Dokumen:** 2.1
 **Tanggal Terbit:** 17 Agustus 2026
 **Status:** Rilis
@@ -345,7 +345,8 @@ membacanya.
 | F-DS-06 | Dapat dinonaktifkan tanpa dihapus |
 | F-DS-07 | Potongan tampil sebagai baris tersendiri berikut nama promonya, lalu nominal **DIBAYAR** |
 | F-DS-08 | Diskon tercatat pada pesanannya, sehingga struk lama tetap menyebut potongan yang benar |
-| F-DS-09 | Diskon punya **GL sendiri** sebagai pengurang pendapatan |
+| F-DS-09 | Diskon punya **GL sendiri** sebagai pengurang pendapatan, terisi bawaannya |
+| F-DS-13 | Baris jurnal diskon menyebut nama promonya — "Ngopi Santai — pesanan #A2F6F5A2" |
 
 **Aturan pemilihan:**
 
@@ -538,6 +539,13 @@ keuangan lain di aplikasi ini.
 | F-PF-10 | **Tidak ada Setor Saldo Cash** di sisi KaataGo |
 | F-PF-11 | Super Admin dapat melihat **Jurnal GL seluruh resto**, dengan saringan per resto |
 | F-PF-12 | Jurnal lintas resto **hanya bisa dilihat** — tidak ada satu pun cara mengubahnya |
+| F-PF-14 | Total debit/kredit **tidak menghitung baris pembatalan**, sama seperti jurnal per resto |
+| F-PF-15 | Baris pembatalan tetap **ditampilkan** dan ditandai, demi jejak audit |
+| F-PF-16 | Saringan resto yang sedang berlaku **tertulis di layar**, berikut cara melepasnya |
+| F-PF-17 | Resto yang belum punya jurnal disebut apa adanya di daftar saringan |
+| F-PF-18 | Jurnal dikelompokkan **per tanggal** dan dapat dilipat; tanggal terbaru terbuka |
+| F-PF-19 | GL Diskon punya **nilai bawaan** di tiap resto, tetap dapat diubah lewat Mapping GL |
+| F-PF-20 | Baris jurnal diskon menyebut **nama promonya**, bukan sekadar kata "Diskon" |
 
 > **Kenapa tidak ada Setor Saldo Cash.** Menyetor tunai ke rekening
 > adalah pekerjaan resto yang uangnya menumpuk di laci kasir. KaataGo
@@ -1241,6 +1249,6 @@ tampilannya dari peran lain.
 !!ss[Kelompok KEUANGAN dalam mode gelap](gambar/capture/Darkmode/Owner/Screenshot_20260816-215208.jpg)
 !!ss[Kelompok PENGELOLAAN dalam mode gelap](gambar/capture/Darkmode/Owner/Screenshot_20260816-215213.jpg)
 
-*Dokumen ini disusun dari aplikasi versi 1.46.1. Sisi teknisnya —
+*Dokumen ini disusun dari aplikasi versi 1.46.2. Sisi teknisnya —
 arsitektur, tabel, keamanan baris, prasyarat basis data — ada di
 `SPESIFIKASI-KAATAGO`.*

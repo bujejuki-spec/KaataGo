@@ -1,6 +1,6 @@
 # KaataGo — Test Case
 
-**Versi Aplikasi:** 1.46.1 (build 94)
+**Versi Aplikasi:** 1.46.2 (build 95)
 **Versi Dokumen:** 1.0
 **Tanggal Terbit:** 17 Agustus 2026
 **Status:** Rilis
@@ -493,6 +493,11 @@ sudah membayar berhenti berjualan.
 | TC-BL-14g | P1 | Kirim callback palsu ke `xendit-billing-webhook` tanpa token | Ditolak 401; tagihan tidak berubah | TSD §7.3 |
 | TC-BL-14h | P2 | Xendit mengirim callback yang sama dua kali | Tagihan tetap lunas sekali; catatan pelunasnya tidak berubah | TSD §7.3 |
 | TC-BL-14i | P2 | Unggah bukti transfer manual lewat jalur cadangan | Status jadi **Menunggu Verifikasi**; aplikasi **terbuka lagi** | F-BL-24, F-BL-12 |
+| TC-BL-26 | P2 | Dengan kunci uji Xendit, buka tagihan ber-VA | Tombol **Simulasikan Pembayaran** muncul | TSD §7.3 |
+| TC-BL-27 | P1 | Ketuk Simulasikan Pembayaran | Tagihan jadi Lunas sendiri lewat webhook; kunci resto terbuka | F-BL-22 |
+| TC-BL-28 | P1 | Pasang kunci produksi Xendit, buka layar yang sama | Tombol simulasi **hilang sendiri** | TSD §7.3 |
+| TC-BL-29 | P1 | Buat diskon langganan setelah tagihan terbit → ketuk segarkan di Super Admin | Nominal tagihan turun; nomor VA lama **dibuang** | F-BL-05 |
+| TC-BL-30 | P1 | Buat VA baru setelah nominalnya berubah | Nominalnya sesuai yang sudah dipotong | F-BL-20 |
 | TC-BL-15 | P1 | Coba kirim bukti tanpa melampirkan foto | Tombol Kirim mati | F-BL-11 |
 | TC-BL-16 | P1 | Super Admin → tab Tagihan → **Terima** | Status jadi Lunas; resto tetap terbuka; pita hilang | F-BL-13 |
 | TC-BL-17 | P1 | Super Admin → **Tolak** tanpa mengisi alasan | Tombol Tolak tidak menyelesaikan apa-apa — alasan wajib | F-BL-14 |
@@ -545,6 +550,17 @@ sudah membayar berhenti berjualan.
 | TC-PF-17 | P1 | Buka Pilih Resto sebagai pelanggan | **KaataGo tidak muncul** di daftar mana pun | TSD §7.4 |
 | TC-PF-18 | P1 | Buka List Resto dan Billing Resto sebagai Super Admin | KaataGo tidak muncul sebagai resto yang bisa ditagih | TSD §7.4 |
 | TC-PF-19 | P2 | Buka Diskon Langganan sebagai Owner resto | Hanya diskon yang mengenai restonya yang terbaca | F-PF-03 |
+| TC-PF-20 | P1 | Bandingkan total debit/kredit Jurnal Semua Resto dengan Jurnal GL resto itu (saring ke resto yang sama) | **Angkanya sama persis** | F-PF-14 |
+| TC-PF-21 | P1 | Batalkan sebuah pengeluaran, lihat kedua layar jurnal | Total tidak naik; keterangan "N pembatalan tidak dihitung" muncul | F-PF-14 |
+| TC-PF-22 | P2 | Cari baris pembatalan di daftar | Tetap tampil, bertanda **PEMBATALAN** | F-PF-15 |
+| TC-PF-23 | P1 | Saring ke sebuah resto, lalu pilih **Semua resto** lagi | Kembali menampilkan seluruh resto — bukan tetap tersaring | F-PF-16 |
+| TC-PF-24 | P1 | Saring ke resto A, lalu saring lagi ke resto B yang punya jurnal | Isinya berganti ke jurnal resto B | F-PF-16 |
+| TC-PF-25 | P2 | Perhatikan pita di atas layar sesudah menyaring | Nama restonya tertulis, dengan tombol × untuk melepasnya | F-PF-16 |
+| TC-PF-26 | P2 | Buka daftar saringan | Resto yang belum punya jurnal ditandai "Belum ada jurnal" | F-PF-17 |
+| TC-PF-27 | P2 | Perhatikan pengelompokan | Per tanggal, bisa dilipat; tanggal terbaru terbuka, sisanya tertutup | F-PF-18 |
+| TC-PF-28 | P1 | Buka Mapping GL Account resto mana pun | **GL Diskon** punya bagiannya dan nomornya sudah terisi | F-PF-19, F-DS-09 |
+| TC-PF-29 | P2 | Buka Mapping GL Account KaataGo | Ada bagian **GL Langganan**; penghitung akun tidak pernah menyisakan yang mustahil terisi | F-PF-19 |
+| TC-PF-30 | P1 | Pesan menu berpromo, bayar, buka Jurnal GL | Baris GL Diskon menyebut **nama promonya** | F-PF-20, F-DS-13 |
 
 ---
 
@@ -721,9 +737,9 @@ Tiap kelompok kebutuhan di FSD, dan kasus uji yang menjaganya.
 | Super Admin (SA) | 12 | TC-SA-01…17 |
 | Sesi Meja (SS) | 7 | TC-SS-01…07 |
 | Pembaruan (UP) | 7 | TC-UP-01…09 |
-| Langganan (BL) | 24 | TC-BL-01…25, E2E-09 |
-| Finance KaataGo (PF) | 12 | TC-PF-01…19 |
-| **Total** | **207** | **235 kasus + 8 alur ujung-ke-ujung** |
+| Langganan (BL) | 24 | TC-BL-01…30, E2E-09 |
+| Finance KaataGo (PF) | 20 | TC-PF-01…30 |
+| **Total** | **217** | **235 kasus + 8 alur ujung-ke-ujung** |
 
 Kriteria penerimaan A-01…A-20 di FSD §9 seluruhnya terpetakan lewat
 kolom Rujukan di atas. Bab TSD yang diuji: §1.2, §4, §5, §6, §7, §8,
@@ -731,7 +747,7 @@ kolom Rujukan di atas. Bab TSD yang diuji: §1.2, §4, §5, §6, §7, §8,
 
 ---
 
-*Dokumen ini disusun dari aplikasi versi 1.46.1 berikut `FSD-KAATAGO`
+*Dokumen ini disusun dari aplikasi versi 1.46.2 berikut `FSD-KAATAGO`
 dan `TSD-KAATAGO` pada tanggal yang sama. Kasus uji yang tidak lagi
 cocok dengan aplikasinya adalah temuan — entah pada aplikasinya, entah
 pada dokumennya.*
