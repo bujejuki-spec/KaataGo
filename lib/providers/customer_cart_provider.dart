@@ -115,6 +115,7 @@ class CustomerCartProvider extends ChangeNotifier {
     Product product, {
     int quantity = 1,
     Map<String, String>? selectedLevels,
+    List<String>? selectedToppings,
     String? notes,
   }) {
     if (quantity <= 0) return;
@@ -123,6 +124,7 @@ class CustomerCartProvider extends ChangeNotifier {
       product: product,
       quantity: quantity,
       selectedLevels: selectedLevels,
+      selectedToppings: selectedToppings,
       notes: notes,
     );
     final existing = _items.where((i) => i.variantKey == candidate.variantKey);
@@ -139,6 +141,7 @@ class CustomerCartProvider extends ChangeNotifier {
     String lineId, {
     required int quantity,
     Map<String, String>? selectedLevels,
+    List<String>? selectedToppings,
     String? notes,
   }) {
     final index = _items.indexWhere((i) => i.lineId == lineId);

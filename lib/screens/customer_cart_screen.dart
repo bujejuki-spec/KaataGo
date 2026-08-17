@@ -305,6 +305,7 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
         product: item.product,
         initialQuantity: item.quantity,
         initialLevels: item.selectedLevels,
+        initialToppings: item.selectedToppings,
         initialNotes: item.notes,
         ppnPercent: cart.ppnPercent,
         editing: true,
@@ -315,6 +316,7 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
       item.lineId,
       quantity: result.quantity,
       selectedLevels: result.selectedLevels,
+      selectedToppings: result.selectedToppings,
       notes: result.notes,
     );
   }

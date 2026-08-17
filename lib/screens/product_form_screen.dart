@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -42,6 +43,13 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   File? _pickedPhoto;
   bool _photoRemoved = false;
   late Set<String> _selectedLevelGroups;
+
+  /// Baris topping yang sedang disunting. Nama dan harganya dipegang
+  /// controller supaya isian yang belum disimpan tidak hilang saat baris
+  /// lain ditambah atau dibuang.
+  final List<({TextEditingController nama, TextEditingController harga})>
+      _topping = [];
+  late final _maxToppingCtrl = TextEditingController();
   /// Resto's PPN rate, loaded once so the form can preview the selling
   /// price. Nothing is stored with the product — only the original price
   /// is persisted, and PPN is applied wherever the price is shown.
@@ -78,6 +86,15 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     _selectedCategory = p?.category;
     _existingPhotoBase64 = p?.photoBase64;
     _selectedLevelGroups = (p?.levelGroups ?? const []).toSet();
+    for (final t in p?.toppings ?? const <Topping>[]) {
+      _topping.add((
+        nama: TextEditingController(text: t.name),
+        harga: TextEditingController(
+            text: t.price == 0 ? '' : formatRupiahInput(t.price)),
+      ));
+    }
+    _maxToppingCtrl.text =
+        (p?.maxToppings ?? 0) == 0 ? '' : '${p!.maxToppings}';
     _ppnExempt = p?.ppnExempt ?? false;
     _outOfStock = p?.outOfStock ?? false;
     _serviceExempt = p?.serviceExempt ?? false;
@@ -226,6 +243,20 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
         },
     };
 
+    // Baris tanpa nama dibuang diam-diam: itu baris yang ditambah lalu
+    // ditinggalkan, dan menyimpannya berarti menawarkan topping tak
+    // bernama ke pelanggan.
+    final toppings = <Topping>[
+      for (final t in _topping)
+        if (t.nama.text.trim().isNotEmpty)
+          Topping(
+            name: t.nama.text.trim(),
+            price: parseRupiah(t.harga.text) ?? 0,
+          ),
+    ];
+    final maxToppings =
+        (int.tryParse(_maxToppingCtrl.text.trim()) ?? 0).clamp(0, 99);
+
     if (widget.existing == null) {
       await provider.addProduct(
         name: name,
@@ -236,6 +267,8 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
         photoBase64: photoBase64,
         levelGroups: _selectedLevelGroups.toList(),
         levelPrices: levelPrices,
+        toppings: toppings,
+        maxToppings: maxToppings,
         ppnExempt: _ppnExempt,
         serviceExempt: _serviceExempt,
         outOfStock: _outOfStock,
@@ -250,6 +283,8 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
         photoBase64: photoBase64,
         levelGroups: _selectedLevelGroups.toList(),
         levelPrices: levelPrices,
+        toppings: toppings,
+        maxToppings: maxToppings,
         ppnExempt: _ppnExempt,
         serviceExempt: _serviceExempt,
         outOfStock: _outOfStock,
@@ -578,6 +613,120 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                           ),
                       ],
                     ),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 20),
+              const Text('Topping (opsional)',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 4),
+              Text(
+                'Tambahan yang bisa dipilih beberapa sekaligus, masing-masing '
+                'dengan harganya sendiri. Beda dengan Level yang cuma bisa '
+                'dipilih satu.',
+                style: TextStyle(color: KaataTheme.mutedOf(context), fontSize: 12),
+              ),
+              const SizedBox(height: 10),
+              for (var i = 0; i < _topping.length; i++)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _topping[i].nama,
+                          enabled: _editing,
+                          decoration: InputDecoration(
+                            isDense: true,
+                            labelText: 'Nama topping',
+                            hintText: 'Keju, Telur, Extra Pedas',
+                            border: const OutlineInputBorder(),
+                            filled: !_editing,
+                            fillColor: _editing
+                                ? null
+                                : KaataTheme.disabledFillOf(context),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      SizedBox(
+                        width: 120,
+                        child: TextFormField(
+                          controller: _topping[i].harga,
+                          enabled: _editing,
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [ThousandsInputFormatter()],
+                          decoration: InputDecoration(
+                            isDense: true,
+                            prefixText: 'Rp ',
+                            border: const OutlineInputBorder(),
+                            filled: !_editing,
+                            fillColor: _editing
+                                ? null
+                                : KaataTheme.disabledFillOf(context),
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: 'Hapus',
+                        icon: const Icon(Icons.close, size: 18),
+                        onPressed: !_editing
+                            ? null
+                            : () => setState(() {
+                                  _topping[i].nama.dispose();
+                                  _topping[i].harga.dispose();
+                                  _topping.removeAt(i);
+                                }),
+                      ),
+                    ],
+                  ),
+                ),
+              if (_editing)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: () => setState(() => _topping.add((
+                          nama: TextEditingController(),
+                          harga: TextEditingController(),
+                        ))),
+                    icon: const Icon(Icons.add, size: 18),
+                    label: const Text('Tambah Topping'),
+                  ),
+                ),
+              if (_topping.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                SizedBox(
+                  width: 220,
+                  child: TextFormField(
+                    controller: _maxToppingCtrl,
+                    enabled: _editing,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    decoration: InputDecoration(
+                      labelText: 'Maks. topping dipilih',
+                      // Batasnya ada bukan cuma soal harga: dapur punya
+                      // ruang terbatas di atas satu porsi, dan "semua
+                      // topping sekaligus" adalah pesanan yang tidak bisa
+                      // dibuat.
+                      helperText: 'Kosong = tanpa batas',
+                      isDense: true,
+                      border: const OutlineInputBorder(),
+                      filled: !_editing,
+                      fillColor:
+                          _editing ? null : KaataTheme.disabledFillOf(context),
+                    ),
+                    validator: (v) {
+                      final n = int.tryParse((v ?? '').trim());
+                      if (n == null) return null;
+                      if (n < 0) return 'Tidak boleh minus';
+                      final berisi = _topping
+                          .where((t) => t.nama.text.trim().isNotEmpty)
+                          .length;
+                      if (n > berisi) {
+                        return 'Cuma ada $berisi topping';
+                      }
+                      return null;
+                    },
                   ),
                 ),
               ],

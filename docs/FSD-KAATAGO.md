@@ -167,6 +167,8 @@ selesai — tidak ada gunanya menyetujui permintaan sendiri.
 | F-CU-02 | Masuk ke menu resto lewat scan QR meja **atau** memilih resto dari daftar |
 | F-CU-03 | Scan QR meja mengisi nomor mejanya otomatis dan menguncinya |
 | F-CU-04 | Memilih level/varian dan menuliskan catatan per menu |
+| F-CU-25 | Memilih **beberapa topping sekaligus**, dibatasi maksimal yang disetel resto |
+| F-CU-26 | Harga tiap topping tampil di pilihannya, dan subtotal berubah seketika |
 | F-CU-05 | Satu produk dengan varian berbeda menjadi **baris terpisah** di keranjang |
 | F-CU-06 | Menu yang telanjur ditambahkan dapat dihapus atau diubah dari keranjang |
 | F-CU-07 | Memilih **Dine In** atau **Take Away**; Take Away tidak meminta nomor meja |
@@ -276,6 +278,9 @@ kasir **tidak boleh** muncul di daftar ini.
 | F-AD-09 | **Tab Level**: menyusun sendiri kelompok level/varian resto ini berikut pilihannya |
 | F-AD-10 | Resto baru disemai lima kelompok bawaan (Level Pedas, Level Gula, Level Es, Suhu, Ukuran) |
 | F-AD-11 | Kelompok level minimal punya **2 pilihan**; nama kelompok tidak boleh kembar dalam satu resto |
+| F-AD-18 | Produk dapat menawarkan **topping** — opsional, masing-masing dengan harganya sendiri |
+| F-AD-19 | Topping dapat dibatasi: **maksimal berapa** yang boleh dipilih sekaligus; kosong berarti tanpa batas |
+| F-AD-20 | Topping berharga **Rp 0** tetap boleh ditawarkan |
 | F-AD-12 | Stok **opsional**; ketersediaan ditentukan penanda **Out of Stock**, bukan angka stok |
 | F-AD-13 | Produk dapat ditandai habis langsung dari daftar, tanpa membuka formulirnya |
 | F-AD-14 | Stok tidak ditampilkan ke pelanggan |

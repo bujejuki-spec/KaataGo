@@ -282,6 +282,18 @@ kali.
 | TC-AD-08 | P2 | Buka tab **Level** pada resto baru | Lima kelompok bawaan sudah terisi | F-AD-10 |
 | TC-AD-09 | P2 | Buat kelompok level dengan **satu** pilihan | Ditolak — minimal dua pilihan | F-AD-11 |
 | TC-AD-10 | P2 | Buat kelompok level bernama sama dengan yang sudah ada | Ditolak | F-AD-11 |
+| TC-TP-01 | P2 | Tambah produk tanpa mengisi topping | Tersimpan; layar pesannya tidak menampilkan bagian topping | F-AD-18 |
+| TC-TP-02 | P2 | Tambah 5 topping berharga berbeda, maks. 2 | Tersimpan apa adanya | F-AD-18, F-AD-19 |
+| TC-TP-03 | P1 | Pesan menu itu, pilih 2 topping | Harga naik sesuai jumlah keduanya; subtotal berubah seketika | F-CU-25, F-CU-26 |
+| TC-TP-04 | P1 | Coba pilih topping ketiga | Pilihan sisanya mati, dengan keterangan batasnya | F-AD-19 |
+| TC-TP-05 | P2 | Lepas satu topping saat batas tercapai | Bisa dilepas, lalu topping lain bisa dipilih | F-AD-19 |
+| TC-TP-06 | P2 | Kosongkan maks. topping | Semua topping bisa dipilih sekaligus | F-AD-19 |
+| TC-TP-07 | P2 | Isi maks. topping lebih besar dari jumlah toppingnya | Ditolak — disebutkan ada berapa | F-AD-19 |
+| TC-TP-08 | P2 | Tambah topping berharga Rp 0 | Boleh; namanya tampil tanpa tambahan harga | F-AD-20 |
+| TC-TP-09 | P1 | Pesan menu sama dua kali dengan urutan topping dibalik | Menyatu jadi satu baris, bukan dua | F-CU-05 |
+| TC-TP-10 | P1 | Periksa tiket dapur dan struk | Toppingnya tertulis | F-CU-25 |
+| TC-TP-11 | P2 | Sunting baris keranjang yang bertopping | Pilihan toppingnya masih tercentang | F-CU-06 |
+| TC-TP-12 | P1 | Pesan dari HP pelanggan dan dari kasir | Perilaku dan harganya sama | F-CU-25 |
 | TC-AD-11 | P1 | Ubah email seorang karyawan | Riwayat transaksinya tetap utuh atas namanya | F-AD-05 |
 | TC-AD-12 | P2 | Info Resto → ambil titik lokasi sekali tekan | Pin berpindah ke posisi sekarang; pratinjau peta ikut bergeser | F-AD-06, F-AD-15 |
 | TC-AD-13 | P2 | Geser pin di pratinjau peta, simpan, buka lagi | Titik yang tersimpan sama dengan yang terakhir digeser | F-AD-15 |
@@ -738,7 +750,7 @@ Tiap kelompok kebutuhan di FSD, dan kasus uji yang menjaganya.
 | Dapur (CH) | 8 | TC-CH-01…12 |
 | Keuangan (FN) | 11 | TC-FN-01…17, E2E-05 |
 | Setor Saldo (SD) | 7 | TC-SD-01…09, E2E-04 |
-| Katalog (AD) | 17 | TC-AD-01…19 |
+| Katalog (AD) | 20 | TC-AD-01…19, TC-TP-01…12 |
 | QR Meja (QR) | 7 | TC-QR-01…08 |
 | Kotak Masuk (IN) | 19 | TC-IN-01…14, TC-UP-04…09 |
 | Diskon (DS) | 12 | TC-DS-01…21, E2E-06 |
@@ -750,7 +762,7 @@ Tiap kelompok kebutuhan di FSD, dan kasus uji yang menjaganya.
 | Pembaruan (UP) | 7 | TC-UP-01…09 |
 | Langganan (BL) | 24 | TC-BL-01…30, E2E-09 |
 | Finance KaataGo (PF) | 21 | TC-PF-01…34 |
-| **Total** | **222** | **235 kasus + 8 alur ujung-ke-ujung** |
+| **Total** | **227** | **235 kasus + 8 alur ujung-ke-ujung** |
 
 Kriteria penerimaan A-01…A-20 di FSD §9 seluruhnya terpetakan lewat
 kolom Rujukan di atas. Bab TSD yang diuji: §1.2, §4, §5, §6, §7, §8,

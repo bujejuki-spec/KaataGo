@@ -19,6 +19,13 @@ class CartItem {
   /// entry per group in [Product.levelGroups].
   Map<String, String> selectedLevels;
 
+  /// Topping yang dipilih, disebut namanya.
+  ///
+  /// Yang disimpan namanya saja, bukan harganya: harga dicari dari
+  /// produknya saat dihitung. Harga yang ikut dibawa pilihan bisa
+  /// diubah siapa pun yang mau menambahkan keju seharga nol rupiah.
+  List<String> selectedToppings;
+
   /// Free-text note from whoever is ordering (customer/kasir/admin), e.g.
   /// "tanpa bawang" — always optional, on top of the level selections.
   String? notes;
@@ -28,8 +35,10 @@ class CartItem {
     required this.product,
     this.quantity = 1,
     Map<String, String>? selectedLevels,
+    List<String>? selectedToppings,
     this.notes,
-  }) : selectedLevels = selectedLevels ?? {};
+  })  : selectedLevels = selectedLevels ?? {},
+        selectedToppings = selectedToppings ?? [];
 
   /// Identifies the *configuration* rather than the line: two lines of
   /// the same product with identical options and note are the same thing
@@ -37,15 +46,24 @@ class CartItem {
   /// duplicate rows.
   String get variantKey {
     final options = selectedLevels.entries.map((e) => '${e.key}=${e.value}').toList()..sort();
-    return '${product.id}|${options.join(',')}|${notes?.trim() ?? ''}';
+    // Toppingnya diurutkan lebih dulu: keju+telur dan telur+keju adalah
+    // pesanan yang sama, dan tanpa diurutkan keduanya jadi dua baris
+    // berbeda di keranjang maupun di layar dapur.
+    final tops = [...selectedToppings]..sort();
+    return '${product.id}|${options.join(',')}|${tops.join(',')}|'
+        '${notes?.trim() ?? ''}';
   }
 
   /// Unit price after adding any per-level price deltas (e.g. "Ukuran:
-  /// Large" adding Rp 5.000 on top of the base price).
-  int get effectiveUnitPrice =>
-      product.price +
-      selectedLevels.entries
-          .fold(0, (sum, e) => sum + product.priceDeltaFor(e.key, e.value));
+  /// Large" adding Rp 5.000 on top of the base price) dan harga tiap
+  /// topping yang dipilih.
+  int get effectiveUnitPrice {
+    final level = selectedLevels.entries
+        .fold<int>(0, (sum, e) => sum + product.priceDeltaFor(e.key, e.value));
+    final topping = selectedToppings
+        .fold<int>(0, (sum, t) => sum + product.toppingPrice(t));
+    return product.price + level + topping;
+  }
 
   int get subtotal => effectiveUnitPrice * quantity;
 
@@ -54,6 +72,7 @@ class CartItem {
   String? get noteSummary {
     final parts = <String>[
       for (final entry in selectedLevels.entries) '${entry.key}: ${entry.value}',
+      if (selectedToppings.isNotEmpty) 'Topping: ${selectedToppings.join(', ')}',
     ];
     final combined = parts.join(', ');
     final trimmedNotes = notes?.trim() ?? '';

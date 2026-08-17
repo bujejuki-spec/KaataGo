@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../theme.dart';
+
 import '../models/level_option.dart';
 import '../models/product.dart';
 import '../utils/tax_calculator.dart';
@@ -15,11 +17,13 @@ import 'dialog_actions.dart';
 class QuantityDialogResult {
   final int quantity;
   final Map<String, String> selectedLevels;
+  final List<String> selectedToppings;
   final String? notes;
 
   const QuantityDialogResult({
     required this.quantity,
     required this.selectedLevels,
+    this.selectedToppings = const [],
     this.notes,
   });
 }
@@ -33,6 +37,10 @@ class QuantityDialog extends StatefulWidget {
   final Product product;
   final int initialQuantity;
   final Map<String, String>? initialLevels;
+
+  /// Topping yang sudah dipilih sebelumnya — dipakai saat baris
+  /// keranjang disunting kembali.
+  final List<String>? initialToppings;
   final String? initialNotes;
 
   /// Resto's PPN rate — figures here must match the menu prices the
@@ -54,6 +62,7 @@ class QuantityDialog extends StatefulWidget {
     required this.product,
     this.initialQuantity = 1,
     this.initialLevels,
+    this.initialToppings,
     this.initialNotes,
     this.ppnPercent = 0,
     this.editing = false,
@@ -70,6 +79,11 @@ class _QuantityDialogState extends State<QuantityDialog> {
   int _quantity = 1;
   late Map<String, String> _selectedLevels;
 
+  /// Topping yang dipilih. Kosong secara bawaan — topping adalah
+  /// tambahan, dan tambahan yang tercentang sendiri berarti pelanggan
+  /// membayar sesuatu yang tidak pernah dia minta.
+  late Set<String> _selectedToppings;
+
   @override
   void initState() {
     super.initState();
@@ -84,7 +98,14 @@ class _QuantityDialogState extends State<QuantityDialog> {
             LevelGroupRegistry.firstOptionOf(group) ??
             '',
     };
+    _selectedToppings = {...?widget.initialToppings};
   }
+
+  /// Batas topping sudah tercapai — sisanya dimatikan, bukan
+  /// disembunyikan. Pilihan yang lenyap membuat orang mengira menunya
+  /// berubah; pilihan yang meredup memberi tahu ada batas.
+  bool get _batasTercapai =>
+      _selectedToppings.length >= widget.product.effectiveMaxToppings;
 
   /// Sisa stok hanya untuk yang berhak melihatnya, dan hanya kalau
   /// restonya memang menghitungnya.
@@ -132,10 +153,14 @@ class _QuantityDialogState extends State<QuantityDialog> {
     );
     // Extra price from whichever level options are currently selected
     // (e.g. "Ukuran: Large") — added on top of the base price per item.
-    final priceDelta = _selectedLevels.entries.fold(
-      0,
-      (sum, e) => sum + widget.product.priceDeltaFor(e.key, e.value),
-    );
+    final priceDelta = _selectedLevels.entries.fold<int>(
+          0,
+          (sum, e) => sum + widget.product.priceDeltaFor(e.key, e.value),
+        ) +
+        _selectedToppings.fold<int>(
+          0,
+          (sum, t) => sum + widget.product.toppingPrice(t),
+        );
     // Priced the way the customer sees it on the menu: original + PPN.
     // The pre-tax figures are what gets stored on the order; this is
     // display only, so the dialog can't quote a different number than
@@ -207,6 +232,57 @@ class _QuantityDialogState extends State<QuantityDialog> {
                 const SizedBox(height: 10),
               ],
             ],
+            if (widget.product.toppings.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  widget.product.maxToppings > 0
+                      ? 'Topping (maks. ${widget.product.maxToppings})'
+                      : 'Topping (opsional)',
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w600, fontSize: 13),
+                ),
+              ),
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: [
+                  for (final t in widget.product.toppings)
+                    FilterChip(
+                      label: Text(t.price == 0
+                          ? t.name
+                          : '${t.name} +${currency.format(_withPpn(t.price))}'),
+                      selected: _selectedToppings.contains(t.name),
+                      // Yang sudah dipilih tetap bisa dilepas walau
+                      // batasnya tercapai — kalau ikut mati, satu-satunya
+                      // jalan mengubah pilihan adalah menutup dialognya.
+                      onSelected: _batasTercapai &&
+                              !_selectedToppings.contains(t.name)
+                          ? null
+                          : (pilih) => setState(() {
+                                if (pilih) {
+                                  _selectedToppings.add(t.name);
+                                } else {
+                                  _selectedToppings.remove(t.name);
+                                }
+                              }),
+                    ),
+                ],
+              ),
+              if (_batasTercapai && widget.product.maxToppings > 0)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    'Sudah ${widget.product.maxToppings} topping — lepas satu '
+                    'dulu untuk mengganti.',
+                    style: TextStyle(
+                        fontSize: 11, color: KaataTheme.mutedOf(context)),
+                  ),
+                ),
+              const SizedBox(height: 4),
+            ],
             const SizedBox(height: 6),
             const Align(
               alignment: Alignment.centerLeft,
@@ -276,6 +352,7 @@ class _QuantityDialogState extends State<QuantityDialog> {
               onConfirm: () => Navigator.of(context).pop(QuantityDialogResult(
                 quantity: _quantity,
                 selectedLevels: _selectedLevels,
+                selectedToppings: _selectedToppings.toList(),
                 notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
               )),
               onCancel: () => Navigator.of(context).pop(),

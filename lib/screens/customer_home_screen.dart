@@ -402,6 +402,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
       product,
       quantity: result.quantity,
       selectedLevels: result.selectedLevels,
+      selectedToppings: result.selectedToppings,
       notes: result.notes,
     );
   }
@@ -417,6 +418,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
         product: line.product,
         initialQuantity: line.quantity,
         initialLevels: line.selectedLevels,
+        initialToppings: line.selectedToppings,
         initialNotes: line.notes,
         ppnPercent: cart.ppnPercent,
         editing: true,
@@ -427,6 +429,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
       line.lineId,
       quantity: result.quantity,
       selectedLevels: result.selectedLevels,
+      selectedToppings: result.selectedToppings,
       notes: result.notes,
     );
   }

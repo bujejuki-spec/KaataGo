@@ -128,6 +128,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         product: item.product,
         initialQuantity: item.quantity,
         initialLevels: item.selectedLevels,
+        initialToppings: item.selectedToppings,
         initialNotes: item.notes,
         ppnPercent: cart.ppnPercent,
         editing: true,
@@ -138,6 +139,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       item.lineId,
       quantity: result.quantity,
       selectedLevels: result.selectedLevels,
+      selectedToppings: result.selectedToppings,
       notes: result.notes,
     );
   }

@@ -24,7 +24,7 @@ class DatabaseHelper {
 
     return openDatabase(
       path,
-      version: 12,
+      version: 13,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE products (
@@ -37,6 +37,8 @@ class DatabaseHelper {
             photo_base64 TEXT,
             level_groups TEXT,
             level_prices TEXT,
+            toppings TEXT,
+            max_toppings INTEGER NOT NULL DEFAULT 0,
             ppn_exempt INTEGER NOT NULL DEFAULT 0,
             service_exempt INTEGER NOT NULL DEFAULT 0,
             out_of_stock INTEGER NOT NULL DEFAULT 0,
@@ -144,6 +146,15 @@ class DatabaseHelper {
           // menemukan menunya diam-diam menghilang.
           await db.execute(
               'ALTER TABLE products ADD COLUMN out_of_stock INTEGER NOT NULL DEFAULT 0');
+        }
+        if (oldVersion < 13) {
+          // Topping: daftar pilihannya berikut harga masing-masing, dan
+          // batas berapa yang boleh dipilih sekaligus. Nol berarti tanpa
+          // batas — menu lama tidak menawarkan topping sama sekali, jadi
+          // batasnya tidak pernah terpakai.
+          await db.execute('ALTER TABLE products ADD COLUMN toppings TEXT');
+          await db.execute(
+              'ALTER TABLE products ADD COLUMN max_toppings INTEGER NOT NULL DEFAULT 0');
         }
       },
     );
