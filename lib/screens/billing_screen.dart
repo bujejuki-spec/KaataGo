@@ -141,7 +141,12 @@ class _BillingScreenState extends State<BillingScreen> {
                     child: ListView(
                       padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
                       children: [
-                        _KartuPaket(setelan: _setelan),
+                        _KartuPaket(
+                          setelan: _setelan,
+                          potongan: terbuka.isEmpty
+                              ? 0
+                              : terbuka.first.discountAmount,
+                        ),
                         const SizedBox(height: 18),
                         if (terbuka.isNotEmpty) ...[
                           const _Judul('Perlu Dibayar'),
@@ -187,7 +192,11 @@ class _Judul extends StatelessWidget {
 
 class _KartuPaket extends StatelessWidget {
   final RestoBilling? setelan;
-  const _KartuPaket({this.setelan});
+
+  /// Potongan pada tagihan yang sedang berjalan, kalau ada.
+  final int potongan;
+
+  const _KartuPaket({this.setelan, this.potongan = 0});
 
   @override
   Widget build(BuildContext context) {
@@ -227,7 +236,9 @@ class _KartuPaket extends StatelessWidget {
             gratis
                 ? 'Resto ini belum dikenai biaya langganan.'
                 : 'Jatuh tempo tiap tanggal ${s.billingDay}. '
-                    'Tenggang ${s.graceDays} hari sesudahnya.',
+                    'Tenggang ${s.graceDays} hari sesudahnya.'
+                    '${potongan > 0 ? '\nSudah termasuk potongan '
+                        '${_rupiah.format(potongan)} pada tagihan berjalan.' : ''}',
             style: const TextStyle(color: Colors.white70, fontSize: 12),
           ),
         ],
@@ -286,6 +297,22 @@ class _KartuTagihan extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
+          // Rincian ditampilkan hanya kalau memang ada potongannya.
+          // Nominal akhir tanpa penjelasan terbaca sebagai salah hitung,
+          // dan yang menjelaskannya nanti adalah orang yang menerima
+          // telepon.
+          if (invoice.discountAmount > 0) ...[
+            _Rincian(
+              label: 'Harga langganan',
+              nilai: invoice.grossAmount ?? invoice.amount,
+            ),
+            _Rincian(
+              label: invoice.discountName ?? 'Diskon',
+              nilai: -invoice.discountAmount,
+              warna: Colors.green,
+            ),
+            const Divider(height: 14),
+          ],
           Text(_rupiah.format(invoice.amount),
               style: const TextStyle(
                   fontSize: 19, fontWeight: FontWeight.bold)),
@@ -504,6 +531,37 @@ class _DialogPilihBank extends StatelessWidget {
       ],
     );
   }
+}
+
+/// Satu baris rincian tagihan.
+class _Rincian extends StatelessWidget {
+  final String label;
+  final int nilai;
+  final Color? warna;
+
+  const _Rincian({required this.label, required this.nilai, this.warna});
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(bottom: 3),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(label,
+                  style: TextStyle(
+                      fontSize: 12, color: KaataTheme.mutedOf(context)),
+                  overflow: TextOverflow.ellipsis),
+            ),
+            Text(
+              '${nilai < 0 ? '−' : ''}${_rupiah.format(nilai.abs())}',
+              style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: warna ?? KaataTheme.mutedOf(context)),
+            ),
+          ],
+        ),
+      );
 }
 
 class _Bukti {

@@ -166,6 +166,19 @@ class BillingRepository {
     return rows.map((r) => BillingInvoice.fromMap(r)).toList();
   }
 
+  /// Menghitung ulang satu tagihan mengikuti diskon yang berlaku
+  /// sekarang.
+  ///
+  /// Menunggu penjadwal harian berarti resto melihat tagihan penuh
+  /// sampai besok, dan yang menjelaskan selisihnya adalah orang yang
+  /// menerima telepon.
+  Future<int> refreshInvoice(String invoiceId) async {
+    final n = await _client.rpc('refresh_billing_invoice', params: {
+      'p_invoice_id': invoiceId,
+    });
+    return (n as num?)?.toInt() ?? 0;
+  }
+
   /// Menerbitkan tagihan sekarang juga, tanpa menunggu penjadwal.
   Future<int> generateNow() async {
     final n = await _client.rpc('generate_billing_invoices');

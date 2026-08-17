@@ -168,4 +168,53 @@ void main() {
       expect(layar, contains('KaataGo tidak punya laci'));
     });
   });
+
+  group('diskon ikut memotong tagihan yang sudah terbit', () {
+    final sql = File('supabase/billing_discount_apply.sql').readAsStringSync();
+
+    test('tagihan yang belum dibayar disegarkan, bukan dibiarkan', () {
+      // `on conflict do nothing` menjaga satu tagihan per periode, tapi
+      // juga membekukan nominalnya sejak detik pertama — diskon yang
+      // dibuat sesudahnya tidak pernah sampai.
+      expect(sql, contains("and i.status = 'unpaid'"));
+      expect(sql, contains('and i.amount <> v_amount'));
+    });
+
+    test('yang sudah mengirim bukti tidak diubah nominalnya', () {
+      // Mengubah nominal di bawah kaki orang yang sudah membayar adalah
+      // cara tercepat membuat pembayaran yang benar terlihat kurang.
+      expect(sql, isNot(contains("i.status in ('unpaid', 'review')")));
+    });
+
+    test('nomor VA dibuang begitu nominalnya berubah', () {
+      // VA tertutup di nominal lama akan MENOLAK transfer sebesar
+      // nominal baru: resto membayar jumlah yang benar dan tetap
+      // dianggap belum bayar.
+      final blokUpdate = sql.substring(sql.indexOf('update billing_invoices i'));
+      expect(blokUpdate, contains('va_number = null'));
+      expect(blokUpdate, contains('va_expires_at = null'));
+    });
+
+    test('bisa disegarkan satu per satu tanpa menunggu penjadwal', () {
+      expect(sql, contains('function refresh_billing_invoice'));
+      expect(sql, contains('Hanya Super Admin yang dapat menyegarkan'));
+    });
+
+    test('yang sudah lunas tidak ikut dihitung ulang', () {
+      expect(sql, contains("if v_inv.status <> 'unpaid' then"));
+    });
+
+    test('tagihan lama tanpa gross_amount diisi dari nominalnya sendiri', () {
+      // Supaya rinciannya tidak menampilkan "harga langganan Rp 0".
+      expect(sql, contains('where gross_amount is null'));
+    });
+
+    test('layar tagihan menampilkan rinciannya', () {
+      final layar =
+          File('lib/screens/billing_screen.dart').readAsStringSync();
+      expect(layar, contains('Harga langganan'));
+      expect(layar, contains('invoice.discountAmount > 0'));
+    });
+  });
+
 }

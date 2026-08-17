@@ -105,6 +105,23 @@ class _SuperAdminBillingScreenState extends State<SuperAdminBillingScreen> {
     }
   }
 
+  Future<void> _segarkan(BillingInvoice inv) async {
+    try {
+      final baru = await _repo.refreshInvoice(inv.id);
+      if (!mounted) return;
+      showAppToast(
+        context,
+        baru == inv.amount
+            ? 'Nominalnya sudah sesuai.'
+            : 'Diperbarui jadi ${_rupiah.format(baru)}.',
+      );
+      _muat();
+    } catch (e) {
+      if (!mounted) return;
+      showAppToast(context, 'Gagal: $e', isError: true);
+    }
+  }
+
   Future<void> _putuskan(BillingInvoice inv, bool terima) async {
     String? alasan;
     if (!terima) {
@@ -225,6 +242,7 @@ class _SuperAdminBillingScreenState extends State<SuperAdminBillingScreen> {
             invoice: _tagihan[i],
             onTerima: () => _putuskan(_tagihan[i], true),
             onTolak: () => _putuskan(_tagihan[i], false),
+            onSegarkan: () => _segarkan(_tagihan[i]),
           ),
         ),
       ),
@@ -236,11 +254,13 @@ class _KartuTagihanAdmin extends StatelessWidget {
   final BillingInvoice invoice;
   final VoidCallback onTerima;
   final VoidCallback onTolak;
+  final VoidCallback onSegarkan;
 
   const _KartuTagihanAdmin({
     required this.invoice,
     required this.onTerima,
     required this.onTolak,
+    required this.onSegarkan,
   });
 
   @override
@@ -291,10 +311,31 @@ class _KartuTagihanAdmin extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 6),
-          Text(
-            '${_rupiah.format(invoice.amount)} · ${invoice.id}',
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '${_rupiah.format(invoice.amount)} · ${invoice.id}',
+                  style: const TextStyle(
+                      fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+              ),
+              if (invoice.status == InvoiceStatus.unpaid)
+                IconButton(
+                  tooltip: 'Hitung ulang mengikuti diskon',
+                  visualDensity: VisualDensity.compact,
+                  icon: const Icon(Icons.refresh, size: 18),
+                  onPressed: onSegarkan,
+                ),
+            ],
           ),
+          if (invoice.discountAmount > 0)
+            Text(
+              'Harga ${_rupiah.format(invoice.grossAmount ?? invoice.amount)} · '
+              '${invoice.discountName ?? 'Diskon'} '
+              '−${_rupiah.format(invoice.discountAmount)}',
+              style: const TextStyle(fontSize: 11.5, color: Colors.green),
+            ),
           Text(
             'Jatuh tempo ${_tanggal.format(invoice.dueDate)}',
             style:
