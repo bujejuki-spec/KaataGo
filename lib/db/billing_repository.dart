@@ -166,6 +166,24 @@ class BillingRepository {
     return rows.map((r) => BillingInvoice.fromMap(r)).toList();
   }
 
+  /// Menyuruh Xendit berlaku seolah uangnya sudah ditransfer.
+  ///
+  /// Hanya bekerja dengan kunci development — ditolak Xendit sendiri
+  /// pada kunci produksi, jadi tidak ada penanda yang bisa tertinggal
+  /// menyala di rilis.
+  Future<void> simulateVaPayment(String invoiceId) async {
+    try {
+      final res = await _client.functions.invoke('create-billing-va', body: {
+        'invoice_id': invoiceId,
+        'simulate': true,
+      });
+      final data = Map<String, dynamic>.from(res.data as Map);
+      if (data['error'] != null) throw Exception(data['error']);
+    } on FunctionException catch (e) {
+      throw Exception(_pesanGalat(e.details) ?? 'Simulasi ditolak');
+    }
+  }
+
   /// Menghitung ulang satu tagihan mengikuti diskon yang berlaku
   /// sekarang.
   ///

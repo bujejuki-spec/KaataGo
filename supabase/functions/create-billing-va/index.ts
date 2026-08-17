@@ -54,9 +54,11 @@ interface InvoiceRow {
 
 Deno.serve(async (req) => {
   try {
-    const { invoice_id, bank } = await req.json();
+    const { invoice_id, bank, simulate } = await req.json();
 
     if (!invoice_id) return json({ error: "sebutkan invoice_id" }, 400);
+
+    if (simulate === true) return await simulasiBayar(String(invoice_id));
 
     const bankCode = String(bank ?? "BCA").toUpperCase();
     if (!BANK_TERSEDIA.includes(bankCode)) {
@@ -95,11 +97,22 @@ Deno.serve(async (req) => {
         amount: inv.amount,
         expires_at: inv.va_expires_at,
         reused: true,
+        test_mode: (Deno.env.get("XENDIT_SECRET_KEY") ?? "")
+          .startsWith("xnd_development_"),
       });
     }
 
     const secret = Deno.env.get("XENDIT_SECRET_KEY");
     if (!secret) return json({ error: "XENDIT_SECRET_KEY belum diset" }, 500);
+
+    // Mode uji ditentukan server, bukan aplikasi.
+    //
+    // Aplikasi tidak punya cara mengetahuinya sendiri, dan menitipkannya
+    // ke penanda saat build berarti mengandalkan seseorang ingat
+    // mematikannya sebelum rilis — yang selalu gagal tepat pada rilis
+    // yang paling sibuk. Dengan cara ini, mengganti kunci ke produksi
+    // sudah cukup untuk melenyapkan seluruh perkakas ujinya.
+    const testMode = secret.startsWith("xnd_development_");
 
     // Berlaku sampai seminggu sesudah jatuh tempo. VA yang mati tepat di
     // tanggal jatuh tempo menutup pintu justru pada hari orang paling
@@ -175,11 +188,61 @@ Deno.serve(async (req) => {
       amount: inv.amount,
       expires_at: kedaluwarsa.toISOString(),
       reused: false,
+      test_mode: testMode,
     });
   } catch (e) {
     return json({ error: e instanceof Error ? e.message : String(e) }, 500);
   }
 });
+
+/// Menyuruh Xendit berlaku seolah uangnya sudah ditransfer.
+///
+/// Hanya hidup dengan kunci development — Xendit sendiri yang menolak
+/// endpoint ini pada kunci produksi. Jadi tidak ada penanda yang bisa
+/// tertinggal menyala di rilis: mengganti kuncinya sudah cukup.
+///
+/// Nominalnya dibaca dari tagihannya, bukan dari yang mengirim. VA-nya
+/// tertutup di nominal itu, dan simulasi dengan angka lain hanya akan
+/// menghasilkan penolakan yang membingungkan penguji.
+async function simulasiBayar(invoiceId: string) {
+  const secret = Deno.env.get("XENDIT_SECRET_KEY");
+  if (!secret) return json({ error: "XENDIT_SECRET_KEY belum diset" }, 500);
+  if (!secret.startsWith("xnd_development_")) {
+    return json({ error: "Simulasi hanya tersedia di mode uji" }, 403);
+  }
+
+  const { data: inv } = await admin
+    .from("billing_invoices")
+    .select("id, amount, va_number, status")
+    .eq("id", invoiceId)
+    .maybeSingle<{ id: string; amount: number; va_number: string | null; status: string }>();
+
+  if (!inv) return json({ error: "tagihan tidak ditemukan" }, 404);
+  if (!inv.va_number) return json({ error: "belum ada Virtual Account" }, 409);
+  if (inv.status === "paid" || inv.status === "waived") {
+    return json({ error: "tagihan ini sudah lunas" }, 409);
+  }
+
+  const res = await fetch(
+    `https://api.xendit.co/callback_virtual_accounts/external_id=${
+      encodeURIComponent(inv.id)
+    }/simulate_payment`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Basic ${btoa(`${secret}:`)}`,
+      },
+      body: JSON.stringify({ amount: inv.amount }),
+    },
+  );
+
+  const body = await res.json();
+  if (!res.ok) {
+    return json({ error: body?.message ?? "Xendit menolak simulasi" }, 502);
+  }
+  return json({ simulated: true });
+}
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {

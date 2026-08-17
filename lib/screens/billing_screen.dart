@@ -42,6 +42,14 @@ class _BillingScreenState extends State<BillingScreen> {
   /// Id tagihan yang VA-nya sedang diterbitkan.
   String? _menerbitkanVa;
 
+  /// Penyedia pembayaran sedang memakai kunci uji.
+  ///
+  /// Dijawab server, bukan ditebak aplikasi. Menitipkannya ke penanda
+  /// saat build berarti mengandalkan seseorang ingat mematikannya
+  /// sebelum rilis — yang selalu gagal tepat pada rilis yang paling
+  /// sibuk.
+  bool _modeUji = false;
+
   @override
   void initState() {
     super.initState();
@@ -80,8 +88,9 @@ class _BillingScreenState extends State<BillingScreen> {
 
     setState(() => _menerbitkanVa = inv.id);
     try {
-      await _repo.requestVa(inv.id, bank: bank);
+      final hasil = await _repo.requestVa(inv.id, bank: bank);
       if (!mounted) return;
+      setState(() => _modeUji = hasil['test_mode'] == true);
       await _muat();
     } catch (e) {
       if (!mounted) return;
@@ -113,6 +122,22 @@ class _BillingScreenState extends State<BillingScreen> {
     } catch (e) {
       if (!mounted) return;
       showAppToast(context, 'Gagal mengirim: $e', isError: true);
+    }
+  }
+
+  Future<void> _simulasi(BillingInvoice inv) async {
+    try {
+      await _repo.simulateVaPayment(inv.id);
+      if (!mounted) return;
+      showAppToast(context, 'Pembayaran disimulasikan. Menunggu kabar Xendit…');
+      // Kabarnya datang lewat webhook, bukan dari jawaban panggilan ini.
+      // Jeda pendek supaya daftarnya dimuat ulang sesudah webhook-nya
+      // sempat mendarat.
+      await Future<void>.delayed(const Duration(seconds: 2));
+      if (mounted) _muat();
+    } catch (e) {
+      if (!mounted) return;
+      showAppToast(context, 'Gagal: $e', isError: true);
     }
   }
 
@@ -156,6 +181,8 @@ class _BillingScreenState extends State<BillingScreen> {
                               menerbitkanVa: _menerbitkanVa == t.id,
                               onMintaVa: () => _mintaVa(t),
                               onBayar: () => _bayar(t),
+                              onSimulasi:
+                                  _modeUji && t.vaHidup ? () => _simulasi(t) : null,
                             ),
                           const SizedBox(height: 18),
                         ],
@@ -251,12 +278,14 @@ class _KartuTagihan extends StatelessWidget {
   final BillingInvoice invoice;
   final VoidCallback? onBayar;
   final VoidCallback? onMintaVa;
+  final VoidCallback? onSimulasi;
   final bool menerbitkanVa;
 
   const _KartuTagihan({
     required this.invoice,
     this.onBayar,
     this.onMintaVa,
+    this.onSimulasi,
     this.menerbitkanVa = false,
   });
 
@@ -361,6 +390,30 @@ class _KartuTagihan extends StatelessWidget {
           if (invoice.vaHidup) ...[
             const SizedBox(height: 12),
             _KartuVa(invoice: invoice),
+          ],
+          if (onSimulasi != null) ...[
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: onSimulasi,
+                icon: const Icon(Icons.science_outlined, size: 17),
+                label: const Text('Simulasikan Pembayaran'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.orange,
+                  side: const BorderSide(color: Colors.orange),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                'Mode uji — Xendit berlaku seolah uangnya sudah masuk. '
+                'Tombol ini hilang sendiri saat kunci produksi dipasang.',
+                style: TextStyle(
+                    fontSize: 11, color: KaataTheme.mutedOf(context)),
+              ),
+            ),
           ],
           if (onMintaVa != null) ...[
             const SizedBox(height: 10),

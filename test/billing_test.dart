@@ -280,6 +280,27 @@ void main() {
       expect(repo, contains('_pesanGalat'));
     });
 
+    test('simulasi hanya hidup di mode uji', () {
+      // Ditolak Xendit sendiri pada kunci produksi, dan ditolak lagi di
+      // sini sebelum sempat dikirim. Tidak ada penanda yang bisa
+      // tertinggal menyala di rilis: mengganti kuncinya sudah cukup.
+      expect(fn, contains('Simulasi hanya tersedia di mode uji'));
+      expect(fn, contains('secret.startsWith("xnd_development_")'));
+    });
+
+    test('nominal simulasi dibaca dari tagihannya', () {
+      // VA-nya tertutup di nominal itu; simulasi dengan angka lain hanya
+      // menghasilkan penolakan yang membingungkan penguji.
+      expect(fn, contains('JSON.stringify({ amount: inv.amount })'));
+    });
+
+    test('mode uji dijawab server, bukan ditebak aplikasi', () {
+      final layar =
+          File('lib/screens/billing_screen.dart').readAsStringSync();
+      expect(fn, contains('test_mode: testMode'));
+      expect(layar, contains("hasil['test_mode'] == true"));
+    });
+
     test('VA berlaku sampai sesudah jatuh tempo', () {
       // VA yang mati tepat di tanggal jatuh tempo menutup pintu justru
       // pada hari orang paling mungkin membayarnya.
