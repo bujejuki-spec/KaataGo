@@ -165,7 +165,7 @@ angka.
 
 ## 4. Model Data
 
-29 tabel, seluruhnya di skema `public`.
+30 tabel, seluruhnya di skema `public`.
 
 ### 4.0 Peta relasi
 
@@ -273,6 +273,7 @@ penandanya di barisnya sendiri berarti pengumuman itu hanya bisa
 | `mail_requests` | Permintaan kirim struk lewat email |
 | `resto_billing` | Harga & tanggal langganan tiap resto |
 | `billing_invoices` | Tagihan bulanan berikut bukti bayarnya |
+| `billing_discounts` | Potongan harga langganan untuk resto terpilih |
 | `applied_migrations` | Penanda perbaikan data sekali-jalan — bukan catatan migrasi umum |
 
 Enam di antaranya tidak menyimpan data resto sama sekali —
@@ -636,6 +637,48 @@ terkunci, dan tidak ada yang tahu kenapa.
 
 **`is_single_use`** — nomornya mati begitu terbayar, jadi transfer bulan
 depan tidak mendarat di tagihan bulan ini.
+
+---
+
+### 7.4 Pembukuan KaataGo sendiri
+
+Pendapatan langganan harus tercatat di suatu tempat, dan tempat itu
+bukan buku resto: bagi mereka, biaya langganan adalah pengeluaran
+mereka sendiri.
+
+**KaataGo diberi satu barisnya sendiri di tabel `restaurants`**,
+ditandai `is_platform`, dengan id `kaatago`. Seluruh mesin pembukuan
+yang sudah ada — bagan akun, jurnal, pengeluaran, kas kecil, berikut
+pemicu dan kebijakannya — bekerja per resto, jadi ia langsung bekerja
+untuk penyewa ini tanpa satu baris pun disalin.
+
+> **Kenapa bukan tabel `platform_*` sendiri.** Menyalinnya berarti dua
+> salinan aturan yang sama, dan dua salinan akan berpisah: perbaikan
+> yang dipasang di satu sisi tidak pernah ikut ke sisi lain, dan yang
+> menemukannya adalah selisih angka berbulan-bulan kemudian.
+
+Harganya satu hal yang harus dijaga terus: **baris itu tidak boleh
+muncul sebagai pilihan resto di layar mana pun.** Dua lapis penjagaan:
+
+| Lapis | Caranya |
+|---|---|
+| `active = false` | Lolos dari tiap saringan yang sudah ada — daftar pelanggan, pemilih resto, pencarian |
+| `is_platform = false` di `RestaurantRepository.getAll()` | Disaring di **satu tempat**, bukan di tiap layar pemanggilnya |
+
+Menyaringnya di repository, bukan di layar, berarti layar baru yang
+dibuat nanti tidak bisa lupa menyaringnya.
+
+**Nomor akunnya 11xxxxx**, berbeda golongan dari 19xxxxx milik resto.
+Selisih itu membuat satu baris jurnal bisa dikenali pemiliknya hanya
+dari nomornya, tanpa menelusuri restonya lebih dulu.
+
+Akses Super Admin ditambahkan sebagai kebijakan **baru** di tiap tabel
+keuangan, bukan dengan menulis ulang yang sudah ada — kebijakan
+permissive digabung dengan OR, jadi menambah satu sudah cukup, sementara
+menulis ulang berarti menyalin ulang syaratnya, yang suatu hari akan
+tersalin tidak lengkap.
+
+Untuk `gl_journal_entries`, yang ditambahkan **hanya `select`**.
 
 ---
 

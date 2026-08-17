@@ -111,7 +111,14 @@ const _expenseColor = Color(0xFFEF4444);
 /// wall of greyed-out inputs, which is far easier to scan. Tapping Edit
 /// swaps every row into a compact code+name field pair.
 class FinanceGlMappingScreen extends StatefulWidget {
-  const FinanceGlMappingScreen({super.key});
+  /// Resto yang dibukukan. Kosong berarti resto tempat orangnya bekerja.
+  ///
+  /// Diisi hanya oleh menu Finance Super Admin, yang membukukan KaataGo
+  /// sendiri — penyewa platform yang memakai mesin pembukuan yang sama
+  /// persis dengan resto.
+  final String? restoId;
+
+  const FinanceGlMappingScreen({super.key, this.restoId});
 
   @override
   State<FinanceGlMappingScreen> createState() => _FinanceGlMappingScreenState();
@@ -144,7 +151,8 @@ class _FinanceGlMappingScreenState extends State<FinanceGlMappingScreen> {
   /// can restore all of them rather than leaving unsaved edits visible.
   Map<String, String> _snapshot = const {};
 
-  String get _restoId => context.read<AuthProvider>().restoId!;
+  String get _restoId =>
+      widget.restoId ?? context.read<AuthProvider>().restoId!;
 
   @override
   void initState() {

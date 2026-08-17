@@ -112,7 +112,8 @@ alter table gl_accounts drop constraint if exists gl_accounts_payment_method_che
 alter table gl_accounts add constraint gl_accounts_payment_method_check
   check (payment_method in
     ('cash', 'qris', 'transfer', 'petty_cash', 'income_aggregate', 'total_balance',
-     'ppn', 'service', 'suspense', 'suspense_petty', 'gateway_fee', 'discount'));
+     'ppn', 'service', 'suspense', 'suspense_petty', 'gateway_fee', 'discount',
+     'subscription', 'subscription_discount'));
 
 insert into gl_accounts (resto_id, payment_method, gl_code, gl_name)
 select r.id, 'discount', '2200002', 'GL Diskon Penjualan'
@@ -125,7 +126,9 @@ on conflict (resto_id, payment_method) do nothing;
 -- dan menolak baris yang sudah terlanjur ada.
 alter table gl_journal_entries drop constraint if exists gl_journal_entries_reference_type_check;
 alter table gl_journal_entries add constraint gl_journal_entries_reference_type_check
-  check (reference_type in ('order', 'order_discount', 'expense', 'petty_cash', 'cash_deposit'));
+  check (reference_type in
+    ('order', 'order_discount', 'expense', 'petty_cash', 'cash_deposit',
+     'billing', 'billing_discount'));
 
 -- Jurnal diskon.
 --

@@ -31,7 +31,14 @@ const _referenceTypeLabels = {
 /// reversal instead (shown greyed out with a "Pembatalan" tag), so the
 /// history stays honest about what happened and when.
 class FinanceJournalScreen extends StatefulWidget {
-  const FinanceJournalScreen({super.key});
+  /// Resto yang dibukukan. Kosong berarti resto tempat orangnya bekerja.
+  ///
+  /// Diisi hanya oleh menu Finance Super Admin, yang membukukan KaataGo
+  /// sendiri — penyewa platform yang memakai mesin pembukuan yang sama
+  /// persis dengan resto.
+  final String? restoId;
+
+  const FinanceJournalScreen({super.key, this.restoId});
 
   @override
   State<FinanceJournalScreen> createState() => _FinanceJournalScreenState();
@@ -59,7 +66,7 @@ class _FinanceJournalScreenState extends State<FinanceJournalScreen> {
       _loadError = null;
     });
     try {
-      final restoId = context.read<AuthProvider>().restoId!;
+      final restoId = widget.restoId ?? context.read<AuthProvider>().restoId!;
       final results = await Future.wait([
         _repo.getForResto(restoId),
         _glRepo.getForResto(restoId),

@@ -52,6 +52,7 @@ FILES=(
   discount_product_rules.sql
   billing.sql
   billing_va.sql
+  platform_finance.sql
 )
 
 {

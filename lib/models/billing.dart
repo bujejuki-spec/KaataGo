@@ -1,3 +1,12 @@
+/// Penyewa platform — KaataGo membukukan dirinya sendiri lewat mesin
+/// pembukuan yang sama persis dengan resto.
+///
+/// Barisnya ada di tabel `restaurants` dan ditandai `is_platform`, jadi
+/// seluruh layar keuangan yang sudah ada langsung bekerja untuknya.
+/// Konsekuensinya harus dijaga di sisi lain: baris itu tidak boleh
+/// muncul di daftar resto mana pun.
+const kPlatformRestoId = 'kaatago';
+
 /// Keadaan tagihan sebuah tagihan langganan.
 enum InvoiceStatus {
   /// Belum dibayar.
@@ -125,6 +134,13 @@ class BillingInvoice {
   final String? vaNumber;
   final DateTime? vaExpiresAt;
 
+  /// Harga sebelum diskon. Null pada tagihan lama yang terbit sebelum
+  /// diskon langganan ada.
+  final int? grossAmount;
+  final String? discountId;
+  final String? discountName;
+  final int discountAmount;
+
   /// Bagaimana tagihannya akhirnya lunas — `xendit_va`, `manual`, atau
   /// `waived`. Dibedakan karena tingkat kepercayaannya berbeda: yang
   /// pertama terkonfirmasi mesin, yang kedua keputusan orang.
@@ -148,6 +164,10 @@ class BillingInvoice {
     this.confirmedBy,
     this.confirmedAt,
     this.rejectReason,
+    this.grossAmount,
+    this.discountId,
+    this.discountName,
+    this.discountAmount = 0,
     this.vaBank,
     this.vaNumber,
     this.vaExpiresAt,
@@ -180,6 +200,10 @@ class BillingInvoice {
         confirmedBy: map['confirmed_by'] as String?,
         confirmedAt: _waktu(map['confirmed_at']),
         rejectReason: map['reject_reason'] as String?,
+        grossAmount: (map['gross_amount'] as num?)?.toInt(),
+        discountId: map['discount_id'] as String?,
+        discountName: map['discount_name'] as String?,
+        discountAmount: (map['discount_amount'] as num?)?.toInt() ?? 0,
         vaBank: map['va_bank'] as String?,
         vaNumber: map['va_number'] as String?,
         vaExpiresAt: _waktu(map['va_expires_at']),
@@ -262,3 +286,124 @@ class BillingState {
         active: map['active'] == true,
       );
 }
+
+
+/// Potongan harga langganan untuk resto tertentu.
+///
+/// Dipilih per resto, bukan berlaku untuk semuanya: yang sering terjadi
+/// justru satu-dua resto yang perlu diperlakukan berbeda — masa
+/// percobaan, promo pembukaan, kompensasi gangguan.
+class BillingDiscount {
+  final String id;
+  final String name;
+  final DiscountKindBilling kind;
+  final int value;
+  final List<String> restoIds;
+  final DateTime? startsOn;
+  final DateTime? endsOn;
+  final bool active;
+  final String? createdBy;
+  final DateTime createdAt;
+
+  const BillingDiscount({
+    required this.id,
+    required this.name,
+    this.kind = DiscountKindBilling.percent,
+    required this.value,
+    this.restoIds = const [],
+    this.startsOn,
+    this.endsOn,
+    this.active = true,
+    this.createdBy,
+    required this.createdAt,
+  });
+
+  String get valueLabel =>
+      kind == DiscountKindBilling.percent ? '$value%' : 'Rp $value';
+
+  /// Potongan untuk sebuah harga langganan.
+  ///
+  /// Tidak pernah melebihi harganya sendiri — potongan yang lebih besar
+  /// daripada tagihannya menghasilkan tagihan negatif, yaitu kami yang
+  /// berutang kepada resto yang belum membayar apa pun.
+  int amountFor(int price) {
+    if (price <= 0) return 0;
+    final raw =
+        kind == DiscountKindBilling.percent ? price * value ~/ 100 : value;
+    return raw.clamp(0, price);
+  }
+
+  bool isLive([DateTime? now]) {
+    if (!active) return false;
+    final hari = now ?? DateTime.now();
+    final tgl = DateTime(hari.year, hari.month, hari.day);
+    if (startsOn != null && tgl.isBefore(startsOn!)) return false;
+    if (endsOn != null && tgl.isAfter(endsOn!)) return false;
+    return true;
+  }
+
+  Map<String, dynamic> toMap() => {
+        'id': id,
+        'name': name,
+        'kind': kind == DiscountKindBilling.percent ? 'percent' : 'amount',
+        'value': value,
+        'resto_ids': restoIds,
+        'starts_on': startsOn?.toIso8601String().split('T').first,
+        'ends_on': endsOn?.toIso8601String().split('T').first,
+        'active': active,
+        if (createdBy != null) 'created_by': createdBy,
+      };
+
+  factory BillingDiscount.fromMap(Map<String, dynamic> map) => BillingDiscount(
+        id: map['id'] as String,
+        name: map['name'] as String? ?? 'Diskon',
+        kind: map['kind'] == 'amount'
+            ? DiscountKindBilling.amount
+            : DiscountKindBilling.percent,
+        value: (map['value'] as num?)?.toInt() ?? 0,
+        restoIds: [
+          for (final r in (map['resto_ids'] as List<dynamic>? ?? const []))
+            r.toString(),
+        ],
+        startsOn: map['starts_on'] == null
+            ? null
+            : DateTime.parse(map['starts_on'].toString()),
+        endsOn: map['ends_on'] == null
+            ? null
+            : DateTime.parse(map['ends_on'].toString()),
+        active: map['active'] != false,
+        createdBy: map['created_by'] as String?,
+        createdAt: DateTime.parse(map['created_at'].toString()),
+      );
+
+  BillingDiscount copyWith({
+    String? name,
+    DiscountKindBilling? kind,
+    int? value,
+    List<String>? restoIds,
+    Object? startsOn = _unset,
+    Object? endsOn = _unset,
+    bool? active,
+  }) =>
+      BillingDiscount(
+        id: id,
+        name: name ?? this.name,
+        kind: kind ?? this.kind,
+        value: value ?? this.value,
+        restoIds: restoIds ?? this.restoIds,
+        startsOn:
+            identical(startsOn, _unset) ? this.startsOn : startsOn as DateTime?,
+        endsOn: identical(endsOn, _unset) ? this.endsOn : endsOn as DateTime?,
+        active: active ?? this.active,
+        createdBy: createdBy,
+        createdAt: createdAt,
+      );
+
+  static const _unset = Object();
+}
+
+/// Bentuk potongan langganan. Dinamai terpisah dari DiscountKind milik
+/// promo menu — keduanya kebetulan sama bentuknya, tapi hidup di dunia
+/// yang berbeda, dan menyatukannya berarti perubahan di salah satunya
+/// ikut menyeret yang lain.
+enum DiscountKindBilling { percent, amount }

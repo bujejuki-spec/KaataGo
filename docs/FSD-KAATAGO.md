@@ -98,6 +98,8 @@ terdaftar. Pelanggan boleh memesan **tanpa akun sama sekali**.
 | Laporan Transaksi | – | ✔ | – | – | – | ✔ | – |
 | Tagihan Langganan | ✔ | ✔ | – | – | – | – | – |
 | Billing Resto (semua) | ✔ | – | – | – | – | – | – |
+| Finance KaataGo | ✔ | – | – | – | – | – | – |
+| Jurnal GL semua resto | ✔ | – | – | – | – | – | – |
 | Kelola Produk | – | ✔ | ✔ | – | – | – | – |
 | Pengaturan Resto & QR Meja | – | ✔ | ✔ | – | – | – | – |
 | Pengaturan Pembayaran | – | ✔ | – | – | – | ✔ | – |
@@ -508,6 +510,38 @@ mencatat uang masuk ke resto, bukan uang keluar dari resto ke kami.
 > **Kenapa layar terkunci tetap punya jalan keluar.** Mengunci
 > satu-satunya jalan membayar berarti resto yang sudah mentransfer tidak
 > punya cara memberi tahu siapa pun.
+
+### 4.18 Finance KaataGo (Super Admin)
+
+Pembukuan KaataGo sendiri, terpisah dari pembukuan resto. Ini bagian
+yang mencatat **uang masuk ke kami** — kebalikan arah dari seluruh menu
+keuangan lain di aplikasi ini.
+
+| ID | Kebutuhan |
+|---|---|
+| F-PF-01 | Riwayat langganan: seluruh tagihan yang sudah dibayar, dikelompokkan per bulan |
+| F-PF-02 | Tiap baris menyebut jalur pelunasannya — **VA** (mesin) atau **manual** (keputusan orang) |
+| F-PF-03 | **Diskon langganan** untuk resto yang dipilih, berbentuk persen atau rupiah |
+| F-PF-04 | Diskon punya masa berlaku dan dapat dinonaktifkan tanpa dihapus |
+| F-PF-05 | Diskon dipakai saat tagihan **berikutnya** terbit; tagihan yang sudah terbit tidak berubah |
+| F-PF-06 | Diskon punya **GL sendiri** sebagai pengurang pendapatan |
+| F-PF-07 | Pendapatan langganan masuk **Jurnal GL KaataGo** secara otomatis saat tagihan lunas |
+| F-PF-08 | KaataGo punya **bagan akun sendiri** — pendapatan, diskon, kas, petty cash, suspense, pengeluaran |
+| F-PF-09 | Petty cash dan pengeluaran KaataGo dikelola seperti di resto |
+| F-PF-10 | **Tidak ada Setor Saldo Cash** di sisi KaataGo |
+| F-PF-11 | Super Admin dapat melihat **Jurnal GL seluruh resto**, dengan saringan per resto |
+| F-PF-12 | Jurnal lintas resto **hanya bisa dilihat** — tidak ada satu pun cara mengubahnya |
+
+> **Kenapa tidak ada Setor Saldo Cash.** Menyetor tunai ke rekening
+> adalah pekerjaan resto yang uangnya menumpuk di laci kasir. KaataGo
+> tidak punya laci — seluruh pendapatannya masuk lewat Virtual Account,
+> langsung ke rekening.
+
+> **Kenapa jurnal lintas resto hanya bisa dilihat.** Tiap baris jurnal
+> ditulis pemicu yang mengikuti kejadian nyata di pesanan dan
+> pengeluaran. Tangan yang bisa menulis langsung ke sana adalah tangan
+> yang bisa membuat pembukuan berbeda dari yang benar-benar terjadi —
+> dan itu berlaku untuk Super Admin persis seperti untuk yang lain.
 
 ---
 

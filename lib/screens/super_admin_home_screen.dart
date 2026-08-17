@@ -12,6 +12,7 @@ import '../widgets/kaata_logo.dart';
 import 'employee_management_screen.dart';
 import 'restaurant_manage_list_screen.dart';
 import 'super_admin_billing_screen.dart';
+import 'super_admin_finance_screen.dart';
 import 'publish_announcement_screen.dart';
 
 /// Home screen for the 'super_admin' role — not scoped to any single
@@ -84,6 +85,15 @@ class SuperAdminHomeScreen extends StatelessWidget {
                   color: const Color(0xFF10B981),
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => const SuperAdminBillingScreen()),
+                  ),
+                ),
+                HubMenuTile(
+                  icon: Icons.account_balance_outlined,
+                  title: 'Finance',
+                  subtitle: 'Pendapatan langganan, pembukuan KaataGo, jurnal semua resto',
+                  color: const Color(0xFF14B8A6),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const SuperAdminFinanceScreen()),
                   ),
                 ),
                 HubMenuTile(

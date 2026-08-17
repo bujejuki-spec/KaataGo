@@ -13,15 +13,32 @@ class RestaurantRepository {
 
   /// All restaurants (active or not) — used by Super Admin screens
   /// (resto picker when adding an employee, restaurant list).
+  /// Seluruh resto sungguhan.
+  ///
+  /// Penyewa platform (`is_platform`) disaring di sini, bukan di tiap
+  /// layar pemanggilnya. KaataGo punya barisnya sendiri di tabel ini
+  /// supaya bisa memakai mesin pembukuan yang sama dengan resto — dan
+  /// baris itu tidak boleh pernah muncul sebagai pilihan resto di layar
+  /// mana pun. Menyaringnya di satu tempat berarti tidak ada layar baru
+  /// yang bisa lupa menyaringnya.
   Future<List<Restaurant>> getAll() async {
-    final rows = await _client.from('restaurants').select().order('name');
+    final rows = await _client
+        .from('restaurants')
+        .select()
+        .eq('is_platform', false)
+        .order('name');
     return rows.map((r) => Restaurant.fromMap(r['id'] as String, r)).toList();
   }
 
   /// Only active restaurants — used by the customer's "Pilih Resto" list,
   /// so a deactivated resto can't be picked to order from.
   Future<List<Restaurant>> getAllActive() async {
-    final rows = await _client.from('restaurants').select().eq('active', true).order('name');
+    final rows = await _client
+        .from('restaurants')
+        .select()
+        .eq('active', true)
+        .eq('is_platform', false)
+        .order('name');
     return rows.map((r) => Restaurant.fromMap(r['id'] as String, r)).toList();
   }
 

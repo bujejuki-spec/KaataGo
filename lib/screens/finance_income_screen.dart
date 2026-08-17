@@ -14,7 +14,14 @@ import '../utils/id_time.dart';
 /// Transaksi" (this device's SQLite only), this is the authoritative
 /// resto-wide picture Finance needs.
 class FinanceIncomeScreen extends StatefulWidget {
-  const FinanceIncomeScreen({super.key});
+  /// Resto yang dibukukan. Kosong berarti resto tempat orangnya bekerja.
+  ///
+  /// Diisi hanya oleh menu Finance Super Admin, yang membukukan KaataGo
+  /// sendiri — penyewa platform yang memakai mesin pembukuan yang sama
+  /// persis dengan resto.
+  final String? restoId;
+
+  const FinanceIncomeScreen({super.key, this.restoId});
 
   @override
   State<FinanceIncomeScreen> createState() => _FinanceIncomeScreenState();
@@ -73,7 +80,7 @@ class _FinanceIncomeScreenState extends State<FinanceIncomeScreen> {
   }
 
   Future<void> _load() async {
-    final restoId = context.read<AuthProvider>().restoId!;
+    final restoId = widget.restoId ?? context.read<AuthProvider>().restoId!;
     final all = await _orderRepo.watchAll(restoId).first;
     if (!mounted) return;
     setState(() {

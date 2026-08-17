@@ -44,7 +44,14 @@ import '../widgets/required_label.dart';
 /// `petty_cash_entries` rather than stored, so it's always consistent
 /// with the underlying data.
 class FinanceBalanceScreen extends StatefulWidget {
-  const FinanceBalanceScreen({super.key});
+  /// Resto yang dibukukan. Kosong berarti resto tempat orangnya bekerja.
+  ///
+  /// Diisi hanya oleh menu Finance Super Admin, yang membukukan KaataGo
+  /// sendiri — penyewa platform yang memakai mesin pembukuan yang sama
+  /// persis dengan resto.
+  final String? restoId;
+
+  const FinanceBalanceScreen({super.key, this.restoId});
 
   @override
   State<FinanceBalanceScreen> createState() => _FinanceBalanceScreenState();
@@ -79,7 +86,8 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
   bool _loading = true;
   String? _loadError;
 
-  String get _restoId => context.read<AuthProvider>().restoId!;
+  String get _restoId =>
+      widget.restoId ?? context.read<AuthProvider>().restoId!;
 
   /// Kasir gets this screen too, but only to see the balances and write
   /// down what they spent out of the float. Topping Petty Cash up moves

@@ -112,6 +112,35 @@ class BillingRepository {
     return data;
   }
 
+  // ── Diskon langganan ───────────────────────────────────────────────
+
+  Future<List<BillingDiscount>> discounts() async {
+    final rows = await _client
+        .from('billing_discounts')
+        .select()
+        .order('created_at', ascending: false);
+    return rows.map((r) => BillingDiscount.fromMap(r)).toList();
+  }
+
+  Future<void> saveDiscount(BillingDiscount d) async {
+    await _client.from('billing_discounts').upsert(d.toMap());
+  }
+
+  Future<void> deleteDiscount(String id) async {
+    await _client.from('billing_discounts').delete().eq('id', id);
+  }
+
+  /// Tagihan yang sudah lunas — riwayat pendapatan langganan.
+  Future<List<BillingInvoice>> paidInvoices() async {
+    final rows = await _client
+        .from('billing_invoices')
+        .select('*, restaurants(name)')
+        .inFilter('status', ['paid', 'waived'])
+        .order('confirmed_at', ascending: false)
+        .limit(500);
+    return rows.map((r) => BillingInvoice.fromMap(r)).toList();
+  }
+
   /// Menerbitkan tagihan sekarang juga, tanpa menunggu penjadwal.
   Future<int> generateNow() async {
     final n = await _client.rpc('generate_billing_invoices');
