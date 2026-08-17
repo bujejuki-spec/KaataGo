@@ -139,7 +139,15 @@ Deno.serve(async (req) => {
         is_closed: true,
         is_single_use: true,
         expiration_date: kedaluwarsa.toISOString(),
-        description: `Langganan KaataGo ${inv.id}`,
+        // `description` sengaja tidak dikirim.
+        //
+        // Sebagian bank menolaknya mentah-mentah — Mandiri menjawab
+        // DESCRIPTION_NOT_SUPPORTED_ERROR — dan yang mana saja berbeda
+        // per bank dan bisa berubah kapan pun di sisi Xendit.
+        // Mengirimkannya hanya untuk bank tertentu berarti daftar
+        // pengecualian yang harus diikuti selamanya, demi kolom yang
+        // tidak pernah dibaca siapa pun: nomor tagihan sudah ada di
+        // external_id, dan nama restonya sudah ada di `name`.
       }),
     });
 

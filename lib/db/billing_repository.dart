@@ -101,15 +101,40 @@ class BillingRepository {
   /// siapa pun yang ingin melunasi tagihan sejuta rupiah dengan seribu.
   Future<Map<String, dynamic>> requestVa(String invoiceId,
       {String bank = 'BCA'}) async {
-    final res = await _client.functions.invoke('create-billing-va', body: {
-      'invoice_id': invoiceId,
-      'bank': bank,
-    });
-    final data = Map<String, dynamic>.from(res.data as Map);
-    if (data['error'] != null) {
-      throw Exception(data['error']);
+    try {
+      final res = await _client.functions.invoke('create-billing-va', body: {
+        'invoice_id': invoiceId,
+        'bank': bank,
+      });
+      final data = Map<String, dynamic>.from(res.data as Map);
+      if (data['error'] != null) throw Exception(data['error']);
+      return data;
+    } on FunctionException catch (e) {
+      // Jawaban selain 2xx dilempar sebagai FunctionException, jadi
+      // pemeriksaan data['error'] di atas tidak pernah sampai. Tanpa ini
+      // yang tampil di layar adalah seluruh bungkusnya — status, detail
+      // bersarang, reasonPhrase — dan orang resto yang membacanya tidak
+      // punya cara menemukan kalimat yang sebenarnya menjelaskan apa
+      // yang salah.
+      throw Exception(_pesanGalat(e.details) ?? 'Penyedia pembayaran menolak permintaan');
     }
-    return data;
+  }
+
+  /// Kalimat penjelas dari dalam jawaban Xendit, sedalam apa pun ia
+  /// dibungkus.
+  static String? _pesanGalat(Object? details) {
+    if (details is Map) {
+      for (final kunci in ['error', 'message', 'detail']) {
+        final nilai = details[kunci];
+        if (nilai is String && nilai.isNotEmpty) return nilai;
+        if (nilai is Map) {
+          final dalam = _pesanGalat(nilai);
+          if (dalam != null) return dalam;
+        }
+      }
+    }
+    if (details is String && details.isNotEmpty) return details;
+    return null;
   }
 
   // ── Diskon langganan ───────────────────────────────────────────────

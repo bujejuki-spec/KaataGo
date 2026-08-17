@@ -261,6 +261,25 @@ void main() {
       }
     });
 
+    test('description tidak pernah dikirim ke Xendit', () {
+      // Sebagian bank menolaknya mentah-mentah — Mandiri menjawab
+      // DESCRIPTION_NOT_SUPPORTED_ERROR — dan yang mana saja berbeda per
+      // bank dan bisa berubah kapan pun di sisi Xendit. Kolomnya sendiri
+      // tidak pernah dibaca siapa pun.
+      final badan = fn.substring(fn.indexOf('external_id: inv.id'),
+          fn.indexOf('const body = await res.json()'));
+      expect(badan, isNot(contains('description:')));
+    });
+
+    test('galat penyedia disaring jadi satu kalimat', () {
+      // Jawaban selain 2xx dilempar sebagai FunctionException, jadi
+      // pemeriksaan data['error'] tidak pernah sampai — dan yang tampil
+      // di layar adalah seluruh bungkusnya.
+      final repo = File('lib/db/billing_repository.dart').readAsStringSync();
+      expect(repo, contains('on FunctionException catch'));
+      expect(repo, contains('_pesanGalat'));
+    });
+
     test('VA berlaku sampai sesudah jatuh tempo', () {
       // VA yang mati tepat di tanggal jatuh tempo menutup pintu justru
       // pada hari orang paling mungkin membayarnya.
