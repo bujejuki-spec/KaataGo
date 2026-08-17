@@ -184,9 +184,21 @@ class _MyVouchersScreenState extends State<MyVouchersScreen> {
                           ),
                         ),
                         const SizedBox(width: 8),
+                        // Lebarnya wajib disebut. Tema aplikasi memberi
+                        // tombol `minimumSize: Size.fromHeight(50)`, dan
+                        // itu berarti lebar minimum **tak terhingga** —
+                        // di dalam Row, tombolnya menuntut seluruh
+                        // lebar, Expanded kebagian nol, dan kolom
+                        // kodenya menyusut jadi garis tipis tanpa satu
+                        // pun galat muncul.
                         SizedBox(
+                          width: 104,
                           height: 46,
                           child: FilledButton(
+                            style: FilledButton.styleFrom(
+                              minimumSize: const Size(104, 46),
+                              padding: EdgeInsets.zero,
+                            ),
                             onPressed: _menebus ? null : _tebus,
                             child: _menebus
                                 ? const SizedBox(
