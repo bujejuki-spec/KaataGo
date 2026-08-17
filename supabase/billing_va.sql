@@ -65,6 +65,20 @@ alter table billing_invoices add constraint billing_invoices_va_bank_check
 -- Ditulis sebagai fungsi, bukan UPDATE lepas di dalam fungsi edge,
 -- supaya syaratnya — nominal cukup, tagihan belum lunas — hidup di satu
 -- tempat yang sama dengan aturan lainnya.
+-- Dibuang dulu, bukan sekadar `create or replace`.
+--
+-- Versi pertama fungsi ini mengembalikan boolean; sekarang text.
+-- Postgres menolak `create or replace` yang mengubah tipe kembalian —
+-- dan penolakannya baru terlihat di database yang sudah pernah
+-- menjalankan versi lama, bukan di database kosong tempat berkas ini
+-- biasanya diuji:
+--
+--   ERROR: cannot change return type of existing function
+--
+-- Tanda tangannya ditulis lengkap supaya yang dibuang persis fungsi
+-- ini, bukan fungsi bernama sama dengan argumen berbeda.
+drop function if exists settle_billing_va(text, bigint, text);
+
 create or replace function settle_billing_va(
   p_invoice_id text,
   p_amount bigint,
