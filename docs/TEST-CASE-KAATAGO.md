@@ -561,6 +561,10 @@ sudah membayar berhenti berjualan.
 | TC-PF-28 | P1 | Buka Mapping GL Account resto mana pun | **GL Diskon** punya bagiannya dan nomornya sudah terisi | F-PF-19, F-DS-09 |
 | TC-PF-29 | P2 | Buka Mapping GL Account KaataGo | Ada bagian **GL Langganan**; penghitung akun tidak pernah menyisakan yang mustahil terisi | F-PF-19 |
 | TC-PF-30 | P1 | Pesan menu berpromo, bayar, buka Jurnal GL | Baris GL Diskon menyebut **nama promonya** | F-PF-20, F-DS-13 |
+| TC-PF-31 | P1 | Buka Jurnal GL Semua Resto sesudah ada tagihan langganan lunas | Baris pendapatan langganan **tidak muncul** di sana | F-PF-21 |
+| TC-PF-32 | P1 | Buka daftar saringan resto | **KaataGo tidak ada** di daftarnya | F-PF-21 |
+| TC-PF-33 | P1 | Buka Jurnal GL KaataGo | Pendapatan langganan ada di sana, dan **Saldo Total tidak nol** | F-PF-07 |
+| TC-PF-34 | P2 | Periksa nomor akun di Jurnal GL KaataGo | Golongan **11xxxxx**, berbeda dari 19xxxxx milik resto | F-PF-08 |
 
 ---
 
@@ -738,8 +742,8 @@ Tiap kelompok kebutuhan di FSD, dan kasus uji yang menjaganya.
 | Sesi Meja (SS) | 7 | TC-SS-01…07 |
 | Pembaruan (UP) | 7 | TC-UP-01…09 |
 | Langganan (BL) | 24 | TC-BL-01…30, E2E-09 |
-| Finance KaataGo (PF) | 20 | TC-PF-01…30 |
-| **Total** | **217** | **235 kasus + 8 alur ujung-ke-ujung** |
+| Finance KaataGo (PF) | 21 | TC-PF-01…34 |
+| **Total** | **218** | **235 kasus + 8 alur ujung-ke-ujung** |
 
 Kriteria penerimaan A-01…A-20 di FSD §9 seluruhnya terpetakan lewat
 kolom Rujukan di atas. Bab TSD yang diuji: §1.2, §4, §5, §6, §7, §8,

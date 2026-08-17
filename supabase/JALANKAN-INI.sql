@@ -4458,14 +4458,21 @@ commit;
 begin;
 
 -- Pasangan nomor bawaan resto → nomor platform.
-create temporary table _peta_gl (
-  payment_method text primary key,
-  dari text,
-  ke text,
-  nama text
-) on commit drop;
+--
+-- Ditulis sebagai daftar sebaris di dalam tiap pernyataan, bukan tabel
+-- sementara. Tabel sementara hanya hidup di satu sesi, dan SQL Editor
+-- Supabase bisa menjalankan tiap pernyataan lewat koneksi yang berbeda:
+--
+--   ERROR: relation "_peta_gl" does not exist
+--
+-- Galatnya muncul di pernyataan kedua, bukan pada yang membuat tabelnya
+-- — jadi yang membacanya menyangka ada yang salah pada UPDATE-nya.
 
-insert into _peta_gl values
+-- Jurnal lebih dulu, selagi nomor lamanya masih bisa dicocokkan.
+update gl_journal_entries j
+set gl_code = p.ke,
+    gl_name = p.nama
+from (values
   ('cash',             '1950001', '1100010', 'GL Kas Tunai KaataGo'),
   ('qris',             '1950002', '1100012', 'GL Penerimaan QRIS KaataGo'),
   ('transfer',         '1950003', '1100011', 'GL Rekening KaataGo'),
@@ -4477,20 +4484,28 @@ insert into _peta_gl values
   ('suspense',         '2100001', '1100050', 'GL Suspense KaataGo'),
   ('suspense_petty',   '2100002', '1100051', 'GL Suspense Petty KaataGo'),
   ('gateway_fee',      '2200001', '1100060', 'GL Biaya Gateway KaataGo'),
-  ('discount',         '2200002', '1100072', 'GL Diskon Lain KaataGo');
-
--- Jurnal lebih dulu, selagi nomor lamanya masih bisa dicocokkan.
-update gl_journal_entries j
-set gl_code = p.ke,
-    gl_name = p.nama
-from _peta_gl p
+  ('discount',         '2200002', '1100072', 'GL Diskon Lain KaataGo')
+) as p(payment_method, dari, ke, nama)
 where j.resto_id = 'kaatago'
   and j.gl_code = p.dari;
 
 update gl_accounts a
 set gl_code = p.ke,
     gl_name = p.nama
-from _peta_gl p
+from (values
+  ('cash',             '1950001', '1100010', 'GL Kas Tunai KaataGo'),
+  ('qris',             '1950002', '1100012', 'GL Penerimaan QRIS KaataGo'),
+  ('transfer',         '1950003', '1100011', 'GL Rekening KaataGo'),
+  ('income_aggregate', '1950010', '1100020', 'GL Pendapatan KaataGo'),
+  ('ppn',              '1960001', '1100070', 'GL PPN KaataGo'),
+  ('service',          '1960002', '1100071', 'GL Biaya Service KaataGo'),
+  ('petty_cash',       '1980001', '1100030', 'GL Petty Cash KaataGo'),
+  ('total_balance',    '1990001', '1100040', 'GL Total Saldo KaataGo'),
+  ('suspense',         '2100001', '1100050', 'GL Suspense KaataGo'),
+  ('suspense_petty',   '2100002', '1100051', 'GL Suspense Petty KaataGo'),
+  ('gateway_fee',      '2200001', '1100060', 'GL Biaya Gateway KaataGo'),
+  ('discount',         '2200002', '1100072', 'GL Diskon Lain KaataGo')
+) as p(payment_method, dari, ke, nama)
 where a.resto_id = 'kaatago'
   and a.payment_method = p.payment_method
   and a.gl_code = p.dari;

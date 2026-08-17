@@ -537,7 +537,8 @@ keuangan lain di aplikasi ini.
 | F-PF-08 | KaataGo punya **bagan akun sendiri** — pendapatan, diskon, kas, petty cash, suspense, pengeluaran |
 | F-PF-09 | Petty cash dan pengeluaran KaataGo dikelola seperti di resto |
 | F-PF-10 | **Tidak ada Setor Saldo Cash** di sisi KaataGo |
-| F-PF-11 | Super Admin dapat melihat **Jurnal GL seluruh resto**, dengan saringan per resto |
+| F-PF-11 | Super Admin dapat melihat **Jurnal GL seluruh resto klien**, dengan saringan per resto |
+| F-PF-21 | Pembukuan KaataGo **tidak ikut** di layar itu — ia punya Jurnal GL KaataGo sendiri |
 | F-PF-12 | Jurnal lintas resto **hanya bisa dilihat** — tidak ada satu pun cara mengubahnya |
 | F-PF-14 | Total debit/kredit **tidak menghitung baris pembatalan**, sama seperti jurnal per resto |
 | F-PF-15 | Baris pembatalan tetap **ditampilkan** dan ditandai, demi jejak audit |

@@ -463,6 +463,19 @@ void main() {
       expect(sql, contains("('cash',             '1950001', '1100010'"));
     });
 
+    test('tanpa tabel sementara', () {
+      // Tabel sementara hanya hidup di satu sesi, dan SQL Editor
+      // Supabase bisa menjalankan tiap pernyataan lewat koneksi yang
+      // berbeda — galatnya lalu muncul di pernyataan KEDUA, bukan pada
+      // yang membuat tabelnya.
+      final perintah = sql
+          .split('\n')
+          .where((l) => !l.trimLeft().startsWith('--'))
+          .join('\n');
+      expect(perintah, isNot(contains('create temporary table')));
+      expect(perintah, contains('from (values'));
+    });
+
     test('jurnal yang sudah tercatat ikut dipindah nomornya', () {
       // Kalau tidak, baris lama dan baru menunjuk akun yang berbeda
       // untuk hal yang sama.
@@ -484,6 +497,30 @@ void main() {
           isNot(contains('amount')));
       expect(blokUpdate.substring(0, blokUpdate.indexOf(';')),
           isNot(contains('entry_type')));
+    });
+  });
+
+
+  group('Jurnal Semua Resto tidak mencampur pembukuan KaataGo', () {
+    final repo =
+        File('lib/db/gl_journal_repository.dart').readAsStringSync();
+    final layar =
+        File('lib/screens/super_admin_finance_screen.dart').readAsStringSync();
+
+    test('baris platform disaring di kueri', () {
+      // Disaring sesudah data sampai berarti baris platform ikut
+      // memakan jatah batas 1.000 baris, dan yang terpotong justru
+      // jurnal resto yang dicari.
+      expect(repo, contains("neq('resto_id', kPlatformRestoId)"));
+    });
+
+    test('KaataGo tidak ada di daftar saringan', () {
+      expect(layar,
+          isNot(contains("kPlatformRestoId: 'KaataGo'")));
+    });
+
+    test('pembukuan KaataGo tetap punya layarnya sendiri', () {
+      expect(layar, contains("title: 'Jurnal GL KaataGo'"));
     });
   });
 

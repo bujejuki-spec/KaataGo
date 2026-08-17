@@ -694,6 +694,14 @@ tersalin tidak lengkap.
 
 Untuk `gl_journal_entries`, yang ditambahkan **hanya `select`**.
 
+**Jurnal Semua Resto menyaring keluar penyewa platform.** Barisnya
+memang tersimpan di tabel yang sama, tapi mencampurnya di satu layar
+membuat total debit/kredit menjumlahkan dua pembukuan yang tidak punya
+hubungan satu sama lain: penjualan resto, dan tagihan yang kami
+terbitkan kepada mereka. Disaring di kuerinya, bukan sesudah data
+sampai — baris platform yang ikut terangkut memakan jatah batas 1.000
+baris, dan yang terpotong justru jurnal resto yang dicari.
+
 ---
 
 ## 8. Notifikasi Push

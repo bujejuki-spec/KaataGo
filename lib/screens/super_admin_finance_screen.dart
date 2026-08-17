@@ -114,7 +114,7 @@ class SuperAdminFinanceScreen extends StatelessWidget {
             HubMenuTile(
               icon: Icons.travel_explore_outlined,
               title: 'Jurnal GL Semua Resto',
-              subtitle: 'Hanya untuk dilihat — tidak bisa diubah',
+              subtitle: 'Pembukuan resto klien, hanya untuk dilihat',
               color: const Color(0xFF64748B),
               onTap: () => Navigator.of(context).push(MaterialPageRoute(
                 builder: (_) => const AllRestoJournalScreen(),
@@ -390,10 +390,9 @@ class _AllRestoJournalScreenState extends State<AllRestoJournalScreen> {
       if (!mounted) return;
       setState(() {
         _semua = entries;
-        _namaResto = {
-          for (final r in resto) r.id: r.name,
-          kPlatformRestoId: 'KaataGo',
-        };
+        // KaataGo tidak ikut: layar ini khusus pembukuan resto klien.
+        // Pembukuan sendiri punya layarnya sendiri di menu di atas.
+        _namaResto = {for (final r in resto) r.id: r.name};
         _dibuka
           ..clear()
           ..addAll(entries.isEmpty ? const [] : [_hari(entries.first.entryDate)]);
