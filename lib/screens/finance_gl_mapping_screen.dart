@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../db/expense_gl_account_repository.dart';
 import '../db/gl_account_repository.dart';
+import '../models/billing.dart';
 import '../models/expense_gl_account.dart';
 import '../models/gl_account.dart';
 import '../providers/auth_provider.dart';
@@ -65,6 +66,19 @@ const _suspensePettyMethod = 'suspense_petty';
 // dan pembukuannya tidak akan pernah bisa ditutup.
 const _gatewayFeeMethod = 'gateway_fee';
 
+// Potongan harga yang diberikan ke pelanggan. Pengurang pendapatan,
+// bukan biaya: diskon tidak pernah jadi uang yang keluar dari resto, ia
+// adalah uang yang tidak pernah masuk. Tanpa akunnya sendiri, penjualan
+// tercatat sebesar harga daftar sementara uang yang diterima lebih
+// kecil, dan selisihnya muncul sebagai kas yang hilang tanpa sebab.
+const _discountMethod = 'discount';
+
+// Dua akun berikut hanya dipakai pembukuan KaataGo sendiri — resto tidak
+// menagih siapa pun. Ditampilkan hanya saat layar ini dibuka untuk
+// penyewa platform.
+const _subscriptionMethod = 'subscription';
+const _subscriptionDiscountMethod = 'subscription_discount';
+
 // PPN and service charge collected are money owed onward, not revenue,
 // so they're journaled to their own accounts instead of being folded
 // into the payment-method income mapping.
@@ -85,6 +99,9 @@ const _allMethods = [
   _suspenseMethod,
   _suspensePettyMethod,
   _gatewayFeeMethod,
+  _discountMethod,
+  _subscriptionMethod,
+  _subscriptionDiscountMethod,
 ];
 
 /// Drops a trailing ".0" so a rate of 11 shows as "11", not "11.00".
@@ -154,6 +171,13 @@ class _FinanceGlMappingScreenState extends State<FinanceGlMappingScreen> {
   String get _restoId =>
       widget.restoId ?? context.read<AuthProvider>().restoId!;
 
+  /// Layar ini dibuka untuk pembukuan KaataGo sendiri.
+  ///
+  /// Dua akun langganan hanya berarti di sana — resto tidak menagih
+  /// siapa pun, dan menampilkan kolom yang tidak akan pernah dipakai
+  /// membuat halaman ini lebih panjang tanpa jadi lebih berguna.
+  bool get _untukPlatform => _restoId == kPlatformRestoId;
+
   @override
   void initState() {
     super.initState();
@@ -210,7 +234,21 @@ class _FinanceGlMappingScreenState extends State<FinanceGlMappingScreen> {
   /// header so Finance can see at a glance whether anything's missing
   /// (an unmapped account silently skips journaling).
   int get _mappedCount =>
-      _allMethods.where((m) => _codeCtrls[m]!.text.trim().isNotEmpty).length;
+      _metodeLayarIni.where((m) => _codeCtrls[m]!.text.trim().isNotEmpty).length;
+
+  /// Akun yang benar-benar berlaku di layar ini.
+  ///
+  /// Dua akun langganan hanya ada di pembukuan KaataGo. Menghitungnya
+  /// untuk resto biasa membuat penanda di atas selamanya berbunyi "2
+  /// akun belum dipetakan" — peringatan yang tidak pernah bisa
+  /// dihilangkan, dan peringatan semacam itu mengajari orang
+  /// mengabaikan seluruh penandanya.
+  List<String> get _metodeLayarIni => _untukPlatform
+      ? _allMethods
+      : [
+          for (final m in _allMethods)
+            if (m != _subscriptionMethod && m != _subscriptionDiscountMethod) m,
+        ];
 
   void _startEdit() {
     _snapshot = {
@@ -432,7 +470,7 @@ class _FinanceGlMappingScreenState extends State<FinanceGlMappingScreen> {
                       _StatusBanner(
                         editing: _editing,
                         mapped: _mappedCount,
-                        total: _allMethods.length,
+                        total: _metodeLayarIni.length,
                       ),
                       const SizedBox(height: 16),
                       _GlSectionCard(
@@ -558,6 +596,58 @@ class _FinanceGlMappingScreenState extends State<FinanceGlMappingScreen> {
                           ),
                         ],
                       ),
+                      const SizedBox(height: 14),
+                      _GlSectionCard(
+                        icon: Icons.local_offer_outlined,
+                        color: const Color(0xFF10B981),
+                        title: 'GL Diskon',
+                        subtitle: 'Pengurang pendapatan, bukan biaya',
+                        children: [
+                          _GlAccountRow(
+                            icon: Icons.local_offer_outlined,
+                            label: 'GL Diskon Penjualan',
+                            hint: 'Potongan promo — uang yang tidak pernah '
+                                'masuk, bukan uang yang keluar',
+                            color: const Color(0xFF10B981),
+                            codeCtrl: _codeCtrls[_discountMethod]!,
+                            nameCtrl: _nameCtrls[_discountMethod]!,
+                            editing: _editing,
+                          ),
+                        ],
+                      ),
+                      if (_untukPlatform) ...[
+                        const SizedBox(height: 14),
+                        _GlSectionCard(
+                          icon: Icons.workspace_premium_outlined,
+                          color: const Color(0xFF6366F1),
+                          title: 'GL Langganan',
+                          subtitle: 'Pendapatan KaataGo dari biaya langganan resto',
+                          children: [
+                            _GlAccountRow(
+                              icon: Icons.trending_up,
+                              label: 'GL Pendapatan Langganan',
+                              hint: 'Dicatat sebesar harga daftar, sebelum '
+                                  'potongan',
+                              color: const Color(0xFF6366F1),
+                              codeCtrl: _codeCtrls[_subscriptionMethod]!,
+                              nameCtrl: _nameCtrls[_subscriptionMethod]!,
+                              editing: _editing,
+                            ),
+                            _GlAccountRow(
+                              icon: Icons.local_offer_outlined,
+                              label: 'GL Diskon Langganan',
+                              hint: 'Potongan harga langganan untuk resto '
+                                  'tertentu',
+                              color: const Color(0xFF6366F1),
+                              codeCtrl:
+                                  _codeCtrls[_subscriptionDiscountMethod]!,
+                              nameCtrl:
+                                  _nameCtrls[_subscriptionDiscountMethod]!,
+                              editing: _editing,
+                            ),
+                          ],
+                        ),
+                      ],
                       const SizedBox(height: 14),
                       _GlSectionCard(
                         icon: Icons.trending_down,

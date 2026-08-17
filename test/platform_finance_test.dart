@@ -256,4 +256,49 @@ void main() {
     });
   });
 
+
+  group('GL diskon di layar pemetaan', () {
+    final layar =
+        File('lib/screens/finance_gl_mapping_screen.dart').readAsStringSync();
+
+    test('GL Diskon punya bagiannya sendiri', () {
+      // Tanpa ini, akunnya ada di database tapi tidak pernah bisa
+      // dilihat atau diubah Finance — dan yang GL-nya belum dipetakan
+      // dilewati pemicu jurnal tanpa galat apa pun.
+      expect(layar, contains("const _discountMethod = 'discount'"));
+      expect(layar, contains("title: 'GL Diskon'"));
+    });
+
+    test('akun langganan hanya tampil untuk pembukuan KaataGo', () {
+      // Resto tidak menagih siapa pun.
+      expect(layar, contains('if (_untukPlatform)'));
+      expect(layar, contains("title: 'GL Langganan'"));
+    });
+
+    test('penghitung akun mengikuti layar yang sedang dibuka', () {
+      // Menghitung akun langganan untuk resto biasa membuat penandanya
+      // selamanya berbunyi "2 akun belum dipetakan" — peringatan yang
+      // tidak bisa dihilangkan mengajari orang mengabaikan seluruh
+      // penandanya.
+      expect(layar, contains('_metodeLayarIni.where'));
+      expect(layar, contains('total: _metodeLayarIni.length'));
+    });
+
+    test('menyimpan tidak membuat baris kosong', () {
+      expect(layar, contains('if (code.isEmpty && name.isEmpty) continue'));
+    });
+  });
+
+  group('label cara pelunasan', () {
+    test('ditulis utuh, bukan sekadar "manual"', () {
+      // Yang dibedakan adalah bagaimana tagihannya dinyatakan lunas,
+      // bukan cara transfernya. "manual" sendirian membuat yang
+      // membacanya menebak — dan menebak soal uang selalu mahal.
+      final layar =
+          File('lib/screens/super_admin_finance_screen.dart').readAsStringSync();
+      expect(layar, contains("'Lunas via VA'"));
+      expect(layar, contains("'Dikonfirmasi manual'"));
+    });
+  });
+
 }

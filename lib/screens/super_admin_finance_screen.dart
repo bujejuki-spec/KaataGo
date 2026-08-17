@@ -321,11 +321,13 @@ class _BarisTagihan extends StatelessWidget {
                   style: const TextStyle(
                       fontWeight: FontWeight.bold, fontSize: 13.5)),
               const SizedBox(height: 2),
-              // Dibedakan karena tingkat kepercayaannya berbeda: yang
-              // lewat VA terkonfirmasi mesin, yang manual adalah
-              // keputusan orang berdasarkan foto.
+              // Yang dibedakan adalah bagaimana tagihannya dinyatakan
+              // lunas, bukan cara transfernya — dan itu perlu ditulis
+              // utuh. "manual" sendirian tidak memberi tahu siapa pun
+              // apa yang terjadi; yang membacanya enam bulan lagi akan
+              // menebak, dan menebak soal uang selalu mahal.
               Text(
-                lewatMesin ? 'VA' : 'manual',
+                lewatMesin ? 'Lunas via VA' : 'Dikonfirmasi manual',
                 style: TextStyle(
                   fontSize: 10.5,
                   color: lewatMesin
