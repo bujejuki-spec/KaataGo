@@ -532,6 +532,7 @@ keuangan lain di aplikasi ini.
 | F-PF-05 | Diskon dipakai saat tagihan **berikutnya** terbit; tagihan yang sudah terbit tidak berubah |
 | F-PF-06 | Diskon punya **GL sendiri** sebagai pengurang pendapatan |
 | F-PF-07 | Pendapatan langganan masuk **Jurnal GL KaataGo** secara otomatis saat tagihan lunas |
+| F-PF-13 | Pendapatan dicatat sebesar **harga daftar**; diskon jadi baris pengurang tersendiri |
 | F-PF-08 | KaataGo punya **bagan akun sendiri** — pendapatan, diskon, kas, petty cash, suspense, pengeluaran |
 | F-PF-09 | Petty cash dan pengeluaran KaataGo dikelola seperti di resto |
 | F-PF-10 | **Tidak ada Setor Saldo Cash** di sisi KaataGo |

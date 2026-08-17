@@ -120,8 +120,10 @@ void main() {
     });
 
     test('pendapatan dikredit, diskon didebit', () {
-      expect(sql, contains("new.amount, 'credit'"));
-      expect(sql, contains("new.discount_amount, 'debit'"));
+      final gross =
+          File('supabase/billing_journal_gross.sql').readAsStringSync();
+      expect(gross, contains("v_gross, 'credit'"));
+      expect(gross, contains("new.discount_amount, 'debit'"));
     });
 
     test('tidak mencatat dua kali walau statusnya berpindah lagi', () {
@@ -214,6 +216,43 @@ void main() {
           File('lib/screens/billing_screen.dart').readAsStringSync();
       expect(layar, contains('Harga langganan'));
       expect(layar, contains('invoice.discountAmount > 0'));
+    });
+  });
+
+
+  group('pendapatan dicatat sebesar harga penuh', () {
+    final sql = File('supabase/billing_journal_gross.sql').readAsStringSync();
+
+    test('yang dikredit harga daftar, bukan yang sudah dipotong', () {
+      // Mengkredit nominal yang sudah dipotong LALU mendebit diskonnya
+      // menghitung potongan itu dua kali: tagihan 230.000 berdiskon 50%
+      // menghasilkan pendapatan bersih nol, padahal 115.000 benar-benar
+      // masuk.
+      expect(sql, contains('v_gross := coalesce(new.gross_amount, new.amount)'));
+      expect(sql, contains("v_gross, 'credit'"));
+    });
+
+    test('tagihan lama tanpa gross memakai nominalnya sendiri', () {
+      // Untuk mereka, nominalnya memang harga penuhnya.
+      expect(sql, contains('coalesce(new.gross_amount, new.amount)'));
+    });
+
+    test('jurnal yang salah diperbaiki dengan menambah, bukan menyunting', () {
+      // Pembukuan yang barisnya bisa disunting belakangan tidak bisa
+      // dipakai membuktikan apa pun.
+      expect(sql, isNot(contains('update gl_journal_entries')));
+      expect(sql, isNot(contains('delete from gl_journal_entries')));
+      expect(sql, contains('insert into gl_journal_entries'));
+      expect(sql, contains('Koreksi pencatatan diskon'));
+    });
+
+    test('koreksinya hanya sekali walau berkasnya dijalankan berulang', () {
+      expect(sql, contains("k.description like 'Koreksi pencatatan diskon%'"));
+    });
+
+    test('yang dikoreksi hanya yang memang tercatat bersih', () {
+      expect(sql, contains('j.amount = i.amount'));
+      expect(sql, contains('i.gross_amount > i.amount'));
     });
   });
 

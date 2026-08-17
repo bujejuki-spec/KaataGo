@@ -668,6 +668,20 @@ muncul sebagai pilihan resto di layar mana pun.** Dua lapis penjagaan:
 Menyaringnya di repository, bukan di layar, berarti layar baru yang
 dibuat nanti tidak bisa lupa menyaringnya.
 
+**Pendapatan dicatat sebesar harga daftar, bukan sesudah potongan.**
+
+| | Kredit Pendapatan | Debit Diskon | Bersih |
+|---|---|---|---|
+| Salah | 115.000 (sudah dipotong) | 115.000 | **0** |
+| Benar | 230.000 (harga daftar) | 115.000 | **115.000** |
+
+Mengkredit nominal yang sudah dipotong lalu mendebit diskonnya
+menghitung potongan itu dua kali. Selain angka bersihnya salah, cara
+yang benar memberi dua angka yang bisa dibaca terpisah: berapa harga
+daftar yang kita jual, dan berapa yang kita berikan sebagai potongan.
+Pertanyaan "berapa besar diskon kita tahun ini" jadi punya jawabannya
+sendiri, bukan angka yang harus dikira-kira dari selisih.
+
 **Nomor akunnya 11xxxxx**, berbeda golongan dari 19xxxxx milik resto.
 Selisih itu membuat satu baris jurnal bisa dikenali pemiliknya hanya
 dari nomornya, tanpa menelusuri restonya lebih dulu.
