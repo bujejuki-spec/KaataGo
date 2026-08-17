@@ -1,7 +1,7 @@
 # KaataGo — Test Case
 
-**Versi Aplikasi:** 2.1.0 (build 97)
-**Versi Dokumen:** 1.0
+**Versi Aplikasi:** 2.2.0 (build 98)
+**Versi Dokumen:** 1.1
 **Tanggal Terbit:** 17 Agustus 2026
 **Status:** Rilis
 **Jenis Dokumen:** Test Case — pengujian manual
@@ -600,24 +600,50 @@ sudah membayar berhenti berjualan.
 
 | ID | P | Skenario | Hasil yang diharapkan | Rujukan |
 |---|---|---|---|---|
-| TC-VC-01 | P2 | Super Admin → Finance → Voucher Pelanggan → buat voucher 10% | Tersimpan berikut kodenya | F-VC-01 |
-| TC-VC-02 | P2 | Buat voucher berkode sama dengan yang sudah ada | Ditolak — kodenya sudah dipakai | F-VC-01 |
-| TC-VC-03 | P1 | Voucher 20% tanpa batas, tagihan Rp 1.000.000 | Potongan Rp 200.000 | F-VC-01 |
-| TC-VC-04 | P1 | Voucher yang sama dengan maks. Rp 20.000 | Potongan berhenti di Rp 20.000 | F-VC-02 |
-| TC-VC-05 | P1 | Voucher min belanja Rp 50.000, tagihan Rp 30.000 | Ditolak dengan sebutan minimalnya | F-VC-03, F-VC-10 |
-| TC-VC-06 | P1 | Voucher khusus resto A, dipakai di resto B | Ditolak — "tidak berlaku di resto ini" | F-VC-04, F-VC-10 |
-| TC-VC-07 | P1 | Voucher kuota 1, pakai dua kali oleh orang berbeda | Yang kedua ditolak — kuota habis | F-VC-05 |
-| TC-VC-08 | P1 | Voucher kuota per pelanggan 1, pakai dua kali oleh orang sama | Yang kedua ditolak — "sudah kamu pakai" | F-VC-05 |
-| TC-VC-09 | P2 | Ketik kode dengan huruf kecil | Tetap diterima | F-VC-07 |
-| TC-VC-10 | P2 | Ketik kode yang tidak ada | Ditolak dengan sebutan tidak ditemukan | F-VC-10 |
-| TC-VC-11 | P2 | Voucher nonaktif / lewat masa berlaku | Ditolak, masing-masing dengan alasannya | F-VC-06, F-VC-10 |
-| TC-VC-12 | P1 | Pasang voucher lalu selesaikan pesanan | Yang dibayar sudah dipotong; nominal QRIS-nya juga | F-VC-08 |
-| TC-VC-13 | P1 | Ketuk **Lepas** setelah voucher terpasang | Tagihan kembali ke nominal semula | F-VC-08 |
-| TC-VC-14 | P1 | Periksa Jurnal GL KaataGo sesudah voucher dipakai | Dua baris: GL Biaya Voucher **debit**, kantongnya **kredit** | F-VC-12 |
-| TC-VC-15 | P1 | Periksa Jurnal GL resto yang bersangkutan | **Tidak** ada baris voucher di sana | F-VC-12 |
-| TC-VC-16 | P1 | Panggil `voucher_quote` lewat API dengan nominal dipalsukan | Nominal yang dipakai tetap dari perhitungan server | F-VC-09 |
-| TC-VC-17 | P2 | Buka daftar voucher sebagai Owner resto | Terbaca, tapi tidak bisa diubah | F-VC-01 |
-| TC-VC-18 | P2 | Periksa jumlah "dipakai" di kartu voucher | Cocok dengan jumlah pemakaian sebenarnya | F-VC-11 |
+| TC-VC-01 | P1 | Super Admin → Voucher → terbitkan Rp 1.000.000 jadi 10 | 10 voucher @Rp 100.000; nominalnya tampil hidup di formulir | F-VC-01, F-VC-02 |
+| TC-VC-02 | P1 | Terbitkan Rp 1.000.000 jadi 3 | @Rp 333.333, sisa Rp 1 disebutkan dan **tidak** ikut dijurnal | F-VC-02 |
+| TC-VC-03 | P2 | Terbitkan dengan kode yang sudah dipakai | Ditolak — kodenya sudah ada | F-VC-01 |
+| TC-VC-04 | P1 | Periksa Jurnal GL KaataGo sesudah terbit | Debit **Total Saldo 1100040**, kredit **Voucher 1100073** | F-VC-13 |
+| TC-VC-05 | P1 | Pelanggan menebus kode di **Voucher Saya** | Berhasil; voucher masuk daftar "Siap Dipakai" | F-VC-07 |
+| TC-VC-06 | P2 | Ketik kodenya dengan huruf kecil | Tetap diterima | F-VC-07 |
+| TC-VC-07 | P2 | Ketik kode yang tidak ada | "Kode voucher tidak ditemukan" | F-VC-10 |
+| TC-VC-08 | P1 | Periksa Jurnal GL KaataGo sesudah ditebus | Debit **Voucher**, kredit **Voucher Redeem 1100074** | F-VC-13 |
+| TC-VC-09 | P1 | Orang yang sama menebus kode itu lagi | Ditolak — "Voucher ini sudah kamu tebus" | F-VC-08, F-VC-10 |
+| TC-VC-10 | P1 | Batch berisi 10, orang ke-11 menebus | Ditolak — "Voucher ini sudah habis" | F-VC-09, F-VC-10 |
+| TC-VC-11 | P1 | Dua orang menebus voucher terakhir bersamaan | Hanya satu lolos; yang lain ditolak kuota habis | F-VC-09 |
+| TC-VC-12 | P2 | Tebus voucher dari batch yang sudah ditutup | "Voucher ini sudah ditutup" | F-VC-04, F-VC-10 |
+| TC-VC-13 | P2 | Tebus voucher yang lewat masa berlaku | "Voucher ini sudah kedaluwarsa" | F-VC-04, F-VC-10 |
+| TC-VC-14 | P1 | Di keranjang, ketuk baris voucher | Muncul **pilihan** voucher miliknya, bukan kolom ketik kode | F-VC-11 |
+| TC-VC-15 | P1 | Voucher min belanja Rp 50.000, tagihan Rp 30.000 | Tidak bisa dipilih, disertai "Belanja belum mencapai minimum" | F-VC-05, F-VC-10 |
+| TC-VC-16 | P1 | Voucher khusus resto A dibuka di resto B | Tidak bisa dipilih — "Tidak berlaku di resto ini" | F-VC-06, F-VC-10 |
+| TC-VC-17 | P1 | Voucher Rp 100.000 pada tagihan Rp 60.000 | Yang dibayar Rp 0; sisa Rp 40.000 **tidak** dikembalikan | F-VC-12 |
+| TC-VC-18 | P1 | Pasang voucher lalu selesaikan pesanan | Yang dibayar sudah dipotong; nominal QRIS-nya juga | F-VC-11 |
+| TC-VC-19 | P1 | Ketuk **Lepas** setelah voucher terpasang | Tagihan kembali ke nominal semula | F-VC-11 |
+| TC-VC-20 | P1 | Periksa Jurnal GL KaataGo sesudah dipakai | Debit **Voucher Redeem**, kredit GL **Transfer** restonya | F-VC-13 |
+| TC-VC-21 | P1 | Periksa Jurnal GL restonya | Ada baris masuk sebesar nilai vouchernya | F-VC-13 |
+| TC-VC-22 | P2 | Voucher yang sudah dipakai dibuka lagi di keranjang | Tidak muncul di daftar pilihan | F-VC-11 |
+| TC-VC-23 | P1 | Jalankan `expire_vouchers()` — ada klaim tak terpakai | Debit **Voucher Redeem**, kredit **Total Saldo** | F-VC-14 |
+| TC-VC-24 | P1 | Batch kedaluwarsa dengan sisa kuota tak tertebus | Debit **Voucher**, kredit **Total Saldo** sebesar sisanya | F-VC-14 |
+| TC-VC-25 | P1 | Jalankan `expire_vouchers()` **dua kali** | Pengembaliannya sekali saja — dijaga `settled_at` | F-VC-14 |
+| TC-VC-26 | P1 | Jumlahkan keempat tahap untuk satu batch | Debit dan kreditnya seimbang; tidak ada dana yang hilang | F-VC-13, F-VC-14 |
+| TC-VC-27 | P1 | Tulis langsung ke `voucher_claims` lewat API | Ditolak RLS — tidak ada kebijakan tulis untuk siapa pun | F-VC-13 |
+| TC-VC-28 | P1 | Panggil `generate_voucher_batch` sebagai bukan Super Admin | Ditolak — "Hanya Super Admin yang dapat menerbitkan voucher" | F-VC-01 |
+| TC-VC-29 | P2 | Periksa kartu batch di layar Super Admin | Sisa kuota dan **nilai menggantung** cocok dengan penebusnya | F-VC-15 |
+| TC-VC-30 | P2 | Tutup sebuah batch yang kuotanya masih ada | Tidak bisa ditebus lagi; yang sudah ditebus tetap bisa dipakai | F-VC-04 |
+| TC-VC-31 | P1 | Pakai voucher, lalu periksa tabel `voucher_payouts` | Muncul satu baris `pending` sebesar nilai vouchernya | F-VC-16 |
+| TC-VC-32 | P1 | Jalankan `settle-voucher-payouts` | Status jadi `sent`, `transfer_id` terisi, saldo sub-akun resto bertambah | F-VC-16 |
+| TC-VC-33 | P1 | Jalankan fungsinya **dua kali** berturut-turut | Uangnya berpindah sekali; yang kedua duplikat dan tetap `sent` | F-VC-18 |
+| TC-VC-34 | P1 | Matikan Xendit (kunci salah), lalu jalankan | Status `failed`, `last_error` menyebut sebabnya, `attempts` naik | F-VC-17 |
+| TC-VC-35 | P1 | Perbaiki kuncinya lalu jalankan lagi | Baris yang tadi gagal terkirim | F-VC-17 |
+| TC-VC-36 | P1 | Pakai voucher di resto yang belum punya sub-akun | Tetap `pending`, `attempts` **tidak** naik, tidak hilang | F-VC-19 |
+| TC-VC-37 | P1 | Buat pesanan bervoucher saat Xendit mati total | Pesanannya tetap tersimpan dan masuk dapur | F-VC-17 |
+| TC-VC-38 | P2 | Jalankan `voucher_payouts.sql` di basis data yang sudah ada pemakaian | Klaim `used` lama ikut terantre | F-VC-16 |
+| TC-VC-39 | P1 | Tulis langsung ke `voucher_payouts` lewat API | Ditolak — tidak ada kebijakan tulis untuk siapa pun | F-VC-18 |
+| TC-VC-40 | P2 | Baca `voucher_payout_config` sebagai Super Admin | Kosong — kunci layanan tidak terbaca peran mana pun | F-VC-16 |
+| TC-VC-41 | P2 | Jalankan penjadwal sebelum `function_url` diisi | Berjalan tanpa melakukan apa-apa, tanpa galat | F-VC-17 |
+| TC-VC-42 | P1 | Bandingkan total `sent` dengan mutasi transfer di dashboard Xendit | Cocok baris per baris lewat `transfer_id` | F-VC-16 |
+| TC-VC-43 | P1 | Jalankan pencairan saat xenPlatform belum aktif | Seluruh antrean tetap `pending`, `attempts` nol, tidak ada galat | F-VC-19 |
+| TC-VC-44 | P2 | Aktifkan xenPlatform + pasang sub-akun, lalu tunggu penjadwal | Tunggakan lama ikut terangkut tanpa dijalankan ulang manual | F-VC-16, F-VC-17 |
 
 ---
 
@@ -796,8 +822,8 @@ Tiap kelompok kebutuhan di FSD, dan kasus uji yang menjaganya.
 | Pembaruan (UP) | 7 | TC-UP-01…09 |
 | Langganan (BL) | 24 | TC-BL-01…30, E2E-09 |
 | Finance KaataGo (PF) | 21 | TC-PF-01…34 |
-| Voucher (VC) | 12 | TC-VC-01…18 |
-| **Total** | **243** | **235 kasus + 8 alur ujung-ke-ujung** |
+| Voucher (VC) | 44 | TC-VC-01…44 |
+| **Total** | **275** | **267 kasus + 8 alur ujung-ke-ujung** |
 
 Kriteria penerimaan A-01…A-20 di FSD §9 seluruhnya terpetakan lewat
 kolom Rujukan di atas. Bab TSD yang diuji: §1.2, §4, §5, §6, §7, §8,

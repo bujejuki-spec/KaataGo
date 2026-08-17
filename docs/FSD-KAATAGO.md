@@ -1,7 +1,7 @@
 # KaataGo — Functional Specification Document
 
-**Versi Aplikasi:** 2.1.0 (build 97)
-**Versi Dokumen:** 2.1
+**Versi Aplikasi:** 2.2.0 (build 98)
+**Versi Dokumen:** 2.2
 **Tanggal Terbit:** 17 Agustus 2026
 **Status:** Rilis
 **Jenis Dokumen:** FSD — sisi fungsional
@@ -576,38 +576,97 @@ keuangan lain di aplikasi ini.
 ### 4.19 Voucher Pelanggan
 
 Promo KaataGo, bukan promo resto. Bedanya bukan sekadar siapa yang
-membuat: **yang menanggung potongannya juga KaataGo** — dananya keluar
-dari saldo KaataGo sebagai biaya promosi, dan tercatat di Jurnal GL
-KaataGo tiap kali dipakai.
+membuat: **yang menanggung potongannya juga KaataGo** — dananya diambil
+dari saldo KaataGo di muka, bukan ditagihkan belakangan.
+
+Voucher diterbitkan **per batch**. Super Admin mengalokasikan sejumlah
+uang lalu memecahnya jadi beberapa voucher bernilai sama: Rp 1.000.000
+jadi 10 voucher @Rp 100.000. Satu kode untuk seluruh batch, dan sengaja
+begitu — kodenya diumumkan ke banyak orang sekaligus, dan kode yang
+berbeda per orang tidak bisa diumumkan.
+
+**Empat tahap, empat perpindahan uang.** Dana voucher tidak muncul dan
+hilang begitu saja; ia berpindah antar-kantong dan selalu ada di salah
+satunya.
+
+| Tahap | Yang terjadi | Jurnal GL KaataGo |
+|---|---|---|
+| 1. Terbit | Super Admin menerbitkan batch | Debit **Total Saldo** (1100040) → Kredit **Voucher** (1100073) |
+| 2. Ditebus | Pelanggan memasukkan kode, kuotanya berkurang | Debit **Voucher** → Kredit **Voucher Redeem** (1100074) |
+| 3. Dipakai | Vouchernya membayar pesanan di resto | Debit **Voucher Redeem** → Kredit **GL Transfer resto**, **dan uangnya benar-benar ditransfer ke resto lewat Xendit** |
+| 4. Hangus | Lewat masa berlaku tanpa dipakai | Debit kantong yang menahannya → Kredit **Total Saldo** |
 
 | ID | Kebutuhan |
 |---|---|
-| F-VC-01 | Super Admin membuat voucher berkode, dalam **persen** atau **rupiah** |
-| F-VC-02 | Voucher persen dapat dibatasi **potongan maksimal** |
-| F-VC-03 | Dapat mensyaratkan **minimal belanja** |
-| F-VC-04 | Berlaku di **semua resto** atau hanya resto yang dipilih |
-| F-VC-05 | Kuota **total** dan kuota **per pelanggan**; nol berarti tanpa batas |
-| F-VC-06 | Punya masa berlaku dan dapat dinonaktifkan tanpa dihapus |
-| F-VC-07 | Kodenya tidak peduli huruf besar-kecil |
-| F-VC-08 | Pelanggan memasukkan kode di keranjang, sebelum memilih cara bayar |
-| F-VC-09 | Potongannya **dihitung server**, tidak pernah dari aplikasi |
+| F-VC-01 | Super Admin menerbitkan **batch**: nominal total, dipecah jadi berapa, dan kodenya |
+| F-VC-02 | Nilai tiap voucher **dihitung server** — total dibagi jumlahnya; sisa pembagian tidak diterbitkan |
+| F-VC-03 | Nominalnya **exact dalam rupiah**, bukan persentase |
+| F-VC-04 | Punya masa berlaku, dan dapat ditutup tanpa dihapus |
+| F-VC-05 | Dapat mensyaratkan **minimal belanja** |
+| F-VC-06 | Berlaku di **semua resto** atau hanya resto yang dipilih |
+| F-VC-07 | Pelanggan menebus kode di halaman **Voucher Saya**; kodenya tidak peduli huruf besar-kecil |
+| F-VC-08 | **Satu pelanggan satu voucher per batch** |
+| F-VC-09 | Penebus melebihi kuota **ditolak** — orang ke-11 dari batch berisi 10 |
 | F-VC-10 | Setiap penolakan menyebutkan **alasannya** |
-| F-VC-11 | Pemakaian tercatat sebagai barisnya sendiri, dan menegakkan kuota |
-| F-VC-12 | Biayanya masuk **Jurnal GL KaataGo** — debit GL Biaya Voucher, kredit kantong yang membayarinya |
+| F-VC-11 | Di keranjang, pelanggan **memilih** dari voucher miliknya, bukan mengetik kode lagi |
+| F-VC-12 | Potongannya tidak pernah melebihi tagihan — sisanya tidak dikembalikan |
+| F-VC-13 | Empat perpindahan GL di atas tercatat otomatis, tidak ada yang dijurnal manual |
+| F-VC-14 | Yang hangus dan yang tak pernah ditebus **kembali ke Total Saldo**, masing-masing sekali saja |
+| F-VC-15 | Super Admin melihat sisa kuota dan **nilai yang menggantung di tangan pelanggan** |
+| F-VC-16 | Nilai voucher yang dipakai **dicairkan sungguhan** ke resto lewat Xendit, bukan sekadar dijurnal |
+| F-VC-17 | Pencairannya diantre dan dicoba ulang; kegagalan tidak menggagalkan pesanan pelanggan |
+| F-VC-18 | Satu voucher hanya bisa dicairkan **sekali**, dijaga di sisi Xendit maupun basis data |
+| F-VC-19 | Resto tanpa sub-akun Xendit tetap tercatat sebagai utang, tidak hilang |
 
-> **Kenapa potongan maksimal ada.** Tanpa itu, "diskon 20%" pada tagihan
-> sejuta rupiah adalah dua ratus ribu yang keluar dari saldo KaataGo
-> untuk satu transaksi — dan anggaran promo sebulan bisa habis oleh satu
-> orang.
+> **Kenapa nominalnya exact, bukan persentase.** Anggaran promo yang
+> ditetapkan di muka bisa dihitung sampai habis. "Diskon 20%" pada
+> tagihan sejuta rupiah adalah dua ratus ribu dari saldo KaataGo untuk
+> satu transaksi — anggaran sebulan bisa habis oleh satu orang.
+
+> **Kenapa dananya keluar saat terbit, bukan saat dipakai.** Voucher
+> yang sudah diumumkan adalah kewajiban, apa pun yang terjadi
+> setelahnya. Mencatatnya baru saat dipakai membuat saldo KaataGo
+> terlihat lebih besar dari yang benar-benar bebas dipakai.
+
+> **Kenapa kuotanya ditegakkan server.** Menghitungnya di aplikasi
+> berarti dua orang yang menekan tombol di detik yang sama sama-sama
+> lolos sebagai penebus terakhir — dan batch berisi 10 mengeluarkan 11
+> voucher.
+
+> **Kenapa satu orang satu voucher.** Kodenya satu untuk seluruh batch
+> dan diumumkan terbuka. Tanpa batas ini, orang pertama yang membaca
+> pengumumannya bisa menebus kesepuluhnya sekaligus.
 
 > **Kenapa setiap penolakan menyebutkan alasannya.** "Voucher tidak
 > berlaku" tanpa sebab membuat orang mencoba lagi dengan kode yang sama,
 > lalu menyalahkan aplikasinya.
 
-> **Yang belum ditangani aplikasi.** Saat pelanggan membayar, resto
-> menerima uang yang sudah dipotong vouchernya. Pembukuan KaataGo
-> mencatat potongan itu sebagai biaya, tapi **pembayaran penggantinya ke
-> resto masih dilakukan di luar aplikasi**.
+> **Kenapa pencairannya diantre, bukan langsung saat pesanan.** Kalau
+> panggilan ke Xendit ikut di dalam transaksi yang menyimpan pesanan,
+> pesanan pelanggan gagal tersimpan setiap kali Xendit lambat — dan
+> pelanggan yang sudah antre di kasir menanggung akibat gangguan pihak
+> ketiga. Antreannya boleh gagal dan boleh diulang; pesanannya tidak.
+
+> **Keadaan saat rilis ini.** xenPlatform di akun Xendit KaataGo belum
+> aktif, jadi belum ada satu pun sub-akun resto. Seluruh pencairan
+> voucher tertahan sebagai antrean `pending` — tercatat penuh, belum
+> dibayar. Begitu xenPlatform disetujui dan sub-akunnya terpasang,
+> penjadwal yang sudah berjalan mengangkut seluruh tunggakan sekaligus
+> tanpa ada yang perlu dijalankan ulang. Selama masa itu, GL resto
+> sudah terkredit sejak pesanannya selesai, sehingga buku mereka
+> mendahului rekeningnya; selisihnya menumpuk selama masa tunggu, dan
+> yang menemukannya adalah resto yang mencocokkan mutasi.
+
+> **Kenapa resto tanpa sub-akun tidak dilewati diam-diam.** Utangnya
+> tetap tercatat sebagai antrean tertunda. Menandainya selesai karena
+> tidak ada tujuan pengiriman berarti KaataGo berhenti berutang dengan
+> cara tidak membayar.
+
+> **Kenapa resto tetap menerima penuh.** Voucher adalah promo KaataGo.
+> Resto menagih pelanggan sesuai harga menunya; selisihnya dibayar
+> KaataGo lewat perpindahan tahap 3 ke GL Transfer restonya, bukan
+> ditanggung restonya — dan sejak §4.19 ini, pembayarannya bukan lagi
+> dilakukan di luar aplikasi.
 
 ---
 

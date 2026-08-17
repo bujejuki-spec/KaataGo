@@ -264,7 +264,7 @@ class CustomerCartProvider extends ChangeNotifier {
     OrderType orderType = OrderType.dineIn,
     String? customerName,
     String paymentMethod = 'qris',
-    String? voucherId,
+    String? voucherClaimId,
     String? voucherCode,
     int voucherAmount = 0,
   }) async {
@@ -290,7 +290,7 @@ class CustomerCartProvider extends ChangeNotifier {
       // KaataGo, tapi yang dilihat pelanggan tetap satu angka — dan
       // angka itulah yang harus tersimpan sebagai total pesanannya.
       total: tax.total - (applied?.amount ?? 0) - voucherAmount,
-      voucherId: voucherId,
+      voucherClaimId: voucherClaimId,
       voucherCode: voucherCode,
       voucherAmount: voucherAmount,
       paymentStatus: OrderPaymentStatus.pending,

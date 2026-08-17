@@ -60,6 +60,7 @@ FILES=(
   platform_gl_renumber.sql
   product_toppings.sql
   vouchers.sql
+  voucher_payouts.sql
 )
 
 {

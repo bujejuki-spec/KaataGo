@@ -5,10 +5,10 @@ import '../models/voucher.dart';
 class VoucherRepository {
   final _client = Supabase.instance.client;
 
-  /// Seluruh voucher berikut jumlah pemakaiannya — untuk Super Admin.
+  /// Seluruh batch berikut jumlah penebusnya — untuk Super Admin.
   ///
-  /// Pemakaiannya dihitung dari tabel pemakaian, bukan disimpan sebagai
-  /// angka di baris vouchernya. Angka yang disimpan terpisah akan
+  /// Penebusnya dihitung dari tabel penebusan, bukan disimpan sebagai
+  /// angka di baris batch-nya. Angka yang disimpan terpisah akan
   /// berpisah dari kenyataannya suatu hari, dan yang menemukannya adalah
   /// pelanggan yang ditolak padahal kuotanya masih ada.
   Future<List<Voucher>> all() async {
@@ -16,81 +16,78 @@ class VoucherRepository {
         .from('vouchers')
         .select()
         .order('created_at', ascending: false);
-    final pakai = await _client.from('voucher_redemptions').select('voucher_id');
+    final klaim = await _client.from('voucher_claims').select('voucher_id');
 
     final hitung = <String, int>{};
-    for (final r in pakai) {
+    for (final r in klaim) {
       final id = r['voucher_id'] as String;
       hitung[id] = (hitung[id] ?? 0) + 1;
     }
     return [
       for (final r in rows)
-        Voucher.fromMap(r, used: hitung[r['id'] as String] ?? 0),
+        voucherFromMap(r, claimed: hitung[r['id'] as String] ?? 0),
     ];
   }
 
-  /// Voucher yang sedang berlaku dan pantas ditawarkan ke pelanggan.
-  ///
-  /// Disaring di aplikasi, bukan lewat `where` tanggal di server:
-  /// daftarnya pendek, dan aturan masa berlakunya sudah tertulis satu
-  /// kali di [Voucher.isLive]. Menulis ulang aturan yang sama sebagai
-  /// SQL berarti dua tempat yang harus selalu sepakat.
-  Future<List<Voucher>> liveFor(String restoId) async {
-    final rows = await _client.from('vouchers').select().eq('active', true);
-    return [
-      for (final r in rows)
-        if (Voucher.fromMap(r).isLive() &&
-            (Voucher.fromMap(r).berlakuDiSemuaResto ||
-                Voucher.fromMap(r).restoIds.contains(restoId)))
-          Voucher.fromMap(r),
-    ];
-  }
-
-  /// Menanyakan berapa potongan sebuah kode untuk tagihan ini.
-  ///
-  /// Dihitung server, bukan aplikasi. Nominal potongan yang datang dari
-  /// HP bisa diubah siapa pun yang ingin membayar seribu rupiah untuk
-  /// tagihan seratus ribu — dan ini uang KaataGo sendiri yang keluar.
-  Future<VoucherQuote> quote({
+  /// Menerbitkan satu batch: nominalnya dipecah jadi beberapa voucher,
+  /// dan dananya berpindah dari saldo bebas ke kantong voucher.
+  Future<String> generate({
     required String code,
-    required String restoId,
-    required String customerLabel,
-    required int total,
+    required String name,
+    required int totalAmount,
+    required int quantity,
+    required DateTime expiresOn,
+    int minPurchase = 0,
+    List<String> restoIds = const [],
   }) async {
-    final rows = await _client.rpc('voucher_quote', params: {
+    final id = await _client.rpc('generate_voucher_batch', params: {
       'p_code': code,
-      'p_resto_id': restoId,
-      'p_customer': customerLabel,
-      'p_total': total,
+      'p_name': name,
+      'p_total': totalAmount,
+      'p_quantity': quantity,
+      'p_expires_on': expiresOn.toIso8601String().split('T').first,
+      'p_min_purchase': minPurchase,
+      'p_resto_ids': restoIds,
     });
+    return id?.toString() ?? '';
+  }
+
+  Future<void> setActive(String id, bool active) async {
+    await _client.from('vouchers').update({'active': active}).eq('id', id);
+  }
+
+  /// Pelanggan menebus sebuah kode.
+  ///
+  /// Kuotanya ditegakkan server. Menghitungnya di aplikasi berarti dua
+  /// orang yang menekan tombol di detik yang sama sama-sama lolos
+  /// sebagai penebus terakhir.
+  Future<ClaimResult> claim(String code) async {
+    final rows = await _client.rpc('claim_voucher', params: {'p_code': code});
     final list = (rows as List?) ?? const [];
     if (list.isEmpty) {
-      return const VoucherQuote(reason: 'Kode voucher tidak ditemukan');
+      return const ClaimResult(reason: 'Kode voucher tidak ditemukan');
     }
-    return VoucherQuote.fromMap(Map<String, dynamic>.from(list.first as Map));
+    return ClaimResult.fromMap(Map<String, dynamic>.from(list.first as Map));
   }
 
-  Future<void> save(Voucher voucher) async {
-    await _client.from('vouchers').upsert(voucher.toMap());
-  }
-
-  Future<void> delete(String id) async {
-    await _client.from('vouchers').delete().eq('id', id);
-  }
-
-  /// Pemakaian voucher per resto — dasar hitungan yang harus dibayarkan
-  /// KaataGo ke tiap resto.
-  Future<Map<String, int>> owedPerResto() async {
+  /// Voucher milik pelanggan yang sedang masuk.
+  Future<List<VoucherClaim>> mine() async {
+    final email = _client.auth.currentUser?.email;
+    if (email == null) return const [];
     final rows = await _client
-        .from('voucher_redemptions')
-        .select('resto_id, amount')
-        .limit(2000);
-    final total = <String, int>{};
-    for (final r in rows) {
-      final id = r['resto_id'] as String?;
-      if (id == null) continue;
-      total[id] = (total[id] ?? 0) + ((r['amount'] as num?)?.toInt() ?? 0);
-    }
-    return total;
+        .from('voucher_claims')
+        .select('*, vouchers(code, name, expires_on, min_purchase, resto_ids)')
+        .eq('customer_label', email)
+        .order('created_at', ascending: false);
+    return rows.map((r) => VoucherClaim.fromMap(r)).toList();
+  }
+
+  /// Voucher yang siap dipakai di sebuah resto untuk tagihan sebesar ini.
+  Future<List<VoucherClaim>> usableAt(String restoId, int total) async {
+    final semua = await mine();
+    return [
+      for (final c in semua)
+        if (c.bisaDipakaiDi(restoId, total)) c,
+    ];
   }
 }

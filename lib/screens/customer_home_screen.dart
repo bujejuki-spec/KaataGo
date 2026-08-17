@@ -40,6 +40,7 @@ import 'customer_cart_screen.dart';
 import 'customer_history_screen.dart';
 import 'customer_order_status_screen.dart';
 import 'customer_profile_screen.dart';
+import 'my_vouchers_screen.dart';
 import 'restaurant_list_screen.dart';
 import 'scan_table_screen.dart';
 import '../widgets/dialog_actions.dart';
@@ -550,6 +551,16 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute(builder: (_) => const CustomerHistoryScreen()),
                     ),
+                  ),
+                  const SizedBox(height: 12),
+                  HubMenuTile(
+                    icon: Icons.confirmation_number_outlined,
+                    title: 'Voucher Saya',
+                    subtitle: 'Tebus kode voucher & lihat yang siap dipakai',
+                    color: const Color(0xFFF59E0B),
+                    onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => const MyVouchersScreen(),
+                    )),
                   ),
                   const SizedBox(height: 12),
                   const InboxTile(forCustomer: true),

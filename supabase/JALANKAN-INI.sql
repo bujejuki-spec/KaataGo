@@ -17,7 +17,7 @@
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 1 dari 37 — employee_surrogate_key.sql
+-- BAGIAN 1 dari 38 — employee_surrogate_key.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — email karyawan jadi bisa diubah.
@@ -68,7 +68,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 2 dari 37 — promo_banner.sql
+-- BAGIAN 2 dari 38 — promo_banner.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — banner promo per resto.
@@ -130,7 +130,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 3 dari 37 — rilis_setor_petty_inbox.sql
+-- BAGIAN 3 dari 38 — rilis_setor_petty_inbox.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — setoran & top up petty cash berjenjang, GL Suspense, dan
@@ -373,7 +373,7 @@ alter table gl_accounts add constraint gl_accounts_payment_method_check
   check (payment_method in
     ('cash', 'qris', 'transfer', 'petty_cash', 'income_aggregate', 'total_balance',
      'ppn', 'service', 'suspense', 'suspense_petty', 'gateway_fee', 'discount',
-     'subscription', 'subscription_discount', 'voucher'));
+     'subscription', 'subscription_discount', 'voucher', 'voucher_redeem'));
 
 -- ─────────────────────────────────────────────────────────────────────
 -- 4. Jurnal petty cash mengikuti statusnya
@@ -613,7 +613,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 4 dari 37 — customer_cash_payment.sql
+-- BAGIAN 4 dari 38 — customer_cash_payment.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pelanggan boleh memilih bayar tunai di kasir.
@@ -683,7 +683,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 5 dari 37 — push_notifications.sql
+-- BAGIAN 5 dari 38 — push_notifications.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — notifikasi yang tetap sampai walau aplikasinya tertutup.
@@ -1031,7 +1031,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 6 dari 37 — announcement_categories.sql
+-- BAGIAN 6 dari 38 — announcement_categories.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pengumuman dibagi dua jenis, dan admin resto boleh mengirim.
@@ -1120,7 +1120,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 7 dari 37 — fix_device_tokens_rls.sql
+-- BAGIAN 7 dari 38 — fix_device_tokens_rls.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pendaftaran token push lewat fungsi, bukan tulis langsung.
@@ -1239,7 +1239,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 8 dari 37 — push_trigger_pg_net.sql
+-- BAGIAN 8 dari 38 — push_trigger_pg_net.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — panggil Edge Function langsung dari database, tanpa webhook.
@@ -1352,7 +1352,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 9 dari 37 — payment_gateway.sql
+-- BAGIAN 9 dari 38 — payment_gateway.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — QRIS sungguhan lewat Xendit.
@@ -1506,7 +1506,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 10 dari 37 — gateway_settlement.sql
+-- BAGIAN 10 dari 38 — gateway_settlement.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pencairan dana dari payment gateway.
@@ -1542,7 +1542,7 @@ alter table gl_accounts add constraint gl_accounts_payment_method_check
   check (payment_method in
     ('cash', 'qris', 'transfer', 'petty_cash', 'income_aggregate', 'total_balance',
      'ppn', 'service', 'suspense', 'suspense_petty', 'gateway_fee', 'discount',
-     'subscription', 'subscription_discount', 'voucher'));
+     'subscription', 'subscription_discount', 'voucher', 'voucher_redeem'));
 
 -- ─────────────────────────────────────────────────────────────────────
 -- 2. Catatan pencairan
@@ -1685,7 +1685,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 11 dari 37 — resto_payment_accounts.sql
+-- BAGIAN 11 dari 38 — resto_payment_accounts.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pencairan langsung ke rekening masing-masing resto.
@@ -1778,7 +1778,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 12 dari 37 — counter_charge.sql
+-- BAGIAN 12 dari 38 — counter_charge.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — tagihan QRIS di meja kasir.
@@ -1815,7 +1815,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 13 dari 37 — announcement_push.sql
+-- BAGIAN 13 dari 38 — announcement_push.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pengumuman ikut membunyikan HP.
@@ -1872,7 +1872,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 14 dari 37 — cash_payment_expiry.sql
+-- BAGIAN 14 dari 38 — cash_payment_expiry.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pesanan tunai yang tidak dilunasi di kasir hangus sendiri.
@@ -1958,7 +1958,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 15 dari 37 — level_groups.sql
+-- BAGIAN 15 dari 38 — level_groups.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — tiap resto menyusun sendiri kelompok levelnya.
@@ -2084,7 +2084,7 @@ create trigger trg_seed_level_groups
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 16 dari 37 — resto_order_types.sql
+-- BAGIAN 16 dari 38 — resto_order_types.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — resto menentukan sendiri melayani Dine In, Take Away, atau
@@ -2122,7 +2122,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 17 dari 37 — product_out_of_stock.sql
+-- BAGIAN 17 dari 38 — product_out_of_stock.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — ketersediaan produk ditandai, bukan dihitung.
@@ -2166,7 +2166,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 18 dari 37 — discounts.sql
+-- BAGIAN 18 dari 38 — discounts.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — diskon: per menu (termasuk bundling) atau minimum belanja.
@@ -2284,7 +2284,7 @@ alter table gl_accounts add constraint gl_accounts_payment_method_check
   check (payment_method in
     ('cash', 'qris', 'transfer', 'petty_cash', 'income_aggregate', 'total_balance',
      'ppn', 'service', 'suspense', 'suspense_petty', 'gateway_fee', 'discount',
-     'subscription', 'subscription_discount', 'voucher'));
+     'subscription', 'subscription_discount', 'voucher', 'voucher_redeem'));
 
 insert into gl_accounts (resto_id, payment_method, gl_code, gl_name)
 select r.id, 'discount', '2200002', 'GL Diskon Penjualan'
@@ -2370,7 +2370,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 19 dari 37 — promo_banner_period.sql
+-- BAGIAN 19 dari 38 — promo_banner_period.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — banner promo punya masa berlaku.
@@ -2398,7 +2398,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 20 dari 37 — default_gl_accounts.sql
+-- BAGIAN 20 dari 38 — default_gl_accounts.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — resto baru langsung punya bagan akun dan tarif pajaknya.
@@ -2564,7 +2564,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 21 dari 37 — gateway_account_super_admin.sql
+-- BAGIAN 21 dari 38 — gateway_account_super_admin.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pengenal sub-akun Xendit jadi urusan Super Admin saja.
@@ -2605,7 +2605,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 22 dari 37 — announcement_audience.sql
+-- BAGIAN 22 dari 38 — announcement_audience.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pengumuman resto memilih sasarannya: karyawan, pelanggan,
@@ -2678,7 +2678,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 23 dari 37 — kasir_journal_read.sql
+-- BAGIAN 23 dari 38 — kasir_journal_read.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — kasir boleh melihat jurnal dari catatan yang dia buat.
@@ -2714,7 +2714,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 24 dari 37 — cancel_order.sql
+-- BAGIAN 24 dari 38 — cancel_order.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pelanggan boleh membatalkan pesanannya sendiri selama
@@ -2806,7 +2806,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 25 dari 37 — settled_at_counter.sql
+-- BAGIAN 25 dari 38 — settled_at_counter.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — menandai pesanan mandiri yang uangnya diterima di meja
@@ -2848,7 +2848,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 26 dari 37 — discount_min_qty.sql
+-- BAGIAN 26 dari 38 — discount_min_qty.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — diskon dengan syarat jumlah pembelian.
@@ -2878,7 +2878,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 27 dari 37 — discount_product_rules.sql
+-- BAGIAN 27 dari 38 — discount_product_rules.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — syarat jumlah menempel di tiap menu, bukan di promonya.
@@ -2931,7 +2931,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 28 dari 37 — billing.sql
+-- BAGIAN 28 dari 38 — billing.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — langganan bulanan resto.
@@ -3338,7 +3338,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 29 dari 37 — billing_va.sql
+-- BAGIAN 29 dari 38 — billing_va.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — tagihan langganan dibayar lewat Virtual Account Xendit.
@@ -3508,7 +3508,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 30 dari 37 — platform_finance.sql
+-- BAGIAN 30 dari 38 — platform_finance.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — keuangan KaataGo sendiri, terpisah dari keuangan resto.
@@ -3864,7 +3864,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 31 dari 37 — resto_soft_delete.sql
+-- BAGIAN 31 dari 38 — resto_soft_delete.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — menghapus resto tanpa membuang datanya.
@@ -4043,7 +4043,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 32 dari 37 — billing_discount_apply.sql
+-- BAGIAN 32 dari 38 — billing_discount_apply.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — diskon ikut memotong tagihan yang sudah terbit.
@@ -4210,7 +4210,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 33 dari 37 — billing_journal_gross.sql
+-- BAGIAN 33 dari 38 — billing_journal_gross.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pendapatan langganan dicatat sebesar harga penuh.
@@ -4361,7 +4361,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 34 dari 37 — gl_discount_backfill.sql
+-- BAGIAN 34 dari 38 — gl_discount_backfill.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — GL Diskon terisi bawaannya di tiap resto.
@@ -4423,7 +4423,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 35 dari 37 — platform_gl_renumber.sql
+-- BAGIAN 35 dari 38 — platform_gl_renumber.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — nomor akun penyewa platform dipindah ke golongan 11xxxxx.
@@ -4523,7 +4523,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 36 dari 37 — product_toppings.sql
+-- BAGIAN 36 dari 38 — product_toppings.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — topping per menu, berikut harga dan batas pilihnya.
@@ -4565,302 +4565,181 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 37 dari 37 — vouchers.sql
+-- BAGIAN 37 dari 38 — vouchers.sql
 -- ═══════════════════════════════════════════════════════════════════
 
--- KaataGo — voucher untuk pelanggan, ditanggung KaataGo.
+-- KaataGo — voucher untuk pelanggan, dananya benar-benar berpindah.
 --
 -- Jalankan SETELAH product_toppings.sql. Aman diulang.
 --
--- Bedanya dengan diskon resto: diskon resto adalah promo restonya
--- sendiri, dan potongannya mengurangi pendapatan resto itu. Voucher ini
--- promo KAMI — dipakai menarik orang memasang aplikasinya — jadi yang
--- menanggung juga kami. Dananya keluar dari saldo KaataGo sebagai biaya
--- promosi.
+-- Voucher di sini bukan sekadar aturan potongan seperti diskon resto.
+-- Ia dompet: Super Admin mengalokasikan sejumlah uang, uang itu berhenti
+-- jadi saldo bebas, dan baru kembali kalau vouchernya hangus. Tiap
+-- perpindahannya tercatat.
 --
--- ── Yang belum ditangani aplikasi ────────────────────────────────────
+-- ── Empat keadaan uangnya ────────────────────────────────────────────
 --
--- Pada saat pelanggan membayar, resto menerima uang yang sudah dipotong
--- vouchernya. Pembukuan KaataGo mencatat potongan itu sebagai biaya, dan
--- layar Super Admin menampilkan berapa yang terutang ke tiap resto — tapi
--- pembayarannya ke resto masih dilakukan di luar aplikasi. Menuliskannya
--- di sini supaya tidak ada yang mengira transfernya otomatis.
+--   1. Diterbitkan   GL Total Saldo  →  GL Voucher
+--      Super Admin mengalokasikan Rp 1.000.000 jadi 10 voucher @100.000.
+--
+--   2. Ditebus       GL Voucher      →  GL Voucher Redeem
+--      Pelanggan memasukkan kodenya. Yang ke-11 ditolak: kuotanya habis.
+--
+--   3. Dipakai       GL Voucher Redeem  →  GL resto
+--      Dipakai membayar di resto. Restonya menerima uangnya dari kami,
+--      bukan kehilangan pendapatan.
+--
+--   4. Hangus        GL Voucher / Redeem  →  GL Total Saldo
+--      Tidak ditebus sampai kedaluwarsa, atau ditebus tapi tidak dipakai.
+--
+-- Kenapa serepot ini, dan bukan sekadar mengurangi tagihan: tanpa
+-- perpindahan yang tercatat, pertanyaan "berapa uang kami yang sedang
+-- menggantung di tangan pelanggan" tidak punya jawaban di mana pun. Itu
+-- uang yang sudah dijanjikan keluar tapi belum keluar, dan saldo yang
+-- menghitungnya sebagai milik sendiri akan menyesatkan tiap keputusan
+-- yang memakainya.
 
 begin;
 
 -- ─────────────────────────────────────────────────────────────────────
--- Voucher
+-- Bagan akun voucher
+-- ─────────────────────────────────────────────────────────────────────
+--
+-- Sederet dengan GL Diskon Lain (1100072): keduanya sama-sama uang yang
+-- diberikan, bukan uang yang dibelanjakan.
+
+insert into gl_accounts (resto_id, payment_method, gl_code, gl_name)
+values
+  ('kaatago', 'voucher',        '1100073', 'GL Voucher'),
+  ('kaatago', 'voucher_redeem', '1100074', 'GL Voucher Redeem')
+on conflict (resto_id, payment_method) do nothing;
+
+-- Nomor lama dari rancangan sebelumnya dipindahkan, bukan ditinggalkan
+-- jadi akun kembar yang tidak pernah dipakai lagi.
+update gl_accounts
+set gl_code = '1100073', gl_name = 'GL Voucher'
+where resto_id = 'kaatago' and payment_method = 'voucher'
+  and gl_code = '1100080';
+
+-- ─────────────────────────────────────────────────────────────────────
+-- Batch voucher
 -- ─────────────────────────────────────────────────────────────────────
 
 create table if not exists vouchers (
   id text primary key,
 
-  -- Kode yang diketik pelanggan. Disimpan huruf besar semua supaya
-  -- "hemat10" dan "HEMAT10" adalah voucher yang sama — yang mengetiknya
-  -- sedang lapar dan berdiri di depan kasir, bukan sedang teliti.
+  -- Satu kode untuk seluruh batch, dan sengaja begitu: kodenya diumumkan
+  -- ke banyak orang sekaligus lewat pengumuman, dan kode yang berbeda per
+  -- orang tidak bisa diumumkan.
   code text not null unique,
   name text not null,
 
-  kind text not null default 'percent' check (kind in ('percent', 'amount')),
-  value bigint not null check (value > 0),
+  -- Yang dialokasikan, dan dipecah jadi berapa.
+  total_amount bigint not null check (total_amount > 0),
+  quantity integer not null check (quantity > 0),
 
-  -- Batas atas untuk voucher persen. Tanpa ini, "diskon 20%" pada
-  -- tagihan sejuta rupiah adalah dua ratus ribu yang keluar dari saldo
-  -- kami untuk satu transaksi.
-  max_discount bigint not null default 0 check (max_discount >= 0),
+  -- Nilai tiap voucher. Disimpan, bukan dihitung ulang tiap dibaca:
+  -- total dibagi jumlah bisa menyisakan pecahan, dan pembagian yang
+  -- diulang di dua tempat akan membulatkannya berbeda.
+  amount bigint not null check (amount > 0),
+
+  expires_on date not null,
 
   min_purchase bigint not null default 0 check (min_purchase >= 0),
 
-  -- Resto yang menerimanya. Kosong berarti berlaku di semua resto.
+  -- Resto tempat voucher ini bisa dipakai. Kosong berarti semua resto.
   resto_ids jsonb not null default '[]'::jsonb,
 
-  -- Nol berarti tanpa batas.
-  quota_total integer not null default 0 check (quota_total >= 0),
-  quota_per_customer integer not null default 1 check (quota_per_customer >= 0),
-
-  starts_on date,
-  ends_on date,
   active boolean not null default true,
 
+  -- Sisa yang belum ditebus sudah dikembalikan ke saldo.
+  settled_at timestamptz,
+
   created_by text,
-  created_at timestamptz not null default now(),
-
-  constraint vouchers_period_check
-    check (ends_on is null or starts_on is null or ends_on > starts_on),
-  constraint vouchers_percent_check
-    check (kind <> 'percent' or value between 1 and 100)
-);
-
-create index if not exists idx_vouchers_aktif
-  on vouchers (code) where active;
-
--- ─────────────────────────────────────────────────────────────────────
--- Pemakaian
--- ─────────────────────────────────────────────────────────────────────
---
--- Dicatat sebagai barisnya sendiri, bukan dihitung dari pesanan. Kuota
--- harus bisa dijawab tanpa memindai seluruh tabel pesanan, dan yang
--- lebih penting: pesanan bisa dibatalkan, sementara catatan pemakaian
--- voucher adalah jejak yang tetap perlu ada.
-
-create table if not exists voucher_redemptions (
-  id text primary key,
-  voucher_id text not null references vouchers (id) on delete cascade,
-  order_id uuid,
-  resto_id text references restaurants (id) on delete set null,
-
-  -- Email pelanggan, atau penanda tamu. Dipakai menegakkan kuota per
-  -- orang.
-  customer_label text not null,
-  amount bigint not null check (amount >= 0),
   created_at timestamptz not null default now()
 );
 
-create index if not exists idx_redemptions_voucher
-  on voucher_redemptions (voucher_id);
-create index if not exists idx_redemptions_customer
-  on voucher_redemptions (voucher_id, customer_label);
-create index if not exists idx_redemptions_resto
-  on voucher_redemptions (resto_id, created_at desc);
+create index if not exists idx_vouchers_kadaluarsa
+  on vouchers (expires_on) where settled_at is null;
 
-alter table orders add column if not exists voucher_id text;
+-- ─────────────────────────────────────────────────────────────────────
+-- Voucher yang sudah ditebus pelanggan
+-- ─────────────────────────────────────────────────────────────────────
+
+create table if not exists voucher_claims (
+  id text primary key,
+  voucher_id text not null references vouchers (id) on delete cascade,
+
+  -- Email pelanggan. Voucher menempel pada orang, bukan pada perangkat:
+  -- yang menebusnya di HP lama harus tetap menemukannya di HP baru.
+  customer_label text not null,
+  amount bigint not null check (amount > 0),
+
+  -- claimed → ditebus, belum dipakai
+  -- used    → sudah dipakai membayar
+  -- expired → kedaluwarsa tanpa dipakai, dananya sudah dikembalikan
+  status text not null default 'claimed'
+    check (status in ('claimed', 'used', 'expired')),
+
+  order_id uuid,
+  resto_id text references restaurants (id) on delete set null,
+  used_at timestamptz,
+  expired_at timestamptz,
+  created_at timestamptz not null default now(),
+
+  -- Satu orang satu voucher per batch. Tanpa ini, orang pertama yang
+  -- membaca pengumumannya bisa menebus kesepuluhnya sekaligus.
+  constraint voucher_claims_sekali unique (voucher_id, customer_label)
+);
+
+create index if not exists idx_claims_pemilik
+  on voucher_claims (customer_label, status);
+create index if not exists idx_claims_voucher
+  on voucher_claims (voucher_id);
+
+alter table orders add column if not exists voucher_claim_id text;
 alter table orders add column if not exists voucher_code text;
 alter table orders add column if not exists voucher_amount bigint not null default 0;
 
--- ─────────────────────────────────────────────────────────────────────
--- Akun biaya voucher di pembukuan KaataGo
--- ─────────────────────────────────────────────────────────────────────
-
-insert into gl_accounts (resto_id, payment_method, gl_code, gl_name)
-values ('kaatago', 'voucher', '1100080', 'GL Biaya Voucher KaataGo')
-on conflict (resto_id, payment_method) do nothing;
+-- Kolom dari rancangan sebelumnya, dilepas dari pemakaian tapi tidak
+-- dibuang: aplikasi versi lama masih menulisinya, dan kolom yang hilang
+-- membuat pesanannya gagal tersimpan sama sekali.
+alter table orders add column if not exists voucher_id text;
 
 -- ─────────────────────────────────────────────────────────────────────
--- Menghitung potongan voucher
+-- Alat bantu jurnal
 -- ─────────────────────────────────────────────────────────────────────
---
--- Dihitung di server, bukan di aplikasi. Nominal potongan yang datang
--- dari HP bisa diubah siapa pun yang ingin membayar seribu rupiah untuk
--- tagihan seratus ribu — dan ini uang kami sendiri yang keluar.
 
-create or replace function voucher_quote(
-  p_code text,
-  p_resto_id text,
-  p_customer text,
-  p_total bigint
+create or replace function _jurnal_kaatago(
+  p_method text,
+  p_ref_id text,
+  p_amount bigint,
+  p_type text,
+  p_desc text
 )
-returns table (
-  voucher_id text,
-  code text,
-  name text,
-  amount bigint,
-  reason text
-)
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  v vouchers;
-  v_terpakai integer;
-  v_terpakai_orang integer;
-  v_amount bigint;
-begin
-  select * into v from vouchers where vouchers.code = upper(trim(p_code));
-
-  if v.id is null then
-    return query select null::text, null::text, null::text, 0::bigint,
-      'Kode voucher tidak ditemukan';
-    return;
-  end if;
-
-  if not v.active then
-    return query select v.id, v.code, v.name, 0::bigint,
-      'Voucher ini sudah tidak berlaku';
-    return;
-  end if;
-
-  if v.starts_on is not null and current_date < v.starts_on then
-    return query select v.id, v.code, v.name, 0::bigint,
-      'Voucher ini belum berlaku';
-    return;
-  end if;
-
-  if v.ends_on is not null and current_date > v.ends_on then
-    return query select v.id, v.code, v.name, 0::bigint,
-      'Voucher ini sudah lewat masa berlakunya';
-    return;
-  end if;
-
-  if jsonb_array_length(v.resto_ids) > 0 and not (v.resto_ids ? p_resto_id) then
-    return query select v.id, v.code, v.name, 0::bigint,
-      'Voucher ini tidak berlaku di resto ini';
-    return;
-  end if;
-
-  if p_total < v.min_purchase then
-    return query select v.id, v.code, v.name, 0::bigint,
-      'Belanja minimal ' || v.min_purchase || ' untuk memakai voucher ini';
-    return;
-  end if;
-
-  if v.quota_total > 0 then
-    select count(*) into v_terpakai
-    from voucher_redemptions where voucher_redemptions.voucher_id = v.id;
-    if v_terpakai >= v.quota_total then
-      return query select v.id, v.code, v.name, 0::bigint,
-        'Kuota voucher ini sudah habis';
-      return;
-    end if;
-  end if;
-
-  if v.quota_per_customer > 0 and coalesce(p_customer, '') <> '' then
-    select count(*) into v_terpakai_orang
-    from voucher_redemptions
-    where voucher_redemptions.voucher_id = v.id
-      and voucher_redemptions.customer_label = p_customer;
-    if v_terpakai_orang >= v.quota_per_customer then
-      return query select v.id, v.code, v.name, 0::bigint,
-        'Voucher ini sudah kamu pakai';
-      return;
-    end if;
-  end if;
-
-  v_amount := case
-    when v.kind = 'percent' then p_total * v.value / 100
-    else v.value
-  end;
-
-  -- Batas atas persen, lalu tidak pernah melebihi tagihannya sendiri.
-  if v.max_discount > 0 and v_amount > v.max_discount then
-    v_amount := v.max_discount;
-  end if;
-  if v_amount > p_total then
-    v_amount := p_total;
-  end if;
-
-  return query select v.id, v.code, v.name, v_amount, null::text;
-end;
-$$;
-
--- ─────────────────────────────────────────────────────────────────────
--- Mencatat pemakaian
--- ─────────────────────────────────────────────────────────────────────
---
--- Lewat pemicu pada pesanan, bukan panggilan terpisah dari aplikasi.
--- Panggilan terpisah bisa gagal atau tidak pernah dikirim, dan yang
--- tertinggal adalah voucher yang memotong tagihan tanpa pernah terhitung
--- kuotanya.
-
-create or replace function log_voucher_redemption()
-returns trigger
+returns void
 language plpgsql
 security definer
 set search_path = public
 as $$
 declare
   v_gl record;
-  v_petty record;
   v_now timestamptz := now();
-  v_id text;
 begin
-  if coalesce(new.voucher_amount, 0) <= 0 or new.voucher_id is null then
-    return new;
+  select * into v_gl from _gl_account_for('kaatago', p_method);
+  if v_gl.gl_code is null or v_gl.gl_code = '' then
+    return;
   end if;
-
-  if exists (
-    select 1 from voucher_redemptions where order_id = new.id
-  ) then
-    return new;
-  end if;
-
-  v_id := 'VR-' || upper(substr(md5(new.id::text), 1, 12));
-
-  insert into voucher_redemptions (
-    id, voucher_id, order_id, resto_id, customer_label, amount
+  insert into gl_journal_entries (
+    resto_id, entry_date, entry_time, gl_code, gl_name,
+    reference_type, reference_id, amount, entry_type, description
   ) values (
-    v_id, new.voucher_id, new.id, new.resto_id,
-    coalesce(new.customer_label, 'Tamu'), new.voucher_amount
+    'kaatago',
+    (v_now at time zone 'Asia/Jakarta')::date,
+    (v_now at time zone 'Asia/Jakarta')::time,
+    v_gl.gl_code, v_gl.gl_name,
+    'voucher', p_ref_id, p_amount, p_type, p_desc
   );
-
-  -- Biaya promosi di pembukuan KaataGo: uangnya keluar dari saldo kami.
-  --
-  -- Dua kaki, sama seperti pengeluaran biasa — debit biayanya, kredit
-  -- kantong yang membayarinya. Satu kaki saja akan membuat saldo
-  -- KaataGo terlihat utuh padahal uangnya sudah dijanjikan keluar.
-  select * into v_gl from _gl_account_for('kaatago', 'voucher');
-  select * into v_petty from _gl_account_for('kaatago', 'petty_cash');
-
-  if v_gl.gl_code is not null and v_gl.gl_code <> '' then
-    insert into gl_journal_entries (
-      resto_id, entry_date, entry_time, gl_code, gl_name,
-      reference_type, reference_id, amount, entry_type, description
-    ) values (
-      'kaatago',
-      (v_now at time zone 'Asia/Jakarta')::date,
-      (v_now at time zone 'Asia/Jakarta')::time,
-      v_gl.gl_code, v_gl.gl_name,
-      'voucher', v_id, new.voucher_amount, 'debit',
-      'Voucher ' || coalesce(new.voucher_code, '') ||
-        ' — pesanan #' || upper(substr(new.id::text, 1, 8))
-    );
-  end if;
-
-  if v_petty.gl_code is not null and v_petty.gl_code <> '' then
-    insert into gl_journal_entries (
-      resto_id, entry_date, entry_time, gl_code, gl_name,
-      reference_type, reference_id, amount, entry_type, description
-    ) values (
-      'kaatago',
-      (v_now at time zone 'Asia/Jakarta')::date,
-      (v_now at time zone 'Asia/Jakarta')::time,
-      v_petty.gl_code, v_petty.gl_name,
-      'voucher', v_id, new.voucher_amount, 'credit',
-      'Dana voucher ' || coalesce(new.voucher_code, '')
-    );
-  end if;
-
-  return new;
 end;
 $$;
 
@@ -4870,35 +4749,644 @@ alter table gl_journal_entries add constraint gl_journal_entries_reference_type_
     ('order', 'order_discount', 'expense', 'petty_cash', 'cash_deposit',
      'billing', 'billing_discount', 'voucher'));
 
+-- ─────────────────────────────────────────────────────────────────────
+-- 1. Menerbitkan batch
+-- ─────────────────────────────────────────────────────────────────────
+
+create or replace function generate_voucher_batch(
+  p_code text,
+  p_name text,
+  p_total bigint,
+  p_quantity integer,
+  p_expires_on date,
+  p_min_purchase bigint default 0,
+  p_resto_ids jsonb default '[]'::jsonb
+)
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_id text;
+  v_amount bigint;
+  v_code text := upper(trim(p_code));
+begin
+  if not is_super_admin() then
+    raise exception 'Hanya Super Admin yang dapat menerbitkan voucher';
+  end if;
+
+  if p_quantity <= 0 or p_total <= 0 then
+    raise exception 'Nominal dan jumlah voucher harus lebih dari nol';
+  end if;
+
+  v_amount := p_total / p_quantity;
+  if v_amount <= 0 then
+    raise exception 'Nominal per voucher jadi nol — kurangi jumlahnya';
+  end if;
+
+  if p_expires_on <= current_date then
+    raise exception 'Tanggal kedaluwarsa minimal besok';
+  end if;
+
+  v_id := 'VC-' || upper(substr(md5(v_code || now()::text), 1, 10));
+
+  insert into vouchers (
+    id, code, name, total_amount, quantity, amount, expires_on,
+    min_purchase, resto_ids, created_by
+  ) values (
+    v_id, v_code, p_name,
+    -- Yang dicatat keluar adalah yang benar-benar bisa ditebus. Sisa
+    -- pembagian tidak pernah jadi voucher, jadi mencatatnya sebagai uang
+    -- yang keluar berarti saldo berkurang untuk sesuatu yang tidak ada.
+    v_amount * p_quantity,
+    p_quantity, v_amount, p_expires_on,
+    p_min_purchase, coalesce(p_resto_ids, '[]'::jsonb),
+    auth.jwt() ->> 'email'
+  );
+
+  -- Uang berpindah dari saldo bebas ke kantong voucher.
+  perform _jurnal_kaatago('total_balance', v_id, v_amount * p_quantity,
+    'debit', 'Terbit voucher ' || v_code || ' — ' || p_quantity || ' × ' || v_amount);
+  perform _jurnal_kaatago('voucher', v_id, v_amount * p_quantity,
+    'credit', 'Alokasi voucher ' || v_code);
+
+  return v_id;
+end;
+$$;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- 2. Menebus
+-- ─────────────────────────────────────────────────────────────────────
+
+create or replace function claim_voucher(p_code text)
+returns table (claim_id text, amount bigint, reason text)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v vouchers;
+  v_email text := auth.jwt() ->> 'email';
+  v_terpakai integer;
+  v_id text;
+begin
+  if coalesce(v_email, '') = '' then
+    return query select null::text, 0::bigint,
+      'Masuk dulu dengan akun supaya vouchernya tersimpan';
+    return;
+  end if;
+
+  select * into v from vouchers where vouchers.code = upper(trim(p_code));
+
+  if v.id is null then
+    return query select null::text, 0::bigint, 'Kode voucher tidak ditemukan';
+    return;
+  end if;
+  if not v.active then
+    return query select null::text, 0::bigint, 'Voucher ini sudah ditutup';
+    return;
+  end if;
+  if v.expires_on < current_date then
+    return query select null::text, 0::bigint, 'Voucher ini sudah kedaluwarsa';
+    return;
+  end if;
+
+  if exists (
+    select 1 from voucher_claims
+    where voucher_id = v.id and customer_label = v_email
+  ) then
+    return query select null::text, 0::bigint, 'Voucher ini sudah kamu tebus';
+    return;
+  end if;
+
+  -- Dihitung di dalam transaksi yang sama dengan penyisipannya, dan
+  -- baris uniknya jadi penjaga terakhir: dua orang yang menekan tombol
+  -- di detik yang sama tidak boleh sama-sama lolos sebagai penebus
+  -- terakhir.
+  select count(*) into v_terpakai
+  from voucher_claims where voucher_id = v.id;
+
+  if v_terpakai >= v.quantity then
+    return query select null::text, 0::bigint, 'Voucher ini sudah habis';
+    return;
+  end if;
+
+  v_id := 'VCL-' || upper(substr(md5(v.id || v_email), 1, 12));
+
+  insert into voucher_claims (id, voucher_id, customer_label, amount)
+  values (v_id, v.id, v_email, v.amount);
+
+  perform _jurnal_kaatago('voucher', v_id, v.amount,
+    'debit', 'Ditebus ' || v.code || ' — ' || v_email);
+  perform _jurnal_kaatago('voucher_redeem', v_id, v.amount,
+    'credit', 'Voucher ditebus ' || v.code);
+
+  return query select v_id, v.amount, null::text;
+end;
+$$;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- 3. Dipakai membayar
+-- ─────────────────────────────────────────────────────────────────────
+--
+-- Lewat pemicu pada pesanan, bukan panggilan terpisah: panggilan
+-- terpisah bisa gagal atau tidak pernah dikirim, dan yang tertinggal
+-- adalah voucher yang memotong tagihan tanpa pernah berpindah akun.
+
+create or replace function log_voucher_use()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_claim voucher_claims;
+  v_gl record;
+  v_now timestamptz := now();
+  v_ref text := upper(substr(new.id::text, 1, 8));
+begin
+  if new.voucher_claim_id is null or coalesce(new.voucher_amount, 0) <= 0 then
+    return new;
+  end if;
+
+  select * into v_claim from voucher_claims where id = new.voucher_claim_id;
+  if v_claim.id is null or v_claim.status <> 'claimed' then
+    return new;
+  end if;
+
+  update voucher_claims
+  set status = 'used', order_id = new.id, resto_id = new.resto_id,
+      used_at = v_now
+  where id = v_claim.id;
+
+  -- Uangnya keluar dari kantong voucher yang sudah ditebus.
+  perform _jurnal_kaatago('voucher_redeem', v_claim.id, new.voucher_amount,
+    'debit', 'Voucher dipakai di pesanan #' || v_ref);
+
+  -- Dan masuk ke resto: bagi mereka ini uang masuk, bukan pendapatan
+  -- yang hilang. Restonya tidak menanggung promo yang tidak dia buat.
+  select * into v_gl from _gl_account_for(new.resto_id, 'transfer');
+  if v_gl.gl_code is not null and v_gl.gl_code <> '' then
+    insert into gl_journal_entries (
+      resto_id, entry_date, entry_time, gl_code, gl_name,
+      reference_type, reference_id, amount, entry_type, description
+    ) values (
+      new.resto_id,
+      (v_now at time zone 'Asia/Jakarta')::date,
+      (v_now at time zone 'Asia/Jakarta')::time,
+      v_gl.gl_code, v_gl.gl_name,
+      'voucher', v_claim.id, new.voucher_amount, 'credit',
+      'Voucher KaataGo ' || coalesce(new.voucher_code, '') ||
+        ' — pesanan #' || v_ref
+    );
+  end if;
+
+  return new;
+end;
+$$;
+
 drop trigger if exists trg_log_voucher_redemption on orders;
-create trigger trg_log_voucher_redemption
+drop trigger if exists trg_log_voucher_use on orders;
+create trigger trg_log_voucher_use
   after insert on orders
-  for each row execute function log_voucher_redemption();
+  for each row execute function log_voucher_use();
+
+-- ─────────────────────────────────────────────────────────────────────
+-- 4. Hangus — dananya pulang
+-- ─────────────────────────────────────────────────────────────────────
+
+create or replace function expire_vouchers()
+returns integer
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_count integer := 0;
+  c record;
+  v record;
+  v_sisa bigint;
+begin
+  -- Yang sudah ditebus tapi tidak pernah dipakai.
+  for c in
+    select cl.* from voucher_claims cl
+    join vouchers vc on vc.id = cl.voucher_id
+    where cl.status = 'claimed' and vc.expires_on < current_date
+  loop
+    update voucher_claims
+    set status = 'expired', expired_at = now()
+    where id = c.id;
+
+    perform _jurnal_kaatago('voucher_redeem', c.id, c.amount,
+      'debit', 'Voucher hangus tanpa dipakai');
+    perform _jurnal_kaatago('total_balance', c.id, c.amount,
+      'credit', 'Dana voucher hangus kembali ke saldo');
+    v_count := v_count + 1;
+  end loop;
+
+  -- Sisa yang tidak pernah ditebus sama sekali. Dihitung sekali per
+  -- batch — `settled_at` yang menjaganya, bukan ingatan penjadwal.
+  for v in
+    select * from vouchers
+    where expires_on < current_date and settled_at is null
+  loop
+    select v.amount * (v.quantity - count(*)) into v_sisa
+    from voucher_claims where voucher_id = v.id;
+
+    if v_sisa > 0 then
+      perform _jurnal_kaatago('voucher', v.id, v_sisa,
+        'debit', 'Sisa voucher ' || v.code || ' tidak ditebus');
+      perform _jurnal_kaatago('total_balance', v.id, v_sisa,
+        'credit', 'Sisa voucher ' || v.code || ' kembali ke saldo');
+    end if;
+
+    update vouchers set settled_at = now() where id = v.id;
+    v_count := v_count + 1;
+  end loop;
+
+  return v_count;
+end;
+$$;
+
+select cron.unschedule('expire-vouchers')
+where exists (select 1 from cron.job where jobname = 'expire-vouchers');
+
+-- Sekali sehari lewat tengah malam WIB.
+select cron.schedule('expire-vouchers', '10 17 * * *',
+  $$select expire_vouchers();$$);
 
 -- ─────────────────────────────────────────────────────────────────────
 -- RLS
 -- ─────────────────────────────────────────────────────────────────────
 
 alter table vouchers enable row level security;
-alter table voucher_redemptions enable row level security;
+alter table voucher_claims enable row level security;
 
--- Dibaca siapa saja termasuk tamu: vouchernya harus terlihat di layar
--- pelanggan sebelum dia memutuskan memesan.
+-- Batch-nya dibaca siapa saja: pelanggan perlu melihat nominal dan masa
+-- berlakunya sebelum menebus.
 drop policy if exists "vouchers: public read" on vouchers;
-create policy "vouchers: public read" on vouchers
-  for select using (true);
+create policy "vouchers: public read" on vouchers for select using (true);
 
 drop policy if exists "vouchers: super admin write" on vouchers;
 create policy "vouchers: super admin write" on vouchers
   for all using (is_super_admin()) with check (is_super_admin());
 
--- Pemakaian hanya dibaca Super Admin dan resto yang bersangkutan —
--- resto perlu tahu berapa yang tertahan untuk ditagihkan ke kami.
-drop policy if exists "voucher_redemptions: read" on voucher_redemptions;
-create policy "voucher_redemptions: read" on voucher_redemptions
+-- Penebusan hanya terlihat oleh pemiliknya, Super Admin, dan resto tempat
+-- ia dipakai.
+drop policy if exists "voucher_claims: read" on voucher_claims;
+create policy "voucher_claims: read" on voucher_claims
   for select using (
-    is_super_admin()
+    customer_label = auth.jwt() ->> 'email'
+    or is_super_admin()
     or is_resto_employee(resto_id, array['owner', 'admin', 'finance'])
   );
 
+-- Tidak ada kebijakan tulis untuk siapa pun. Menebus lewat RPC, memakai
+-- lewat pemicu — tangan yang bisa menulis langsung ke sini adalah tangan
+-- yang bisa membuat voucher dari udara.
+
 commit;
+
+
+-- ═══════════════════════════════════════════════════════════════════
+-- BAGIAN 38 dari 38 — voucher_payouts.sql
+-- ═══════════════════════════════════════════════════════════════════
+
+-- KaataGo — voucher yang dipakai pelanggan dibayarkan sungguhan ke resto.
+--
+-- Jalankan SETELAH vouchers.sql dan resto_payment_accounts.sql.
+-- Aman dijalankan berulang kali.
+--
+-- Sampai sekarang tahap ketiga voucher hanya berupa jurnal: GL Voucher
+-- Redeem didebit, GL Transfer restonya dikredit. Pembukuannya benar,
+-- tapi tidak ada satu rupiah pun yang berpindah. Resto menyerahkan
+-- makanan seharga seratus ribu, menerima nol dari pelanggan, dan yang
+-- didapatnya cuma satu baris di layar.
+--
+-- Berkas ini yang membuat barisnya diikuti uang.
+--
+-- ── Kenapa transfer antar-akun, bukan pencairan ke rekening ──────────
+--
+-- Xendit punya dua cara mengirim uang keluar. Pencairan (disbursement)
+-- menembak nomor rekening bank langsung — dan untuk itu kita harus
+-- menyimpan nomor rekening tiap resto. Kita sengaja tidak menyimpannya
+-- (lihat resto_payment_accounts.sql): data rekening milik orang lain
+-- yang kita tampung adalah kerugian yang bukan milik kita tapi kita
+-- yang menyebabkannya kalau bocor.
+--
+-- Transfer antar-akun memindahkan saldo dari akun KaataGo ke sub-akun
+-- restonya di dalam xenPlatform. Tujuannya cukup disebut dengan
+-- pengenal sub-akun yang memang sudah kita simpan. Dari sana dananya
+-- ikut jadwal pencairan resto itu sendiri, ke rekening yang mereka
+-- daftarkan sendiri, yang tidak pernah kita lihat.
+--
+-- ── Kenapa antrean, bukan panggilan langsung dari pemicu ─────────────
+--
+-- Pemicu berjalan di dalam transaksi yang menyimpan pesanan. Memanggil
+-- Xendit dari sana berarti pesanan pelanggan gagal tersimpan setiap
+-- kali Xendit lambat atau mati — pelanggan yang sudah antre di kasir
+-- menanggung akibat dari gangguan pihak ketiga. Dan kalau panggilannya
+-- terlanjur sampai lalu transaksinya dibatalkan, uangnya sudah pindah
+-- untuk pesanan yang tidak pernah ada.
+--
+-- Jadi pemicunya cuma menulis satu baris "harus dibayar". Yang
+-- membayarnya berjalan belakangan, boleh gagal, dan boleh diulang.
+
+begin;
+
+create table if not exists voucher_payouts (
+  id uuid primary key default gen_random_uuid(),
+
+  -- Satu klaim satu pencairan. Ini batasan basis data, bukan
+  -- pemeriksaan di kode: penjadwal yang berjalan dua kali, atau
+  -- pemicu yang entah bagaimana menyala dua kali, tidak boleh bisa
+  -- membayar voucher yang sama dua kali.
+  claim_id text not null unique references voucher_claims (id) on delete cascade,
+
+  resto_id text not null references restaurants (id) on delete cascade,
+  order_id uuid,
+  amount bigint not null check (amount > 0),
+
+  -- pending → sent, atau pending → failed lalu dicoba lagi.
+  status text not null default 'pending'
+    check (status in ('pending', 'sent', 'failed')),
+
+  -- Yang dikembalikan Xendit, supaya baris ini bisa dicocokkan dengan
+  -- mutasi di dashboard mereka tanpa menebak-nebak.
+  transfer_id text,
+
+  -- Alasan gagalnya, apa adanya dari penyedia. Disimpan supaya yang
+  -- memeriksa besok pagi tidak perlu membuka log fungsi edge.
+  last_error text,
+  attempts integer not null default 0,
+
+  created_at timestamptz not null default now(),
+  sent_at timestamptz
+);
+
+create index if not exists voucher_payouts_pending_idx
+  on voucher_payouts (created_at) where status <> 'sent';
+
+create index if not exists voucher_payouts_resto_idx
+  on voucher_payouts (resto_id, created_at desc);
+
+alter table voucher_payouts enable row level security;
+
+-- Resto boleh melihat yang jadi haknya; Super Admin melihat semuanya.
+drop policy if exists "voucher_payouts: read" on voucher_payouts;
+create policy "voucher_payouts: read" on voucher_payouts
+  for select using (
+    is_super_admin() or is_resto_employee(resto_id, array['finance', 'owner', 'admin'])
+  );
+
+-- Tidak ada kebijakan tulis untuk siapa pun. Yang menulis ke sini
+-- adalah pemicu pemakaian voucher dan fungsi pencairannya, keduanya
+-- SECURITY DEFINER. Tangan yang bisa menulis langsung ke tabel ini
+-- adalah tangan yang bisa memerintahkan uang sungguhan berpindah.
+
+commit;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- Pemicunya sekarang juga mengantre pencairan
+-- ─────────────────────────────────────────────────────────────────────
+
+create or replace function log_voucher_use()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_claim voucher_claims;
+  v_gl record;
+  v_now timestamptz := now();
+  v_ref text := upper(substr(new.id::text, 1, 8));
+begin
+  if new.voucher_claim_id is null or coalesce(new.voucher_amount, 0) <= 0 then
+    return new;
+  end if;
+
+  select * into v_claim from voucher_claims where id = new.voucher_claim_id;
+  if v_claim.id is null or v_claim.status <> 'claimed' then
+    return new;
+  end if;
+
+  update voucher_claims
+  set status = 'used', order_id = new.id, resto_id = new.resto_id,
+      used_at = v_now
+  where id = v_claim.id;
+
+  -- Uangnya keluar dari kantong voucher yang sudah ditebus.
+  perform _jurnal_kaatago('voucher_redeem', v_claim.id, new.voucher_amount,
+    'debit', 'Voucher dipakai di pesanan #' || v_ref);
+
+  -- Dan masuk ke resto: bagi mereka ini uang masuk, bukan pendapatan
+  -- yang hilang. Restonya tidak menanggung promo yang tidak dia buat.
+  select * into v_gl from _gl_account_for(new.resto_id, 'transfer');
+  if v_gl.gl_code is not null and v_gl.gl_code <> '' then
+    insert into gl_journal_entries (
+      resto_id, entry_date, entry_time, gl_code, gl_name,
+      reference_type, reference_id, amount, entry_type, description
+    ) values (
+      new.resto_id,
+      (v_now at time zone 'Asia/Jakarta')::date,
+      (v_now at time zone 'Asia/Jakarta')::time,
+      v_gl.gl_code, v_gl.gl_name,
+      'voucher', v_claim.id, new.voucher_amount, 'credit',
+      'Voucher KaataGo ' || coalesce(new.voucher_code, '') ||
+        ' — pesanan #' || v_ref
+    );
+  end if;
+
+  -- Uang sungguhannya menyusul. Baris ini yang membuat jurnal di atas
+  -- bukan sekadar janji.
+  insert into voucher_payouts (claim_id, resto_id, order_id, amount)
+  values (v_claim.id, new.resto_id, new.id, new.voucher_amount)
+  on conflict (claim_id) do nothing;
+
+  return new;
+end;
+$$;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- Yang dibaca dan ditulis fungsi pencairannya
+-- ─────────────────────────────────────────────────────────────────────
+
+-- Antrean yang siap dibayar, lengkap dengan tujuannya.
+--
+-- Resto yang belum punya sub-akun aktif tidak ikut terangkut: tidak
+-- ada tujuan untuk dikirimi, dan mencobanya cuma menaikkan `attempts`
+-- sampai barisnya terlihat seperti gangguan Xendit padahal yang kurang
+-- ada di sisi kita.
+-- Tipe kembaliannya pernah salah menyebut claim_id sebagai uuid.
+-- `create or replace` tidak bisa mengubah tipe kembalian, jadi yang
+-- lama harus dibuang dulu — di basis data yang belum pernah
+-- menjalankannya, baris ini tidak melakukan apa-apa.
+drop function if exists voucher_payouts_due(integer);
+
+create or replace function voucher_payouts_due(p_limit integer default 50)
+returns table (
+  payout_id uuid,
+  claim_id text,
+  resto_id text,
+  resto_name text,
+  account_id text,
+  amount bigint
+)
+language sql
+security definer
+set search_path = public
+as $$
+  select p.id, p.claim_id, p.resto_id, r.name, a.account_id, p.amount
+  from voucher_payouts p
+  join resto_payment_accounts a
+    on a.resto_id = p.resto_id and a.active and a.account_id <> ''
+  left join restaurants r on r.id = p.resto_id
+  where p.status <> 'sent'
+  order by p.created_at
+  limit greatest(1, least(coalesce(p_limit, 50), 200));
+$$;
+
+revoke all on function voucher_payouts_due(integer) from public, anon, authenticated;
+
+-- Menandai hasilnya. Hanya menambah dan menandai — tidak pernah
+-- menghapus barisnya, karena baris pencairan yang hilang adalah uang
+-- yang berpindah tanpa jejak.
+create or replace function mark_voucher_payout(
+  p_payout_id uuid,
+  p_ok boolean,
+  p_transfer_id text default null,
+  p_error text default null
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  update voucher_payouts
+  set status      = case when p_ok then 'sent' else 'failed' end,
+      transfer_id = coalesce(p_transfer_id, transfer_id),
+      last_error  = case when p_ok then null else p_error end,
+      attempts    = attempts + 1,
+      sent_at     = case when p_ok then now() else sent_at end
+  where id = p_payout_id
+    and status <> 'sent';   -- yang sudah terkirim tidak bisa dibatalkan
+end;
+$$;
+
+revoke all on function mark_voucher_payout(uuid, boolean, text, text) from public, anon, authenticated;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- Mengantre yang sudah terlanjur dipakai sebelum berkas ini ada
+-- ─────────────────────────────────────────────────────────────────────
+--
+-- Voucher yang sudah dipakai kemarin tetap utang yang belum dibayar.
+-- Tanggal berkas ini dijalankan bukan garis pemisah antara utang dan
+-- bukan utang.
+
+insert into voucher_payouts (claim_id, resto_id, order_id, amount)
+select c.id, c.resto_id, c.order_id, c.amount
+from voucher_claims c
+where c.status = 'used' and c.resto_id is not null and c.amount > 0
+on conflict (claim_id) do nothing;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- Penjadwalnya
+-- ─────────────────────────────────────────────────────────────────────
+--
+-- Antrean yang tidak pernah dijalankan sama saja dengan tidak ada.
+-- Tapi alamat fungsi dan kuncinya berbeda antara proyek uji dan
+-- produksi, jadi berkas ini tidak menebaknya — selama barisnya belum
+-- diisi, penjadwalnya berjalan dan tidak melakukan apa-apa.
+
+create table if not exists voucher_payout_config (
+  id integer primary key default 1 check (id = 1),
+  function_url text,
+  service_key text,
+  updated_at timestamptz not null default now()
+);
+
+insert into voucher_payout_config (id) values (1) on conflict (id) do nothing;
+
+alter table voucher_payout_config enable row level security;
+-- Tidak ada kebijakan apa pun: isinya kunci layanan, dan tidak ada
+-- peran di aplikasi yang punya alasan membacanya.
+
+create or replace function run_voucher_payouts()
+returns void
+language plpgsql
+security definer
+set search_path = public, extensions
+as $$
+declare
+  v_cfg voucher_payout_config;
+begin
+  select * into v_cfg from voucher_payout_config where id = 1;
+  if v_cfg.function_url is null or v_cfg.service_key is null then
+    return;
+  end if;
+
+  perform net.http_post(
+    url := v_cfg.function_url,
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'Authorization', 'Bearer ' || v_cfg.service_key
+    ),
+    body := jsonb_build_object('limit', 50)
+  );
+end;
+$$;
+
+revoke all on function run_voucher_payouts() from public, anon, authenticated;
+
+-- Tiap 15 menit. Resto tidak perlu menunggu semalam untuk menerima
+-- uang yang sudah jadi haknya sejak pesanannya selesai.
+select cron.unschedule('settle-voucher-payouts')
+where exists (select 1 from cron.job where jobname = 'settle-voucher-payouts');
+
+select cron.schedule('settle-voucher-payouts', '*/15 * * * *',
+  $cron$select run_voucher_payouts();$cron$);
+
+-- ─────────────────────────────────────────────────────────────────────
+-- Setelah menjalankan ini
+-- ─────────────────────────────────────────────────────────────────────
+--
+-- 1. Deploy fungsinya:
+--
+--      supabase functions deploy settle-voucher-payouts \
+--        --project-ref xizpwtycczigjhzxegen
+--
+-- 2. Isi secret pengenal akun KaataGo sendiri di Xendit — transfer
+--    butuh tahu dari akun mana uangnya diambil:
+--
+--      supabase secrets set XENDIT_ACCOUNT_ID=...
+--
+--    Nomornya ada di Dashboard Xendit → Settings → Developers, atau:
+--
+--      curl https://api.xendit.co/balance -u 'xnd_...:' -v
+--
+-- 3. Isi alamat fungsi dan kunci layanan supaya penjadwalnya hidup:
+--
+--      update voucher_payout_config set
+--        function_url = 'https://xizpwtycczigjhzxegen.supabase.co/functions/v1/settle-voucher-payouts',
+--        service_key  = '<service_role key>',
+--        updated_at   = now()
+--      where id = 1;
+--
+-- 4. Periksa antreannya kapan saja:
+--
+--      select p.status, p.attempts, p.amount, r.name, p.last_error
+--      from voucher_payouts p left join restaurants r on r.id = p.resto_id
+--      order by p.created_at desc;
+--
+-- Resto yang belum punya sub-akun akan menumpuk sebagai `pending` tanpa
+-- pernah dicoba. Itu disengaja — dan cara melihatnya:
+--
+--   select r.name, count(*), sum(p.amount)
+--   from voucher_payouts p
+--   left join restaurants r on r.id = p.resto_id
+--   left join resto_payment_accounts a on a.resto_id = p.resto_id
+--   where p.status <> 'sent' and (a.resto_id is null or not a.active)
+--   group by r.name;

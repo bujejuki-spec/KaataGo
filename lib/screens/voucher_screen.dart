@@ -1,19 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 
 import '../db/restaurant_repository.dart';
 import '../db/voucher_repository.dart';
 import '../models/restaurant.dart';
 import '../models/voucher.dart';
-import '../providers/auth_provider.dart';
 import '../theme.dart';
-import '../utils/promo_period.dart';
 import '../utils/rupiah_input.dart';
 import '../widgets/app_toast.dart';
-import '../widgets/dialog_actions.dart';
-import '../widgets/promo_period_fields.dart';
 import '../widgets/required_label.dart';
 import '../widgets/responsive.dart';
 
@@ -21,11 +16,12 @@ final _rupiah =
     NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
 final _tanggal = DateFormat('d MMM yyyy', 'id_ID');
 
-/// Voucher KaataGo untuk pelanggan — hanya Super Admin.
+/// Voucher KaataGo — hanya Super Admin.
 ///
-/// Ini promo kami sendiri, bukan promo resto. Yang menanggung
-/// potongannya juga kami: dananya keluar dari saldo KaataGo sebagai
-/// biaya promosi, dan tercatat di Jurnal GL KaataGo tiap kali dipakai.
+/// Menerbitkan voucher bukan sekadar membuat aturan potongan: dananya
+/// benar-benar berpindah dari saldo bebas KaataGo ke kantong voucher,
+/// dan baru kembali kalau vouchernya hangus. Karena itu layar ini
+/// menampilkan nominalnya, bukan cuma nama dan kodenya.
 class VoucherScreen extends StatefulWidget {
   const VoucherScreen({super.key});
 
@@ -71,58 +67,36 @@ class _VoucherScreenState extends State<VoucherScreen> {
     }
   }
 
-  Future<void> _ubah([Voucher? existing]) async {
-    final hasil = await Navigator.of(context).push<bool>(MaterialPageRoute(
-      builder: (_) => _FormVoucher(existing: existing, resto: _resto),
-    ));
-    if (hasil == true) _muat();
-  }
-
-  Future<void> _hapus(Voucher v) async {
-    final yakin = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Hapus voucher?', style: TextStyle(fontSize: 17)),
-        content: Text(
-          v.used > 0
-              ? 'Voucher ini sudah dipakai ${v.used} kali. Catatan '
-                  'pemakaiannya ikut terhapus, dan hitungan yang harus '
-                  'dibayarkan ke resto jadi tidak lengkap. Lebih aman '
-                  'menonaktifkannya saja.'
-              : 'Belum pernah dipakai, jadi tidak ada catatan yang hilang.',
-          style: TextStyle(fontSize: 13, color: KaataTheme.mutedOf(context)),
-        ),
-        actionsAlignment: MainAxisAlignment.center,
-        actions: [
-          DialogActions(
-            confirmLabel: 'Hapus',
-            destructive: true,
-            onConfirm: () => Navigator.pop(context, true),
-          ),
-        ],
-      ),
-    );
-    if (yakin != true) return;
+  Future<void> _tutupBuka(Voucher v) async {
     try {
-      await _repo.delete(v.id);
+      await _repo.setActive(v.id, !v.active);
       if (!mounted) return;
       _muat();
     } catch (e) {
       if (!mounted) return;
-      showAppToast(context, 'Gagal menghapus: $e', isError: true);
+      AppToast.show(context, 'Gagal: $e', isError: true);
     }
+  }
+
+  Future<void> _terbitkan() async {
+    final hasil = await Navigator.of(context).push<bool>(MaterialPageRoute(
+      builder: (_) => _FormBatch(resto: _resto),
+    ));
+    if (hasil == true) _muat();
   }
 
   @override
   Widget build(BuildContext context) {
+    final menggantung =
+        _items.fold<int>(0, (s, v) => s + v.nilaiTertebus);
+
     return Scaffold(
       backgroundColor: KaataTheme.backgroundOf(context),
       appBar: AppBar(title: const Text('Voucher Pelanggan')),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _ubah(),
+        onPressed: _terbitkan,
         icon: const Icon(Icons.add),
-        label: const Text('Voucher Baru'),
+        label: const Text('Terbitkan Voucher'),
       ),
       body: _memuat
           ? const Center(child: CircularProgressIndicator())
@@ -135,33 +109,66 @@ class _VoucherScreenState extends State<VoucherScreen> {
                         style: TextStyle(color: KaataTheme.mutedOf(context))),
                   ),
                 )
-              : _items.isEmpty
-                  ? Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(30),
-                        child: Text(
-                          'Belum ada voucher.\nPelanggan membayar harga penuh '
-                          'di semua resto.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: KaataTheme.mutedOf(context)),
-                        ),
-                      ),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: _muat,
-                      child: ResponsiveCenter(
-                        child: ListView.builder(
-                          padding: const EdgeInsets.fromLTRB(14, 14, 14, 88),
-                          itemCount: _items.length,
-                          itemBuilder: (_, i) => _Kartu(
-                            voucher: _items[i],
-                            resto: _resto,
-                            onTap: () => _ubah(_items[i]),
-                            onHapus: () => _hapus(_items[i]),
+              : RefreshIndicator(
+                  onRefresh: _muat,
+                  child: ResponsiveCenter(
+                    child: ListView(
+                      padding: const EdgeInsets.fromLTRB(14, 14, 14, 88),
+                      children: [
+                        if (_items.isNotEmpty) ...[
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(colors: [
+                                Color(0xFFF59E0B),
+                                Color(0xFFB45309),
+                              ]),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('Menggantung di tangan pelanggan',
+                                    style: TextStyle(
+                                        color: Colors.white70, fontSize: 12)),
+                                const SizedBox(height: 4),
+                                Text(_rupiah.format(menggantung),
+                                    style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.bold)),
+                                const SizedBox(height: 4),
+                                const Text(
+                                  'Sudah ditebus, belum dipakai. Kembali ke '
+                                  'saldo kalau sampai hangus.',
+                                  style: TextStyle(
+                                      color: Colors.white70, fontSize: 11.5),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      ),
+                          const SizedBox(height: 14),
+                        ],
+                        if (_items.isEmpty)
+                          Padding(
+                            padding: const EdgeInsets.all(30),
+                            child: Text(
+                              'Belum ada voucher diterbitkan.',
+                              textAlign: TextAlign.center,
+                              style:
+                                  TextStyle(color: KaataTheme.mutedOf(context)),
+                            ),
+                          ),
+                        for (final v in _items)
+                          _Kartu(
+                            voucher: v,
+                            resto: _resto,
+                            onToggle: () => _tutupBuka(v),
+                          ),
+                      ],
                     ),
+                  ),
+                ),
     );
   }
 }
@@ -169,24 +176,24 @@ class _VoucherScreenState extends State<VoucherScreen> {
 class _Kartu extends StatelessWidget {
   final Voucher voucher;
   final List<Restaurant> resto;
-  final VoidCallback onTap;
-  final VoidCallback onHapus;
+  final VoidCallback onToggle;
 
   const _Kartu({
     required this.voucher,
     required this.resto,
-    required this.onTap,
-    required this.onHapus,
+    required this.onToggle,
   });
 
   @override
   Widget build(BuildContext context) {
-    final berjalan = voucher.isLive() && !voucher.kuotaHabis;
     final nama = {for (final r in resto) r.id: r.name};
-    final periode = [
-      if (voucher.startsOn != null) 'mulai ${_tanggal.format(voucher.startsOn!)}',
-      if (voucher.endsOn != null) 'sampai ${_tanggal.format(voucher.endsOn!)}',
-    ].join(' · ');
+    final (label, warna) = voucher.kedaluwarsa
+        ? ('Kedaluwarsa', Colors.grey)
+        : !voucher.active
+            ? ('Ditutup', Colors.grey)
+            : voucher.habis
+                ? ('Habis ditebus', Colors.orange)
+                : ('Berjalan', Colors.green);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -196,197 +203,159 @@ class _Kartu extends StatelessWidget {
         borderRadius: BorderRadius.circular(13),
         border: Border.all(color: KaataTheme.borderOf(context)),
       ),
-      child: InkWell(
-        onTap: onTap,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: KaataTheme.brandOf(context).withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(voucher.code,
-                      style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
-                          color: KaataTheme.brandOf(context))),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: KaataTheme.brandOf(context).withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(6),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(voucher.name,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 14)),
+                child: Text(voucher.code,
+                    style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                        color: KaataTheme.brandOf(context))),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(voucher.name,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 14)),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: warna.withOpacity(0.13),
+                  borderRadius: BorderRadius.circular(6),
                 ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: (berjalan ? Colors.green : Colors.grey)
-                        .withOpacity(0.13),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    voucher.kuotaHabis
-                        ? 'Kuota habis'
-                        : berjalan
-                            ? 'Berjalan'
-                            : 'Tidak berlaku',
+                child: Text(label,
                     style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
-                        color: berjalan ? Colors.green : Colors.grey),
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline,
-                      size: 19, color: Colors.red),
-                  tooltip: 'Hapus',
-                  onPressed: onHapus,
-                ),
-              ],
+                        color: warna)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '${_rupiah.format(voucher.amount)} × ${voucher.quantity} = '
+            '${_rupiah.format(voucher.totalAmount)}',
+            style:
+                TextStyle(fontSize: 13, color: KaataTheme.brandOf(context)),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            'Ditebus ${voucher.claimed}/${voucher.quantity} · '
+            'berlaku sampai ${_tanggal.format(voucher.expiresOn)}',
+            style:
+                TextStyle(fontSize: 11.5, color: KaataTheme.mutedOf(context)),
+          ),
+          Text(
+            [
+              voucher.berlakuDiSemuaResto
+                  ? 'Semua resto'
+                  : voucher.restoIds.map((id) => nama[id] ?? id).join(', '),
+              if (voucher.minPurchase > 0)
+                'min belanja ${_rupiah.format(voucher.minPurchase)}',
+            ].join(' · '),
+            style:
+                TextStyle(fontSize: 11.5, color: KaataTheme.mutedOf(context)),
+          ),
+          if (voucher.settledAt != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                'Sisa yang tidak ditebus sudah kembali ke saldo.',
+                style: TextStyle(
+                    fontSize: 11, color: KaataTheme.mutedOf(context)),
+              ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              [
-                voucher.kind == VoucherKind.percent
-                    ? 'Potong ${voucher.value}%'
-                    : 'Potong ${_rupiah.format(voucher.value)}',
-                if (voucher.maxDiscount > 0)
-                  'maks ${_rupiah.format(voucher.maxDiscount)}',
-                if (voucher.minPurchase > 0)
-                  'min belanja ${_rupiah.format(voucher.minPurchase)}',
-              ].join(' · '),
-              style:
-                  TextStyle(fontSize: 12.5, color: KaataTheme.brandOf(context)),
+          const SizedBox(height: 6),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: voucher.kedaluwarsa ? null : onToggle,
+              child: Text(voucher.active ? 'Tutup' : 'Buka lagi'),
             ),
-            const SizedBox(height: 3),
-            Text(
-              [
-                voucher.berlakuDiSemuaResto
-                    ? 'Semua resto'
-                    : '${voucher.restoIds.length} resto: '
-                        '${voucher.restoIds.map((id) => nama[id] ?? id).join(', ')}',
-                'dipakai ${voucher.used}'
-                    '${voucher.quotaTotal > 0 ? '/${voucher.quotaTotal}' : ''}',
-              ].join(' · '),
-              style:
-                  TextStyle(fontSize: 11.5, color: KaataTheme.mutedOf(context)),
-            ),
-            if (periode.isNotEmpty)
-              Text(periode,
-                  style: TextStyle(
-                      fontSize: 11.5, color: KaataTheme.mutedOf(context))),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _FormVoucher extends StatefulWidget {
-  final Voucher? existing;
+class _FormBatch extends StatefulWidget {
   final List<Restaurant> resto;
 
-  const _FormVoucher({this.existing, required this.resto});
+  const _FormBatch({required this.resto});
 
   @override
-  State<_FormVoucher> createState() => _FormVoucherState();
+  State<_FormBatch> createState() => _FormBatchState();
 }
 
-class _FormVoucherState extends State<_FormVoucher> {
+class _FormBatchState extends State<_FormBatch> {
   final _formKey = GlobalKey<FormState>();
   final _repo = VoucherRepository();
 
-  late final _kode = TextEditingController(text: widget.existing?.code ?? '');
-  late final _nama = TextEditingController(text: widget.existing?.name ?? '');
-  late final _nilai = TextEditingController(
-    text: widget.existing == null
-        ? ''
-        : widget.existing!.kind == VoucherKind.percent
-            ? '${widget.existing!.value}'
-            : formatRupiahInput(widget.existing!.value),
-  );
-  late final _maks = TextEditingController(
-    text: (widget.existing?.maxDiscount ?? 0) == 0
-        ? ''
-        : formatRupiahInput(widget.existing!.maxDiscount),
-  );
-  late final _minBelanja = TextEditingController(
-    text: (widget.existing?.minPurchase ?? 0) == 0
-        ? ''
-        : formatRupiahInput(widget.existing!.minPurchase),
-  );
-  late final _kuota = TextEditingController(
-    text: (widget.existing?.quotaTotal ?? 0) == 0
-        ? ''
-        : '${widget.existing!.quotaTotal}',
-  );
-  late final _kuotaOrang =
-      TextEditingController(text: '${widget.existing?.quotaPerCustomer ?? 1}');
-
-  late VoucherKind _jenis = widget.existing?.kind ?? VoucherKind.percent;
-  late final Set<String> _sasaran = {...?widget.existing?.restoIds};
-  late DateTime? _mulai = widget.existing?.startsOn;
-  late DateTime? _akhir = widget.existing?.endsOn;
-  late bool _aktif = widget.existing?.active ?? true;
+  final _kode = TextEditingController();
+  final _nama = TextEditingController();
+  final _total = TextEditingController();
+  final _jumlah = TextEditingController(text: '10');
+  final _minBelanja = TextEditingController();
+  final Set<String> _sasaran = {};
+  DateTime? _kedaluwarsa;
   bool _menyimpan = false;
 
   @override
   void dispose() {
-    for (final c in [
-      _kode,
-      _nama,
-      _nilai,
-      _maks,
-      _minBelanja,
-      _kuota,
-      _kuotaOrang
-    ]) {
+    for (final c in [_kode, _nama, _total, _jumlah, _minBelanja]) {
       c.dispose();
     }
     super.dispose();
   }
 
+  int get _nilaiPer {
+    final total = parseRupiah(_total.text) ?? 0;
+    final n = int.tryParse(_jumlah.text.trim()) ?? 0;
+    if (total <= 0 || n <= 0) return 0;
+    return total ~/ n;
+  }
+
+  /// Sisa pembagian yang tidak pernah jadi voucher.
+  ///
+  /// Ditampilkan, bukan dibulatkan diam-diam: yang mengetik Rp 1.000.000
+  /// untuk 3 voucher berhak tahu bahwa Rp 1 tidak ikut keluar.
+  int get _sisa {
+    final total = parseRupiah(_total.text) ?? 0;
+    final n = int.tryParse(_jumlah.text.trim()) ?? 0;
+    if (total <= 0 || n <= 0) return 0;
+    return total - (_nilaiPer * n);
+  }
+
   Future<void> _simpan() async {
     if (!_formKey.currentState!.validate()) return;
-
-    final galatPeriode = validatePeriod(startsOn: _mulai, endsOn: _akhir);
-    if (galatPeriode != null) {
-      showAppToast(context, galatPeriode, isError: true);
+    if (_kedaluwarsa == null) {
+      AppToast.show(context, 'Pilih tanggal kedaluwarsanya.', isError: true);
       return;
     }
 
-    final nilai = _jenis == VoucherKind.percent
-        ? int.tryParse(_nilai.text.trim()) ?? 0
-        : parseRupiah(_nilai.text) ?? 0;
-
     setState(() => _menyimpan = true);
     try {
-      await _repo.save(Voucher(
-        id: widget.existing?.id ??
-            DateTime.now().microsecondsSinceEpoch.toString(),
+      await _repo.generate(
         code: _kode.text.trim().toUpperCase(),
         name: _nama.text.trim(),
-        kind: _jenis,
-        value: nilai,
-        maxDiscount: parseRupiah(_maks.text) ?? 0,
+        totalAmount: parseRupiah(_total.text) ?? 0,
+        quantity: int.tryParse(_jumlah.text.trim()) ?? 0,
+        expiresOn: _kedaluwarsa!,
         minPurchase: parseRupiah(_minBelanja.text) ?? 0,
         restoIds: _sasaran.toList(),
-        quotaTotal: int.tryParse(_kuota.text.trim()) ?? 0,
-        quotaPerCustomer: int.tryParse(_kuotaOrang.text.trim()) ?? 1,
-        startsOn: _mulai,
-        endsOn: _akhir,
-        active: _aktif,
-        createdBy: context.read<AuthProvider>().user?.email,
-        createdAt: widget.existing?.createdAt ?? DateTime.now(),
-      ));
+      );
       if (!mounted) return;
       Navigator.pop(context, true);
     } catch (e) {
@@ -394,21 +363,16 @@ class _FormVoucherState extends State<_FormVoucher> {
       setState(() => _menyimpan = false);
       final pesan = '$e'.contains('vouchers_code_key')
           ? 'Kode ini sudah dipakai voucher lain.'
-          : 'Gagal menyimpan: $e';
-      showAppToast(context, pesan, isError: true);
+          : 'Gagal menerbitkan: $e';
+      AppToast.show(context, pesan, isError: true);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final persen = _jenis == VoucherKind.percent;
-
     return Scaffold(
       backgroundColor: KaataTheme.backgroundOf(context),
-      appBar: AppBar(
-        title: Text(
-            widget.existing == null ? 'Voucher Baru' : 'Ubah Voucher'),
-      ),
+      appBar: AppBar(title: const Text('Terbitkan Voucher')),
       body: Form(
         key: _formKey,
         child: ResponsiveCenter(
@@ -420,16 +384,15 @@ class _FormVoucherState extends State<_FormVoucher> {
                 textCapitalization: TextCapitalization.characters,
                 inputFormatters: [
                   FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9]')),
-                  // Selalu huruf besar. "hemat10" dan "HEMAT10" harus
-                  // voucher yang sama — yang mengetiknya sedang lapar dan
-                  // berdiri di depan kasir, bukan sedang teliti.
                   TextInputFormatter.withFunction((lama, baru) =>
                       baru.copyWith(text: baru.text.toUpperCase())),
                 ],
                 decoration: InputDecoration(
                   label: requiredLabel('Kode Voucher'),
-                  hintText: 'HEMAT10',
-                  helperText: 'Huruf dan angka saja, tanpa spasi',
+                  hintText: 'HEMAT100',
+                  helperText: 'Satu kode untuk seluruh batch — ini yang '
+                      'diumumkan ke pelanggan',
+                  helperMaxLines: 2,
                 ),
                 validator: (v) => (v == null || v.trim().length < 3)
                     ? 'Minimal 3 karakter'
@@ -447,62 +410,89 @@ class _FormVoucherState extends State<_FormVoucher> {
                     (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null,
               ),
               const SizedBox(height: 18),
-              const Text('Potongan',
+              const Text('Alokasi Dana',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-              const SizedBox(height: 8),
-              SegmentedButton<VoucherKind>(
-                segments: const [
-                  ButtonSegment(
-                      value: VoucherKind.percent, label: Text('Persen')),
-                  ButtonSegment(
-                      value: VoucherKind.amount, label: Text('Rupiah')),
+              const SizedBox(height: 4),
+              Text(
+                'Dananya keluar dari saldo KaataGo saat diterbitkan, dan '
+                'kembali lagi kalau tidak ditebus sampai kedaluwarsa.',
+                style:
+                    TextStyle(fontSize: 11.5, color: KaataTheme.mutedOf(context)),
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    flex: 3,
+                    child: TextFormField(
+                      controller: _total,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [ThousandsInputFormatter()],
+                      decoration: InputDecoration(
+                        label: requiredLabel('Total Dana'),
+                        prefixText: 'Rp ',
+                      ),
+                      onChanged: (_) => setState(() {}),
+                      validator: (v) => (parseRupiah(v ?? '') ?? 0) <= 0
+                          ? 'Harus lebih dari 0'
+                          : null,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 2,
+                    child: TextFormField(
+                      controller: _jumlah,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      decoration: InputDecoration(
+                        label: requiredLabel('Jadi berapa'),
+                        suffixText: 'voucher',
+                      ),
+                      onChanged: (_) => setState(() {}),
+                      validator: (v) =>
+                          (int.tryParse((v ?? '').trim()) ?? 0) <= 0
+                              ? 'Minimal 1'
+                              : null,
+                    ),
+                  ),
                 ],
-                selected: {_jenis},
-                onSelectionChanged: (v) => setState(() {
-                  _jenis = v.first;
-                  _nilai.clear();
-                }),
               ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _nilai,
-                keyboardType: TextInputType.number,
-                inputFormatters: persen
-                    ? [FilteringTextInputFormatter.digitsOnly]
-                    : [ThousandsInputFormatter()],
-                decoration: InputDecoration(
-                  label: requiredLabel('Nilai'),
-                  prefixText: persen ? null : 'Rp ',
-                  suffixText: persen ? '%' : null,
-                ),
-                validator: (v) {
-                  final n = persen
-                      ? int.tryParse((v ?? '').trim()) ?? 0
-                      : parseRupiah(v ?? '') ?? 0;
-                  if (n <= 0) return 'Harus lebih dari 0';
-                  if (persen && n > 100) return 'Maksimal 100%';
-                  return null;
-                },
-              ),
-              if (persen) ...[
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _maks,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [ThousandsInputFormatter()],
-                  decoration: const InputDecoration(
-                    labelText: 'Potongan maksimal',
-                    prefixText: 'Rp ',
-                    // Tanpa batas ini, "diskon 20%" pada tagihan sejuta
-                    // rupiah adalah dua ratus ribu yang keluar dari saldo
-                    // KaataGo untuk satu transaksi.
-                    helperText: 'Kosong = tanpa batas. Isi supaya satu '
-                        'transaksi besar tidak menghabiskan anggaran promo.',
-                    helperMaxLines: 3,
+              if (_nilaiPer > 0) ...[
+                const SizedBox(height: 10),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: KaataTheme.brandOf(context).withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Tiap voucher bernilai ${_rupiah.format(_nilaiPer)}',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13.5,
+                            color: KaataTheme.brandOf(context)),
+                      ),
+                      if (_sisa > 0)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 3),
+                          child: Text(
+                            'Sisa ${_rupiah.format(_sisa)} tidak ikut '
+                            'diterbitkan dan tetap di saldo.',
+                            style: TextStyle(
+                                fontSize: 11.5,
+                                color: KaataTheme.mutedOf(context)),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               ],
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: _minBelanja,
                 keyboardType: TextInputType.number,
@@ -513,38 +503,36 @@ class _FormVoucherState extends State<_FormVoucher> {
                   helperText: 'Kosong = tanpa minimum',
                 ),
               ),
-              const SizedBox(height: 18),
-              const Text('Kuota',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _kuota,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      decoration: const InputDecoration(
-                        labelText: 'Total pemakaian',
-                        helperText: 'Kosong = tanpa batas',
-                        helperMaxLines: 2,
-                      ),
+              const SizedBox(height: 16),
+              InkWell(
+                onTap: () async {
+                  final besok = DateTime.now().add(const Duration(days: 1));
+                  final pilih = await showDatePicker(
+                    context: context,
+                    initialDate: _kedaluwarsa ?? besok,
+                    firstDate: besok,
+                    lastDate: DateTime.now().add(const Duration(days: 730)),
+                  );
+                  if (pilih != null) setState(() => _kedaluwarsa = pilih);
+                },
+                child: InputDecorator(
+                  decoration: InputDecoration(
+                    label: requiredLabel('Kedaluwarsa'),
+                    helperText: 'Minimal besok. Voucher yang belum dipakai '
+                        'hangus dan dananya kembali ke saldo.',
+                    helperMaxLines: 2,
+                  ),
+                  child: Text(
+                    _kedaluwarsa == null
+                        ? 'Pilih tanggal'
+                        : _tanggal.format(_kedaluwarsa!),
+                    style: TextStyle(
+                      color: _kedaluwarsa == null
+                          ? KaataTheme.mutedOf(context)
+                          : null,
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _kuotaOrang,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      decoration: const InputDecoration(
-                        labelText: 'Per pelanggan',
-                        helperText: '0 = tanpa batas',
-                        helperMaxLines: 2,
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
               const SizedBox(height: 18),
               Row(
@@ -562,15 +550,9 @@ class _FormVoucherState extends State<_FormVoucher> {
                   ),
                 ],
               ),
-              const SizedBox(height: 4),
-              Text(
-                'Kosongkan semuanya kalau voucher ini berlaku di seluruh resto.',
-                style:
-                    TextStyle(fontSize: 11.5, color: KaataTheme.mutedOf(context)),
-              ),
               const SizedBox(height: 8),
               Container(
-                constraints: const BoxConstraints(maxHeight: 260),
+                constraints: const BoxConstraints(maxHeight: 240),
                 decoration: BoxDecoration(
                   border: Border.all(color: KaataTheme.borderOf(context)),
                   borderRadius: BorderRadius.circular(12),
@@ -595,29 +577,6 @@ class _FormVoucherState extends State<_FormVoucher> {
                   ],
                 ),
               ),
-              const SizedBox(height: 18),
-              PromoPeriodFields(
-                startsOn: _mulai,
-                endsOn: _akhir,
-                onChanged: (mulai, akhir) => setState(() {
-                  _mulai = mulai;
-                  _akhir = akhir;
-                }),
-              ),
-              const SizedBox(height: 6),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                value: _aktif,
-                title: const Text('Aktif', style: TextStyle(fontSize: 13.5)),
-                subtitle: Text(
-                  _aktif
-                      ? 'Bisa dipakai pelanggan'
-                      : 'Disimpan, tapi ditolak saat dicoba',
-                  style: TextStyle(
-                      fontSize: 11.5, color: KaataTheme.mutedOf(context)),
-                ),
-                onChanged: (v) => setState(() => _aktif = v),
-              ),
               const SizedBox(height: 22),
               SizedBox(
                 height: 48,
@@ -628,14 +587,15 @@ class _FormVoucherState extends State<_FormVoucher> {
                           width: 18,
                           height: 18,
                           child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Text('Simpan'),
+                      : Text(_nilaiPer > 0
+                          ? 'Terbitkan ${_rupiah.format(_nilaiPer * (int.tryParse(_jumlah.text.trim()) ?? 0))}'
+                          : 'Terbitkan'),
                 ),
               ),
               const SizedBox(height: 10),
               Text(
-                'Potongan voucher ditanggung KaataGo — dananya keluar dari '
-                'saldo KaataGo sebagai biaya promosi, dan tercatat di Jurnal '
-                'GL KaataGo tiap kali dipakai.',
+                'Setelah terbit, umumkan kodenya ke pelanggan lewat Kirim '
+                'Pengumuman supaya mereka bisa menebusnya.',
                 style:
                     TextStyle(fontSize: 11.5, color: KaataTheme.mutedOf(context)),
               ),

@@ -1,7 +1,7 @@
 # KaataGo — Technical Specification Document
 
-**Versi Aplikasi:** 2.1.0 (build 97)
-**Versi Dokumen:** 1.0
+**Versi Aplikasi:** 2.2.0 (build 98)
+**Versi Dokumen:** 1.1
 **Tanggal Terbit:** 17 Agustus 2026
 **Status:** Rilis
 **Jenis Dokumen:** TSD — sisi teknis
@@ -26,7 +26,7 @@ dilaporkan.
 4. Model Data
 5. Keamanan Baris (RLS)
 6. Buku Besar (GL)
-7. Pembayaran (termasuk langganan resto)
+7. Pembayaran (termasuk langganan resto & voucher)
 8. Notifikasi Push
 9. Fungsi Edge
 10. Penyimpanan Lokal & Luring
@@ -701,6 +701,95 @@ hubungan satu sama lain: penjualan resto, dan tagihan yang kami
 terbitkan kepada mereka. Disaring di kuerinya, bukan sesudah data
 sampai — baris platform yang ikut terangkut memakan jatah batas 1.000
 baris, dan yang terpotong justru jurnal resto yang dicari.
+
+### 7.5 Voucher
+
+`supabase/vouchers.sql`. Dua tabel: `vouchers` menyimpan batch-nya,
+`voucher_claims` menyimpan siapa yang menebus voucher yang mana.
+
+**Nilai per voucher dihitung server.** `generate_voucher_batch` memakai
+`v_amount := p_total / p_quantity` (pembagian bulat), lalu menjurnal
+`v_amount * p_quantity` — bukan `p_total`. Sisa pembagiannya tidak
+pernah jadi voucher, dan mencatatnya sebagai uang keluar berarti saldo
+berkurang untuk sesuatu yang tidak ada.
+
+**Kuota ditegakkan di RPC, bukan di aplikasi.** `claim_voucher` adalah
+SECURITY DEFINER yang menghitung penebus di dalam transaksinya sendiri
+lalu menolak dengan `if v_terpakai >= v.quantity`. Menghitungnya di
+aplikasi berarti dua orang yang menekan tombol bersamaan sama-sama
+lolos sebagai penebus terakhir. Satu-pelanggan-satu-voucher dijaga
+`unique (voucher_id, customer_label)` — batasan basis data, bukan
+pemeriksaan yang bisa dilewati.
+
+**`voucher_claims` tidak punya kebijakan tulis untuk siapa pun.**
+Menebus lewat RPC, memakai lewat pemicu. Tangan yang bisa menulis
+langsung ke tabel ini adalah tangan yang bisa membuat voucher dari
+udara — dan itu berlaku untuk Super Admin persis seperti untuk yang
+lain.
+
+**Pemakaian dicatat pemicu, bukan aplikasi.** `log_voucher_use()`
+berjalan `after insert on orders`: menandai klaimnya terpakai, mendebit
+`voucher_redeem` di buku KaataGo, dan mengkredit GL `transfer` restonya
+lewat `_gl_account_for(new.resto_id, 'transfer')`. Pesanan yang masuk
+tanpa lewat layar keranjang tetap terjurnal.
+
+**Kedaluwarsa dijalankan pg_cron harian** (`expire-vouchers`, 00:10
+WIB). Dua hal dikembalikan ke `total_balance`: klaim yang tidak pernah
+dipakai (dari `voucher_redeem`), dan sisa batch yang tidak pernah
+ditebus siapa pun (dari `voucher`). Yang kedua dijaga `settled_at` —
+tanpa penanda itu, penjadwal yang berjalan dua kali mengembalikan
+dananya dua kali. Ingatan penjadwal bukan penjaga yang bisa dipercaya;
+kolomnya yang menjaga.
+
+**Tahap 3 diikuti uang sungguhan.** `supabase/voucher_payouts.sql`.
+Pemicunya tidak memanggil Xendit — ia menulis satu baris ke
+`voucher_payouts` berstatus `pending`. Memanggil penyedia dari dalam
+transaksi yang menyimpan pesanan berarti pesanan gagal tersimpan setiap
+kali penyedianya lambat, dan kalau panggilannya terlanjur sampai lalu
+transaksinya dibatalkan, uangnya sudah pindah untuk pesanan yang tidak
+pernah ada.
+
+Fungsi edge `settle-voucher-payouts` memproses antreannya tiap 15 menit
+(pg_cron → `run_voucher_payouts()` → pg_net). Yang dipakai adalah
+**Transfers** xenPlatform, bukan Disbursements: transfer cukup menyebut
+pengenal sub-akun yang sudah ada di `resto_payment_accounts`, sementara
+disbursement menuntut nomor rekening tiap resto — data milik orang lain
+yang sengaja tidak kita simpan.
+
+Idempotensinya berlapis dua, dan keduanya di luar ingatan fungsi itu
+sendiri: `voucher_payouts.claim_id` bersifat `unique`, dan `reference`
+yang dikirim ke Xendit adalah id klaimnya, sehingga permintaan kedua
+ditolak sebagai duplikat. Penolakan duplikat itu **ditandai berhasil**,
+bukan gagal — menandainya gagal membuat barisnya dicoba ulang setiap
+penjadwal berjalan, selamanya.
+
+`voucher_payouts_due()` sengaja hanya mengangkut resto yang sub-akunnya
+aktif. Yang belum punya menumpuk sebagai `pending` tanpa pernah dicoba:
+utangnya tetap tercatat, dan `attempts`-nya tidak naik sehingga barisnya
+tidak menyamar sebagai gangguan Xendit padahal yang kurang ada di sisi
+kita. Tabelnya, seperti `voucher_claims`, **tidak punya kebijakan tulis
+untuk siapa pun** — tangan yang bisa menulis ke sini adalah tangan yang
+bisa memerintahkan uang sungguhan berpindah.
+
+Per rilis 2.2.0, xenPlatform belum aktif dan `resto_payment_accounts`
+masih kosong, jadi `voucher_payouts_due()` tidak mengangkut apa pun dan
+`attempts` tetap nol di seluruh antrean. Itu bukan kegagalan yang
+disembunyikan — nol percobaan adalah tandanya kekurangan ada di sisi
+kita, bukan di Xendit. Konsekuensi yang sama berlaku untuk QRIS:
+`create-qris` memasang `for-user-id` hanya bila sub-akunnya ada,
+sehingga sampai xenPlatform aktif seluruh pembayaran resto mendarat di
+rekening KaataGo dan diteruskan di luar aplikasi.
+
+Saat berkas ini dijalankan, seluruh klaim berstatus `used` diantre
+sekaligus. Tanggal pemasangan bukan garis pemisah antara utang dan
+bukan utang.
+
+`_jurnal_kaatago(method, ref_id, amount, type, desc)` membungkus
+keempat perpindahan supaya nomor akun platform tidak ditulis ulang di
+lima tempat. Nomornya sederet dengan GL Diskon: **1100073** Voucher,
+**1100074** Voucher Redeem.
+
+---
 
 ---
 

@@ -122,7 +122,7 @@ class CustomerOrder {
   /// restonya — karena itu disimpan terpisah dari discount_amount, yang
   /// milik promo resto sendiri. Menyatukan keduanya membuat "berapa yang
   /// kami tanggung bulan ini" tidak punya jawaban.
-  final String? voucherId;
+  final String? voucherClaimId;
   final String? voucherCode;
   final int voucherAmount;
 
@@ -151,7 +151,7 @@ class CustomerOrder {
     this.discountAmount = 0,
     this.discountId,
     this.discountName,
-    this.voucherId,
+    this.voucherClaimId,
     this.voucherCode,
     this.voucherAmount = 0,
     this.settledBy,
@@ -182,7 +182,7 @@ class CustomerOrder {
         if (discountId != null) 'discount_id': discountId,
         if (discountName != null) 'discount_name': discountName,
         'voucher_amount': voucherAmount,
-        if (voucherId != null) 'voucher_id': voucherId,
+        if (voucherClaimId != null) 'voucher_claim_id': voucherClaimId,
         if (voucherCode != null) 'voucher_code': voucherCode,
       };
 
@@ -320,7 +320,7 @@ class CustomerOrder {
       discountAmount: (data['discount_amount'] as num?)?.toInt() ?? 0,
       discountId: data['discount_id'] as String?,
       discountName: data['discount_name'] as String?,
-      voucherId: data['voucher_id'] as String?,
+      voucherClaimId: data['voucher_claim_id'] as String?,
       voucherCode: data['voucher_code'] as String?,
       voucherAmount: (data['voucher_amount'] as num?)?.toInt() ?? 0,
       settledBy: data['settled_by'] as String?,
