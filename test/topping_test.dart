@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pos_app/models/cart_item.dart';
+import 'package:pos_app/models/discount.dart';
 import 'package:pos_app/models/product.dart';
 
 Product _p({
@@ -164,4 +165,101 @@ void main() {
       expect(lokal, contains('ADD COLUMN max_toppings'));
     });
   });
+
+  group('diskon menyasar level atau topping', () {
+    // "Gratis ukuran besar": menunya tetap dibayar penuh, yang hilang
+    // cuma selisih ukurannya.
+    int dasar(DiscountItem item, Product p, {int qty = 1}) {
+      if (item.toppingName != null) {
+        return p.toppingPrice(item.toppingName!) * qty;
+      }
+      if (item.levelOption != null) {
+        return p.priceDeltaFor(item.levelGroup!, item.levelOption!) * qty;
+      }
+      return p.price * qty;
+    }
+
+    final p = Product(
+      id: 'p1',
+      name: 'Kopi',
+      category: 'Minuman',
+      price: 25000,
+      levelGroups: const ['Ukuran'],
+      levelPrices: const {
+        'Ukuran': {'Besar': 5000, 'Regular': 0}
+      },
+      toppings: const [_keju],
+    );
+
+    test('sasaran level memotong tambahannya saja', () {
+      const item = DiscountItem(
+          productId: 'p1', levelGroup: 'Ukuran', levelOption: 'Besar');
+      expect(dasar(item, p), 5000);
+
+      final promo = Discount(
+        id: 'd1',
+        restoId: 'r1',
+        name: 'Gratis Ukuran Besar',
+        basis: DiscountBasis.products,
+        kind: DiscountKind.percent,
+        value: 100,
+        items: const [item],
+        createdAt: DateTime(2026, 8, 1),
+      );
+      // 100% dari 5.000, bukan dari 30.000 — menunya tetap dibayar.
+      expect(promo.amountFor(dasar(item, p)), 5000);
+    });
+
+    test('sasaran topping memotong harga toppingnya saja', () {
+      const item = DiscountItem(productId: 'p1', toppingName: 'Keju');
+      expect(dasar(item, p), 5000);
+    });
+
+    test('tanpa sasaran, seluruh harga menunya yang dipotong', () {
+      const item = DiscountItem(productId: 'p1');
+      expect(dasar(item, p), 25000);
+      expect(item.targetsAddOn, isFalse);
+    });
+
+    test('sasarannya punya nama untuk ditampilkan', () {
+      expect(
+        const DiscountItem(
+                productId: 'p1', levelGroup: 'Ukuran', levelOption: 'Besar')
+            .targetLabel,
+        'Ukuran: Besar',
+      );
+      expect(
+        const DiscountItem(productId: 'p1', toppingName: 'Keju').targetLabel,
+        'Topping: Keju',
+      );
+      expect(const DiscountItem(productId: 'p1').targetLabel, isNull);
+    });
+
+    test('sasarannya ikut tersimpan dan terbaca kembali', () {
+      const item = DiscountItem(
+          productId: 'p1', levelGroup: 'Ukuran', levelOption: 'Besar');
+      final lagi = DiscountItem.fromMap(item.toMap());
+      expect(lagi.levelGroup, 'Ukuran');
+      expect(lagi.levelOption, 'Besar');
+      expect(lagi.toppingName, isNull);
+    });
+
+    test('promo lama tanpa sasaran tetap mengenai seluruh menu', () {
+      final lagi = DiscountItem.fromMap({'product_id': 'p1', 'qty': 1});
+      expect(lagi.targetsAddOn, isFalse);
+    });
+
+    test('mengganti sasaran membuang sasaran sebelumnya', () {
+      // Tanpa ini, sebuah item bisa menunjuk level DAN topping sekaligus
+      // — dua sasaran untuk satu potongan, dan yang menang tergantung
+      // urutan pemeriksaan.
+      const semula = DiscountItem(
+          productId: 'p1', levelGroup: 'Ukuran', levelOption: 'Besar');
+      final jadi = semula.copyWith(
+          levelGroup: null, levelOption: null, toppingName: 'Keju');
+      expect(jadi.levelOption, isNull);
+      expect(jadi.toppingName, 'Keju');
+    });
+  });
+
 }

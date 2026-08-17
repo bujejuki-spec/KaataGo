@@ -107,7 +107,7 @@ void main() {
       final hasil = bestDiscountFor(
         discounts: [bundling],
         total: 80000,
-        subtotalOf: subtotal,
+        subtotalOf: (i) => subtotal(i.productId),
         qtyOf: (_) => 1,
         now: _hariIni,
       );
@@ -121,7 +121,7 @@ void main() {
       final hasil = bestDiscountFor(
         discounts: [d],
         total: 80000,
-        subtotalOf: subtotal,
+        subtotalOf: (i) => subtotal(i.productId),
         qtyOf: (_) => 1,
         now: _hariIni,
       );
@@ -144,7 +144,7 @@ void main() {
       final hasil = bestDiscountFor(
         discounts: [kecil, besar],
         total: 80000,
-        subtotalOf: subtotal,
+        subtotalOf: (i) => subtotal(i.productId),
         qtyOf: (_) => 1,
         now: _hariIni,
       );
@@ -157,7 +157,7 @@ void main() {
       final hasil = bestDiscountFor(
         discounts: [_d(items: const [DiscountItem(productId: 'p9')])],
         total: 80000,
-        subtotalOf: subtotal,
+        subtotalOf: (i) => subtotal(i.productId),
         qtyOf: (_) => 1,
         now: _hariIni,
       );
@@ -212,7 +212,7 @@ void main() {
       final hasil = bestDiscountFor(
         discounts: [promo],
         total: 50000,
-        subtotalOf: subtotal,
+        subtotalOf: (i) => subtotal(i.productId),
         qtyOf: (_) => 1,
         now: _hariIni,
       );
@@ -227,7 +227,7 @@ void main() {
       final hasil = bestDiscountFor(
         discounts: [promo],
         total: 50000,
-        subtotalOf: subtotal,
+        subtotalOf: (i) => subtotal(i.productId),
         qtyOf: (_) => 1,
         now: _hariIni,
       );
@@ -243,8 +243,8 @@ void main() {
         bestDiscountFor(
           discounts: [d],
           total: 200000,
-          subtotalOf: (id) => harga(id) * (qty[id] ?? 0),
-          qtyOf: (id) => qty[id] ?? 0,
+          subtotalOf: (i) => harga(i.productId) * (qty[i.productId] ?? 0),
+          qtyOf: (i) => qty[i.productId] ?? 0,
           now: _hariIni,
         );
 

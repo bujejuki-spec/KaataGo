@@ -87,10 +87,60 @@ class CustomerCartProvider extends ChangeNotifier {
   AppliedDiscount? discountFor(OrderType orderType) => bestDiscountFor(
         discounts: discounts,
         total: chargesFor(orderType).total,
-        subtotalOf: (productId) => linesOf(productId)
-            .fold(0, (sum, line) => sum + menuSubtotalOf(line)),
-        qtyOf: quantityOf,
+        subtotalOf: _dasarDiskon,
+        qtyOf: _jumlahDiskon,
       );
+
+
+  /// Nilai yang boleh dipotong untuk sebuah sasaran diskon.
+  ///
+  /// Sasaran yang menyempit ke sebuah level atau topping hanya memotong
+  /// TAMBAHAN harganya, bukan harga menunya. Itulah yang membuat "gratis
+  /// ukuran besar" bisa dinyatakan: menunya tetap dibayar penuh, yang
+  /// hilang cuma selisih ukurannya.
+  int _dasarDiskon(DiscountItem item) {
+    final baris = linesOf(item.productId);
+    if (baris.isEmpty) return 0;
+    final produk = baris.first.product;
+
+    if (item.toppingName != null) {
+      final harga = produk.toppingPrice(item.toppingName!);
+      return baris
+          .where((l) => l.selectedToppings.contains(item.toppingName))
+          .fold<int>(0, (s, l) => s + _hargaMenu(harga, l) * l.quantity);
+    }
+
+    if (item.levelOption != null && item.levelGroup != null) {
+      final harga = produk.priceDeltaFor(item.levelGroup!, item.levelOption!);
+      return baris
+          .where((l) => l.selectedLevels[item.levelGroup] == item.levelOption)
+          .fold<int>(0, (s, l) => s + _hargaMenu(harga, l) * l.quantity);
+    }
+
+    return baris.fold<int>(0, (s, l) => s + menuSubtotalOf(l));
+  }
+
+  /// Tambahan harga dipajaki sama seperti menunya sendiri — kalau tidak,
+  /// potongan 100% menyisakan beberapa ratus rupiah yang tidak bisa
+  /// dijelaskan ke pelanggan.
+  int _hargaMenu(int harga, CartItem line) => menuPrice(harga,
+      ppnPercent: ppnPercent, ppnExempt: line.product.ppnExempt);
+
+  /// Jumlah yang cocok dengan sasarannya.
+  int _jumlahDiskon(DiscountItem item) {
+    final baris = linesOf(item.productId);
+    if (item.toppingName != null) {
+      return baris
+          .where((l) => l.selectedToppings.contains(item.toppingName))
+          .fold<int>(0, (s, l) => s + l.quantity);
+    }
+    if (item.levelOption != null && item.levelGroup != null) {
+      return baris
+          .where((l) => l.selectedLevels[item.levelGroup] == item.levelOption)
+          .fold<int>(0, (s, l) => s + l.quantity);
+    }
+    return quantityOf(item.productId);
+  }
 
   /// Yang benar-benar harus dibayar setelah potongan.
   int payableFor(OrderType orderType) {

@@ -349,6 +349,14 @@ dibaca. Tiap kasus di bawah menguji satu perbedaan yang halus.
 | TC-DS-19 | P1 | Selesaikan transaksi berdiskon, lalu **hapus** promonya, lalu cetak ulang struknya | Struk lama tetap menyebut potongan yang benar | F-DS-08 |
 | TC-DS-20 | P2 | Buat promo dengan potongan **101%** | Ditolak — persen antara 1 dan 100 | F-DS-03 |
 | TC-DS-21 | P2 | Simpan promo berbasis menu tanpa memilih satu pun menu | Ditolak | F-DS-01 |
+| TC-DS-22 | P1 | Menu Rp 25.000, Ukuran Besar +Rp 5.000. Buat promo sasaran "Tambahan Ukuran: Besar", potongan 100% | Pesan Ukuran Besar → bayar Rp 25.000, bukan Rp 30.000 | F-DS-14, F-DS-15 |
+| TC-DS-23 | P1 | Pesan menu yang sama dengan Ukuran Regular | **Tidak** dapat potongan — pilihannya tidak dipesan | F-DS-16 |
+| TC-DS-24 | P1 | Promo sasaran topping "Keju" 100%, pesan dengan Keju | Harga toppingnya hilang, menunya tetap penuh | F-DS-14, F-DS-15 |
+| TC-DS-25 | P1 | Promo sasaran topping "Keju", pesan tanpa Keju | Tidak dapat potongan | F-DS-16 |
+| TC-DS-26 | P2 | Pesan 3 porsi Ukuran Besar dengan promo 100% | Ketiganya bebas biaya ukuran | F-DS-15 |
+| TC-DS-27 | P2 | Pilihan yang tidak menambah harga | Tidak muncul di daftar "Yang dipotong" | F-DS-14 |
+| TC-DS-28 | P2 | Menu tanpa tambahan harga sama sekali | Kolom "Yang dipotong" tidak ditampilkan | F-DS-14 |
+| TC-DS-29 | P2 | Ganti sasaran dari level ke topping | Sasaran lamanya terbuang, tidak menumpuk | F-DS-14 |
 
 ---
 
@@ -753,7 +761,7 @@ Tiap kelompok kebutuhan di FSD, dan kasus uji yang menjaganya.
 | Katalog (AD) | 20 | TC-AD-01…19, TC-TP-01…12 |
 | QR Meja (QR) | 7 | TC-QR-01…08 |
 | Kotak Masuk (IN) | 19 | TC-IN-01…14, TC-UP-04…09 |
-| Diskon (DS) | 12 | TC-DS-01…21, E2E-06 |
+| Diskon (DS) | 16 | TC-DS-01…29, E2E-06 |
 | QRIS (PG) | 7 | TC-PG-01…10, TC-TS-15, TC-TS-16 |
 | Pembatalan (CN) | 6 | TC-CN-01…09, E2E-07 |
 | Tampilan (TM) | 8 | TC-TM-01…15 |
@@ -762,7 +770,7 @@ Tiap kelompok kebutuhan di FSD, dan kasus uji yang menjaganya.
 | Pembaruan (UP) | 7 | TC-UP-01…09 |
 | Langganan (BL) | 24 | TC-BL-01…30, E2E-09 |
 | Finance KaataGo (PF) | 21 | TC-PF-01…34 |
-| **Total** | **227** | **235 kasus + 8 alur ujung-ke-ujung** |
+| **Total** | **231** | **235 kasus + 8 alur ujung-ke-ujung** |
 
 Kriteria penerimaan A-01…A-20 di FSD §9 seluruhnya terpetakan lewat
 kolom Rujukan di atas. Bab TSD yang diuji: §1.2, §4, §5, §6, §7, §8,

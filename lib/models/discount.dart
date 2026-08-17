@@ -87,11 +87,35 @@ class DiscountItem {
   final int qty;
   final QtyMode mode;
 
+  /// Sasaran yang lebih sempit dari seluruh menunya.
+  ///
+  /// Diisi kalau promonya cuma mengenai satu pilihan — "Ukuran: Besar"
+  /// atau topping "Keju". Yang dipotong bukan harga menunya, melainkan
+  /// tambahan harga pilihan itu saja. Dengan potongan 100%, "Ukuran
+  /// Besar" jadi gratis: menunya tetap dibayar penuh, tambahannya
+  /// hilang.
+  final String? levelGroup;
+  final String? levelOption;
+  final String? toppingName;
+
   const DiscountItem({
     required this.productId,
     this.qty = 1,
     this.mode = QtyMode.atLeast,
+    this.levelGroup,
+    this.levelOption,
+    this.toppingName,
   });
+
+  /// Mengenai tambahan harga saja, bukan seluruh menunya.
+  bool get targetsAddOn => levelOption != null || toppingName != null;
+
+  /// Nama sasarannya untuk ditampilkan, atau null kalau seluruh menu.
+  String? get targetLabel {
+    if (toppingName != null) return 'Topping: $toppingName';
+    if (levelOption != null) return '$levelGroup: $levelOption';
+    return null;
+  }
 
   /// Terpenuhi oleh [ordered] buah menu ini di keranjang.
   bool satisfiedBy(int ordered) =>
@@ -104,6 +128,9 @@ class DiscountItem {
         'product_id': productId,
         'qty': qty,
         'mode': _qtyModeDb[mode],
+        if (levelGroup != null) 'level_group': levelGroup,
+        if (levelOption != null) 'level_option': levelOption,
+        if (toppingName != null) 'topping': toppingName,
       };
 
   factory DiscountItem.fromMap(Map<String, dynamic> map) => DiscountItem(
@@ -113,13 +140,34 @@ class DiscountItem {
             .firstWhere((e) => e.value == map['mode'],
                 orElse: () => _qtyModeDb.entries.first)
             .key,
+        levelGroup: map['level_group'] as String?,
+        levelOption: map['level_option'] as String?,
+        toppingName: map['topping'] as String?,
       );
 
-  DiscountItem copyWith({int? qty, QtyMode? mode}) => DiscountItem(
+  DiscountItem copyWith({
+    int? qty,
+    QtyMode? mode,
+    Object? levelGroup = _unset,
+    Object? levelOption = _unset,
+    Object? toppingName = _unset,
+  }) =>
+      DiscountItem(
         productId: productId,
         qty: qty ?? this.qty,
         mode: mode ?? this.mode,
+        levelGroup: identical(levelGroup, _unset)
+            ? this.levelGroup
+            : levelGroup as String?,
+        levelOption: identical(levelOption, _unset)
+            ? this.levelOption
+            : levelOption as String?,
+        toppingName: identical(toppingName, _unset)
+            ? this.toppingName
+            : toppingName as String?,
       );
+
+  static const _unset = Object();
 }
 
 /// Satu aturan diskon milik sebuah resto.
@@ -311,17 +359,18 @@ class AppliedDiscount {
 /// melebihi harga barangnya — dan yang menemukan itu lebih dulu selalu
 /// bukan restonya.
 ///
-/// [subtotalOf] mengembalikan nilai baris untuk sebuah produk; dipakai
-/// diskon berbasis menu supaya potongannya hanya mengenai menu yang
-/// memang ikut promo, bukan seluruh tagihan.
+/// [subtotalOf] mengembalikan nilai yang boleh dipotong untuk sebuah
+/// sasaran: seluruh baris menunya, atau — kalau sasarannya menyempit ke
+/// sebuah level/topping — tambahan harga pilihan itu saja.
 ///
-/// [qtyOf] mengembalikan jumlah menu itu di keranjang, nol kalau tidak
-/// ada — dipakai memeriksa syarat jumlah tiap menu.
+/// [qtyOf] mengembalikan jumlah yang cocok dengan sasaran itu, nol kalau
+/// tidak ada. Keduanya menerima [DiscountItem] utuh, bukan sekadar id
+/// produk: sasaran yang menyempit tidak bisa dijawab hanya dari id-nya.
 AppliedDiscount? bestDiscountFor({
   required List<Discount> discounts,
   required int total,
-  required int Function(String productId) subtotalOf,
-  required int Function(String productId) qtyOf,
+  required int Function(DiscountItem item) subtotalOf,
+  required int Function(DiscountItem item) qtyOf,
   DateTime? now,
 }) {
   AppliedDiscount? terbaik;
@@ -342,15 +391,14 @@ AppliedDiscount? bestDiscountFor({
       // keranjang berisi dua Nasi Goreng dan segelas kopi — paket yang
       // dijanjikan spanduknya tidak pernah benar-benar dibeli, tapi
       // restonya tetap membayar potongannya.
-      final lengkap = d.items.every((i) => i.satisfiedBy(qtyOf(i.productId)));
+      final lengkap = d.items.every((i) => i.satisfiedBy(qtyOf(i)));
       if (!lengkap) continue;
 
       // Bundling: semua menu yang ikut promo dijumlahkan dulu, baru
       // dipotong. Memotong tiap baris sendiri-sendiri membuat diskon
       // rupiah tetap (misal "potong 10.000") terkalikan sebanyak menu
       // yang ikut.
-      final dasar =
-          d.items.fold<int>(0, (sum, i) => sum + subtotalOf(i.productId));
+      final dasar = d.items.fold<int>(0, (sum, i) => sum + subtotalOf(i));
       potongan = d.amountFor(dasar);
     }
 

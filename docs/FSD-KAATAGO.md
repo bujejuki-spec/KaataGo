@@ -344,6 +344,9 @@ membacanya.
 | F-DS-10 | Tiap menu dalam promo membawa **syarat jumlahnya sendiri**, bukan satu angka untuk seluruh promo |
 | F-DS-11 | Syarat jumlah berbentuk **Minimal** (lebih banyak tetap dapat) atau **Tepat** (kurang maupun lebih tidak dapat) |
 | F-DS-12 | Pada bundling, **seluruh** menu yang disebut harus terpenuhi — kurang satu berarti promonya tidak berlaku sama sekali |
+| F-DS-14 | Diskon dapat menyasar **satu level/varian** atau **satu topping**, bukan seluruh harga menu |
+| F-DS-15 | Sasaran sempit memotong **tambahan harganya saja** — "gratis ukuran besar" tetap membayar harga menunya |
+| F-DS-16 | Promo bersasaran sempit hanya berlaku kalau pilihan itu **benar-benar dipesan** |
 | F-DS-03 | Potongan berbentuk **persen** (1–100) atau **rupiah** |
 | F-DS-04 | Masa berlaku: mulai tidak boleh mundur ke belakang, berakhir minimal besok |
 | F-DS-05 | Lencana status: **Berjalan**, **Terjadwal**, **Sudah lewat**, **Nonaktif** |
@@ -362,6 +365,7 @@ membacanya.
 | Syarat jumlah menempel di **menunya**, bukan di promonya | Satu angka untuk seluruh promo membuat "Nasi Goreng + Es Teh, beli 2" lolos oleh keranjang berisi dua Nasi Goreng dan segelas kopi |
 | Bundling menuntut **seluruh** menunya terpenuhi | Sebagian-cukup berarti paket yang dijanjikan tidak pernah benar-benar dibeli, tapi restonya tetap membayar potongannya |
 | Menu di luar promo tidak ikut dipotong sekalipun ada di keranjang | Potongannya dihitung dari menu yang memang ikut promo |
+| Sasaran sempit memotong tambahan harganya saja | "Gratis ukuran besar" berarti selisih ukurannya yang hilang, bukan harga menunya — kalau seluruhnya dipotong, promonya jadi jauh lebih mahal daripada yang dijanjikan |
 | Potongan tidak pernah melebihi tagihannya | Kalau tidak, totalnya negatif — resto berutang kepada orang yang belum membayar apa pun |
 | Diskon dihitung dari **total setelah service dan PPN** | Itulah angka yang dilihat dan dijanjikan ke pelanggan |
 

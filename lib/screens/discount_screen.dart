@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../db/discount_repository.dart';
 import '../models/discount.dart';
+import '../models/level_option.dart';
 import '../models/product.dart';
 import '../providers/auth_provider.dart';
 import '../providers/product_provider.dart';
@@ -696,7 +697,48 @@ class _ProductRow extends StatelessWidget {
             onChanged();
           },
         ),
-        if (item != null)
+        if (item != null) ...[
+          // Sasaran yang lebih sempit dari seluruh menunya.
+          //
+          // Dipisah dari baris jumlah karena artinya berbeda: yang satu
+          // "berapa yang harus dibeli", yang satu "bagian mana yang
+          // dipotong". Menyatukannya di satu baris membuat keduanya
+          // terbaca sebagai satu syarat.
+          if (_punyaSasaran(product))
+            Padding(
+              padding: const EdgeInsets.fromLTRB(52, 0, 16, 8),
+              child: DropdownButtonFormField<String>(
+                value: _kunciSasaran(item),
+                isDense: true,
+                isExpanded: true,
+                decoration: const InputDecoration(
+                  isDense: true,
+                  labelText: 'Yang dipotong',
+                ),
+                items: [
+                  const DropdownMenuItem(
+                      value: '*', child: Text('Seluruh harga menu')),
+                  for (final g in product.levelGroups)
+                    for (final o in LevelGroupRegistry.optionsOf(g))
+                      if (product.priceDeltaFor(g, o) > 0)
+                        DropdownMenuItem(
+                          value: 'L|$g|$o',
+                          child: Text('Tambahan $g: $o'),
+                        ),
+                  for (final t in product.toppings)
+                    if (t.price > 0)
+                      DropdownMenuItem(
+                        value: 'T|${t.name}',
+                        child: Text('Topping ${t.name}'),
+                      ),
+                ],
+                onChanged: (v) {
+                  if (v == null) return;
+                  items[index] = _terapkanSasaran(item, v);
+                  onChanged();
+                },
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.fromLTRB(52, 0, 16, 12),
             child: Row(
@@ -743,8 +785,48 @@ class _ProductRow extends StatelessWidget {
               ],
             ),
           ),
+        ],
       ],
     );
+  }
+
+  /// Menu ini punya bagian yang bisa dipotong sendiri.
+  ///
+  /// Yang tidak punya tambahan harga sama sekali tidak diberi pilihan:
+  /// dropdown berisi satu pilihan bukan pilihan, cuma kolom yang harus
+  /// dilewati.
+  static bool _punyaSasaran(Product product) {
+    for (final g in product.levelGroups) {
+      for (final o in LevelGroupRegistry.optionsOf(g)) {
+        if (product.priceDeltaFor(g, o) > 0) return true;
+      }
+    }
+    return product.toppings.any((t) => t.price > 0);
+  }
+
+  /// Kunci sasaran untuk dropdown. Bintang berarti seluruh menu — nilai
+  /// sentinel, bukan null, karena null di DropdownButtonFormField
+  /// berarti "belum dipilih" dan meninggalkan kolomnya kosong.
+  static String _kunciSasaran(DiscountItem item) {
+    if (item.toppingName != null) return 'T|${item.toppingName}';
+    if (item.levelOption != null) {
+      return 'L|${item.levelGroup}|${item.levelOption}';
+    }
+    return '*';
+  }
+
+  static DiscountItem _terapkanSasaran(DiscountItem item, String kunci) {
+    if (kunci == '*') {
+      return item.copyWith(
+          levelGroup: null, levelOption: null, toppingName: null);
+    }
+    final bagian = kunci.split('|');
+    if (bagian.first == 'T') {
+      return item.copyWith(
+          levelGroup: null, levelOption: null, toppingName: bagian[1]);
+    }
+    return item.copyWith(
+        levelGroup: bagian[1], levelOption: bagian[2], toppingName: null);
   }
 }
 
