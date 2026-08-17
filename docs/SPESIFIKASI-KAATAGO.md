@@ -633,22 +633,17 @@ ke rangkaian uji regresi:
 
 ---
 
-## 13. Matriks Pengujian Ringkas
+## 13. Matriks Pengujian
 
-Prioritas untuk rilis 1.34.0.
+Matriks ringkas yang dulu ada di sini sudah **digantikan dokumen
+tersendiri**: `TEST-CASE-KAATAGO` — 235 kasus uji berikut prioritas,
+langkah, hasil yang diharapkan, dan rujukan ke ID kebutuhan FSD maupun
+bab TSD.
 
-| Prioritas | Modul | Fokus |
-|---|---|---|
-| **P1** | Pending Payment | Alur ujung ke ujung 4.2, termasuk perpindahan ke Riwayat Transaksi |
-| **P1** | Pemetaan GL pesanan tunai pelanggan | Harus masuk GL Tunai & Saldo Cash (7.4) |
-| **P1** | Notifikasi hasil pengajuan | Semua kombinasi setuju/tolak × setoran/petty cash |
-| **P1** | Prasyarat SQL | Jalankan keempat berkas (bagian 10) sebelum pengujian apa pun |
-| **P2** | Penanda merah | Finance, Owner, Kasir, Admin, Kotak Masuk |
-| **P2** | QR Meja borongan | Rentang, nol di depan, simpan galeri, batas 100 |
-| **P2** | Riwayat Transaksi | Total harian harus cocok dengan isi laci |
-| **P3** | Validasi isian | Setiap kolom di tabel 6.1, **diuji dengan tempel** |
-| **P3** | Logo | Ikon aplikasi, splash, header, ikon notifikasi |
-| **P3** | Multi-resto | Isolasi data antar cabang |
+Matriks lama disusun untuk versi 1.34.0 dan menyebut layar yang sudah
+berganti nama sejak itu. Membiarkannya di sini berarti dua daftar
+pengujian yang berbeda isinya, dan yang membacanya tidak punya cara tahu
+mana yang berlaku.
 
 ---
 
