@@ -39,46 +39,51 @@ dilaporkan.
 
 ## 1. Gambaran Arsitektur
 
+Dua gambar untuk satu sistem yang sama, dari dua tempat berdiri yang
+berbeda. Dipisah karena pembacanya berbeda: orang resto yang membaca
+diagram berisi "pg_net" dan "RLS" tidak menemukan dirinya di sana, dan
+pengembang yang membaca diagram berisi "Kasir menerima uang" tidak
+menemukan tempat menambal kodenya. Satu gambar yang memuat keduanya
+gagal untuk dua-duanya sekaligus.
+
+### 1.1 Dari sisi pengguna
+
+![Arsitektur dari sisi pengguna](gambar/arsitektur-01-pengguna.png)
+
+Tidak ada satu pun nama teknologi di gambar ini. Yang digambarkan adalah
+apa yang berpindah tangan: pesanan, uang, dan catatannya.
+
+Dua hal yang paling sering ditanyakan terjawab di sini. **Pesanan dari
+HP pelanggan yang memilih bayar tunai tidak langsung ke dapur** — ia
+mampir di Pending Payment sampai kasir menerima uangnya, karena bahan
+yang sudah terpakai adalah kerugian nyata dan yang menanggungnya bukan
+pihak yang menekan tombolnya. Dan **Owner tidak punya layar khusus
+miliknya sendiri**; yang dia punya adalah seluruh layar di atasnya.
+
+### 1.2 Dari sisi teknis
+
+![Arsitektur teknis](gambar/arsitektur-02-teknikal.png)
+
 KaataGo adalah aplikasi Flutter tunggal yang berbicara langsung ke
-Supabase. Tidak ada server aplikasi milik sendiri di tengahnya.
+Supabase. **Tidak ada server aplikasi milik sendiri di tengahnya.**
 
-```
-┌──────────────────────────────────────────┐
-│  Aplikasi Flutter (Android)              │
-│  ┌────────────┐  ┌──────────┐            │
-│  │  Layar     │→ │ Provider │            │
-│  └────────────┘  └────┬─────┘            │
-│                       ↓                  │
-│              ┌────────────────┐          │
-│              │  Repository    │          │
-│              └───┬────────┬───┘          │
-│                  ↓        ↓              │
-│          ┌───────────┐ ┌────────┐        │
-│          │  sqflite  │ │Supabase│        │
-│          │  (lokal)  │ │ client │        │
-│          └───────────┘ └───┬────┘        │
-└────────────────────────────┼─────────────┘
-                             ↓
-        ┌────────────────────────────────────┐
-        │  Supabase                          │
-        │  Postgres + RLS                    │
-        │  Edge Functions (Deno)             │
-        │  pg_cron · pg_net                  │
-        └───┬──────────────┬─────────────┬───┘
-            ↓              ↓             ↓
-        ┌───────┐    ┌──────────┐   ┌────────┐
-        │Xendit │    │ FCM v1   │   │ Resend │
-        └───────┘    └──────────┘   └────────┘
-```
+Yang menggantikannya adalah RLS — aturan keamanan yang hidup di
+Postgres, bukan di kode aplikasi. Konsekuensinya harus diterima
+sepenuhnya: **setiap aturan yang cuma dijaga aplikasi tidak dijaga sama
+sekali.** Siapa pun yang memegang kunci publik proyek bisa memanggil
+API-nya langsung, tanpa lewat layar mana pun. Karena itu tiap aturan
+penting ditulis dua kali — di formulir supaya orangnya tahu, dan di
+basis data supaya benar.
 
-**Keputusan yang menentukan bentuk seluruhnya:** tidak ada lapisan
-server di antara aplikasi dan basis data. Yang menggantikannya adalah
-RLS — aturan keamanan yang hidup di Postgres, bukan di kode aplikasi.
-Konsekuensinya harus diterima sepenuhnya: **setiap aturan yang cuma
-dijaga aplikasi tidak dijaga sama sekali.** Siapa pun yang memegang
-kunci publik proyek bisa memanggil API-nya langsung. Karena itu tiap
-aturan penting ditulis dua kali — di formulir supaya orangnya tahu, dan
-di basis data supaya benar.
+Perhatikan arah panah ke pihak ketiga. Yang **mengirim** ke Xendit,
+FCM, dan Resend selalu fungsi edge, tidak pernah aplikasinya. Itu bukan
+kerapian arsitektur melainkan syarat: kunci penyedia pembayaran yang
+ditaruh di dalam APK sama saja dengan diumumkan, karena APK bisa
+dibongkar siapa saja yang mengunduhnya.
+
+Aplikasi tetap berhubungan dengan FCM untuk hal yang tidak butuh kunci
+rahasia — mendaftarkan token perangkatnya sendiri dan menerima pesan
+yang masuk. Yang tidak pernah dipegangnya adalah wewenang mengirim.
 
 ---
 
