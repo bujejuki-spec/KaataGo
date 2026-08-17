@@ -1,6 +1,6 @@
 # KaataGo — Test Case
 
-**Versi Aplikasi:** 1.46.2 (build 95)
+**Versi Aplikasi:** 1.46.3 (build 96)
 **Versi Dokumen:** 1.0
 **Tanggal Terbit:** 17 Agustus 2026
 **Status:** Rilis
@@ -751,7 +751,7 @@ kolom Rujukan di atas. Bab TSD yang diuji: §1.2, §4, §5, §6, §7, §8,
 
 ---
 
-*Dokumen ini disusun dari aplikasi versi 1.46.2 berikut `FSD-KAATAGO`
+*Dokumen ini disusun dari aplikasi versi 1.46.3 berikut `FSD-KAATAGO`
 dan `TSD-KAATAGO` pada tanggal yang sama. Kasus uji yang tidak lagi
 cocok dengan aplikasinya adalah temuan — entah pada aplikasinya, entah
 pada dokumennya.*
