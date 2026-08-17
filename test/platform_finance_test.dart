@@ -301,4 +301,63 @@ void main() {
     });
   });
 
+
+  group('GL Diskon punya nilai bawaan di tiap resto', () {
+    final sql = File('supabase/gl_discount_backfill.sql').readAsStringSync();
+
+    test('resto biasa dapat 2200002', () {
+      expect(sql, contains("'discount', '2200002', 'GL Diskon Penjualan'"));
+    });
+
+    test('KaataGo dapat 1100002 untuk diskon langganan', () {
+      expect(sql, contains("'subscription_discount', '1100002'"));
+    });
+
+    test('baris kosong ikut diisi, bukan hanya yang belum ada', () {
+      // `on conflict do nothing` tidak menyentuh baris yang sudah ada —
+      // dan baris bernomor kosong persis sama akibatnya dengan baris
+      // yang tidak ada: pemicu jurnal melewatkannya diam-diam.
+      expect(sql, contains("coalesce(gl_code, '') = ''"));
+    });
+
+    test('nomornya tetap bisa diubah Finance', () {
+      // Yang dijamin cuma tidak ada resto yang berjalan tanpa akun
+      // diskon sama sekali.
+      expect(sql, contains('tetap bisa diubah Finance'));
+    });
+
+    test('penyewa platform tidak ikut kebagian nomor resto', () {
+      expect(sql, contains('where r.is_platform = false'));
+    });
+  });
+
+  group('nama diskon di jurnal', () {
+    test('jurnal diskon pesanan menyebut nama promonya', () {
+      final sql = File('supabase/discounts.sql').readAsStringSync();
+      expect(sql,
+          contains("coalesce(nullif(new.discount_name, ''), 'Diskon')"));
+    });
+
+    test('nama promonya benar-benar tersimpan di pesanannya', () {
+      // Deskripsi jurnal membacanya dari orders.discount_name; kalau
+      // aplikasi tidak pernah mengisinya, jurnalnya jatuh ke kata
+      // "Diskon" polos dan nama promonya hilang.
+      for (final p in [
+        'lib/providers/cart_provider.dart',
+        'lib/providers/customer_cart_provider.dart',
+      ]) {
+        final isi = File(p).readAsStringSync();
+        expect(isi, contains('discountName: applied?.discount.name'),
+            reason: p);
+        expect(isi, contains('discountAmount:'), reason: p);
+      }
+    });
+
+    test('jurnal diskon langganan menyebut nama diskonnya', () {
+      final sql = File('supabase/billing_journal_gross.sql').readAsStringSync();
+      expect(sql,
+          contains("coalesce(nullif(new.discount_name, ''), 'Diskon langganan')"));
+    });
+  });
+
 }

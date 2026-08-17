@@ -56,6 +56,7 @@ FILES=(
   resto_soft_delete.sql
   billing_discount_apply.sql
   billing_journal_gross.sql
+  gl_discount_backfill.sql
 )
 
 {
