@@ -222,10 +222,28 @@ void main() {
 
     test('kurang bayar tidak melunasi', () {
       expect(sql, contains('if p_amount < v_inv.amount then'));
+      expect(sql, contains("return 'underpaid'"));
     });
 
     test('callback berulang tidak menimpa catatan pelunasan', () {
       expect(sql, contains("if v_inv.status in ('paid', 'waived') then"));
+      expect(sql, contains("return 'already_paid'"));
+    });
+
+    test('tiap sebab kegagalan punya jawabannya sendiri', () {
+      // Ketiganya sama-sama berarti "tidak dilunasi", tapi menunjuk ke
+      // arah yang berbeda saat ditelusuri. Menyatukannya di bawah satu
+      // pesan membuat penelusuran uang berangkat ke arah yang salah —
+      // dan ini catatan yang dibaca justru saat ada uang yang tidak
+      // jelas rimbanya.
+      for (final kode in ['paid', 'already_paid', 'not_found', 'underpaid']) {
+        expect(sql, contains("return '$kode'"), reason: 'SQL: $kode');
+        expect(hook, contains('$kode:'), reason: 'webhook: $kode');
+      }
+    });
+
+    test('tagihan tidak ditemukan tidak dilaporkan sebagai kurang bayar', () {
+      expect(hook, contains('tagihannya tidak dikenali'));
     });
 
     test('jalur pelunasan dibedakan mesin dan manusia', () {

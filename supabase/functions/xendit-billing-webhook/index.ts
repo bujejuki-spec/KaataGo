@@ -93,7 +93,7 @@ Deno.serve(async (req) => {
     return new Response("tagihan tidak dikenali", { status: 200 });
   }
 
-  const { data: berhasil, error } = await admin.rpc("settle_billing_va", {
+  const { data: hasil, error } = await admin.rpc("settle_billing_va", {
     p_invoice_id: id,
     p_amount: amount,
     p_payment_id: paymentId,
@@ -106,13 +106,20 @@ Deno.serve(async (req) => {
     return new Response(error.message, { status: 500 });
   }
 
-  if (berhasil === false) {
-    // Nominalnya kurang, atau tagihannya tidak ada. Mengulanginya tidak
-    // akan mengubah keduanya.
-    return new Response("tidak dilunasi — nominal tidak mencukupi", {
-      status: 200,
-    });
-  }
+  // Jawabannya ditulis apa adanya, bukan disatukan jadi "gagal".
+  // Inilah catatan yang dibaca orang saat ada uang masuk yang tidak
+  // jelas mendarat di mana, dan pesan yang menyamarkan sebabnya
+  // memberangkatkan penelusuran ke arah yang salah.
+  const pesan: Record<string, string> = {
+    paid: "ok — tagihan lunas",
+    already_paid: "ok — tagihan ini sudah lunas sebelumnya",
+    not_found: `tagihan ${id} tidak ada — uangnya masuk, tagihannya tidak dikenali`,
+    underpaid: `kurang bayar untuk ${id} — diterima ${amount}, tidak dilunasi`,
+  };
 
-  return new Response("ok", { status: 200 });
+  // Semuanya 200: tidak satu pun dari keadaan ini jadi lebih baik kalau
+  // Xendit mengulanginya.
+  return new Response(pesan[String(hasil)] ?? `hasil tidak dikenali: ${hasil}`, {
+    status: 200,
+  });
 });

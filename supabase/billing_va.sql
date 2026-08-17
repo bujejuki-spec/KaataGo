@@ -70,7 +70,7 @@ create or replace function settle_billing_va(
   p_amount bigint,
   p_payment_id text
 )
-returns boolean
+returns text
 language plpgsql
 security definer
 set search_path = public
@@ -79,22 +79,31 @@ declare
   v_inv billing_invoices;
 begin
   select * into v_inv from billing_invoices where id = p_invoice_id;
+
+  -- Empat jawaban berbeda, bukan satu "gagal".
+  --
+  -- Ketiga kegagalannya sama-sama berarti "tidak dilunasi", tapi
+  -- artinya jauh berbeda saat ditelusuri: tagihan yang tidak ditemukan
+  -- menunjuk ke nomor yang salah, kurang bayar menunjuk ke uang yang
+  -- benar-benar masuk tapi kurang. Menyatukan keduanya di bawah satu
+  -- pesan membuat penelusuran uang berangkat ke arah yang salah — dan
+  -- ini catatan yang dibaca justru saat ada uang yang tidak jelas
+  -- rimbanya.
   if v_inv.id is null then
-    return false;
+    return 'not_found';
   end if;
 
-  -- Sudah lunas? Xendit mengulang callback-nya sampai dijawab 200, dan
-  -- percobaan kedua tidak boleh menimpa catatan siapa yang melunasi.
+  -- Xendit mengulang callback-nya sampai dijawab 200, dan percobaan
+  -- kedua tidak boleh menimpa catatan siapa yang melunasi.
   if v_inv.status in ('paid', 'waived') then
-    return true;
+    return 'already_paid';
   end if;
 
-  -- Kurang bayar tidak melunasi. VA-nya dibuat tertutup di nominal
-  -- tagihan, jadi ini seharusnya tidak pernah terjadi — dan justru
-  -- karena itu, kalau terjadi, ia layak berhenti di sini alih-alih
-  -- diam-diam membuka kunci.
+  -- VA-nya dibuat tertutup di nominal tagihan, jadi ini seharusnya
+  -- tidak pernah terjadi — dan justru karena itu, kalau terjadi, ia
+  -- layak berhenti di sini alih-alih diam-diam membuka kunci.
   if p_amount < v_inv.amount then
-    return false;
+    return 'underpaid';
   end if;
 
   update billing_invoices
@@ -106,7 +115,7 @@ begin
       reject_reason = null
   where id = p_invoice_id;
 
-  return true;
+  return 'paid';
 end;
 $$;
 
