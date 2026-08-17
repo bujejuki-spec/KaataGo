@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../db/billing_repository.dart';
@@ -38,6 +39,9 @@ class _BillingScreenState extends State<BillingScreen> {
   bool _memuat = true;
   String? _galat;
 
+  /// Id tagihan yang VA-nya sedang diterbitkan.
+  String? _menerbitkanVa;
+
   @override
   void initState() {
     super.initState();
@@ -64,6 +68,26 @@ class _BillingScreenState extends State<BillingScreen> {
         _galat = '$e';
         _memuat = false;
       });
+    }
+  }
+
+  Future<void> _mintaVa(BillingInvoice inv) async {
+    final bank = await showDialog<String>(
+      context: context,
+      builder: (_) => const _DialogPilihBank(),
+    );
+    if (bank == null || !mounted) return;
+
+    setState(() => _menerbitkanVa = inv.id);
+    try {
+      await _repo.requestVa(inv.id, bank: bank);
+      if (!mounted) return;
+      await _muat();
+    } catch (e) {
+      if (!mounted) return;
+      showAppToast(context, 'Gagal membuat VA: $e', isError: true);
+    } finally {
+      if (mounted) setState(() => _menerbitkanVa = null);
     }
   }
 
@@ -124,6 +148,8 @@ class _BillingScreenState extends State<BillingScreen> {
                           for (final t in terbuka)
                             _KartuTagihan(
                               invoice: t,
+                              menerbitkanVa: _menerbitkanVa == t.id,
+                              onMintaVa: () => _mintaVa(t),
                               onBayar: () => _bayar(t),
                             ),
                           const SizedBox(height: 18),
@@ -213,8 +239,15 @@ class _KartuPaket extends StatelessWidget {
 class _KartuTagihan extends StatelessWidget {
   final BillingInvoice invoice;
   final VoidCallback? onBayar;
+  final VoidCallback? onMintaVa;
+  final bool menerbitkanVa;
 
-  const _KartuTagihan({required this.invoice, this.onBayar});
+  const _KartuTagihan({
+    required this.invoice,
+    this.onBayar,
+    this.onMintaVa,
+    this.menerbitkanVa = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -298,21 +331,177 @@ class _KartuTagihan extends StatelessWidget {
                   TextStyle(fontSize: 11.5, color: KaataTheme.mutedOf(context)),
             ),
           ],
-          if (onBayar != null) ...[
+          if (invoice.vaHidup) ...[
             const SizedBox(height: 12),
+            _KartuVa(invoice: invoice),
+          ],
+          if (onMintaVa != null) ...[
+            const SizedBox(height: 10),
             SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
+                onPressed: menerbitkanVa ? null : onMintaVa,
+                icon: menerbitkanVa
+                    ? const SizedBox(
+                        width: 15,
+                        height: 15,
+                        child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Icon(Icons.account_balance_outlined, size: 18),
+                label: Text(invoice.vaHidup
+                    ? 'Ganti Bank'
+                    : 'Buat Virtual Account'),
+              ),
+            ),
+          ],
+          if (onBayar != null) ...[
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              // Jalur cadangan. Transfer manual masih terjadi — resto
+              // yang terlanjur mengirim ke rekening lain, atau VA yang
+              // ditolak banknya — dan menutup jalur ini berarti uang
+              // yang sudah masuk tidak punya cara diakui.
+              child: TextButton.icon(
                 onPressed: onBayar,
-                icon: const Icon(Icons.upload_file_outlined, size: 18),
+                icon: const Icon(Icons.upload_file_outlined, size: 17),
                 label: Text(invoice.status == InvoiceStatus.review
-                    ? 'Ganti Bukti Bayar'
-                    : 'Kirim Bukti Bayar'),
+                    ? 'Ganti Bukti Transfer Manual'
+                    : 'Sudah transfer manual? Kirim bukti'),
               ),
             ),
           ],
         ],
       ),
+    );
+  }
+}
+
+/// Nomor Virtual Account, bagian yang paling sering disalin di seluruh
+/// layar ini.
+///
+/// Nomornya dibuat besar dan bertombol salin karena itulah satu-satunya
+/// hal yang harus berpindah tanpa salah satu digit pun — dan angka
+/// panjang yang harus dibaca bolak-balik dari layar ke aplikasi bank
+/// adalah tempat kesalahan ketik paling sering terjadi.
+class _KartuVa extends StatelessWidget {
+  final BillingInvoice invoice;
+  const _KartuVa({required this.invoice});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: KaataTheme.brandOf(context).withOpacity(0.07),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: KaataTheme.brandOf(context).withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.account_balance_outlined,
+                  size: 16, color: KaataTheme.brandOf(context)),
+              const SizedBox(width: 7),
+              Text('Virtual Account ${invoice.vaBank}',
+                  style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: KaataTheme.brandOf(context))),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: SelectableText(
+                  invoice.vaNumber!,
+                  style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2),
+                ),
+              ),
+              IconButton(
+                tooltip: 'Salin nomor',
+                icon: const Icon(Icons.copy, size: 18),
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: invoice.vaNumber!));
+                  showAppToast(context, 'Nomor VA disalin.');
+                },
+              ),
+            ],
+          ),
+          Text(
+            'Transfer tepat ${_rupiah.format(invoice.amount)}. Nominal yang '
+            'kurang tidak melunasi tagihan.',
+            style: TextStyle(fontSize: 11.5, color: KaataTheme.mutedOf(context)),
+          ),
+          if (invoice.vaExpiresAt != null) ...[
+            const SizedBox(height: 3),
+            Text('Berlaku sampai ${_tanggal.format(invoice.vaExpiresAt!)}',
+                style: TextStyle(
+                    fontSize: 11.5, color: KaataTheme.mutedOf(context))),
+          ],
+          const SizedBox(height: 6),
+          Text(
+            'Begitu transfernya masuk, tagihan lunas sendiri — tidak perlu '
+            'mengirim bukti apa pun.',
+            style: TextStyle(
+                fontSize: 11.5,
+                color: KaataTheme.brandOf(context),
+                fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DialogPilihBank extends StatelessWidget {
+  const _DialogPilihBank();
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: const Text('Pilih Bank', style: TextStyle(fontSize: 17)),
+      content: SizedBox(
+        width: 320,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Nomor Virtual Account dibuat khusus untuk tagihan ini.',
+              style:
+                  TextStyle(fontSize: 12, color: KaataTheme.mutedOf(context)),
+            ),
+            const SizedBox(height: 10),
+            Flexible(
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  for (final b in kBankVA)
+                    ListTile(
+                      dense: true,
+                      title: Text(b),
+                      trailing: const Icon(Icons.chevron_right, size: 18),
+                      onTap: () => Navigator.pop(context, b),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Batal'),
+        ),
+      ],
     );
   }
 }

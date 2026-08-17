@@ -51,6 +51,7 @@ FILES=(
   discount_min_qty.sql
   discount_product_rules.sql
   billing.sql
+  billing_va.sql
 )
 
 {

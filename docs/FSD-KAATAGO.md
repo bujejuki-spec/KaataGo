@@ -471,8 +471,14 @@ mencatat uang masuk ke resto, bukan uang keluar dari resto ke kami.
 | F-BL-08 | Satu tagihan per resto per periode — tidak pernah ganda |
 | F-BL-09 | Mulai **H-3**, pita pengingat tampil di layar utama tiap peran resto |
 | F-BL-10 | Pengingat tetap tampil sesudah lewat jatuh tempo selama belum lunas |
-| F-BL-11 | Resto mengunggah **bukti bayar** berikut catatan dari layar Tagihan Langganan |
-| F-BL-12 | Bukti yang sudah diunggah menahan penguncian selama diperiksa |
+| F-BL-11 | Pembayaran lewat **Virtual Account Xendit** ke rekening KaataGo |
+| F-BL-19 | Resto memilih banknya: BCA, BNI, BRI, Mandiri, Permata, BSI, atau CIMB |
+| F-BL-20 | Nomor VA **tertutup di nominal tagihan** — kurang bayar tidak melunasi |
+| F-BL-21 | Nomor VA **sekali pakai**, dan berlaku sampai 7 hari sesudah jatuh tempo |
+| F-BL-22 | Tagihan lunas **otomatis** begitu transfernya masuk — tanpa mengirim bukti |
+| F-BL-23 | VA yang masih hidup dipakai ulang, tidak diterbitkan ulang tiap dibuka |
+| F-BL-24 | Tersedia jalur cadangan: unggah bukti transfer manual untuk diperiksa |
+| F-BL-12 | Bukti manual yang sudah diunggah menahan penguncian selama diperiksa |
 | F-BL-13 | Hanya **Super Admin** yang menyatakan sebuah tagihan lunas |
 | F-BL-14 | Penolakan bukti **wajib menyertakan alasan**, dan alasannya dibaca resto |
 | F-BL-15 | Lewat tenggang dan belum dibayar → **aplikasi terkunci** untuk resto itu |
@@ -487,7 +493,8 @@ mencatat uang masuk ke resto, bukan uang keluar dari resto ke kami.
 | Belum jatuh tempo | Tidak |
 | Jatuh tempo hari ini, belum bayar | Tidak — tenggang belum lewat |
 | Lewat tenggang, belum bayar | **Ya** |
-| Lewat tenggang, bukti sudah diunggah | Tidak — sedang diperiksa |
+| Lewat tenggang, transfer VA sudah masuk | Tidak — lunas seketika |
+| Lewat tenggang, bukti manual sudah diunggah | Tidak — sedang diperiksa |
 | Bukti ditolak, lewat tenggang | **Ya** |
 | Harga Rp 0, atau langganan dimatikan | Tidak, apa pun keadaannya |
 

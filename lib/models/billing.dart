@@ -20,6 +20,11 @@ const _statusDb = {
   InvoiceStatus.waived: 'waived',
 };
 
+/// Bank yang menyediakan Virtual Account. Daftarnya sama persis dengan
+/// batasan di database — kode yang tidak ada di sana ditolak Xendit, dan
+/// yang melihat penolakannya adalah resto yang sedang mencoba membayar.
+const kBankVA = ['BCA', 'BNI', 'BRI', 'MANDIRI', 'PERMATA', 'BSI', 'CIMB'];
+
 const kInvoiceStatusLabels = {
   InvoiceStatus.unpaid: 'Belum Dibayar',
   InvoiceStatus.review: 'Menunggu Verifikasi',
@@ -115,6 +120,16 @@ class BillingInvoice {
   final DateTime? confirmedAt;
   final String? rejectReason;
 
+  /// Virtual Account untuk membayar tagihan ini.
+  final String? vaBank;
+  final String? vaNumber;
+  final DateTime? vaExpiresAt;
+
+  /// Bagaimana tagihannya akhirnya lunas — `xendit_va`, `manual`, atau
+  /// `waived`. Dibedakan karena tingkat kepercayaannya berbeda: yang
+  /// pertama terkonfirmasi mesin, yang kedua keputusan orang.
+  final String? paidVia;
+
   /// Nama resto — hanya terisi di layar Super Admin, yang membaca
   /// tagihan lintas resto.
   final String? restoName;
@@ -133,6 +148,10 @@ class BillingInvoice {
     this.confirmedBy,
     this.confirmedAt,
     this.rejectReason,
+    this.vaBank,
+    this.vaNumber,
+    this.vaExpiresAt,
+    this.paidVia,
     this.restoName,
   });
 
@@ -140,6 +159,12 @@ class BillingInvoice {
       status == InvoiceStatus.unpaid || status == InvoiceStatus.review;
 
   bool get hasProof => proofBase64 != null && proofBase64!.isNotEmpty;
+
+  /// Punya VA yang masih bisa dipakai.
+  bool get vaHidup =>
+      vaNumber != null &&
+      vaNumber!.isNotEmpty &&
+      (vaExpiresAt == null || vaExpiresAt!.isAfter(DateTime.now()));
 
   factory BillingInvoice.fromMap(Map<String, dynamic> map) => BillingInvoice(
         id: map['id'] as String,
@@ -155,6 +180,10 @@ class BillingInvoice {
         confirmedBy: map['confirmed_by'] as String?,
         confirmedAt: _waktu(map['confirmed_at']),
         rejectReason: map['reject_reason'] as String?,
+        vaBank: map['va_bank'] as String?,
+        vaNumber: map['va_number'] as String?,
+        vaExpiresAt: _waktu(map['va_expires_at']),
+        paidVia: map['paid_via'] as String?,
         restoName: map['restaurants'] is Map
             ? (map['restaurants'] as Map)['name'] as String?
             : map['resto_name'] as String?,

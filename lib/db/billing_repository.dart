@@ -94,6 +94,24 @@ class BillingRepository {
     });
   }
 
+  /// Meminta nomor Virtual Account untuk sebuah tagihan.
+  ///
+  /// Nominalnya tidak dikirim dari sini — fungsi edge membacanya sendiri
+  /// dari tabel tagihan. Nominal yang datang dari aplikasi bisa diubah
+  /// siapa pun yang ingin melunasi tagihan sejuta rupiah dengan seribu.
+  Future<Map<String, dynamic>> requestVa(String invoiceId,
+      {String bank = 'BCA'}) async {
+    final res = await _client.functions.invoke('create-billing-va', body: {
+      'invoice_id': invoiceId,
+      'bank': bank,
+    });
+    final data = Map<String, dynamic>.from(res.data as Map);
+    if (data['error'] != null) {
+      throw Exception(data['error']);
+    }
+    return data;
+  }
+
   /// Menerbitkan tagihan sekarang juga, tanpa menunggu penjadwal.
   Future<int> generateNow() async {
     final n = await _client.rpc('generate_billing_invoices');

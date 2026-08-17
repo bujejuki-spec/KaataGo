@@ -592,17 +592,50 @@ pg_cron (harian) → generate_billing_invoices()
                             ↓
         H-3: BillingGate menampilkan pita pengingat
                             ↓
-   resto → submit_billing_payment()  → status 'review'
-                            ↓            (penguncian tertahan)
-   Super Admin → review_billing_payment(accept)
+   resto → create-billing-va (Edge) → Xendit → nomor VA
                             ↓
-                      status 'paid'
+                  (resto transfer ke VA)
+                            ↓
+   Xendit → xendit-billing-webhook → settle_billing_va()
+                            ↓
+                      status 'paid' — kunci terbuka sendiri
 ```
 
-Resto menaikkan status lewat RPC, bukan `UPDATE` langsung. Kalau
-langsung, tidak ada yang mencegahnya menulis `paid` untuk dirinya
-sendiri — dan `submit_billing_payment` secara sengaja hanya bisa menulis
-`review`.
+**Jalur cadangan** untuk transfer manual tetap ada: resto mengunggah
+bukti lewat `submit_billing_payment` (hanya bisa menulis `review`), dan
+Super Admin memutuskannya lewat `review_billing_payment`. Menutup jalur
+ini berarti uang yang terlanjur masuk lewat cara lain tidak punya cara
+diakui.
+
+### VA langganan tidak memakai sub-akun resto
+
+Inilah satu-satunya perbedaan yang benar-benar penting antara
+`create-qris` dan `create-billing-va`, dan satu-satunya kesalahan di
+fitur ini yang **tidak menghasilkan galat apa pun saat terjadi**.
+
+| | `create-qris` | `create-billing-va` |
+|---|---|---|
+| Header `for-user-id` | **Dipasang** — sub-akun resto | **Tidak dipasang** |
+| Uangnya ke | Rekening resto | Rekening KaataGo |
+| Untuk | Pesanan pelanggan | Tagihan langganan |
+
+Dengan `for-user-id` terpasang di jalur langganan, resto membayar
+tagihannya ke rekeningnya sendiri. Tagihannya tetap lunas, kuncinya
+tetap terbuka, dan uangnya tidak pernah sampai. Yang menemukannya adalah
+rekonsiliasi bank, berbulan-bulan kemudian.
+
+Ada tes yang menjaga ini (`billing_test.dart`), dan tes itu membaca
+berkas fungsi edge-nya langsung.
+
+### Dua sifat VA yang menentukan
+
+**`is_closed` + `expected_amount`** — hanya nominal persis yang
+diterima. Tanpa itu, transfer kurang seribu rupiah tetap masuk dan
+tagihannya tidak lunas: uangnya ada di rekening kita, restonya tetap
+terkunci, dan tidak ada yang tahu kenapa.
+
+**`is_single_use`** — nomornya mati begitu terbayar, jadi transfer bulan
+depan tidak mendarat di tagihan bulan ini.
 
 ---
 

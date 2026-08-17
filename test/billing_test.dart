@@ -180,4 +180,104 @@ void main() {
       expect(sql, contains('values (new.id, 0, 1)'));
     });
   });
+
+  group('Virtual Account', () {
+    final sql = File('supabase/billing_va.sql').readAsStringSync();
+    final fn = File('supabase/functions/create-billing-va/index.ts')
+        .readAsStringSync();
+    final hook = File('supabase/functions/xendit-billing-webhook/index.ts')
+        .readAsStringSync();
+
+    test('VA langganan TIDAK memakai sub-akun resto', () {
+      // Ini kesalahan yang paling mahal dan paling sunyi di seluruh
+      // fitur: dengan for-user-id terpasang, resto membayar tagihan
+      // langganan ke rekeningnya sendiri. Tagihannya tetap lunas,
+      // uangnya tidak pernah sampai, dan tidak ada galat apa pun.
+      expect(fn, isNot(contains('"for-user-id"')));
+      expect(fn, contains('Sengaja TIDAK ada for-user-id'));
+    });
+
+    test('nominalnya dibaca dari database, bukan dari aplikasi', () {
+      expect(fn, contains('expected_amount: inv.amount'));
+      expect(fn, isNot(contains('body.amount')));
+    });
+
+    test('VA tertutup dan sekali pakai', () {
+      // Tertutup: transfer kurang seribu tidak masuk diam-diam lalu
+      // meninggalkan tagihan yang tidak lunas.
+      // Sekali pakai: transfer bulan depan tidak mendarat di tagihan
+      // bulan ini.
+      expect(fn, contains('is_closed: true'));
+      expect(fn, contains('is_single_use: true'));
+    });
+
+    test('VA yang masih hidup dipakai ulang', () {
+      expect(fn, contains('reused: true'));
+    });
+
+    test('webhook memeriksa token callback lebih dulu', () {
+      final sebelumBaca = hook.substring(0, hook.indexOf('req.json()'));
+      expect(sebelumBaca, contains('x-callback-token'));
+    });
+
+    test('kurang bayar tidak melunasi', () {
+      expect(sql, contains('if p_amount < v_inv.amount then'));
+    });
+
+    test('callback berulang tidak menimpa catatan pelunasan', () {
+      expect(sql, contains("if v_inv.status in ('paid', 'waived') then"));
+    });
+
+    test('jalur pelunasan dibedakan mesin dan manusia', () {
+      expect(sql, contains("paid_via in ('xendit_va', 'manual', 'waived')"));
+      expect(sql, contains("paid_via = 'xendit_va'"));
+      expect(sql, contains("when p_accept then 'manual'"));
+    });
+
+    test('daftar bank di Dart sama dengan di database', () {
+      // Kode bank yang tidak dikenal ditolak Xendit, dan yang melihat
+      // penolakannya adalah resto yang sedang mencoba membayar.
+      for (final b in kBankVA) {
+        expect(sql, contains("'$b'"), reason: 'bank $b tidak ada di SQL');
+        expect(fn, contains('"$b"'), reason: 'bank $b tidak ada di fungsi edge');
+      }
+    });
+
+    test('VA berlaku sampai sesudah jatuh tempo', () {
+      // VA yang mati tepat di tanggal jatuh tempo menutup pintu justru
+      // pada hari orang paling mungkin membayarnya.
+      expect(fn, contains('kedaluwarsa.getDate() + 7'));
+    });
+
+    test('VA kedaluwarsa tidak lagi dianggap hidup', () {
+      final inv = BillingInvoice(
+        id: 'INV-1',
+        restoId: 'r1',
+        periodStart: DateTime(2026, 8, 1),
+        periodEnd: DateTime(2026, 8, 31),
+        dueDate: DateTime(2026, 9, 1),
+        amount: 150000,
+        vaNumber: '8808123456',
+        vaBank: 'BCA',
+        vaExpiresAt: DateTime(2020, 1, 1),
+      );
+      expect(inv.vaHidup, isFalse);
+    });
+
+    test('VA yang belum kedaluwarsa dianggap hidup', () {
+      final inv = BillingInvoice(
+        id: 'INV-1',
+        restoId: 'r1',
+        periodStart: DateTime(2026, 8, 1),
+        periodEnd: DateTime(2026, 8, 31),
+        dueDate: DateTime(2026, 9, 1),
+        amount: 150000,
+        vaNumber: '8808123456',
+        vaBank: 'BCA',
+        vaExpiresAt: DateTime.now().add(const Duration(days: 3)),
+      );
+      expect(inv.vaHidup, isTrue);
+    });
+  });
+
 }
