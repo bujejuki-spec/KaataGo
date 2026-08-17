@@ -27,6 +27,12 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SUMBER = os.path.join(REPO, "docs", "TEST-CASE-KAATAGO.md")
 TUJUAN = os.path.join(REPO, "docs", "TEST-CASE-KAATAGO.xlsx")
 
+# Folder Drive tempat tangkapan layar temuan dikumpulkan.
+FOLDER_CAPTURE = (
+    "https://drive.google.com/drive/folders/"
+    "1MonfUjlqV0aABrLDleDZhugd3pULLIOf?usp=sharing"
+)
+
 UNGU = "4F46E5"
 UNGU_MUDA = "EEEDFC"
 ABU = "F1F5F9"
@@ -322,8 +328,8 @@ KOLOM_DEFECT = [
     ("Ditugaskan ke", 16, None),
     ("Versi Perbaikan", 15, None),
     ("Tanggal Ditutup", 15, None),
-    ("Capture", 22, None),
-    ("Buka Capture", 14, None),
+    ("Link Capture", 40, None),
+    ("Buka", 10, None),
     ("Catatan", 34, None),
 ]
 
@@ -331,30 +337,29 @@ BARIS_KOSONG = 60
 
 
 def lembar_defect(wb):
-    """Daftar temuan, berikut tombol pembuka folder capture.
+    """Daftar temuan, berikut tombol pembuka folder capture di Drive.
 
-    Gambarnya tidak ditempel ke dalam berkas ini, hanya namanya yang
-    ditulis. Satu tangkapan layar HP berukuran 300-800 KB; tiga puluh
-    temuan sudah cukup membuat berkas Excel-nya terlalu berat untuk
-    dikirim lewat chat mana pun — dan berkas yang tidak bisa dikirim
-    tidak dipakai siapa-siapa.
+    Gambarnya tidak ditempel ke dalam berkas ini. Satu tangkapan layar
+    HP berukuran 300-800 KB; tiga puluh temuan sudah cukup membuat
+    berkas Excel-nya terlalu berat untuk dikirim lewat chat mana pun —
+    dan berkas yang tidak bisa dikirim tidak dipakai siapa-siapa.
     """
     ws = wb.create_sheet("Defect")
 
     ws["A1"] = "Daftar Temuan"
     ws["A1"].font = Font(bold=True, size=14, color=UNGU)
-    ws["C1"] = ("Isi satu baris per temuan. Simpan tangkapan layarnya di "
-                "folder defect-capture, lalu tulis nama berkasnya di kolom "
-                "Capture.")
+    ws["C1"] = ("Isi satu baris per temuan. Unggah tangkapan layarnya ke "
+                "folder Drive, lalu tempel tautan berkasnya di kolom "
+                "Link Capture.")
     ws["C1"].font = Font(size=9, italic=True, color="6E728C")
 
-    # "Tombol" — sel bergaya tombol berisi HYPERLINK ke foldernya.
-    # Tombol sungguhan di Excel dijalankan makro, dan makro hanya hidup
-    # di berkas .xlsm: mati di Google Sheets, mati di Numbers, dan
-    # ditolak sebagian penyetelan keamanan kantor. Tautan bekerja di
-    # semuanya.
+    # "Tombol" — sel bergaya tombol berisi HYPERLINK ke folder Drive.
+    # Tombol sungguhan di Excel dijalankan makro, dan makro tidak bisa
+    # mengunggah ke Drive tanpa kredensial API. Tautan justru lebih
+    # tepat di sini: satu klik membuka foldernya di peramban, tempat
+    # unggahannya memang dilakukan.
     tombol = ws["A2"]
-    tombol.value = '=HYPERLINK("defect-capture", "📎  BUKA FOLDER CAPTURE")'
+    tombol.value = f'=HYPERLINK("{FOLDER_CAPTURE}", "BUKA FOLDER CAPTURE")'
     tombol.font = Font(bold=True, color=PUTIH, size=11)
     tombol.fill = PatternFill("solid", fgColor=UNGU)
     tombol.alignment = Alignment(horizontal="center", vertical="center")
@@ -362,8 +367,9 @@ def lembar_defect(wb):
     ws.merge_cells("A2:C2")
     ws.row_dimensions[2].height = 24
 
-    ws["D2"] = ("Seret tangkapan layarnya ke folder itu, beri nama sesuai "
-                "ID temuan (DF-001.jpg), lalu tulis namanya di kolom Capture.")
+    ws["D2"] = ("Unggah ke folder itu, beri nama sesuai ID temuan "
+                "(DF-001.jpg), lalu Salin Tautan berkasnya dan tempel di "
+                "kolom Link Capture.")
     ws["D2"].font = Font(size=9, color="6E728C")
 
     kepala = 4
@@ -378,8 +384,8 @@ def lembar_defect(wb):
     ws.row_dimensions[kepala].height = 28
 
     kol_capture = get_column_letter(
-        [k[0] for k in KOLOM_DEFECT].index("Capture") + 1)
-    kol_buka = [k[0] for k in KOLOM_DEFECT].index("Buka Capture") + 1
+        [k[0] for k in KOLOM_DEFECT].index("Link Capture") + 1)
+    kol_buka = [k[0] for k in KOLOM_DEFECT].index("Buka") + 1
 
     awal, akhir = kepala + 1, kepala + BARIS_KOSONG
     for r in range(awal, akhir + 1):
@@ -390,12 +396,12 @@ def lembar_defect(wb):
             if r % 2 == 1:
                 sel.fill = PatternFill("solid", fgColor=ABU)
         ws.cell(row=r, column=1).font = Font(bold=True)
-        # Tautannya muncul sendiri begitu nama berkasnya diisi, dan tetap
+        # Tautannya muncul sendiri begitu link-nya ditempel, dan tetap
         # kosong selama belum — sel berisi "Buka" yang tidak menuju ke
         # mana-mana lebih buruk daripada sel kosong.
         ws.cell(row=r, column=kol_buka).value = (
             f'=IF({kol_capture}{r}="","",'
-            f'HYPERLINK("defect-capture/"&{kol_capture}{r},"Buka"))'
+            f'HYPERLINK({kol_capture}{r},"Buka"))'
         )
         ws.cell(row=r, column=kol_buka).font = Font(color=UNGU, underline="single")
         ws.cell(row=r, column=kol_buka).alignment = Alignment(
@@ -416,95 +422,61 @@ def lembar_defect(wb):
     return ws, awal, akhir
 
 
-VBA = r"""
-Sub UnggahCapture()
-    Dim asal As Variant, tujuan As String, folder As String
-    Dim baris As Long, idTemuan As String, ext As String
-
-    baris = ActiveCell.Row
-    If baris < 5 Then
-        MsgBox "Klik dulu baris temuannya."
-        Exit Sub
-    End If
-
-    idTemuan = Trim(Cells(baris, 1).Value)
-    If idTemuan = "" Then
-        MsgBox "Isi dulu ID temuannya di kolom A."
-        Exit Sub
-    End If
-
-    asal = Application.GetOpenFilename( _
-        "Gambar (*.jpg;*.jpeg;*.png),*.jpg;*.jpeg;*.png", , _
-        "Pilih tangkapan layar untuk " & idTemuan)
-    If asal = False Then Exit Sub
-
-    folder = ThisWorkbook.Path & Application.PathSeparator & "defect-capture"
-    If Dir(folder, vbDirectory) = "" Then MkDir folder
-
-    ext = Mid(asal, InStrRev(asal, "."))
-    tujuan = folder & Application.PathSeparator & idTemuan & ext
-
-    FileCopy CStr(asal), tujuan
-    Cells(baris, 20).Value = idTemuan & ext
-    MsgBox "Tersimpan: " & idTemuan & ext
-End Sub
-"""
-
-
-def lembar_tombol_makro(wb):
-    """Cara memasang tombol sungguhan, untuk yang memakai Excel desktop."""
-    ws = wb.create_sheet("Tombol Makro (opsional)")
+def lembar_cara_capture(wb):
+    """Satu halaman: cara mencatat temuan berikut tangkapan layarnya."""
+    ws = wb.create_sheet("Cara Lampirkan Capture")
     ws.column_dimensions["A"].width = 4
-    ws.column_dimensions["B"].width = 110
+    ws.column_dimensions["B"].width = 108
 
-    penjelasan = [
-        ("Tombol unggah capture — kalau memakai Excel desktop", "judul"),
+    baris = [
+        ("Melampirkan tangkapan layar temuan", "judul"),
         ("", None),
-        ("Tombol ungu di lembar Defect membuka folder capture, lalu "
-         "gambarnya diseret ke sana. Itu bekerja di Excel, LibreOffice, "
-         "maupun Numbers, dan tidak butuh izin apa pun.", None),
+        ("1.  Ambil tangkapan layar di HP saat temuannya terlihat.", None),
+        ("2.  Klik tombol BUKA FOLDER CAPTURE di lembar Defect — folder "
+         "Drive-nya terbuka di peramban.", None),
+        ("3.  Unggah gambarnya ke sana, beri nama sesuai ID temuan: "
+         "DF-001.jpg. Kalau butuh lebih dari satu, tambahkan keterangan: "
+         "DF-001-sebelum.jpg, DF-001-sesudah.jpg.", None),
+        ("4.  Klik kanan berkasnya di Drive - Bagikan - Salin tautan.", None),
+        ("5.  Tempel tautannya di kolom Link Capture pada baris temuan itu. "
+         "Kolom Buka di sebelahnya berubah sendiri jadi tautan yang bisa "
+         "diklik.", None),
         ("", None),
-        ("Kalau ingin tombol yang benar-benar membuka jendela pilih berkas "
-         "lalu menyalin gambarnya sendiri, itu butuh makro — dan makro "
-         "hanya hidup di berkas .xlsm. Sekali pasang:", None),
+        ("Pastikan aksesnya \"Siapa saja yang memiliki link\"", "judul"),
         ("", None),
-        ("1.  Simpan berkas ini sebagai .xlsm  (File - Save As - Excel "
-         "Macro-Enabled Workbook)", None),
-        ("2.  Alt+F11, atau Tools - Macro - Visual Basic Editor di Mac", None),
-        ("3.  Insert - Module, tempel kode di bawah", None),
-        ("4.  Kembali ke lembar Defect, Developer - Insert - Button, "
-         "tautkan ke UnggahCapture", None),
+        ("Tautan yang hanya bisa dibuka pemiliknya sama saja dengan tidak "
+         "dilampirkan: yang membaca laporan ini nanti bukan orang yang "
+         "mengunggahnya, dan dia akan berhenti di halaman minta izin.", None),
         ("", None),
-        ("KODE VBA", "judul"),
+        ("Kenapa gambarnya tidak ditempel langsung ke Excel", "judul"),
         ("", None),
+        ("Satu tangkapan layar HP berukuran 300-800 KB. Tiga puluh temuan "
+         "sudah cukup membuat berkas ini terlalu berat untuk dikirim lewat "
+         "chat mana pun — dan berkas yang tidak bisa dikirim tidak dipakai "
+         "siapa-siapa.", None),
+        ("", None),
+        ("Kenapa tombolnya berupa tautan, bukan makro", "judul"),
+        ("", None),
+        ("Tombol yang menjalankan perintah di Excel butuh makro, dan makro "
+         "tidak bisa mengunggah ke Google Drive tanpa kredensial API yang "
+         "harus dititipkan di dalam berkasnya — kredensial di dalam berkas "
+         "yang dikirim ke banyak orang sama saja dengan diumumkan.", None),
+        ("", None),
+        ("Selain itu makro hanya hidup di berkas .xlsm: mati di Google "
+         "Sheets, mati di Numbers, dan ditolak sebagian penyetelan keamanan "
+         "kantor. Tautan bekerja di semuanya, dan satu klik membuka folder "
+         "tempat unggahannya memang dilakukan.", None),
     ]
 
-    kode = VBA.strip("\n").split("\n")
-
     r = 1
-    for teks, jenis in penjelasan:
+    for teks, jenis in baris:
         sel = ws.cell(row=r, column=2, value=teks)
         if jenis == "judul":
-            sel.font = Font(bold=True, size=13, color=UNGU)
+            sel.font = Font(bold=True, size=12, color=UNGU)
         else:
             sel.font = Font(size=10.5)
             sel.alignment = Alignment(wrap_text=True, vertical="top")
         r += 1
-
-    for baris in kode:
-        sel = ws.cell(row=r, column=2, value=baris)
-        sel.font = Font(name="Menlo", size=9.5)
-        sel.fill = PatternFill("solid", fgColor=ABU)
-        r += 1
-
-    r += 1
-    sel = ws.cell(row=r, column=2, value=(
-        "Angka 20 di baris Cells(baris, 20) adalah kolom Capture. Kalau "
-        "urutan kolom di lembar Defect diubah, angka itu harus ikut diubah "
-        "— makronya tidak akan mengeluh, ia hanya menulis ke kolom yang "
-        "salah."))
-    sel.font = Font(size=10.5, italic=True, color="6E728C")
-    sel.alignment = Alignment(wrap_text=True, vertical="top")
     return ws
 
 
@@ -518,7 +490,7 @@ def main():
     _, awal_df, akhir_df = (None, 0, 0)
     ws_defect, awal_df, akhir_df = lembar_defect(wb)
     lembar_prasyarat(wb, SUMBER)
-    lembar_tombol_makro(wb)
+    lembar_cara_capture(wb)
     ws_rekap, baris_temuan = lembar_rekap(wb, ws_kasus, kasus)
     rekap_temuan(ws_rekap, baris_temuan, awal_df, akhir_df)
 
