@@ -360,4 +360,68 @@ void main() {
     });
   });
 
+
+  group('Jurnal GL Semua Resto', () {
+    final layar =
+        File('lib/screens/super_admin_finance_screen.dart').readAsStringSync();
+    final perResto =
+        File('lib/screens/finance_journal_screen.dart').readAsStringSync();
+
+    test('pembatalan tidak ikut dihitung, sama seperti jurnal per resto', () {
+      // Menjumlahkan semuanya membuat pembatalan justru MENAIKKAN kedua
+      // totalnya — baris aslinya tetap masuk, lalu kebalikannya menambah
+      // cerminnya di atas itu. Dua layar yang membaca data sama harus
+      // menyebut angka yang sama.
+      expect(layar, contains('!e.isReversal && !dibatalkan.contains('));
+      expect(perResto, contains('!e.isReversal && !cancelled.contains('));
+    });
+
+    test('memakai kunci pasangan yang sama', () {
+      expect(layar,
+          contains(r"'${e.referenceType}|${e.referenceId}|${e.glCode}'"));
+      expect(perResto,
+          contains(r"'${e.referenceType}|${e.referenceId}|${e.glCode}'"));
+    });
+
+    test('jumlah pembatalan disebutkan, bukan disembunyikan', () {
+      expect(layar, contains('pembatalan tidak dihitung'));
+    });
+
+    test('barisnya tetap tampil dan ditandai', () {
+      // Menyembunyikannya berarti jejak auditnya hilang justru pada
+      // kejadian yang paling perlu ditelusuri.
+      expect(layar, contains("Text('PEMBATALAN'"));
+    });
+
+    test('saringan memakai nilai sentinel, bukan null', () {
+      // showModalBottomSheet dan PopupMenuButton sama-sama membaca null
+      // sebagai "dibatalkan": pilihan yang mengembalikan null tidak
+      // pernah sampai ke pemanggilnya, dan tombol "Semua resto"
+      // terlihat rusak.
+      expect(layar, contains("Navigator.pop(context, '*')"));
+      expect(layar, contains("pilihan == '*' ? null : pilihan"));
+    });
+
+    test('resto tanpa jurnal disebut apa adanya', () {
+      // Supaya "kosong" tidak terbaca sebagai saringan yang rusak.
+      expect(layar, contains('Belum ada jurnal'));
+    });
+
+    test('saringan yang berlaku ditulis di layar', () {
+      // Angka yang lebih kecil daripada yang diingat selalu jadi
+      // kecurigaan lebih dulu, bukan saringan yang terlupa.
+      expect(layar, contains('_PitaSaringan'));
+      expect(layar, contains("'Semua resto'"));
+    });
+
+    test('dikelompokkan per tanggal dan bisa dilipat', () {
+      expect(layar, contains('_KelompokTanggal'));
+      expect(layar, contains('_dibuka.contains(hari)'));
+    });
+
+    test('hanya tanggal terbaru yang terbuka saat dimuat', () {
+      expect(layar, contains('..addAll(entries.isEmpty'));
+    });
+  });
+
 }

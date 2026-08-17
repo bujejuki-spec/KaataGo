@@ -365,6 +365,11 @@ class _AllRestoJournalScreenState extends State<AllRestoJournalScreen> {
   List<GlJournalEntry> _semua = const [];
   Map<String, String> _namaResto = const {};
   String? _saring;
+
+  /// Tanggal yang sedang terbuka. Diisi saat memuat dengan tanggal
+  /// terbaru saja — hari itu yang hampir selalu dicari, dan membuka
+  /// semuanya menenggelamkannya di bawah berminggu-minggu sebelumnya.
+  final Set<DateTime> _dibuka = {};
   bool _memuat = true;
   String? _galat;
 
@@ -381,7 +386,7 @@ class _AllRestoJournalScreenState extends State<AllRestoJournalScreen> {
     });
     try {
       final entries = await _repo.getAll();
-      final resto = await _restoRepo.getAll();
+      final resto = await _restoRepo.getAll(includeDeleted: true);
       if (!mounted) return;
       setState(() {
         _semua = entries;
@@ -389,6 +394,9 @@ class _AllRestoJournalScreenState extends State<AllRestoJournalScreen> {
           for (final r in resto) r.id: r.name,
           kPlatformRestoId: 'KaataGo',
         };
+        _dibuka
+          ..clear()
+          ..addAll(entries.isEmpty ? const [] : [_hari(entries.first.entryDate)]);
         _memuat = false;
       });
     } catch (e) {
@@ -400,33 +408,133 @@ class _AllRestoJournalScreenState extends State<AllRestoJournalScreen> {
     }
   }
 
+  static DateTime _hari(DateTime d) => DateTime(d.year, d.month, d.day);
+
+  /// Pembalikan ditulis dengan (reference_type, reference_id, gl_code)
+  /// yang sama dengan baris yang dibatalkannya — tiga itu yang
+  /// memasangkan keduanya.
+  String _kunciPasangan(GlJournalEntry e) =>
+      '${e.referenceType}|${e.referenceId}|${e.glCode}';
+
+  /// Baris yang masih ikut dihitung: bukan pembatalan, dan bukan baris
+  /// yang dibatalkan.
+  ///
+  /// Menjumlahkan semuanya membuat pembatalan justru MENAIKKAN kedua
+  /// totalnya — baris aslinya tetap masuk, lalu baris kebalikannya
+  /// menambah cerminnya di atas itu. Aturannya sama persis dengan
+  /// Jurnal GL per resto; kalau di sini berbeda, dua layar yang membaca
+  /// data sama akan menyebut angka berbeda, dan yang membacanya tidak
+  /// punya cara tahu mana yang benar.
+  List<GlJournalEntry> _berlaku(List<GlJournalEntry> dari) {
+    final dibatalkan = dari
+        .where((e) => e.isReversal)
+        .map(_kunciPasangan)
+        .toSet();
+    return dari
+        .where((e) => !e.isReversal && !dibatalkan.contains(_kunciPasangan(e)))
+        .toList();
+  }
+
+  Future<void> _pilihResto() async {
+    final punyaJurnal = _semua.map((e) => e.restoId).toSet();
+    final pilihan = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            const Text('Saring per Resto',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+            const SizedBox(height: 8),
+            Flexible(
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.clear_all),
+                    title: const Text('Semua resto'),
+                    trailing: _saring == null
+                        ? const Icon(Icons.check, size: 18)
+                        : null,
+                    // Nilai sentinel, bukan null. PopupMenuButton dan
+                    // showModalBottomSheet sama-sama membaca null sebagai
+                    // "dibatalkan" — pilihan yang mengembalikan null tidak
+                    // pernah sampai ke pemanggilnya, dan tombol "Semua
+                    // resto" terlihat rusak.
+                    onTap: () => Navigator.pop(context, '*'),
+                  ),
+                  const Divider(height: 1),
+                  for (final e in _namaResto.entries)
+                    ListTile(
+                      leading: Icon(
+                        e.key == kPlatformRestoId
+                            ? Icons.workspace_premium_outlined
+                            : Icons.storefront_outlined,
+                        size: 20,
+                      ),
+                      title: Text(e.value),
+                      // Resto tanpa satu baris pun disebut apa adanya,
+                      // supaya "kosong" tidak terbaca sebagai saringan
+                      // yang rusak.
+                      subtitle: punyaJurnal.contains(e.key)
+                          ? null
+                          : const Text('Belum ada jurnal',
+                              style: TextStyle(fontSize: 11)),
+                      trailing: _saring == e.key
+                          ? const Icon(Icons.check, size: 18)
+                          : null,
+                      onTap: () => Navigator.pop(context, e.key),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (pilihan == null) return;
+    setState(() => _saring = pilihan == '*' ? null : pilihan);
+  }
+
   @override
   Widget build(BuildContext context) {
     final tampil = _saring == null
         ? _semua
         : _semua.where((e) => e.restoId == _saring).toList();
+    final berlaku = _berlaku(tampil);
+    final pembatalan = tampil.where((e) => e.isReversal).length;
 
-    final debit = tampil
+    final debit = berlaku
         .where((e) => e.entryType == JournalEntryType.debit)
         .fold<int>(0, (a, b) => a + b.amount);
-    final kredit = tampil
+    final kredit = berlaku
         .where((e) => e.entryType == JournalEntryType.credit)
         .fold<int>(0, (a, b) => a + b.amount);
+
+    // Dikelompokkan per tanggal, dan bisa dilipat. Tanpa itu, layar ini
+    // adalah satu daftar panjang tanpa batas yang bisa dipakai mata
+    // untuk berhenti.
+    final perTanggal = <DateTime, List<GlJournalEntry>>{};
+    for (final e in tampil) {
+      perTanggal.putIfAbsent(_hari(e.entryDate), () => []).add(e);
+    }
+    final tanggal = perTanggal.keys.toList()..sort((a, b) => b.compareTo(a));
 
     return Scaffold(
       backgroundColor: KaataTheme.backgroundOf(context),
       appBar: AppBar(
         title: const Text('Jurnal GL Semua Resto'),
         actions: [
-          PopupMenuButton<String?>(
-            tooltip: 'Saring resto',
+          IconButton(
+            tooltip: 'Saring per resto',
             icon: const Icon(Icons.filter_list),
-            onSelected: (v) => setState(() => _saring = v),
-            itemBuilder: (_) => [
-              const PopupMenuItem(value: null, child: Text('Semua resto')),
-              for (final e in _namaResto.entries)
-                PopupMenuItem(value: e.key, child: Text(e.value)),
-            ],
+            onPressed: _memuat ? null : _pilihResto,
           ),
         ],
       ),
@@ -445,30 +553,59 @@ class _AllRestoJournalScreenState extends State<AllRestoJournalScreen> {
                   children: [
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.all(14),
+                      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
                       color: KaataTheme.surfaceOf(context),
                       child: ResponsiveCenter(
-                        child: Row(
+                        child: Column(
                           children: [
-                            Expanded(
-                              child: _Angka(
-                                  label: 'Total Debit',
-                                  nilai: debit,
-                                  warna: Colors.red),
+                            // Saringan yang sedang berlaku ditulis di
+                            // layar, bukan cuma tersimpan di kepala orang
+                            // yang menekannya. Angka yang lebih kecil
+                            // daripada yang diingat selalu jadi kecurigaan
+                            // lebih dulu, bukan saringan yang terlupa.
+                            _PitaSaringan(
+                              nama: _saring == null
+                                  ? 'Semua resto'
+                                  : _namaResto[_saring] ?? _saring!,
+                              menyaring: _saring != null,
+                              onUbah: _pilihResto,
+                              onHapus:
+                                  _saring == null ? null : () => setState(() => _saring = null),
                             ),
-                            Expanded(
-                              child: _Angka(
-                                  label: 'Total Kredit',
-                                  nilai: kredit,
-                                  warna: Colors.green),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _Angka(
+                                      label: 'Total Debit',
+                                      nilai: debit,
+                                      warna: Colors.red),
+                                ),
+                                Expanded(
+                                  child: _Angka(
+                                      label: 'Total Kredit',
+                                      nilai: kredit,
+                                      warna: Colors.green),
+                                ),
+                                Expanded(
+                                  child: _Angka(
+                                      label: 'Baris',
+                                      nilai: berlaku.length,
+                                      warna: KaataTheme.mutedOf(context),
+                                      rupiah: false),
+                                ),
+                              ],
                             ),
-                            Expanded(
-                              child: _Angka(
-                                  label: 'Baris',
-                                  nilai: tampil.length,
-                                  warna: KaataTheme.mutedOf(context),
-                                  rupiah: false),
-                            ),
+                            if (pembatalan > 0)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 6),
+                                child: Text(
+                                  '$pembatalan pembatalan tidak dihitung',
+                                  style: TextStyle(
+                                      fontSize: 11,
+                                      color: KaataTheme.mutedOf(context)),
+                                ),
+                              ),
                           ],
                         ),
                       ),
@@ -476,9 +613,18 @@ class _AllRestoJournalScreenState extends State<AllRestoJournalScreen> {
                     Expanded(
                       child: tampil.isEmpty
                           ? Center(
-                              child: Text('Belum ada jurnal.',
+                              child: Padding(
+                                padding: const EdgeInsets.all(30),
+                                child: Text(
+                                  _saring == null
+                                      ? 'Belum ada jurnal.'
+                                      : '${_namaResto[_saring] ?? _saring} belum '
+                                          'punya jurnal.',
+                                  textAlign: TextAlign.center,
                                   style: TextStyle(
-                                      color: KaataTheme.mutedOf(context))),
+                                      color: KaataTheme.mutedOf(context)),
+                                ),
+                              ),
                             )
                           : RefreshIndicator(
                               onRefresh: _muat,
@@ -486,19 +632,153 @@ class _AllRestoJournalScreenState extends State<AllRestoJournalScreen> {
                                 child: ListView.builder(
                                   padding: const EdgeInsets.fromLTRB(
                                       14, 12, 14, 28),
-                                  itemCount: tampil.length,
-                                  itemBuilder: (_, i) => _BarisJurnal(
-                                    entry: tampil[i],
-                                    namaResto:
-                                        _namaResto[tampil[i].restoId] ??
-                                            tampil[i].restoId,
-                                  ),
+                                  itemCount: tanggal.length,
+                                  itemBuilder: (_, i) {
+                                    final hari = tanggal[i];
+                                    return _KelompokTanggal(
+                                      tanggal: hari,
+                                      entries: perTanggal[hari]!,
+                                      namaResto: _namaResto,
+                                      terbuka: _dibuka.contains(hari),
+                                      onToggle: () => setState(() {
+                                        _dibuka.contains(hari)
+                                            ? _dibuka.remove(hari)
+                                            : _dibuka.add(hari);
+                                      }),
+                                    );
+                                  },
                                 ),
                               ),
                             ),
                     ),
                   ],
                 ),
+    );
+  }
+}
+
+class _PitaSaringan extends StatelessWidget {
+  final String nama;
+  final bool menyaring;
+  final VoidCallback onUbah;
+  final VoidCallback? onHapus;
+
+  const _PitaSaringan({
+    required this.nama,
+    required this.menyaring,
+    required this.onUbah,
+    this.onHapus,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final warna = menyaring
+        ? KaataTheme.brandOf(context)
+        : KaataTheme.mutedOf(context);
+    return InkWell(
+      onTap: onUbah,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(12, 7, 8, 7),
+        decoration: BoxDecoration(
+          color: warna.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: warna.withOpacity(0.35)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(menyaring ? Icons.storefront_outlined : Icons.all_inclusive,
+                size: 15, color: warna),
+            const SizedBox(width: 7),
+            Flexible(
+              child: Text(nama,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.bold,
+                      color: warna)),
+            ),
+            const SizedBox(width: 4),
+            if (onHapus != null)
+              GestureDetector(
+                onTap: onHapus,
+                child: Icon(Icons.close, size: 15, color: warna),
+              )
+            else
+              Icon(Icons.expand_more, size: 16, color: warna),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _KelompokTanggal extends StatelessWidget {
+  final DateTime tanggal;
+  final List<GlJournalEntry> entries;
+  final Map<String, String> namaResto;
+  final bool terbuka;
+  final VoidCallback onToggle;
+
+  const _KelompokTanggal({
+    required this.tanggal,
+    required this.entries,
+    required this.namaResto,
+    required this.terbuka,
+    required this.onToggle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final hari = DateFormat('EEEE, d MMM yyyy', 'id_ID').format(tanggal);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: KaataTheme.surfaceOf(context),
+        borderRadius: BorderRadius.circular(13),
+        border: Border.all(color: KaataTheme.borderOf(context)),
+      ),
+      child: Column(
+        children: [
+          InkWell(
+            onTap: onToggle,
+            borderRadius: BorderRadius.circular(13),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(13, 11, 10, 11),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(hari,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 13.5)),
+                  ),
+                  Text('${entries.length} baris',
+                      style: TextStyle(
+                          fontSize: 11.5,
+                          color: KaataTheme.mutedOf(context))),
+                  const SizedBox(width: 6),
+                  Icon(terbuka ? Icons.expand_less : Icons.expand_more,
+                      size: 20, color: KaataTheme.brandOf(context)),
+                ],
+              ),
+            ),
+          ),
+          if (terbuka)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(11, 0, 11, 8),
+              child: Column(
+                children: [
+                  for (final e in entries)
+                    _BarisJurnal(
+                      entry: e,
+                      namaResto: namaResto[e.restoId] ?? e.restoId,
+                    ),
+                ],
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
@@ -556,9 +836,35 @@ class _BarisJurnal extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('${entry.glCode} — ${entry.glName ?? ''}',
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 12.5)),
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text('${entry.glCode} — ${entry.glName ?? ''}',
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 12.5)),
+                    ),
+                    // Barisnya tetap ditampilkan walau tidak ikut
+                    // dihitung. Menyembunyikannya berarti jejak auditnya
+                    // hilang justru pada kejadian yang paling perlu
+                    // ditelusuri.
+                    if (entry.isReversal)
+                      Container(
+                        margin: const EdgeInsets.only(left: 6),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 5, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Text('PEMBATALAN',
+                            style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.orange)),
+                      ),
+                  ],
+                ),
                 const SizedBox(height: 2),
                 Text(
                   '$namaResto · ${_tanggal.format(entry.entryDate)} '
