@@ -59,6 +59,7 @@ FILES=(
   gl_discount_backfill.sql
   platform_gl_renumber.sql
   product_toppings.sql
+  vouchers.sql
 )
 
 {

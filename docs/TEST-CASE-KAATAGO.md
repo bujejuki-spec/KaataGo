@@ -59,6 +59,7 @@ Kolom **P** adalah prioritas:
 19. Pembaruan Aplikasi
 19b. Langganan & Tagihan Resto
 19c. Finance KaataGo (Super Admin)
+19d. Voucher Pelanggan
 20. Uji Ujung-ke-Ujung
 21. Uji Teknis (lingkup TSD)
 22. Regresi — bug yang pernah terjadi
@@ -595,6 +596,31 @@ sudah membayar berhenti berjualan.
 
 ---
 
+## 19d. Voucher Pelanggan
+
+| ID | P | Skenario | Hasil yang diharapkan | Rujukan |
+|---|---|---|---|---|
+| TC-VC-01 | P2 | Super Admin → Finance → Voucher Pelanggan → buat voucher 10% | Tersimpan berikut kodenya | F-VC-01 |
+| TC-VC-02 | P2 | Buat voucher berkode sama dengan yang sudah ada | Ditolak — kodenya sudah dipakai | F-VC-01 |
+| TC-VC-03 | P1 | Voucher 20% tanpa batas, tagihan Rp 1.000.000 | Potongan Rp 200.000 | F-VC-01 |
+| TC-VC-04 | P1 | Voucher yang sama dengan maks. Rp 20.000 | Potongan berhenti di Rp 20.000 | F-VC-02 |
+| TC-VC-05 | P1 | Voucher min belanja Rp 50.000, tagihan Rp 30.000 | Ditolak dengan sebutan minimalnya | F-VC-03, F-VC-10 |
+| TC-VC-06 | P1 | Voucher khusus resto A, dipakai di resto B | Ditolak — "tidak berlaku di resto ini" | F-VC-04, F-VC-10 |
+| TC-VC-07 | P1 | Voucher kuota 1, pakai dua kali oleh orang berbeda | Yang kedua ditolak — kuota habis | F-VC-05 |
+| TC-VC-08 | P1 | Voucher kuota per pelanggan 1, pakai dua kali oleh orang sama | Yang kedua ditolak — "sudah kamu pakai" | F-VC-05 |
+| TC-VC-09 | P2 | Ketik kode dengan huruf kecil | Tetap diterima | F-VC-07 |
+| TC-VC-10 | P2 | Ketik kode yang tidak ada | Ditolak dengan sebutan tidak ditemukan | F-VC-10 |
+| TC-VC-11 | P2 | Voucher nonaktif / lewat masa berlaku | Ditolak, masing-masing dengan alasannya | F-VC-06, F-VC-10 |
+| TC-VC-12 | P1 | Pasang voucher lalu selesaikan pesanan | Yang dibayar sudah dipotong; nominal QRIS-nya juga | F-VC-08 |
+| TC-VC-13 | P1 | Ketuk **Lepas** setelah voucher terpasang | Tagihan kembali ke nominal semula | F-VC-08 |
+| TC-VC-14 | P1 | Periksa Jurnal GL KaataGo sesudah voucher dipakai | Dua baris: GL Biaya Voucher **debit**, kantongnya **kredit** | F-VC-12 |
+| TC-VC-15 | P1 | Periksa Jurnal GL resto yang bersangkutan | **Tidak** ada baris voucher di sana | F-VC-12 |
+| TC-VC-16 | P1 | Panggil `voucher_quote` lewat API dengan nominal dipalsukan | Nominal yang dipakai tetap dari perhitungan server | F-VC-09 |
+| TC-VC-17 | P2 | Buka daftar voucher sebagai Owner resto | Terbaca, tapi tidak bisa diubah | F-VC-01 |
+| TC-VC-18 | P2 | Periksa jumlah "dipakai" di kartu voucher | Cocok dengan jumlah pemakaian sebenarnya | F-VC-11 |
+
+---
+
 ## 20. Uji Ujung-ke-Ujung
 
 Mengikuti alur di FSD §3 dan diagram TSD §1.1. Dijalankan utuh, tanpa
@@ -770,7 +796,8 @@ Tiap kelompok kebutuhan di FSD, dan kasus uji yang menjaganya.
 | Pembaruan (UP) | 7 | TC-UP-01…09 |
 | Langganan (BL) | 24 | TC-BL-01…30, E2E-09 |
 | Finance KaataGo (PF) | 21 | TC-PF-01…34 |
-| **Total** | **231** | **235 kasus + 8 alur ujung-ke-ujung** |
+| Voucher (VC) | 12 | TC-VC-01…18 |
+| **Total** | **243** | **235 kasus + 8 alur ujung-ke-ujung** |
 
 Kriteria penerimaan A-01…A-20 di FSD §9 seluruhnya terpetakan lewat
 kolom Rujukan di atas. Bab TSD yang diuji: §1.2, §4, §5, §6, §7, §8,

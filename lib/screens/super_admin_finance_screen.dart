@@ -10,6 +10,7 @@ import '../theme.dart';
 import '../widgets/hub_menu_tile.dart';
 import '../widgets/responsive.dart';
 import 'billing_discount_screen.dart';
+import 'voucher_screen.dart';
 import 'finance_balance_screen.dart';
 import 'finance_gl_mapping_screen.dart';
 import 'finance_journal_screen.dart';
@@ -63,6 +64,16 @@ class SuperAdminFinanceScreen extends StatelessWidget {
               color: const Color(0xFF6366F1),
               onTap: () => Navigator.of(context).push(MaterialPageRoute(
                 builder: (_) => const BillingDiscountScreen(),
+              )),
+            ),
+            const SizedBox(height: 12),
+            HubMenuTile(
+              icon: Icons.confirmation_number_outlined,
+              title: 'Voucher Pelanggan',
+              subtitle: 'Promo KaataGo — ditanggung dari saldo sendiri',
+              color: const Color(0xFFF59E0B),
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => const VoucherScreen(),
               )),
             ),
             const SizedBox(height: 22),

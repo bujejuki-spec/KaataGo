@@ -7,11 +7,13 @@ import 'package:provider/provider.dart';
 import '../db/customer_profile_repository.dart';
 import '../db/restaurant_repository.dart';
 import '../db/discount_repository.dart';
+import '../db/voucher_repository.dart';
 import '../db/firestore_product_repository.dart';
 import '../models/product.dart';
 import '../models/restaurant.dart';
 import '../db/guest_order_store.dart';
 import '../models/order_type.dart';
+import '../models/voucher.dart';
 import '../providers/auth_provider.dart';
 import '../providers/customer_cart_provider.dart';
 import '../providers/table_session_provider.dart';
@@ -23,6 +25,7 @@ import '../widgets/cart_line_tile.dart';
 import '../models/cart_item.dart';
 import '../utils/field_rules.dart';
 import '../widgets/required_label.dart';
+import '../widgets/app_toast.dart';
 
 /// Checkout screen. Lets the customer pick Dine In or Take Away first —
 /// for Take Away no table is needed at all, so the table-number field is
@@ -58,6 +61,74 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
   bool get _payAtCashier => _paymentMethod == 'cash';
 
   bool _placing = false;
+
+  /// Voucher yang sedang terpasang, hasil pemeriksaan server.
+  VoucherQuote? _voucher;
+  final _voucherCtrl = TextEditingController();
+  bool _memeriksaVoucher = false;
+
+  /// Yang benar-benar dibayar: sesudah diskon resto, lalu sesudah
+  /// voucher KaataGo.
+  ///
+  /// Satu tempat, dipakai layar bayar maupun ringkasannya. Dua
+  /// perhitungan terpisah akan berpisah, dan yang terlihat adalah
+  /// nominal QRIS yang berbeda dari angka yang baru saja dibaca
+  /// pelanggan.
+  int _dibayar(CustomerCartProvider cart) {
+    final sesudahDiskon = cart.payableFor(_orderType);
+    return (sesudahDiskon - (_voucher?.amount ?? 0)).clamp(0, sesudahDiskon);
+  }
+
+  /// Menanyakan potongan sebuah kode ke server.
+  ///
+  /// Nominalnya tidak pernah dihitung di HP: yang dipotong adalah uang
+  /// KaataGo sendiri, dan angka yang datang dari aplikasi bisa diubah
+  /// siapa pun yang ingin membayar seribu rupiah untuk tagihan seratus
+  /// ribu.
+  Future<void> _pasangVoucher() async {
+    final kode = _voucherCtrl.text.trim();
+    if (kode.isEmpty) return;
+
+    final session = context.read<TableSessionProvider>();
+    final auth = context.read<AuthProvider>();
+    final cart = context.read<CustomerCartProvider>();
+    final restoId = session.restoId;
+    if (restoId == null) return;
+
+    setState(() => _memeriksaVoucher = true);
+    try {
+      final hasil = await VoucherRepository().quote(
+        code: kode,
+        restoId: restoId,
+        customerLabel: auth.user?.email ?? 'Tamu',
+        total: _dibayar(cart),
+      );
+      if (!mounted) return;
+      if (hasil.diterima) {
+        setState(() => _voucher = hasil);
+        AppToast.show(context, 'Voucher ${hasil.code} dipakai.');
+      } else {
+        setState(() => _voucher = null);
+        // Alasannya ditampilkan apa adanya. "Voucher tidak berlaku"
+        // tanpa sebab membuat orang mencoba lagi dengan kode yang sama,
+        // lalu menyalahkan aplikasinya.
+        AppToast.show(context, hasil.reason ?? 'Voucher tidak bisa dipakai',
+            isError: true);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      AppToast.show(context, 'Gagal memeriksa voucher: $e', isError: true);
+    } finally {
+      if (mounted) setState(() => _memeriksaVoucher = false);
+    }
+  }
+
+  void _lepasVoucher() {
+    setState(() {
+      _voucher = null;
+      _voucherCtrl.clear();
+    });
+  }
   Restaurant? _resto;
 
   /// Produk di keranjang yang ternyata sudah habis, ketahuan saat
@@ -259,7 +330,7 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
     // lama.
     // Sesudah potongan: inilah yang ditagihkan di layar QRIS dan yang
     // disebutkan ke kasir untuk pembayaran tunai.
-    final amount = cart.payableFor(_orderType);
+    final amount = _dibayar(cart);
     final orderId = await cart.placeOrder(
       label,
       tableNumber: tableNumber,
@@ -272,6 +343,9 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
       // sendiri-sendiri.
       customerName: _nameCtrl.text.trim(),
       paymentMethod: _paymentMethod,
+      voucherId: _voucher?.voucherId,
+      voucherCode: _voucher?.code,
+      voucherAmount: _voucher?.amount ?? 0,
     );
     // A logged-in customer's history comes from their email, so this is
     // only needed for guests — it's the only record they'd otherwise have.
@@ -460,10 +534,19 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
                         _DiscountLine(
                           name: applied.discount.name,
                           amount: applied.amount,
-                          payable: cart.payableFor(_orderType),
+                          payable: _dibayar(cart),
                           currency: currency,
                         ),
                       ],
+                      const SizedBox(height: 10),
+                      _BarisVoucher(
+                        controller: _voucherCtrl,
+                        voucher: _voucher,
+                        memeriksa: _memeriksaVoucher,
+                        currency: currency,
+                        onPasang: _pasangVoucher,
+                        onLepas: _lepasVoucher,
+                      ),
                       const SizedBox(height: 14),
                       const Align(
                         alignment: Alignment.centerLeft,
@@ -587,6 +670,94 @@ class _DiscountLine extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Baris pemasang voucher di ringkasan tagihan.
+///
+/// Ditaruh tepat di atas pilihan cara bayar, bukan di layar terpisah:
+/// voucher yang harus dicari di menu lain adalah voucher yang tidak
+/// pernah dipakai.
+class _BarisVoucher extends StatelessWidget {
+  final TextEditingController controller;
+  final VoucherQuote? voucher;
+  final bool memeriksa;
+  final NumberFormat currency;
+  final VoidCallback onPasang;
+  final VoidCallback onLepas;
+
+  const _BarisVoucher({
+    required this.controller,
+    required this.voucher,
+    required this.memeriksa,
+    required this.currency,
+    required this.onPasang,
+    required this.onLepas,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final v = voucher;
+    if (v != null) {
+      return Container(
+        padding: const EdgeInsets.fromLTRB(12, 8, 6, 8),
+        decoration: BoxDecoration(
+          color: Colors.green.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: Colors.green.withOpacity(0.35)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.confirmation_number_outlined,
+                size: 17, color: Colors.green),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(v.name ?? v.code ?? 'Voucher',
+                      style: const TextStyle(
+                          fontSize: 12.5, fontWeight: FontWeight.bold)),
+                  Text('−${currency.format(v.amount)}',
+                      style: const TextStyle(fontSize: 12, color: Colors.green)),
+                ],
+              ),
+            ),
+            TextButton(onPressed: onLepas, child: const Text('Lepas')),
+          ],
+        ),
+      );
+    }
+
+    return Row(
+      children: [
+        Expanded(
+          child: TextField(
+            controller: controller,
+            textCapitalization: TextCapitalization.characters,
+            decoration: const InputDecoration(
+              isDense: true,
+              labelText: 'Punya kode voucher?',
+              hintText: 'HEMAT10',
+              border: OutlineInputBorder(),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        SizedBox(
+          height: 44,
+          child: FilledButton(
+            onPressed: memeriksa ? null : onPasang,
+            child: memeriksa
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2))
+                : const Text('Pakai'),
+          ),
+        ),
+      ],
     );
   }
 }

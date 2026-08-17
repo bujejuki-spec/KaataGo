@@ -264,6 +264,9 @@ class CustomerCartProvider extends ChangeNotifier {
     OrderType orderType = OrderType.dineIn,
     String? customerName,
     String paymentMethod = 'qris',
+    String? voucherId,
+    String? voucherCode,
+    int voucherAmount = 0,
   }) async {
     final tax = chargesFor(orderType);
     final applied = discountFor(orderType);
@@ -283,7 +286,13 @@ class CustomerCartProvider extends ChangeNotifier {
       // Yang tersimpan adalah yang benar-benar ditagihkan. Menyimpan
       // harga sebelum potongan berarti kasir menagih angka yang tidak
       // pernah dilihat pelanggannya.
-      total: tax.total - (applied?.amount ?? 0),
+      // Voucher ikut mengurangi yang dibayar. Potongannya ditanggung
+      // KaataGo, tapi yang dilihat pelanggan tetap satu angka — dan
+      // angka itulah yang harus tersimpan sebagai total pesanannya.
+      total: tax.total - (applied?.amount ?? 0) - voucherAmount,
+      voucherId: voucherId,
+      voucherCode: voucherCode,
+      voucherAmount: voucherAmount,
       paymentStatus: OrderPaymentStatus.pending,
       customerLabel: customerLabel,
       // Selalu diisi, tidak pernah dibiarkan kosong, supaya kolomnya

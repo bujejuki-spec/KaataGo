@@ -99,6 +99,7 @@ terdaftar. Pelanggan boleh memesan **tanpa akun sama sekali**.
 | Tagihan Langganan | ✔ | ✔ | – | – | – | – | – |
 | Billing Resto (semua) | ✔ | – | – | – | – | – | – |
 | Finance KaataGo | ✔ | – | – | – | – | – | – |
+| Voucher Pelanggan | ✔ | – | – | – | – | – | – |
 | Jurnal GL semua resto | ✔ | – | – | – | – | – | – |
 | Kelola Produk | – | ✔ | ✔ | – | – | – | – |
 | Pengaturan Resto & QR Meja | – | ✔ | ✔ | – | – | – | – |
@@ -571,6 +572,42 @@ keuangan lain di aplikasi ini.
 > pengeluaran. Tangan yang bisa menulis langsung ke sana adalah tangan
 > yang bisa membuat pembukuan berbeda dari yang benar-benar terjadi —
 > dan itu berlaku untuk Super Admin persis seperti untuk yang lain.
+
+### 4.19 Voucher Pelanggan
+
+Promo KaataGo, bukan promo resto. Bedanya bukan sekadar siapa yang
+membuat: **yang menanggung potongannya juga KaataGo** — dananya keluar
+dari saldo KaataGo sebagai biaya promosi, dan tercatat di Jurnal GL
+KaataGo tiap kali dipakai.
+
+| ID | Kebutuhan |
+|---|---|
+| F-VC-01 | Super Admin membuat voucher berkode, dalam **persen** atau **rupiah** |
+| F-VC-02 | Voucher persen dapat dibatasi **potongan maksimal** |
+| F-VC-03 | Dapat mensyaratkan **minimal belanja** |
+| F-VC-04 | Berlaku di **semua resto** atau hanya resto yang dipilih |
+| F-VC-05 | Kuota **total** dan kuota **per pelanggan**; nol berarti tanpa batas |
+| F-VC-06 | Punya masa berlaku dan dapat dinonaktifkan tanpa dihapus |
+| F-VC-07 | Kodenya tidak peduli huruf besar-kecil |
+| F-VC-08 | Pelanggan memasukkan kode di keranjang, sebelum memilih cara bayar |
+| F-VC-09 | Potongannya **dihitung server**, tidak pernah dari aplikasi |
+| F-VC-10 | Setiap penolakan menyebutkan **alasannya** |
+| F-VC-11 | Pemakaian tercatat sebagai barisnya sendiri, dan menegakkan kuota |
+| F-VC-12 | Biayanya masuk **Jurnal GL KaataGo** — debit GL Biaya Voucher, kredit kantong yang membayarinya |
+
+> **Kenapa potongan maksimal ada.** Tanpa itu, "diskon 20%" pada tagihan
+> sejuta rupiah adalah dua ratus ribu yang keluar dari saldo KaataGo
+> untuk satu transaksi — dan anggaran promo sebulan bisa habis oleh satu
+> orang.
+
+> **Kenapa setiap penolakan menyebutkan alasannya.** "Voucher tidak
+> berlaku" tanpa sebab membuat orang mencoba lagi dengan kode yang sama,
+> lalu menyalahkan aplikasinya.
+
+> **Yang belum ditangani aplikasi.** Saat pelanggan membayar, resto
+> menerima uang yang sudah dipotong vouchernya. Pembukuan KaataGo
+> mencatat potongan itu sebagai biaya, tapi **pembayaran penggantinya ke
+> resto masih dilakukan di luar aplikasi**.
 
 ---
 
