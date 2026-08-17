@@ -9,6 +9,7 @@ import 'customer_home_screen.dart';
 import 'finance_home_screen.dart';
 import 'kasir_home_screen.dart';
 import 'owner_home_screen.dart';
+import '../widgets/billing_gate.dart';
 import 'role_choice_screen.dart';
 import 'super_admin_home_screen.dart';
 
@@ -78,11 +79,20 @@ class _RootScreenState extends State<RootScreen> {
   }
 
   Widget? _homeForRole(AuthProvider auth) {
-    if (auth.isOwner) return const OwnerHomeScreen();
-    if (auth.isAdmin) return const AdminHomeScreen();
-    if (auth.isKasir) return const KasirHomeScreen();
-    if (auth.isChef) return const ChefHomeScreen();
-    if (auth.isFinance) return const FinanceHomeScreen();
-    return null;
+    // Kelima peran resto dibungkus satu gerbang langganan. Dipasang di
+    // sini, bukan di dalam tiap layar: lima pemasangan berarti lima
+    // tempat yang bisa terlewat, dan yang terlewat tidak akan terlihat
+    // sampai ada resto menunggak yang kebetulan memakai peran itu.
+    //
+    // Super Admin sengaja di luar — dialah yang membuka kuncinya.
+    final home = switch (auth) {
+      _ when auth.isOwner => const OwnerHomeScreen(),
+      _ when auth.isAdmin => const AdminHomeScreen(),
+      _ when auth.isKasir => const KasirHomeScreen(),
+      _ when auth.isChef => const ChefHomeScreen(),
+      _ when auth.isFinance => const FinanceHomeScreen(),
+      _ => null,
+    };
+    return home == null ? null : BillingGate(child: home);
   }
 }

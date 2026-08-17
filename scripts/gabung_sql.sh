@@ -50,6 +50,7 @@ FILES=(
   settled_at_counter.sql
   discount_min_qty.sql
   discount_product_rules.sql
+  billing.sql
 )
 
 {

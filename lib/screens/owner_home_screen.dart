@@ -9,6 +9,7 @@ import '../theme.dart';
 import '../utils/logout_confirm.dart';
 import '../widgets/badged_hub_tile.dart';
 import '../widgets/hub_menu_tile.dart';
+import 'billing_screen.dart';
 import 'discount_screen.dart';
 import '../widgets/inbox_tile.dart';
 import '../widgets/responsive.dart';
@@ -219,6 +220,25 @@ class OwnerHomeScreen extends StatelessWidget {
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute(builder: (_) => const DiscountScreen()),
                     ),
+                  ),
+                  const SizedBox(height: 12),
+                  // Tagihan langganan KaataGo — bukan keuangan resto.
+                  // Ditaruh di kelompok pengelolaan, bukan di KEUANGAN,
+                  // supaya tidak tertukar dengan pembukuan restonya
+                  // sendiri: yang satu uang yang masuk ke resto, yang
+                  // satu uang yang keluar dari resto ke kami.
+                  HubMenuTile(
+                    icon: Icons.receipt_long_outlined,
+                    title: 'Tagihan Langganan',
+                    subtitle: 'Biaya bulanan KaataGo & bukti pembayaran',
+                    color: const Color(0xFF6366F1),
+                    onTap: () {
+                      final restoId = context.read<AuthProvider>().restoId;
+                      if (restoId == null) return;
+                      Navigator.of(context).push(MaterialPageRoute(
+                        builder: (_) => BillingScreen(restoId: restoId),
+                      ));
+                    },
                   ),
                   const SizedBox(height: 12),
                   HubMenuTile(

@@ -11,6 +11,7 @@ import '../widgets/responsive.dart';
 import '../widgets/kaata_logo.dart';
 import 'employee_management_screen.dart';
 import 'restaurant_manage_list_screen.dart';
+import 'super_admin_billing_screen.dart';
 import 'publish_announcement_screen.dart';
 
 /// Home screen for the 'super_admin' role — not scoped to any single
@@ -74,6 +75,15 @@ class SuperAdminHomeScreen extends StatelessWidget {
                   color: const Color(0xFF0EA5E9),
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => const RestaurantManageListScreen()),
+                  ),
+                ),
+                HubMenuTile(
+                  icon: Icons.receipt_long_outlined,
+                  title: 'Billing Resto',
+                  subtitle: 'Harga & tanggal langganan tiap resto, verifikasi pembayaran',
+                  color: const Color(0xFF10B981),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const SuperAdminBillingScreen()),
                   ),
                 ),
                 HubMenuTile(

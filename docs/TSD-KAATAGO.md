@@ -26,7 +26,7 @@ dilaporkan.
 4. Model Data
 5. Keamanan Baris (RLS)
 6. Buku Besar (GL)
-7. Pembayaran
+7. Pembayaran (termasuk langganan resto)
 8. Notifikasi Push
 9. Fungsi Edge
 10. Penyimpanan Lokal & Luring
@@ -165,7 +165,7 @@ angka.
 
 ## 4. Model Data
 
-27 tabel, seluruhnya di skema `public`.
+29 tabel, seluruhnya di skema `public`.
 
 ### 4.0 Peta relasi
 
@@ -271,6 +271,8 @@ penandanya di barisnya sendiri berarti pengumuman itu hanya bisa
 | `push_config` | Kunci dan setelan pengirim push |
 | `push_outbox` | Antrean notifikasi yang menunggu dikirim |
 | `mail_requests` | Permintaan kirim struk lewat email |
+| `resto_billing` | Harga & tanggal langganan tiap resto |
+| `billing_invoices` | Tagihan bulanan berikut bukti bayarnya |
 | `applied_migrations` | Penanda perbaikan data sekali-jalan — bukan catatan migrasi umum |
 
 Enam di antaranya tidak menyimpan data resto sama sekali —
@@ -535,6 +537,72 @@ tiap menit) mengubahnya jadi `expired`.
 
 Angka 30 menit ditulis di dua tempat — SQL dan
 `CustomerOrder.paymentWindow`. Keduanya harus diubah bersamaan.
+
+---
+
+## 7.3 Langganan resto
+
+Satu-satunya aliran uang yang arahnya keluar dari resto menuju KaataGo.
+Dipisah sepenuhnya dari buku besar resto — jurnal GL mencatat uang yang
+masuk ke restonya, dan menyeret tagihan langganan ke sana akan membuat
+biaya kami muncul sebagai pengeluaran resto di laporan yang dibaca
+Finance mereka.
+
+### Penguncian ditegakkan di RLS, bukan di layar
+
+Layar yang terkunci hanyalah layar. Aplikasi ini berbicara langsung ke
+Postgres tanpa server perantara, jadi siapa pun yang memegang kunci
+publik proyek bisa memanggil API-nya langsung dan tetap membuat pesanan.
+
+Karena itu penguncian dipasang sebagai kebijakan **RESTRICTIVE**:
+
+```sql
+create policy "orders: billing lock" on orders
+  as restrictive for insert
+  with check (not is_resto_billing_locked(resto_id));
+```
+
+> **Restrictive, bukan permissive — dan itu bukan detail.** Kebijakan
+> permissive digabung dengan **OR**: menambah satu lagi justru
+> *melonggarkan* aksesnya, dan kunci yang dipasang begitu tidak mengunci
+> apa pun. Yang restrictive digabung dengan **AND**, dan itulah
+> satu-satunya bentuk yang benar-benar menutup pintu tanpa menyentuh
+> kebijakan yang sudah ada.
+
+`BillingGate` di aplikasi tidak menegakkan apa pun — ia menerjemahkan
+keadaan yang sama jadi sesuatu yang bisa dibaca orang. Keduanya membaca
+`resto_billing_state()`, satu fungsi yang sama. Kalau keduanya sampai
+berbeda pendapat, yang menang database, dan gejalanya adalah tombol yang
+bisa ditekan tapi tidak menyimpan apa pun.
+
+### Yang sengaja tidak dikunci
+
+| Tetap terbuka | Kenapa |
+|---|---|
+| Membaca tagihan sendiri | Orang berhak tahu berapa yang ditagihkan kepadanya |
+| Mengunggah bukti bayar | Inilah satu-satunya jalan keluar dari penguncian |
+| Keluar akun | Perangkat yang dipinjam tidak boleh tersangkut di layar terkunci |
+| Seluruh layar Super Admin | Dialah yang membuka kuncinya |
+
+### Alurnya
+
+```
+pg_cron (harian) → generate_billing_invoices()
+                   terbit H-7 sebelum jatuh tempo
+                            ↓
+        H-3: BillingGate menampilkan pita pengingat
+                            ↓
+   resto → submit_billing_payment()  → status 'review'
+                            ↓            (penguncian tertahan)
+   Super Admin → review_billing_payment(accept)
+                            ↓
+                      status 'paid'
+```
+
+Resto menaikkan status lewat RPC, bukan `UPDATE` langsung. Kalau
+langsung, tidak ada yang mencegahnya menulis `paid` untuk dirinya
+sendiri — dan `submit_billing_payment` secara sengaja hanya bisa menulis
+`review`.
 
 ---
 

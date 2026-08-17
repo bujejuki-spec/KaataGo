@@ -96,6 +96,8 @@ terdaftar. Pelanggan boleh memesan **tanpa akun sama sekali**.
 | Mapping GL Account | – | ✔ | – | – | – | ✔ | – |
 | Jurnal GL | – | ✔ | – | – | – | ✔ | – |
 | Laporan Transaksi | – | ✔ | – | – | – | ✔ | – |
+| Tagihan Langganan | ✔ | ✔ | – | – | – | – | – |
+| Billing Resto (semua) | ✔ | – | – | – | – | – | – |
 | Kelola Produk | – | ✔ | ✔ | – | – | – | – |
 | Pengaturan Resto & QR Meja | – | ✔ | ✔ | – | – | – | – |
 | Pengaturan Pembayaran | – | ✔ | – | – | – | ✔ | – |
@@ -449,6 +451,56 @@ alurnya harus ada di dalam aplikasi itu sendiri.
 | F-UP-05 | Menekan tombol saat unduhan berjalan memunculkan pilihan **Batalkan** atau **Lanjutkan** |
 | F-UP-06 | Selesai mengunduh, pemasang Android dibuka otomatis |
 | F-UP-07 | Galat dibedakan: koneksi terputus, penyimpanan penuh, atau galat lain — dan tidak pernah menampilkan isi galat mentahnya |
+
+### 4.17 Langganan & Tagihan Resto
+
+Resto membayar biaya langganan bulanan kepada KaataGo. Ini satu-satunya
+bagian aplikasi tempat **resto menjadi pelanggan**, bukan penjual — dan
+karena itu sengaja dipisah dari seluruh menu keuangan resto, yang
+mencatat uang masuk ke resto, bukan uang keluar dari resto ke kami.
+
+| ID | Kebutuhan |
+|---|---|
+| F-BL-01 | Harga langganan bulanan ditentukan **per resto** oleh Super Admin |
+| F-BL-02 | Tanggal jatuh tempo ditentukan **per resto**, antara tanggal 1 sampai 28 |
+| F-BL-03 | Tenggang sesudah jatuh tempo dapat diatur; bawaannya **1 hari** |
+| F-BL-04 | Harga **Rp 0** berarti gratis — tidak pernah ditagih dan tidak pernah terkunci |
+| F-BL-05 | Langganan dapat dimatikan per resto tanpa menghapus datanya |
+| F-BL-06 | Resto baru langsung punya setelan langganan, **gratis**, sampai harganya ditetapkan |
+| F-BL-07 | Tagihan terbit otomatis **7 hari** sebelum jatuh tempo |
+| F-BL-08 | Satu tagihan per resto per periode — tidak pernah ganda |
+| F-BL-09 | Mulai **H-3**, pita pengingat tampil di layar utama tiap peran resto |
+| F-BL-10 | Pengingat tetap tampil sesudah lewat jatuh tempo selama belum lunas |
+| F-BL-11 | Resto mengunggah **bukti bayar** berikut catatan dari layar Tagihan Langganan |
+| F-BL-12 | Bukti yang sudah diunggah menahan penguncian selama diperiksa |
+| F-BL-13 | Hanya **Super Admin** yang menyatakan sebuah tagihan lunas |
+| F-BL-14 | Penolakan bukti **wajib menyertakan alasan**, dan alasannya dibaca resto |
+| F-BL-15 | Lewat tenggang dan belum dibayar → **aplikasi terkunci** untuk resto itu |
+| F-BL-16 | Layar terkunci tetap menyediakan **Lihat & Bayar Tagihan** dan **Keluar** |
+| F-BL-17 | Super Admin tidak pernah terkunci |
+| F-BL-18 | Penguncian ditegakkan di **basis data**, bukan hanya di layar |
+
+**Kapan terkunci, kapan tidak:**
+
+| Keadaan | Terkunci? |
+|---|---|
+| Belum jatuh tempo | Tidak |
+| Jatuh tempo hari ini, belum bayar | Tidak — tenggang belum lewat |
+| Lewat tenggang, belum bayar | **Ya** |
+| Lewat tenggang, bukti sudah diunggah | Tidak — sedang diperiksa |
+| Bukti ditolak, lewat tenggang | **Ya** |
+| Harga Rp 0, atau langganan dimatikan | Tidak, apa pun keadaannya |
+
+> **Kenapa bukti yang sudah diunggah menahan penguncian.** Transfer
+> antarbank yang dikirim Jumat sore baru terlihat Senin. Mengunci resto
+> yang uangnya sedang dalam perjalanan berarti menghentikan
+> penjualannya sehari penuh karena keterlambatan yang bukan salahnya —
+> dan itu kesalahan yang paling mahal di seluruh fitur ini, karena yang
+> hilang bukan cuma kepercayaan tapi pendapatan hari itu.
+
+> **Kenapa layar terkunci tetap punya jalan keluar.** Mengunci
+> satu-satunya jalan membayar berarti resto yang sudah mentransfer tidak
+> punya cara memberi tahu siapa pun.
 
 ---
 

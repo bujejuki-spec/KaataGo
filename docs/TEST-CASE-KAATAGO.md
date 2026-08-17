@@ -57,6 +57,7 @@ Kolom **P** adalah prioritas:
 17. Tampilan
 18. Super Admin
 19. Pembaruan Aplikasi
+19b. Langganan & Tagihan Resto
 20. Uji Ujung-ke-Ujung
 21. Uji Teknis (lingkup TSD)
 22. Regresi — bug yang pernah terjadi
@@ -450,6 +451,57 @@ dibaca. Tiap kasus di bawah menguji satu perbedaan yang halus.
 
 ---
 
+## 19b. Langganan & Tagihan Resto
+
+Fitur yang kegagalannya paling mahal di dua arah sekaligus: gagal
+mengunci berarti pemakaian tanpa bayar, gagal membuka berarti resto yang
+sudah membayar berhenti berjualan.
+
+| ID | P | Skenario | Hasil yang diharapkan | Rujukan |
+|---|---|---|---|---|
+| TC-BL-01 | P2 | Super Admin → Billing Resto → atur harga dan tanggal untuk sebuah resto | Tersimpan; kartu restonya menampilkan harga, tanggal, dan tenggangnya | F-BL-01, F-BL-02 |
+| TC-BL-02 | P2 | Buat resto baru, buka Billing Resto | Sudah punya barisnya sendiri, berstatus **Gratis** | F-BL-06 |
+| TC-BL-03 | P1 | Setel harga Rp 0, lewatkan tanggal jatuh tempo jauh | Tidak pernah terbit tagihan, tidak pernah terkunci | F-BL-04 |
+| TC-BL-04 | P1 | Matikan saklar langganan pada resto berbayar yang menunggak | Tidak terkunci | F-BL-05 |
+| TC-BL-05 | P2 | Coba pilih tanggal tagihan 29, 30, atau 31 | Tidak tersedia di pilihan — hanya 1 sampai 28 | F-BL-02 |
+| TC-BL-06 | P2 | Ketuk **Terbitkan tagihan sekarang** dua kali beruntun | Tagihan tetap satu untuk periode itu | F-BL-08 |
+| TC-BL-07 | P1 | Setel jatuh tempo 3 hari lagi, buka aplikasi sebagai Kasir | Pita pengingat tampil di atas layar; isi layarnya **tetap bisa dipakai** | F-BL-09 |
+| TC-BL-08 | P2 | Setel jatuh tempo 4 hari lagi | Pita **belum** tampil | F-BL-09 |
+| TC-BL-09 | P1 | Lewati jatuh tempo, masih dalam tenggang | Pita berubah merah; aplikasi **belum** terkunci | F-BL-03, F-BL-10 |
+| TC-BL-10 | P1 | Lewati tenggang, tagihan belum dibayar | Seluruh layar diganti halaman **Aplikasi Terkunci Sementara** | F-BL-15 |
+| TC-BL-11 | P1 | Pada keadaan terkunci, coba buat pesanan lewat API langsung | Ditolak database — bukan hanya layarnya yang menutup | F-BL-18, TSD §7.3 |
+| TC-BL-12 | P1 | Pada keadaan terkunci, ketuk **Lihat & Bayar Tagihan** | Layar tagihan terbuka dan bisa dipakai | F-BL-16 |
+| TC-BL-13 | P1 | Pada keadaan terkunci, ketuk **Keluar** | Berhasil keluar akun | F-BL-16 |
+| TC-BL-14 | P1 | Unggah bukti bayar dari layar Tagihan | Status jadi **Menunggu Verifikasi**; aplikasi **terbuka lagi** | F-BL-11, F-BL-12 |
+| TC-BL-15 | P1 | Coba kirim bukti tanpa melampirkan foto | Tombol Kirim mati | F-BL-11 |
+| TC-BL-16 | P1 | Super Admin → tab Tagihan → **Terima** | Status jadi Lunas; resto tetap terbuka; pita hilang | F-BL-13 |
+| TC-BL-17 | P1 | Super Admin → **Tolak** tanpa mengisi alasan | Tombol Tolak tidak menyelesaikan apa-apa — alasan wajib | F-BL-14 |
+| TC-BL-18 | P1 | Tolak berikut alasan, lalu buka layar Tagihan dari sisi resto | Alasannya terbaca; kalau sudah lewat tenggang, terkunci lagi | F-BL-14, F-BL-15 |
+| TC-BL-19 | P1 | Login sebagai Super Admin saat ada resto terkunci | Tidak terkunci sama sekali | F-BL-17 |
+| TC-BL-20 | P1 | Sebagai resto terkunci, coba ubah harga produk | Ditolak — katalog ikut dibekukan | F-BL-18 |
+| TC-BL-21 | P1 | Resto A terkunci; buka aplikasi sebagai karyawan resto B | Resto B **tidak** terpengaruh | F-BL-15, A-10 |
+| TC-BL-22 | P1 | Coba panggil `review_billing_payment` sebagai Owner resto | Ditolak — hanya Super Admin | F-BL-13 |
+| TC-BL-23 | P1 | Coba `UPDATE billing_invoices SET status='paid'` sebagai Owner | Ditolak | F-BL-13, TSD §7.3 |
+| TC-BL-24 | P2 | Matikan sambungan, buka aplikasi resto berbayar yang lancar | Tidak terkunci karena gagal memeriksa | TSD §7.3 |
+| TC-BL-25 | P2 | Owner → Tagihan Langganan | Terbuka, memuat paket dan riwayat tagihan | F-BL-11 |
+
+### E2E-09 — Satu siklus langganan penuh (P1)
+
+1. Super Admin setel resto uji: Rp 150.000, jatuh tempo 3 hari lagi, tenggang 1 hari
+2. Terbitkan tagihan → periksa muncul di tab Tagihan berstatus Belum Dibayar
+3. Buka aplikasi sebagai Kasir → pita pengingat tampil, layar tetap bisa dipakai
+4. Majukan tanggal melewati jatuh tempo + 1 hari → buka lagi → **terkunci**
+5. Coba buat pesanan lewat API langsung → ditolak database
+6. Ketuk Lihat & Bayar Tagihan → unggah bukti → status Menunggu Verifikasi
+7. Buka aplikasi lagi → **tidak lagi terkunci**
+8. Super Admin → Tolak berikut alasan → resto **terkunci lagi**, alasannya terbaca
+9. Unggah bukti baru → Super Admin → Terima → status Lunas
+10. Buka aplikasi → terbuka, pita hilang
+
+**Rujukan:** F-BL-07 … F-BL-18, TSD §7.3
+
+---
+
 ## 20. Uji Ujung-ke-Ujung
 
 Mengikuti alur di FSD §3 dan diagram TSD §1.1. Dijalankan utuh, tanpa
@@ -623,7 +675,8 @@ Tiap kelompok kebutuhan di FSD, dan kasus uji yang menjaganya.
 | Super Admin (SA) | 6 | TC-SA-01…06 |
 | Sesi Meja (SS) | 7 | TC-SS-01…07 |
 | Pembaruan (UP) | 7 | TC-UP-01…09 |
-| **Total** | **165** | **235 kasus + 8 alur ujung-ke-ujung** |
+| Langganan (BL) | 18 | TC-BL-01…25, E2E-09 |
+| **Total** | **183** | **235 kasus + 8 alur ujung-ke-ujung** |
 
 Kriteria penerimaan A-01…A-20 di FSD §9 seluruhnya terpetakan lewat
 kolom Rujukan di atas. Bab TSD yang diuji: §1.2, §4, §5, §6, §7, §8,
