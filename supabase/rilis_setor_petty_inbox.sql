@@ -235,10 +235,12 @@ create policy "petty_cash_entries: staff read" on petty_cash_entries
 -- batasannya yang mundur. Satu daftar untuk semua menutup itu.
 alter table gl_accounts drop constraint if exists gl_accounts_payment_method_check;
 alter table gl_accounts add constraint gl_accounts_payment_method_check
-  check (payment_method in
+  check (
+    payment_method in
     ('cash', 'qris', 'transfer', 'petty_cash', 'income_aggregate', 'total_balance',
      'ppn', 'service', 'suspense', 'suspense_petty', 'gateway_fee', 'discount',
-     'subscription', 'subscription_discount', 'voucher', 'voucher_redeem'));
+     'subscription', 'subscription_discount', 'voucher', 'voucher_redeem',
+     'capital'));
 
 -- ─────────────────────────────────────────────────────────────────────
 -- 4. Jurnal petty cash mengikuti statusnya

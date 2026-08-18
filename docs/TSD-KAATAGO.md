@@ -1,7 +1,7 @@
 # KaataGo — Technical Specification Document
 
-**Versi Aplikasi:** 2.3.1 (build 100)
-**Versi Dokumen:** 1.2
+**Versi Aplikasi:** 2.4.0 (build 101)
+**Versi Dokumen:** 1.3
 **Tanggal Terbit:** 17 Agustus 2026
 **Status:** Rilis
 **Jenis Dokumen:** TSD — sisi teknis
@@ -728,6 +728,33 @@ terbitkan kepada mereka. Disaring di kuerinya, bukan sesudah data
 sampai — baris platform yang ikut terangkut memakan jatah batas 1.000
 baris, dan yang terpotong justru jurnal resto yang dicari.
 
+### 7.4b Setoran modal
+
+`supabase/balance_topup.sql`. Tabel `balance_topups` + pemicu
+`log_balance_topup()` yang menulis dua baris: kredit GL Total Saldo
+(uang masuk, bebas dipakai) dan debit GL Setoran Modal (kantong
+asalnya). Jurnalnya ditulis pemicu, bukan aplikasi — dua baris yang
+dikirim aplikasi bisa sampai satu dan gagal satu, dan pembukuan yang
+timpang sebelah lebih sulit ditemukan daripada yang kosong.
+
+Akun `capital` berlaku untuk resto (1940001) maupun platform (1100003):
+keduanya bisa menerima setoran modal, jadi ia **bukan** anggota
+`_platformOnlyMethods` di layar Pemetaan GL.
+
+RLS-nya `for insert with check` saja — tidak ada kebijakan ubah maupun
+hapus. Setoran yang salah diperbaiki dengan setoran koreksi; jurnal
+hanya pernah ditambah, tidak pernah disunting. Kasir boleh membaca
+(angkanya memengaruhi saldo yang dia pertanggungjawabkan) tapi tidak
+menulis: baris yang menaikkan saldo tanpa uang sungguhan adalah cara
+paling rapi menutupi selisih laci.
+
+Di layar, setoran masuk lewat `_nonCashBalance` — uangnya mendarat di
+rekening, bukan di laci — sehingga kartu Cash/Non Cash tetap berjumlah
+sama dengan Penghasilan. Untuk platform tidak perlu penanganan khusus:
+saldonya sudah dihitung dari pergerakan GL Total Saldo.
+
+---
+
 ### 7.5 Voucher
 
 `supabase/vouchers.sql`. Dua tabel: `vouchers` menyimpan batch-nya,
@@ -979,6 +1006,23 @@ yang seharusnya sama.
 
 Aturannya sekarang dikunci tes yang membaca **kedua berkas layar
 sekaligus** dan menuntut keduanya memakai kunci pasangan yang sama.
+
+
+Contoh kedua, dan lebih halus. Saldo KaataGo dulu dihitung dari
+**daftar jenis transaksi** (`{'order','billing'}` menambah,
+`{'expense','billing_discount'}` mengurangi). Daftar semacam itu harus
+ditambahi tiap kali ada fitur baru yang memindahkan uang — dan saat
+voucher terbit, `reference_type = 'voucher'` belum ada di sana, jadi
+seluruh pergerakannya tidak terhitung sama sekali. Layar Saldo &
+Pengeluaran berbunyi Rp 0 sementara Jurnal GL di sebelahnya menyebut
+Rp 115.000.
+
+Sekarang keduanya memanggil `saldoPlatform()` di
+`lib/utils/saldo_jurnal.dart`, yang menghitung **kredit − debit pada
+akun GL Total Saldo**. Setiap perpindahan uang bebas KaataGo memang
+selalu lewat akun itu, jadi aturannya tidak perlu ditambahi tiap ada
+fitur baru. Kesalahan yang lama tidak mengeluh — angkanya cuma salah,
+dan tetap terlihat masuk akal.
 
 ### 11.2 Mengubah tipe kembalian fungsi butuh DROP lebih dulu
 

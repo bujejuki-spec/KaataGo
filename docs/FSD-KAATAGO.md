@@ -1,7 +1,7 @@
 # KaataGo — Functional Specification Document
 
-**Versi Aplikasi:** 2.3.1 (build 100)
-**Versi Dokumen:** 2.3
+**Versi Aplikasi:** 2.4.0 (build 101)
+**Versi Dokumen:** 2.4
 **Tanggal Terbit:** 17 Agustus 2026
 **Status:** Rilis
 **Jenis Dokumen:** FSD — sisi fungsional
@@ -580,6 +580,16 @@ keuangan lain di aplikasi ini.
 | F-PF-07 | Pendapatan langganan masuk **Jurnal GL KaataGo** secara otomatis saat tagihan lunas |
 | F-PF-13 | Pendapatan dicatat sebesar **harga daftar**; diskon jadi baris pengurang tersendiri |
 | F-PF-08 | KaataGo punya **bagan akun sendiri** — pendapatan, diskon, kas, petty cash, suspense, pengeluaran |
+| F-PF-09 | Saldo KaataGo dihitung dari **pergerakan GL Total Saldo**, sumber yang sama dengan Jurnal GL |
+| F-PF-10 | Layar Saldo KaataGo tidak menampilkan Saldo Cash/Non Cash — KaataGo tidak punya laci kasir |
+| F-CB-01 | Daftar **Terdekat** hanya memuat resto dalam radius **5 km** dari titik pelanggan |
+| F-CB-02 | Resto di luar radius tetap tersedia di daftar **Semua Resto** |
+| F-TU-01 | **Top Up Saldo** tersedia di Saldo & Pengeluaran untuk Owner, Finance, dan Super Admin |
+| F-TU-02 | Setoran modal menambah **saldo utama**, dan tercatat di **GL Setoran Modal** — bukan sebagai pendapatan |
+| F-TU-03 | Nama penyetor **wajib**; keterangan dan bukti transfer opsional |
+| F-TU-04 | Kasir dapat melihat riwayat setoran, tapi **tidak dapat menambah** |
+| F-TU-05 | Setoran tercatat otomatis di Jurnal GL — kredit Total Saldo, debit Setoran Modal |
+| F-TU-06 | Setoran tidak dapat diubah maupun dihapus; koreksinya berupa setoran baru |
 | F-PF-09 | Petty cash dan pengeluaran KaataGo dikelola seperti di resto |
 | F-PF-10 | **Tidak ada Setor Saldo Cash** di sisi KaataGo |
 | F-PF-11 | Super Admin dapat melihat **Jurnal GL seluruh resto klien**, dengan saringan per resto |
@@ -684,6 +694,16 @@ satunya.
 > tahu — kuotanya habis oleh siapa pun yang kebetulan membuka layarnya,
 > sisanya hangus tanpa pernah dilihat orang. Dua langkah yang harus
 > diingat berurutan berarti suatu saat yang kedua terlewat.
+
+> **Kenapa modal punya akun sendiri.** Uangnya benar-benar masuk, tapi
+> tidak dijual ke siapa pun. Mencatatnya sebagai penghasilan membuat
+> laporan penjualan memuat uang yang tidak pernah dijual — dan resto
+> yang menyetor modal besar akan terlihat seperti resto yang laris.
+
+> **Kenapa kasir tidak boleh mencatatnya.** Baris yang menaikkan saldo
+> tanpa uang sungguhan adalah cara paling rapi menutupi selisih laci.
+> Kasir tetap boleh melihatnya, karena angkanya memengaruhi saldo yang
+> dia pertanggungjawabkan.
 
 > **Kenapa batch berjalan tidak bisa dihapus.** Kodenya sudah tersebar
 > lewat pengumuman. Menghapusnya berarti kode itu tiba-tiba tidak ada,
@@ -1056,7 +1076,7 @@ aplikasinya kalau dihapus.
 
 | Layar | Yang bisa dilakukan di sana |
 |---|---|
-| **Halaman awal** | Memilih masuk sebagai Pelanggan atau Karyawan Resto; mengatur tema; membuka Tentang KaataGo |
+| **Halaman awal** | Memilih masuk sebagai Pelanggan atau KaataGo Merchant; mengatur tema; membuka Tentang KaataGo |
 | **Ajakan login** | Melewatinya lewat "Lewati, Pesan Tanpa Login" dan langsung memesan |
 | **Layar pembuka tamu** | Tiga pintu saja: Scan QR Meja, Pilih Resto, dan Riwayat Pesanan Saya |
 | **Pilih Resto** | Mencari resto; melihat yang terdekat berikut jaraknya begitu izin lokasi diberikan — sebelum itu hanya bagian Semua Resto yang tampil |
@@ -1107,7 +1127,7 @@ dan riwayatnya.
 
 | Layar | Yang bisa dilakukan di sana |
 |---|---|
-| **Halaman awal** | Memilih masuk sebagai Pelanggan atau Karyawan Resto; mengatur tema sebelum masuk; membuka Tentang KaataGo |
+| **Halaman awal** | Memilih masuk sebagai Pelanggan atau KaataGo Merchant; mengatur tema sebelum masuk; membuka Tentang KaataGo |
 | **Ajakan login** | Masuk dengan Gmail, atau melewatinya dan tetap memesan sebagai tamu |
 | **Menu utama** | Tujuh pintu: Pesan, Profil, Riwayat, Kotak Masuk (berikut penanda belum dibaca), Tampilan, Tes Notifikasi, Keluar |
 | **Mau Pesan Di Mana?** | Scan QR meja, atau memilih resto dari daftar |
@@ -1197,7 +1217,7 @@ bayar tunai. Keduanya bertemu di layar yang sama.
 
 **Mode Terang** — 18 tangkapan
 
-!!ss[Halaman awal — masuk sebagai Karyawan Resto](gambar/capture/Lightmode/Kasir/Screenshot_20260816-215927.jpg)
+!!ss[Halaman awal — masuk sebagai KaataGo Merchant](gambar/capture/Lightmode/Kasir/Screenshot_20260816-215927.jpg)
 !!ss[Memilih akun Google karyawan](gambar/capture/Lightmode/Kasir/Screenshot_20260816-215931_Google Play services.jpg)
 !!ss[Menu kasir — Input Pesanan, Pending Payment (2 menunggu), Riwayat Kasir, Saldo, Setor, Kotak Masuk, Diskon](gambar/capture/Lightmode/Kasir/Screenshot_20260816-215939.jpg)
 !!ss[Input Pesanan — kategori Makanan terbuka; angka di pojok kartu adalah sisa stok](gambar/capture/Lightmode/Kasir/Screenshot_20260816-215946.jpg)
@@ -1391,7 +1411,7 @@ laci, tapi belum diakui masuk.
 
 **Mode Terang** — 10 tangkapan
 
-!!ss[Halaman awal — masuk sebagai Karyawan Resto](gambar/capture/Lightmode/Finance/Screenshot_20260816-220502.jpg)
+!!ss[Halaman awal — masuk sebagai KaataGo Merchant](gambar/capture/Lightmode/Finance/Screenshot_20260816-220502.jpg)
 !!ss[Menyiapkan data resto setelah masuk](gambar/capture/Lightmode/Finance/Screenshot_20260816-220510.jpg)
 !!ss[Pemasukan — total semua waktu, dirinci per hari dengan pecahan Tunai/QRIS](gambar/capture/Lightmode/Finance/Screenshot_20260816-220515.jpg)
 !!ss[Menu Finance dengan pemilih resto: semua angka mengikuti resto yang dipilih](gambar/capture/Lightmode/Finance/Screenshot_20260816-220518.jpg)
@@ -1442,7 +1462,7 @@ tampilannya dari peran lain.
 
 **Mode Terang** — 6 tangkapan
 
-!!ss[Halaman awal — masuk sebagai Karyawan Resto](gambar/capture/Lightmode/Owner/Screenshot_20260816-220640.jpg)
+!!ss[Halaman awal — masuk sebagai KaataGo Merchant](gambar/capture/Lightmode/Owner/Screenshot_20260816-220640.jpg)
 !!ss[Menyiapkan data resto setelah masuk](gambar/capture/Lightmode/Owner/Screenshot_20260816-220647.jpg)
 !!ss[Pemilih resto — Owner dengan lebih dari satu resto berpindah dari sini](gambar/capture/Lightmode/Owner/Screenshot_20260816-220652.jpg)
 !!ss[Menu Owner, kelompok PENJUALAN — Kasir, Pesanan Masuk, Layar Dapur, Pending Payment, Riwayat Kasir](gambar/capture/Lightmode/Owner/Screenshot_20260816-220657.jpg)

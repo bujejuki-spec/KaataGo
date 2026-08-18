@@ -61,6 +61,22 @@ void main() {
       // create or replace tidak bisa mengubah tipe kembalian.
       expect(sql, contains('drop function if exists resto_billing_state(text);'));
     });
+
+    test('setiap berkas yang membuatnya ikut membuangnya dulu', () {
+      // Berkas lama yang dijalankan sesudah berkas baru akan gagal
+      // dengan 42P13 — dan berkas yang tidak aman dijalankan ulang
+      // berhenti jadi berkas yang bisa dipercaya (TSD §11.2).
+      for (final f in Directory('supabase').listSync()) {
+        if (f is! File || !f.path.endsWith('.sql')) continue;
+        if (f.path.endsWith('JALANKAN-INI.sql')) continue;
+        final isi = f.readAsStringSync();
+        if (!isi.contains('function resto_billing_state(p_resto_id text)')) {
+          continue;
+        }
+        expect(isi, contains('drop function if exists resto_billing_state(text);'),
+            reason: f.path);
+      }
+    });
   });
 
   group('VA hilang begitu lunas', () {

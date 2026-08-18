@@ -209,6 +209,15 @@ select cron.schedule(
 -- Satu sumber kebenaran, dipakai RLS maupun layar aplikasi. Dua
 -- perhitungan terpisah akan berpisah, dan yang terlihat adalah layar
 -- yang mengaku aman sementara database menolak menyimpan apa pun.
+-- Dibuang dulu, bukan langsung `create or replace`.
+--
+-- `billing_due_day.sql` menambah kolom `next_due_date` ke kembaliannya,
+-- dan Postgres menolak `create or replace` yang mengubah tipe
+-- kembalian. Di basis data yang sudah menjalankan berkas itu, berkas
+-- ini akan gagal dengan 42P13 — dan berkas yang tidak aman dijalankan
+-- ulang berhenti jadi berkas yang bisa dipercaya (lihat TSD §11.2).
+drop function if exists resto_billing_state(text);
+
 create or replace function resto_billing_state(p_resto_id text)
 returns table (
   locked boolean,

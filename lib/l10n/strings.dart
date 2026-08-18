@@ -27,7 +27,7 @@ const Map<String, String> _en = {
   // ── Halaman awal & peran ──
   'Masuk sebagai': 'Sign in as',
   'Pelanggan': 'Customer',
-  'Karyawan Resto': 'Restaurant Staff',
+  'KaataGo Merchant': 'KaataGo Merchant',
   'Pesan sendiri dari meja atau dari rumah': 'Order from your table or from home',
   'Kasir, dapur, admin, dan keuangan': 'Cashier, kitchen, admin, and finance',
   'Tentang KaataGo': 'About KaataGo',

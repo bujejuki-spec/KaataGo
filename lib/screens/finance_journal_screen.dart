@@ -1,3 +1,5 @@
+import '../models/billing.dart';
+import '../utils/saldo_jurnal.dart';
 import 'package:flutter/material.dart';
 
 import '../theme.dart';
@@ -134,6 +136,16 @@ class _FinanceJournalScreenState extends State<FinanceJournalScreen> {
   /// totals climb well past the money actually on hand — which made this
   /// card look like it was reporting a much larger balance than it was.
   int get _saldoTotal {
+    // Pembukuan KaataGo dihitung dari pergerakan akun GL Total Saldo,
+    // bukan dari daftar jenis transaksi. Daftar semacam itu harus
+    // ditambahi tiap kali ada fitur baru yang memindahkan uang — dan
+    // saat voucher terbit, jenisnya belum ada di daftar sehingga
+    // seluruh pergerakannya tidak terhitung sama sekali.
+    final kodeTotal = _totalBalanceGl?.glCode;
+    if (widget.restoId == kPlatformRestoId && kodeTotal != null) {
+      return saldoPlatform(_entries, kodeTotal);
+    }
+
     final effective = _effectiveEntries;
 
     // Pendapatan datang dari dua sumber, tergantung siapa yang

@@ -11,12 +11,14 @@ import '../widgets/resto_logo_avatar.dart';
 
 /// Batas sebuah resto masih disebut "terdekat".
 ///
-/// Sepuluh kilometer: di kota, itu masih jarak yang orang bersedia
-/// tempuh untuk makan. Lebih jauh dari itu, "terdekat" berhenti berarti
-/// dekat — dan daftar yang menjanjikan kedekatan lalu menawarkan resto
-/// setengah jam perjalanan lebih buruk daripada tidak menjanjikan apa
-/// pun.
-const _nearbyRadiusKm = 10.0;
+/// Lima kilometer. Sepuluh terlalu jauh untuk kata "terdekat": di jam
+/// sibuk itu setengah jam perjalanan, dan daftar yang menjanjikan
+/// kedekatan lalu menawarkan tempat sejauh itu lebih buruk daripada
+/// tidak menjanjikan apa pun.
+///
+/// Yang di luar radius tidak hilang — mereka tetap ada di tab Semua.
+/// Yang dipersempit hanya janjinya, bukan pilihannya.
+const _nearbyRadiusKm = 5.0;
 
 /// Resto yang bisa dibuka pelanggan tanpa memindai QR meja.
 ///

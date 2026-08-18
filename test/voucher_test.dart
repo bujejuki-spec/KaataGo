@@ -210,7 +210,7 @@ void main() {
       // GL-nya kosong tanpa mengeluh.
       expect(layar, contains("const _voucherMethod = 'voucher';"));
       expect(layar, contains("const _voucherRedeemMethod = 'voucher_redeem';"));
-      expect(layar, contains('_voucherMethod,\n  _voucherRedeemMethod,\n];'));
+      expect(layar, contains('_voucherMethod,\n  _voucherRedeemMethod,'));
       expect(layar, contains("title: 'GL Voucher',"));
     });
 

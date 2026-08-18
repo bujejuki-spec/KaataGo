@@ -256,7 +256,7 @@ class _RoleChoiceScreenState extends State<RoleChoiceScreen> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(Icons.storefront_outlined),
-                  label: Text(context.tr('Karyawan Resto')),
+                  label: Text(context.tr('KaataGo Merchant')),
                   onPressed: _signingInEmployee ? null : _chooseEmployee,
                 ),
               ),

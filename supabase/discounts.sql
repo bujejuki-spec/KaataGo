@@ -110,10 +110,12 @@ alter table orders add column if not exists discount_name text;
 
 alter table gl_accounts drop constraint if exists gl_accounts_payment_method_check;
 alter table gl_accounts add constraint gl_accounts_payment_method_check
-  check (payment_method in
+  check (
+    payment_method in
     ('cash', 'qris', 'transfer', 'petty_cash', 'income_aggregate', 'total_balance',
      'ppn', 'service', 'suspense', 'suspense_petty', 'gateway_fee', 'discount',
-     'subscription', 'subscription_discount', 'voucher', 'voucher_redeem'));
+     'subscription', 'subscription_discount', 'voucher', 'voucher_redeem',
+     'capital'));
 
 insert into gl_accounts (resto_id, payment_method, gl_code, gl_name)
 select r.id, 'discount', '2200002', 'GL Diskon Penjualan'

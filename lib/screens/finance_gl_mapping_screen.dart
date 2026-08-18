@@ -88,6 +88,15 @@ const _subscriptionDiscountMethod = 'subscription_discount';
 const _voucherMethod = 'voucher';
 const _voucherRedeemMethod = 'voucher_redeem';
 
+// Uang masuk dari luar penjualan: setoran investor, atau modal awal
+// pemilik resto. Punya akunnya sendiri supaya laporan penjualan tidak
+// memuat uang yang tidak pernah dijual — tanpa itu, resto yang menyetor
+// modal besar akan terlihat seperti resto yang laris.
+//
+// Berlaku untuk resto maupun KaataGo: keduanya bisa menerima setoran
+// modal, dan keduanya perlu membedakannya dari pendapatan.
+const _capitalMethod = 'capital';
+
 // PPN and service charge collected are money owed onward, not revenue,
 // so they're journaled to their own accounts instead of being folded
 // into the payment-method income mapping.
@@ -113,6 +122,7 @@ const _allMethods = [
   _subscriptionDiscountMethod,
   _voucherMethod,
   _voucherRedeemMethod,
+  _capitalMethod,
 ];
 
 /// Akun yang hanya ada di pembukuan KaataGo sendiri.
@@ -613,6 +623,25 @@ class _FinanceGlMappingScreenState extends State<FinanceGlMappingScreen> {
                             color: const Color(0xFFEC4899),
                             codeCtrl: _codeCtrls[_gatewayFeeMethod]!,
                             nameCtrl: _nameCtrls[_gatewayFeeMethod]!,
+                            editing: _editing,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      _GlSectionCard(
+                        icon: Icons.savings_outlined,
+                        color: const Color(0xFF14B8A6),
+                        title: 'GL Modal',
+                        subtitle: 'Uang masuk dari luar penjualan',
+                        children: [
+                          _GlAccountRow(
+                            icon: Icons.savings_outlined,
+                            label: 'GL Setoran Modal',
+                            hint: 'Setoran investor atau modal awal — '
+                                'menambah saldo, bukan pendapatan',
+                            color: const Color(0xFF14B8A6),
+                            codeCtrl: _codeCtrls[_capitalMethod]!,
+                            nameCtrl: _nameCtrls[_capitalMethod]!,
                             editing: _editing,
                           ),
                         ],

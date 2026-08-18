@@ -29,7 +29,7 @@
   },
   "Kasir": {
     "light": {
-      "215927": "Halaman awal — masuk sebagai Karyawan Resto",
+      "215927": "Halaman awal — masuk sebagai KaataGo Merchant",
       "215931": "Memilih akun Google karyawan",
       "215939": "Menu kasir — Input Pesanan, Pending Payment (2 menunggu), Riwayat Kasir, Saldo, Setor, Kotak Masuk, Diskon",
       "215946": "Input Pesanan — kategori Makanan terbuka; angka di pojok kartu adalah sisa stok",
@@ -155,7 +155,7 @@
   },
   "Finance": {
     "light": {
-      "220502": "Halaman awal — masuk sebagai Karyawan Resto",
+      "220502": "Halaman awal — masuk sebagai KaataGo Merchant",
       "220510": "Menyiapkan data resto setelah masuk",
       "220515": "Pemasukan — total semua waktu, dirinci per hari dengan pecahan Tunai/QRIS",
       "220518": "Menu Finance dengan pemilih resto: semua angka mengikuti resto yang dipilih",
@@ -188,7 +188,7 @@
   },
   "Owner": {
     "light": {
-      "220640": "Halaman awal — masuk sebagai Karyawan Resto",
+      "220640": "Halaman awal — masuk sebagai KaataGo Merchant",
       "220647": "Menyiapkan data resto setelah masuk",
       "220652": "Pemilih resto — Owner dengan lebih dari satu resto berpindah dari sini",
       "220657": "Menu Owner, kelompok PENJUALAN — Kasir, Pesanan Masuk, Layar Dapur, Pending Payment, Riwayat Kasir",

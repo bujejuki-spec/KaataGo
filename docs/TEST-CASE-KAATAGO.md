@@ -1,7 +1,7 @@
 # KaataGo — Test Case
 
-**Versi Aplikasi:** 2.3.1 (build 100)
-**Versi Dokumen:** 1.2
+**Versi Aplikasi:** 2.4.0 (build 101)
+**Versi Dokumen:** 1.3
 **Tanggal Terbit:** 17 Agustus 2026
 **Status:** Rilis
 **Jenis Dokumen:** Test Case — pengujian manual
@@ -610,6 +610,26 @@ sudah membayar berhenti berjualan.
 | TC-PF-32 | P1 | Buka daftar saringan resto | **KaataGo tidak ada** di daftarnya | F-PF-21 |
 | TC-PF-33 | P1 | Buka Jurnal GL KaataGo | Pendapatan langganan ada di sana, dan **Saldo Total tidak nol** | F-PF-07 |
 | TC-PF-34 | P2 | Periksa nomor akun di Jurnal GL KaataGo | Golongan **11xxxxx**, berbeda dari 19xxxxx milik resto | F-PF-08 |
+| TC-PF-35 | P1 | Bandingkan Saldo Total di Saldo & Pengeluaran dengan Jurnal GL KaataGo | Angkanya sama persis | F-PF-09 |
+| TC-PF-36 | P1 | Terbitkan voucher, muat ulang kedua layar | Keduanya berkurang sebesar alokasinya | F-PF-09 |
+| TC-PF-37 | P2 | Buka Saldo & Pengeluaran untuk KaataGo | Tidak ada kartu Saldo Cash / Non Cash | F-PF-10 |
+| TC-PF-38 | P2 | Buka layar yang sama untuk resto biasa | Kartu Cash/Non Cash tetap ada | F-PF-10 |
+| TC-CB-01 | P1 | Izinkan lokasi, lihat daftar Terdekat | Hanya resto ≤ 5 km yang muncul | F-CB-01 |
+| TC-CB-02 | P1 | Resto berjarak 7 km | Tidak di Terdekat, tapi ada di Semua Resto | F-CB-01, F-CB-02 |
+| TC-CB-03 | P2 | Periksa keterangan di judul bagian Terdekat | Tertulis "Dalam 5 km dari kamu" | F-CB-01 |
+| TC-CB-04 | P2 | Tolak izin lokasi | Bagian Terdekat tidak tampil; Semua Resto tetap ada | F-CB-02 |
+| TC-TU-01 | P1 | Owner → Saldo & Pengeluaran → Top Up Saldo | Tersimpan; Saldo Total naik sebesar nominalnya | F-TU-01, F-TU-02 |
+| TC-TU-02 | P1 | Periksa Jurnal GL sesudahnya | Kredit GL Total Saldo, debit GL Setoran Modal | F-TU-05 |
+| TC-TU-03 | P1 | Periksa Laporan Transaksi / Pemasukan | Setoran **tidak** muncul sebagai penjualan | F-TU-02 |
+| TC-TU-04 | P1 | Simpan tanpa mengisi Dari | Ditolak — "Sebutkan penyetornya" | F-TU-03 |
+| TC-TU-05 | P2 | Simpan tanpa bukti | Tetap tersimpan — buktinya opsional | F-TU-03 |
+| TC-TU-06 | P1 | Masuk sebagai Kasir, buka layar yang sama | Riwayat terlihat, tombol Top Up Saldo tidak ada | F-TU-04 |
+| TC-TU-07 | P1 | Kasir memanggil insert `balance_topups` lewat API | Ditolak RLS | F-TU-04 |
+| TC-TU-08 | P1 | Super Admin → Finance → Saldo & Pengeluaran → Top Up | Saldo KaataGo naik; Jurnal GL KaataGo mencatatnya | F-TU-01, F-TU-05 |
+| TC-TU-09 | P1 | Coba ubah atau hapus baris `balance_topups` | Ditolak — tidak ada kebijakannya | F-TU-06 |
+| TC-TU-10 | P2 | Periksa kartu Cash / Non Cash sesudah top up | Non Cash naik; keduanya tetap berjumlah sama dengan Penghasilan | F-TU-02 |
+| TC-TU-11 | P2 | Buka Pemetaan GL sebagai Finance resto | Ada bagian **GL Modal** | F-TU-02 |
+| TC-TU-12 | P2 | Buka halaman awal aplikasi | Tombolnya bertuliskan **KaataGo Merchant** | — |
 
 ---
 
@@ -882,10 +902,10 @@ Tiap kelompok kebutuhan di FSD, dan kasus uji yang menjaganya.
 | Sesi Meja (SS) | 7 | TC-SS-01…07 |
 | Pembaruan (UP) | 7 | TC-UP-01…09 |
 | Langganan (BL) | 41 | TC-BL-01…47, E2E-09 |
-| Finance KaataGo (PF) | 21 | TC-PF-01…34 |
+| Finance KaataGo (PF) | 25 | TC-PF-01…38 |
 | Voucher (VC) | 68 | TC-VC-01…68 |
 | Analisa Pasar (MR) | 13 | TC-MR-01…13 |
-| **Total** | **329** | **321 kasus + 8 alur ujung-ke-ujung** |
+| **Total** | **350** | **342 kasus + 8 alur ujung-ke-ujung** |
 
 Kriteria penerimaan A-01…A-20 di FSD §9 seluruhnya terpetakan lewat
 kolom Rujukan di atas. Bab TSD yang diuji: §1.2, §4, §5, §6, §7, §8,
