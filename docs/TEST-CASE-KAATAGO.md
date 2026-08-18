@@ -894,29 +894,40 @@ berminggu-minggu kemudian.
 
 Tiap kelompok kebutuhan di FSD, dan kasus uji yang menjaganya.
 
-| Kelompok | Kebutuhan | Kasus uji |
+Angkanya dihitung dari daftar kasusnya sendiri, bukan dijaga manual.
+Selama ini kolomnya dinaikkan sedikit-sedikit tiap ada tambahan, dan
+tabel yang dirawat dengan tangan seperti itu pasti meleset cepat atau
+lambat: terakhir ia menyebut 351 kasus padahal barisnya sudah 474, dan
+lima kelompok hilang sama sekali dari daftar.
+
+| Kelompok | Kasus uji | Rentang |
 |---|---|---|
-| Pelanggan (CU) | 24 | TC-CU-01…25, E2E-01, E2E-02 |
-| Kasir (KS) | 13 | TC-KS-01…16, TC-RG-01 |
-| Pending Payment (PP) | 10 | TC-PP-01…12, E2E-02, E2E-03 |
-| Dapur (CH) | 8 | TC-CH-01…12 |
-| Keuangan (FN) | 11 | TC-FN-01…17, E2E-05 |
-| Setor Saldo (SD) | 7 | TC-SD-01…09, E2E-04 |
-| Katalog (AD) | 20 | TC-AD-01…19, TC-TP-01…12 |
-| QR Meja (QR) | 7 | TC-QR-01…08 |
-| Kotak Masuk (IN) | 19 | TC-IN-01…14, TC-UP-04…09 |
-| Diskon (DS) | 16 | TC-DS-01…29, E2E-06 |
-| QRIS (PG) | 7 | TC-PG-01…10, TC-TS-15, TC-TS-16 |
-| Pembatalan (CN) | 6 | TC-CN-01…09, E2E-07 |
-| Tampilan (TM) | 8 | TC-TM-01…15 |
-| Super Admin (SA) | 12 | TC-SA-01…17 |
+| Pelanggan (CU) | 25 | TC-CU-01…25 |
+| Kasir (KS) | 16 | TC-KS-01…16 |
+| Pending Payment (PP) | 12 | TC-PP-01…12 |
+| Dapur (CH) | 12 | TC-CH-01…12 |
+| Keuangan (FN) | 17 | TC-FN-01…17 |
+| Setor Saldo (SD) | 9 | TC-SD-01…09 |
+| Katalog (AD) | 19 | TC-AD-01…19 |
+| Topping (TP) | 12 | TC-TP-01…12 |
+| QR Meja (QR) | 8 | TC-QR-01…08 |
+| Diskon (DS) | 29 | TC-DS-01…29 |
+| Kotak Masuk (IN) | 14 | TC-IN-01…14 |
+| QRIS (PG) | 10 | TC-PG-01…10 |
+| Pembatalan (CN) | 9 | TC-CN-01…09 |
 | Sesi Meja (SS) | 7 | TC-SS-01…07 |
-| Pembaruan (UP) | 7 | TC-UP-01…09 |
-| Langganan (BL) | 41 | TC-BL-01…47, E2E-09 |
-| Finance KaataGo (PF) | 25 | TC-PF-01…38 |
+| Tampilan (TM) | 15 | TC-TM-01…15 |
+| Super Admin (SA) | 17 | TC-SA-01…17 |
+| Pembaruan (UP) | 9 | TC-UP-01…09 |
+| Langganan (BL) | 55 | TC-BL-01…47 (+8 sisipan) |
+| Finance KaataGo (PF) | 39 | TC-PF-01…38 (+1 sisipan) |
+| Pilih Resto (CB) | 4 | TC-CB-01…04 |
+| Setoran Modal (TU) | 13 | TC-TU-01…12 (+1 sisipan) |
 | Voucher (VC) | 77 | TC-VC-01…77 |
 | Analisa Pasar (MR) | 13 | TC-MR-01…13 |
-| **Total** | **359** | **351 kasus + 8 alur ujung-ke-ujung** |
+| Pengaturan & Sesi (TS) | 19 | TC-TS-01…19 |
+| Peran & Akses (RG) | 14 | TC-RG-01…14 |
+| **Total** | **474** | **474 kasus + 9 alur ujung-ke-ujung** |
 
 Kriteria penerimaan A-01…A-20 di FSD §9 seluruhnya terpetakan lewat
 kolom Rujukan di atas. Bab TSD yang diuji: §1.2, §4, §5, §6, §7, §8,
