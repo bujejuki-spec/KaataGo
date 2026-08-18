@@ -61,9 +61,10 @@ alter table petty_cash_entries add constraint petty_cash_entries_source_check
 -- ── 3. Jurnal setoran: GL Cash keluar, GL Total Saldo masuk ──────────
 alter table gl_journal_entries drop constraint if exists gl_journal_entries_reference_type_check;
 alter table gl_journal_entries add constraint gl_journal_entries_reference_type_check
-  check (reference_type in
+  check (
+    reference_type in
     ('order', 'order_discount', 'expense', 'petty_cash', 'cash_deposit',
-     'billing', 'billing_discount', 'voucher'));
+     'billing', 'billing_discount', 'voucher', 'capital'));
 
 create or replace function log_cash_deposit_journal()
 returns trigger

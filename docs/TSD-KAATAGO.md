@@ -1,6 +1,6 @@
 # KaataGo — Technical Specification Document
 
-**Versi Aplikasi:** 2.4.0 (build 101)
+**Versi Aplikasi:** 2.4.1 (build 102)
 **Versi Dokumen:** 1.3
 **Tanggal Terbit:** 17 Agustus 2026
 **Status:** Rilis
@@ -1017,12 +1017,29 @@ seluruh pergerakannya tidak terhitung sama sekali. Layar Saldo &
 Pengeluaran berbunyi Rp 0 sementara Jurnal GL di sebelahnya menyebut
 Rp 115.000.
 
-Sekarang keduanya memanggil `saldoPlatform()` di
-`lib/utils/saldo_jurnal.dart`, yang menghitung **kredit − debit pada
-akun GL Total Saldo**. Setiap perpindahan uang bebas KaataGo memang
-selalu lewat akun itu, jadi aturannya tidak perlu ditambahi tiap ada
-fitur baru. Kesalahan yang lama tidak mengeluh — angkanya cuma salah,
-dan tetap terlihat masuk akal.
+Perbaikan pertamanya juga salah, dan cara gagalnya mengajarkan
+sesuatu. Aturan diganti jadi "kredit − debit **pada akun GL Total
+Saldo**", dengan anggapan setiap uang bebas KaataGo lewat akun itu.
+Anggapan itu tidak pernah diperiksa terhadap datanya: pendapatan
+langganan dikreditkan langsung ke GL Pendapatan Langganan (1100001) dan
+tidak pernah menyentuh 1100040. Yang lewat sana hanya voucher — karena
+itu satu-satunya alur yang ditulis dengan anggapan tersebut — jadi
+saldonya berbunyi **−100**, tepat sebesar voucher yang terbit.
+
+Aturan yang dipakai sekarang: **total kredit − total debit atas seluruh
+buku**, tanpa menyebut akun mana pun. Transaksi yang cuma memindahkan
+uang antar kantong menulis satu debit dan satu kredit yang saling
+menghapus, jadi ia tidak mengubah saldo — dan memang seharusnya tidak.
+Yang menaikkan saldo adalah kredit tanpa pasangan debit.
+
+Akibatnya untuk fitur baru: uang yang benar-benar masuk dari luar
+ditulis **satu baris kredit** ke akunnya sendiri, mengikuti pola
+pendapatan langganan. Setoran modal sempat ditulis berpasangan dengan
+debit GL Total Saldo, dan pasangan itu membuatnya tidak menaikkan saldo
+sama sekali.
+
+Ketiga kesalahan ini tidak mengeluh. Angkanya cuma salah, dan tetap
+terlihat masuk akal.
 
 ### 11.2 Mengubah tipe kembalian fungsi butuh DROP lebih dulu
 

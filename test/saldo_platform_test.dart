@@ -43,30 +43,93 @@ void main() {
       expect(saldoPlatform(j, _total), 115000);
     });
 
-    test('akun lain tidak ikut dihitung', () {
-      // Baris langganan dan voucher punya akunnya sendiri; hanya
-      // pergerakan Total Saldo yang menentukan berapa yang bebas.
+    test('seluruh buku dihitung, bukan satu akun saja', () {
+      // Pendapatan langganan dikreditkan ke GL Pendapatan Langganan dan
+      // tidak pernah menyentuh GL Total Saldo. Menghitung akun itu saja
+      // membuat seluruh pendapatan hilang dari saldonya.
       final j = [
-        _baris(glCode: _total, amount: 230000, type: JournalEntryType.credit),
         _baris(glCode: '1100001', amount: 230000, type: JournalEntryType.credit),
-        _baris(glCode: '1100073', amount: 500000, type: JournalEntryType.credit),
+        _baris(
+            glCode: '1100002',
+            amount: 115000,
+            type: JournalEntryType.debit,
+            referenceType: 'billing_discount',
+            referenceId: 'DISC'),
       ];
-      expect(saldoPlatform(j, _total), 230000);
+      expect(saldoPlatform(j, _total), 115000);
     });
 
-    test('voucher yang terbit mengurangi saldo bebas', () {
-      // Inilah yang dulu tidak terhitung: jenis transaksinya belum ada
-      // di daftar, jadi pergerakannya lenyap tanpa mengeluh.
+    test('data sungguhan yang dulu berbunyi minus', () {
+      // Persis isi buku KaataGo saat saldonya salah tampil −100:
+      // satu-satunya baris di GL Total Saldo adalah debit voucher.
       final j = [
-        _baris(glCode: _total, amount: 230000, type: JournalEntryType.credit),
+        _baris(glCode: '1100001', amount: 230000, type: JournalEntryType.credit),
+        _baris(
+            glCode: '1100002',
+            amount: 115000,
+            type: JournalEntryType.debit,
+            referenceType: 'billing_discount',
+            referenceId: 'D'),
+        _baris(
+            glCode: _total,
+            amount: 100,
+            type: JournalEntryType.debit,
+            referenceType: 'voucher',
+            referenceId: 'V1'),
+        _baris(
+            glCode: '1100073',
+            amount: 100,
+            type: JournalEntryType.credit,
+            referenceType: 'voucher',
+            referenceId: 'V1'),
+        _baris(
+            glCode: '1100073',
+            amount: 10,
+            type: JournalEntryType.debit,
+            referenceType: 'voucher',
+            referenceId: 'V2'),
+        _baris(
+            glCode: '1100074',
+            amount: 10,
+            type: JournalEntryType.credit,
+            referenceType: 'voucher',
+            referenceId: 'V2'),
+      ];
+      expect(saldoPlatform(j, _total), 115000);
+    });
+
+    test('perpindahan antar kantong tidak mengubah saldo', () {
+      // Voucher terbit memindahkan uang, tidak menghilangkannya.
+      final j = [
         _baris(
             glCode: _total,
             amount: 1000000,
             type: JournalEntryType.debit,
             referenceType: 'voucher',
-            referenceId: 'VC-1'),
+            referenceId: 'V'),
+        _baris(
+            glCode: '1100073',
+            amount: 1000000,
+            type: JournalEntryType.credit,
+            referenceType: 'voucher',
+            referenceId: 'V'),
       ];
-      expect(saldoPlatform(j, _total), -770000);
+      expect(saldoPlatform(j, _total), 0);
+    });
+
+    test('voucher yang benar-benar dipakai mengurangi saldo', () {
+      // Saat dipakai, sisi KaataGo cuma didebit — kreditnya jatuh ke
+      // buku restonya, yang bukan bagian dari buku ini.
+      final j = [
+        _baris(glCode: '1100001', amount: 230000, type: JournalEntryType.credit),
+        _baris(
+            glCode: '1100074',
+            amount: 10000,
+            type: JournalEntryType.debit,
+            referenceType: 'voucher',
+            referenceId: 'V'),
+      ];
+      expect(saldoPlatform(j, _total), 220000);
     });
 
     test('pembatalan membuang kedua barisnya', () {

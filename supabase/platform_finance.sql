@@ -221,9 +221,10 @@ $$;
 
 alter table gl_journal_entries drop constraint if exists gl_journal_entries_reference_type_check;
 alter table gl_journal_entries add constraint gl_journal_entries_reference_type_check
-  check (reference_type in
+  check (
+    reference_type in
     ('order', 'order_discount', 'expense', 'petty_cash', 'cash_deposit',
-     'billing', 'billing_discount', 'voucher'));
+     'billing', 'billing_discount', 'voucher', 'capital'));
 
 create or replace function log_billing_journal()
 returns trigger

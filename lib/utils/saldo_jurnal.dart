@@ -23,41 +23,45 @@ List<GlJournalEntry> barisBerlaku(List<GlJournalEntry> semua) {
 
 /// Saldo pembukuan KaataGo sendiri.
 ///
-/// Dihitung dari pergerakan **akun GL Total Saldo**, bukan dari daftar
-/// jenis transaksi. Tiap fitur baru yang memindahkan uang selalu lewat
-/// akun itu — langganan, diskon langganan, voucher, pengeluaran — jadi
-/// aturannya tidak perlu ditambahi tiap kali ada fitur baru.
+/// Total kredit dikurangi total debit atas **seluruh buku**, bukan atas
+/// satu akun tertentu.
 ///
-/// Daftar jenis transaksi pernah dipakai di sini, dan itu yang membuat
-/// saldo KaataGo berbunyi Rp 0 saat voucher terbit: jenisnya belum ada
-/// di daftar, jadi pergerakannya tidak terhitung sama sekali. Kesalahan
-/// semacam itu tidak mengeluh — angkanya cuma salah, dan tetap terlihat
-/// masuk akal.
+/// Dua aturan sebelumnya sama-sama salah, dan cara gagalnya berbeda.
 ///
-/// Kredit menambah, debit mengurangi: uang masuk dikredit ke akun ini,
-/// uang keluar didebit darinya.
-int saldoPlatform(List<GlJournalEntry> semua, String kodeTotalSaldo) {
-  final berlaku = barisBerlaku(semua);
+/// Yang pertama menjumlah berdasarkan daftar jenis transaksi. Daftar
+/// begitu harus ditambahi tiap kali ada fitur baru yang memindahkan
+/// uang — dan saat voucher terbit, jenisnya belum ada di sana.
+///
+/// Yang kedua menjumlah pergerakan akun GL Total Saldo saja, dengan
+/// anggapan setiap uang bebas KaataGo lewat akun itu. Ternyata tidak:
+/// pendapatan langganan dikreditkan langsung ke GL Pendapatan
+/// Langganan, tidak pernah menyentuh GL Total Saldo. Yang lewat sana
+/// hanya voucher, jadi saldonya berbunyi minus sebesar voucher yang
+/// terbit.
+///
+/// Aturan sekarang tidak menganggap apa pun tentang akun mana yang
+/// dipakai. Transaksi yang cuma memindahkan uang antar-kantong menulis
+/// satu debit dan satu kredit yang saling menghapus, jadi ia tidak
+/// mengubah saldo — dan memang seharusnya tidak. Yang menaikkan saldo
+/// adalah kredit tanpa pasangan debit, yang menurunkannya sebaliknya.
+int saldoPlatform(List<GlJournalEntry> semua, [String? kodeTotalSaldoUsang]) {
   var saldo = 0;
-  for (final e in berlaku) {
-    if (e.glCode != kodeTotalSaldo) continue;
+  for (final e in barisBerlaku(semua)) {
     saldo += e.entryType == JournalEntryType.credit ? e.amount : -e.amount;
   }
   return saldo;
 }
 
-/// Uang masuk ke pembukuan KaataGo — kredit ke GL Total Saldo.
-int pemasukanPlatform(List<GlJournalEntry> semua, String kodeTotalSaldo) =>
+/// Seluruh uang masuk yang tercatat — jumlah sisi kredit.
+int pemasukanPlatform(List<GlJournalEntry> semua,
+        [String? kodeTotalSaldoUsang]) =>
     barisBerlaku(semua)
-        .where((e) =>
-            e.glCode == kodeTotalSaldo &&
-            e.entryType == JournalEntryType.credit)
+        .where((e) => e.entryType == JournalEntryType.credit)
         .fold(0, (jumlah, e) => jumlah + e.amount);
 
-/// Uang keluar dari pembukuan KaataGo — debit dari GL Total Saldo.
-int pengeluaranPlatform(List<GlJournalEntry> semua, String kodeTotalSaldo) =>
+/// Seluruh uang keluar yang tercatat — jumlah sisi debit.
+int pengeluaranPlatform(List<GlJournalEntry> semua,
+        [String? kodeTotalSaldoUsang]) =>
     barisBerlaku(semua)
-        .where((e) =>
-            e.glCode == kodeTotalSaldo &&
-            e.entryType == JournalEntryType.debit)
+        .where((e) => e.entryType == JournalEntryType.debit)
         .fold(0, (jumlah, e) => jumlah + e.amount);

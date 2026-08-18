@@ -39,12 +39,19 @@ void main() {
   });
 
   group('jurnalnya', () {
-    test('kredit Total Saldo, debit Setoran Modal', () {
-      // Kredit = uang masuk. Debit di akun modal menandai kantong
-      // asalnya, supaya jelas uang ini datang dari mana.
+    test('satu baris kredit ke akun modalnya sendiri', () {
+      // Sempat ditulis berpasangan dengan debit GL Total Saldo — dan
+      // pasangan yang saling menghapus membuat setoran modal tidak
+      // menaikkan saldo sama sekali, karena saldo adalah selisih
+      // seluruh kredit dan debit.
       final blok = sql.substring(sql.indexOf('function log_balance_topup'));
       expect(blok, contains("'capital', new.id::text, new.amount, 'credit'"));
-      expect(blok, contains("'capital', new.id::text, new.amount, 'debit'"));
+      expect(blok, isNot(contains("'debit'")));
+      expect(blok, isNot(contains("'total_balance'")));
+    });
+
+    test('jenis rujukannya masuk daftar batasan', () {
+      expect(sql, contains("'voucher', 'capital'"));
     });
 
     test('ditulis pemicu, bukan aplikasi', () {

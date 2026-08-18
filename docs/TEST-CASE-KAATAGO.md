@@ -1,6 +1,6 @@
 # KaataGo — Test Case
 
-**Versi Aplikasi:** 2.4.0 (build 101)
+**Versi Aplikasi:** 2.4.1 (build 102)
 **Versi Dokumen:** 1.3
 **Tanggal Terbit:** 17 Agustus 2026
 **Status:** Rilis
@@ -611,7 +611,8 @@ sudah membayar berhenti berjualan.
 | TC-PF-33 | P1 | Buka Jurnal GL KaataGo | Pendapatan langganan ada di sana, dan **Saldo Total tidak nol** | F-PF-07 |
 | TC-PF-34 | P2 | Periksa nomor akun di Jurnal GL KaataGo | Golongan **11xxxxx**, berbeda dari 19xxxxx milik resto | F-PF-08 |
 | TC-PF-35 | P1 | Bandingkan Saldo Total di Saldo & Pengeluaran dengan Jurnal GL KaataGo | Angkanya sama persis | F-PF-09 |
-| TC-PF-36 | P1 | Terbitkan voucher, muat ulang kedua layar | Keduanya berkurang sebesar alokasinya | F-PF-09 |
+| TC-PF-36 | P1 | Terbitkan voucher, muat ulang kedua layar | Saldo Total **tidak** berubah — uangnya pindah kantong, bukan hilang | F-PF-09 |
+| TC-PF-36b | P1 | Voucher dipakai pelanggan di resto | Saldo KaataGo berkurang sebesar nilai vouchernya | F-PF-09 |
 | TC-PF-37 | P2 | Buka Saldo & Pengeluaran untuk KaataGo | Tidak ada kartu Saldo Cash / Non Cash | F-PF-10 |
 | TC-PF-38 | P2 | Buka layar yang sama untuk resto biasa | Kartu Cash/Non Cash tetap ada | F-PF-10 |
 | TC-CB-01 | P1 | Izinkan lokasi, lihat daftar Terdekat | Hanya resto ≤ 5 km yang muncul | F-CB-01 |
@@ -619,7 +620,8 @@ sudah membayar berhenti berjualan.
 | TC-CB-03 | P2 | Periksa keterangan di judul bagian Terdekat | Tertulis "Dalam 5 km dari kamu" | F-CB-01 |
 | TC-CB-04 | P2 | Tolak izin lokasi | Bagian Terdekat tidak tampil; Semua Resto tetap ada | F-CB-02 |
 | TC-TU-01 | P1 | Owner → Saldo & Pengeluaran → Top Up Saldo | Tersimpan; Saldo Total naik sebesar nominalnya | F-TU-01, F-TU-02 |
-| TC-TU-02 | P1 | Periksa Jurnal GL sesudahnya | Kredit GL Total Saldo, debit GL Setoran Modal | F-TU-05 |
+| TC-TU-01b | P1 | Super Admin top up, periksa Saldo Total KaataGo | Naik sebesar nominalnya — bukan tetap | F-TU-02, F-TU-05 |
+| TC-TU-02 | P1 | Periksa Jurnal GL sesudahnya | Satu baris kredit ke GL Setoran Modal | F-TU-05 |
 | TC-TU-03 | P1 | Periksa Laporan Transaksi / Pemasukan | Setoran **tidak** muncul sebagai penjualan | F-TU-02 |
 | TC-TU-04 | P1 | Simpan tanpa mengisi Dari | Ditolak — "Sebutkan penyetornya" | F-TU-03 |
 | TC-TU-05 | P2 | Simpan tanpa bukti | Tetap tersimpan — buktinya opsional | F-TU-03 |

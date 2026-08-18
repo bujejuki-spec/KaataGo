@@ -1,6 +1,6 @@
 # KaataGo — Functional Specification Document
 
-**Versi Aplikasi:** 2.4.0 (build 101)
+**Versi Aplikasi:** 2.4.1 (build 102)
 **Versi Dokumen:** 2.4
 **Tanggal Terbit:** 17 Agustus 2026
 **Status:** Rilis
@@ -580,7 +580,7 @@ keuangan lain di aplikasi ini.
 | F-PF-07 | Pendapatan langganan masuk **Jurnal GL KaataGo** secara otomatis saat tagihan lunas |
 | F-PF-13 | Pendapatan dicatat sebesar **harga daftar**; diskon jadi baris pengurang tersendiri |
 | F-PF-08 | KaataGo punya **bagan akun sendiri** — pendapatan, diskon, kas, petty cash, suspense, pengeluaran |
-| F-PF-09 | Saldo KaataGo dihitung dari **pergerakan GL Total Saldo**, sumber yang sama dengan Jurnal GL |
+| F-PF-09 | Saldo KaataGo dihitung dari **total kredit − total debit seluruh buku**, sumber yang sama dengan Jurnal GL |
 | F-PF-10 | Layar Saldo KaataGo tidak menampilkan Saldo Cash/Non Cash — KaataGo tidak punya laci kasir |
 | F-CB-01 | Daftar **Terdekat** hanya memuat resto dalam radius **5 km** dari titik pelanggan |
 | F-CB-02 | Resto di luar radius tetap tersedia di daftar **Semua Resto** |
