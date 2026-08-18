@@ -1,7 +1,7 @@
 # KaataGo — Test Case
 
-**Versi Aplikasi:** 2.4.1 (build 102)
-**Versi Dokumen:** 1.3
+**Versi Aplikasi:** 2.5.0 (build 103)
+**Versi Dokumen:** 1.4
 **Tanggal Terbit:** 17 Agustus 2026
 **Status:** Rilis
 **Jenis Dokumen:** Test Case — pengujian manual
@@ -707,6 +707,15 @@ sudah membayar berhenti berjualan.
 | TC-VC-66 | P1 | Ketuk **Penebus** pada sebuah batch | Daftar email penebut berikut tanggal tebus dan statusnya | F-VC-25 |
 | TC-VC-67 | P1 | Periksa ringkasan di atas daftar penebus | Dipakai / Menggantung / Hangus berjumlah sama dengan barisnya | F-VC-25 |
 | TC-VC-68 | P1 | Lewati tanggal kedaluwarsa sebelum penjadwal berjalan | Statusnya sudah **Hangus**, bukan Belum Dipakai | F-VC-25 |
+| TC-VC-69 | P1 | Terbitkan batch dengan ceklis **Khusus pengguna baru** | Tersimpan; kartunya menyebut "khusus pengguna baru" | F-VC-26 |
+| TC-VC-70 | P1 | Akun yang belum pernah memesan menebusnya | Berhasil | F-VC-26 |
+| TC-VC-71 | P1 | Akun yang pernah punya pesanan terbayar menebusnya | Ditolak — "hanya untuk pengguna baru KaataGo" | F-VC-26, F-VC-27 |
+| TC-VC-72 | P1 | Akun yang pesanannya semua **batal** menebusnya | Berhasil — batal tidak menghilangkan status pengguna baru | F-VC-26 |
+| TC-VC-73 | P1 | Akun yang pernah memesan di resto lain saja | Ditolak — batasnya seluruh KaataGo | F-VC-26 |
+| TC-VC-74 | P1 | Batch khusus pengguna baru berkuota 1, ditebus akun lama lalu akun baru | Akun lama ditolak dengan sebab yang benar; kuotanya tidak berkurang | F-VC-26, F-VC-27 |
+| TC-VC-75 | P2 | Periksa pengumuman kotak masuknya | Menyebut "Khusus pengguna baru" | F-VC-28 |
+| TC-VC-76 | P2 | Terbitkan batch tanpa ceklis itu | Siapa pun bisa menebus; kalimat syaratnya tidak muncul | F-VC-26, F-VC-28 |
+| TC-VC-77 | P2 | Periksa batch lama yang terbit sebelum fitur ini | Tetap terbuka untuk siapa saja | F-VC-26 |
 
 ---
 
@@ -905,9 +914,9 @@ Tiap kelompok kebutuhan di FSD, dan kasus uji yang menjaganya.
 | Pembaruan (UP) | 7 | TC-UP-01…09 |
 | Langganan (BL) | 41 | TC-BL-01…47, E2E-09 |
 | Finance KaataGo (PF) | 25 | TC-PF-01…38 |
-| Voucher (VC) | 68 | TC-VC-01…68 |
+| Voucher (VC) | 77 | TC-VC-01…77 |
 | Analisa Pasar (MR) | 13 | TC-MR-01…13 |
-| **Total** | **350** | **342 kasus + 8 alur ujung-ke-ujung** |
+| **Total** | **359** | **351 kasus + 8 alur ujung-ke-ujung** |
 
 Kriteria penerimaan A-01…A-20 di FSD §9 seluruhnya terpetakan lewat
 kolom Rujukan di atas. Bab TSD yang diuji: §1.2, §4, §5, §6, §7, §8,

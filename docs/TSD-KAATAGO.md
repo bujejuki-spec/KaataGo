@@ -1,7 +1,7 @@
 # KaataGo — Technical Specification Document
 
-**Versi Aplikasi:** 2.4.1 (build 102)
-**Versi Dokumen:** 1.3
+**Versi Aplikasi:** 2.5.0 (build 103)
+**Versi Dokumen:** 1.4
 **Tanggal Terbit:** 17 Agustus 2026
 **Status:** Rilis
 **Jenis Dokumen:** TSD — sisi teknis
@@ -816,6 +816,14 @@ mengembalikan dua kali pada batch yang sudah disettle penjadwal.
 Pengumumannya dicabut lewat pencocokan `body like '%Kode voucher: …%'`;
 kabar yang menyuruh menebus kode yang sudah tidak ada lebih buruk
 daripada tidak ada kabar.
+
+`supabase/voucher_new_customer.sql` menambah `vouchers
+.new_customers_only` (`not null default false`, supaya batch lama tidak
+tiba-tiba jadi terbatas) dan `_pelanggan_baru(email)` — `not exists`
+atas `orders` dengan `payment_status = 'paid'`, tanpa menyebut
+`resto_id` sama sekali. Pemeriksaannya diletakkan di `claim_voucher`
+**sebelum** hitungan kuota: yang tidak berhak tidak boleh menghabiskan
+jatah yang berhak, dan tidak boleh menerima alasan yang salah.
 
 **Tahap 3 diikuti uang sungguhan.** `supabase/voucher_payouts.sql`.
 Pemicunya tidak memanggil Xendit — ia menulis satu baris ke

@@ -413,6 +413,63 @@ void main() {
     });
   });
 
+  group('voucher khusus pengguna baru', () {
+    final sql = File('supabase/voucher_new_customer.sql').readAsStringSync();
+    final layar = File('lib/screens/voucher_screen.dart').readAsStringSync();
+
+    test('pengguna baru berarti belum pernah punya pesanan terbayar', () {
+      // Pesanan batal tidak dihitung: orang yang memesan lalu
+      // membatalkannya belum pernah benar-benar memakai KaataGo, dan
+      // menutup pintu untuknya justru menutup pintu bagi orang yang
+      // paling ingin dibujuk kembali.
+      expect(sql, contains('function _pelanggan_baru'));
+      expect(sql, contains("payment_status = 'paid'"));
+      expect(sql, contains('select not exists ('));
+    });
+
+    test('batasnya seluruh KaataGo, bukan per resto', () {
+      // Orang yang sudah rutin memesan di resto sebelah bukan pengguna
+      // baru hanya karena belum pernah masuk resto ini.
+      final fn = sql.substring(sql.indexOf('function _pelanggan_baru'),
+          sql.indexOf('function claim_voucher'));
+      expect(fn, isNot(contains('resto_id')));
+    });
+
+    test('diperiksa saat menebus, bukan cuma disimpan', () {
+      expect(sql, contains('if v.new_customers_only and not _pelanggan_baru'));
+    });
+
+    test('alasan penolakannya menyebut sebab yang sebenarnya', () {
+      expect(sql,
+          contains('Voucher ini hanya untuk pengguna baru KaataGo'));
+    });
+
+    test('diperiksa sebelum kuota', () {
+      // Orang yang tidak berhak tidak boleh menghabiskan jatah orang
+      // yang berhak, dan tidak boleh diberi tahu "sudah habis" padahal
+      // sebabnya bukan itu.
+      final blok = sql.substring(sql.indexOf('function claim_voucher'));
+      expect(blok.indexOf('new_customers_only'),
+          lessThan(blok.indexOf('v_terpakai >= v.quantity')));
+    });
+
+    test('syaratnya disebut di pengumumannya', () {
+      // Ditolak sesudah bersemangat lebih menjengkelkan daripada tahu
+      // sejak awal bahwa ini bukan untuk dirinya.
+      expect(sql, contains('Khusus pengguna baru yang belum pernah memesan'));
+    });
+
+    test('ada ceklisnya di form terbit, dan tampil di kartunya', () {
+      expect(layar, contains("const Text('Khusus pengguna baru',"));
+      expect(layar, contains("if (voucher.newCustomersOnly) 'khusus pengguna baru',"));
+    });
+
+    test('kolomnya bawaan false, bukan null', () {
+      // Voucher lama tidak boleh tiba-tiba jadi terbatas.
+      expect(sql, contains('boolean not null default false'));
+    });
+  });
+
   group('alur uangnya di SQL', () {
     final sql = File('supabase/vouchers.sql').readAsStringSync();
 

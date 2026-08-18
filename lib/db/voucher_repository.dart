@@ -40,6 +40,7 @@ class VoucherRepository {
     int minPurchase = 0,
     List<String> restoIds = const [],
     String? banner,
+    bool newCustomersOnly = false,
   }) async {
     final id = await _client.rpc('generate_voucher_batch', params: {
       'p_code': code,
@@ -50,6 +51,7 @@ class VoucherRepository {
       'p_min_purchase': minPurchase,
       'p_resto_ids': restoIds,
       'p_banner': banner,
+      'p_new_customers_only': newCustomersOnly,
     });
     return id?.toString() ?? '';
   }

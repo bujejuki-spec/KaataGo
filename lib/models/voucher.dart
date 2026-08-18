@@ -58,6 +58,13 @@ class Voucher {
   /// Gambar 16:9 yang ikut tampil di kotak masuk pelanggan.
   final String? bannerBase64;
 
+  /// Hanya untuk yang belum pernah memesan lewat KaataGo.
+  ///
+  /// Voucher promosi paling mahal adalah yang ditebus orang yang memang
+  /// sudah pasti memesan. Batasan ini membuat anggarannya jatuh ke
+  /// orang yang belum pernah mencoba sama sekali.
+  final bool newCustomersOnly;
+
   /// Sudah ditebus berapa — hanya terisi di layar Super Admin.
   final int claimed;
 
@@ -76,6 +83,7 @@ class Voucher {
     this.createdBy,
     required this.createdAt,
     this.bannerBase64,
+    this.newCustomersOnly = false,
     this.claimed = 0,
   });
 
@@ -245,5 +253,6 @@ Voucher voucherFromMap(Map<String, dynamic> map, {int claimed = 0}) => Voucher(
       createdBy: map['created_by'] as String?,
       createdAt: DateTime.parse(map['created_at'].toString()).toLocal(),
       bannerBase64: map['banner_base64'] as String?,
+      newCustomersOnly: map['new_customers_only'] == true,
       claimed: claimed,
     );

@@ -339,6 +339,7 @@ class _Kartu extends StatelessWidget {
                   : voucher.restoIds.map((id) => nama[id] ?? id).join(', '),
               if (voucher.minPurchase > 0)
                 'min belanja ${_rupiah.format(voucher.minPurchase)}',
+              if (voucher.newCustomersOnly) 'khusus pengguna baru',
             ].join(' · '),
             style:
                 TextStyle(fontSize: 11.5, color: KaataTheme.mutedOf(context)),
@@ -407,6 +408,7 @@ class _FormBatchState extends State<_FormBatch> {
   final Set<String> _sasaran = {};
   final _cariResto = TextEditingController();
   String? _banner;
+  bool _khususBaru = false;
   DateTime? _kedaluwarsa;
   bool _menyimpan = false;
 
@@ -498,6 +500,7 @@ class _FormBatchState extends State<_FormBatch> {
         minPurchase: parseRupiah(_minBelanja.text) ?? 0,
         restoIds: _sasaran.toList(),
         banner: _banner,
+        newCustomersOnly: _khususBaru,
       );
       if (!mounted) return;
       Navigator.pop(context, true);
@@ -781,7 +784,22 @@ class _FormBatchState extends State<_FormBatch> {
                   ],
                 ),
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 8),
+              CheckboxListTile(
+                value: _khususBaru,
+                onChanged: (v) => setState(() => _khususBaru = v ?? false),
+                contentPadding: EdgeInsets.zero,
+                controlAffinity: ListTileControlAffinity.leading,
+                title: const Text('Khusus pengguna baru',
+                    style: TextStyle(fontSize: 13.5)),
+                subtitle: Text(
+                  'Hanya bisa ditebus yang belum pernah memesan lewat '
+                  'KaataGo, di resto mana pun.',
+                  style: TextStyle(
+                      fontSize: 11.5, color: KaataTheme.mutedOf(context)),
+                ),
+              ),
+              const SizedBox(height: 10),
               const Text('Banner 16:9 (opsional)',
                   style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
               const SizedBox(height: 4),

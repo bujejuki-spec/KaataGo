@@ -66,6 +66,7 @@ FILES=(
   market_report.sql
   billing_due_day.sql
   balance_topup.sql
+  voucher_new_customer.sql
 )
 
 {

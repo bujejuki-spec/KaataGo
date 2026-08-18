@@ -1,7 +1,7 @@
 # KaataGo — Functional Specification Document
 
-**Versi Aplikasi:** 2.4.1 (build 102)
-**Versi Dokumen:** 2.4
+**Versi Aplikasi:** 2.5.0 (build 103)
+**Versi Dokumen:** 2.5
 **Tanggal Terbit:** 17 Agustus 2026
 **Status:** Rilis
 **Jenis Dokumen:** FSD — sisi fungsional
@@ -664,6 +664,9 @@ satunya.
 | F-VC-23 | Batch dapat dibekali **banner 16:9** yang ikut tampil di Kotak Masuk pelanggan |
 | F-VC-24 | Batch dapat **dihapus** hanya bila sudah **ditutup** dan **belum ada penebusnya**; dananya kembali ke saldo dan pengumumannya dicabut |
 | F-VC-25 | Super Admin dapat melihat **daftar penebus**: email, tanggal tebus, tanggal pakai, dan statusnya |
+| F-VC-26 | Batch dapat ditandai **khusus pengguna baru** — hanya bisa ditebus yang belum pernah punya pesanan terbayar di resto mana pun |
+| F-VC-27 | Penolakannya menyebut sebabnya: "Voucher ini hanya untuk pengguna baru KaataGo" |
+| F-VC-28 | Syarat itu ikut disebut di pengumuman kotak masuknya |
 
 > **Kenapa nominalnya exact, bukan persentase.** Anggaran promo yang
 > ditetapkan di muka bisa dihitung sampai habis. "Diskon 20%" pada
@@ -704,6 +707,20 @@ satunya.
 > tanpa uang sungguhan adalah cara paling rapi menutupi selisih laci.
 > Kasir tetap boleh melihatnya, karena angkanya memengaruhi saldo yang
 > dia pertanggungjawabkan.
+
+> **Kenapa "pengguna baru" dihitung se-KaataGo, bukan per resto.**
+> Voucher ini promo KaataGo. Orang yang sudah rutin memesan di resto
+> sebelah bukan pengguna baru hanya karena belum pernah masuk resto
+> ini.
+
+> **Kenapa pesanan batal tidak menghilangkan status pengguna baru.**
+> Orang yang memesan lalu membatalkannya belum pernah benar-benar
+> memakai KaataGo — dan menutup pintu untuknya justru menutup pintu
+> bagi orang yang paling ingin dibujuk kembali.
+
+> **Kenapa syaratnya diperiksa sebelum kuota.** Orang yang tidak berhak
+> menebus tidak boleh menghabiskan jatah orang yang berhak, dan tidak
+> boleh diberi tahu "sudah habis" padahal sebabnya bukan itu.
 
 > **Kenapa batch berjalan tidak bisa dihapus.** Kodenya sudah tersebar
 > lewat pengumuman. Menghapusnya berarti kode itu tiba-tiba tidak ada,
