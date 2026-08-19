@@ -160,7 +160,12 @@ void main() {
       expect(sql, contains('add column if not exists max_toppings'));
 
       final lokal = File('lib/db/database_helper.dart').readAsStringSync();
-      expect(lokal, contains('version: 13'));
+      // Yang dijaga migrasinya, bukan angka versinya — nomor itu naik
+      // tiap ada kolom baru untuk hal lain, dan menguncinya di sini
+      // membuat tes ini gagal karena perubahan yang tidak ada
+      // hubungannya dengan topping.
+      expect(lokal, contains('oldVersion < 13'));
+      expect(lokal, contains('ALTER TABLE products ADD COLUMN toppings TEXT'));
       expect(lokal, contains('ADD COLUMN toppings TEXT'));
       expect(lokal, contains('ADD COLUMN max_toppings'));
     });

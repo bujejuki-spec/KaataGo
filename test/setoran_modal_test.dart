@@ -19,7 +19,7 @@ void main() {
       expect(sql, contains("'1940001', 'GL Setoran Modal'"));
     });
 
-    test('resto platform tidak kebagian nomor resto', () {
+    test('merchant platform tidak kebagian nomor merchant', () {
       expect(sql, contains('coalesce(r.is_platform, false) = false'));
     });
 
@@ -123,11 +123,11 @@ void main() {
   });
 
   group('wording masuk', () {
-    test('Karyawan Resto sudah jadi KaataGo Merchant', () {
+    test('Karyawan Merchant sudah jadi KaataGo Merchant', () {
       final pilih =
           File('lib/screens/role_choice_screen.dart').readAsStringSync();
       expect(pilih, contains("context.tr('KaataGo Merchant')"));
-      expect(pilih, isNot(contains('Karyawan Resto')));
+      expect(pilih, isNot(contains('Karyawan Merchant')));
     });
   });
 }

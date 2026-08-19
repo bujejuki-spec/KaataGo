@@ -14,6 +14,17 @@ class OrderRepository {
     return row['id'] as String;
   }
 
+  /// Membuat pesanan dan mengembalikan nomor antreannya.
+  ///
+  /// Nomornya diberikan pemicu di basis data, jadi baru diketahui
+  /// sesudah barisnya benar-benar tersimpan — tidak bisa ditebak di
+  /// aplikasi tanpa mengulangi pencacahannya, dan pencacah kedua adalah
+  /// nomor kembar saat dua kasir menutup transaksi bersamaan.
+  Future<int?> createReturningNo(CustomerOrder order) async {
+    final row = await _client.from('orders').insert(order.toMap()).select().single();
+    return (row['order_no'] as num?)?.toInt();
+  }
+
   /// Confirms the customer's (dummy) QRIS payment. Goes through the
   /// `mark_order_paid` RPC (SECURITY DEFINER) instead of a direct table
   /// UPDATE — a guest customer has no employee RLS privileges to update

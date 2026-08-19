@@ -113,7 +113,7 @@ class _PendingPaymentScreenState extends State<PendingPaymentScreen> {
     if (restoId == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Pending Payment')),
-        body: const Center(child: Text('Akun ini belum punya Resto ID.')),
+        body: const Center(child: Text('Akun ini belum punya Merchant ID.')),
       );
     }
 
@@ -371,7 +371,7 @@ class _MethodSheet extends StatelessWidget {
               method: 'transfer',
               icon: Icons.account_balance_outlined,
               label: 'Transfer',
-              note: 'Rekening resto, dikonfirmasi kasir'),
+              note: 'Rekening merchant, dikonfirmasi kasir'),
           const SizedBox(height: 8),
         ],
       ),

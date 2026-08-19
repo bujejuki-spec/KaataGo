@@ -79,7 +79,7 @@ Future<void> cetakInvoiceLangganan({
           pw.Divider(color: PdfColors.grey300),
           pw.SizedBox(height: 14),
           _baris('Nomor Tagihan', invoice.id),
-          _baris('Resto', restoName),
+          _baris('Merchant', restoName),
           _baris(
               'Periode',
               '${_tanggal.format(invoice.periodStart)} — '

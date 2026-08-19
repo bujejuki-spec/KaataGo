@@ -67,11 +67,11 @@ class _RestoSwitcherState extends State<RestoSwitcher> {
           mainAxisSize: MainAxisSize.min,
           children: [
             const SizedBox(height: 14),
-            const Text('Pilih Resto',
+            const Text('Pilih Merchant',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             const SizedBox(height: 4),
             Text(
-              'Semua data mengikuti resto yang dipilih',
+              'Semua data mengikuti merchant yang dipilih',
               style: TextStyle(fontSize: 12, color: KaataTheme.mutedOf(context)),
             ),
             const SizedBox(height: 10),
@@ -155,7 +155,7 @@ class _RestoSwitcherState extends State<RestoSwitcher> {
                 ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 190),
                   child: Text(
-                    _loading ? 'Memuat resto…' : _nameOf(auth.restoId!),
+                    _loading ? 'Memuat merchant…' : _nameOf(auth.restoId!),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(

@@ -47,8 +47,8 @@ const kAnnouncementAudienceLabels = {
 };
 
 const kAnnouncementAudienceHints = {
-  AnnouncementAudience.employees: 'Hanya karyawan resto ini',
-  AnnouncementAudience.customers: 'Hanya pelanggan resto ini',
+  AnnouncementAudience.employees: 'Hanya karyawan merchant ini',
+  AnnouncementAudience.customers: 'Hanya pelanggan merchant ini',
   AnnouncementAudience.all: 'Karyawan dan pelanggan',
 };
 

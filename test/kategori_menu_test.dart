@@ -97,7 +97,9 @@ void main() {
         File('lib/widgets/product_category_list.dart').readAsStringSync();
 
     test('tiap kategori punya kunci sendiri', () {
-      expect(berkas, contains('key: PageStorageKey<String>(category),'));
+      // Kuncinya ValueKey, bukan PageStorageKey — yang terakhir itu
+      // beradu ember penyimpanan dengan GridView di dalamnya.
+      expect(berkas, contains('key: ValueKey<String>(category),'));
     });
 
     test('layar pelanggan tidak berlangganan ulang tiap build', () {

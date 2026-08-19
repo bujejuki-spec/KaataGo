@@ -96,6 +96,27 @@ class _OrderCardState extends State<OrderCard> {
                 Expanded(
                   child: Row(
                     children: [
+                      // Nomor antreannya paling depan: itu yang
+                      // diteriakkan ke ruangan, dan yang dicari mata
+                      // kasir saat pelanggan menyebutnya.
+                      if (order.punyaNomor) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: KaataTheme.brand.withOpacity(0.14),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            order.nomorTampil,
+                            style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: KaataTheme.brand),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
                       if (order.tableNumber != null) ...[
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),

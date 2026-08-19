@@ -93,9 +93,9 @@ fi
 
 # ── 3. Landing page ──────────────────────────────────────────────────
 log "Menyesuaikan nomor versi di landing page"
-python3 - "$WEB_DIR/index.html" "$VERSION" "$SIZE_MB" <<'PY'
+python3 - "$WEB_DIR/index.html" "$VERSION" "$SIZE_MB" "$REPO" "$TAG" <<'PY'
 import re, sys
-path, version, size = sys.argv[1], sys.argv[2], sys.argv[3]
+path, version, size, repo, tag = sys.argv[1:6]
 html = open(path).read()
 
 # Penanda yang hilang berarti halamannya akan diam-diam terus menampilkan
@@ -103,15 +103,22 @@ html = open(path).read()
 # berbohong soal versinya. Diperiksa keberadaannya, bukan perubahannya:
 # merilis ulang versi yang sama sah-sah saja dan tidak boleh dianggap
 # galat.
-for marker in ('<code id="app-version">', '<span id="app-size">'):
+for marker in ('<code id="app-version">', '<span id="app-size">', 'var APK_URL'):
     if marker not in html:
         sys.exit(f'Penanda {marker} tidak ditemukan di index.html')
 
 html = re.sub(r'(<code id="app-version">)[^<]*(</code>)', rf'\g<1>{version}\g<2>', html)
 html = re.sub(r'(<span id="app-size">)[^<]*(</span>)', rf'\g<1>± {size} MB\g<2>', html)
 
+# Tautannya menunjuk berkas bernomor versi, supaya yang mendarat di HP
+# orang bisa dibedakan. Aset bernama tetap tetap diunggah juga, jadi
+# tautan lama yang sudah tersebar tidak ikut mati.
+apk = f'https://github.com/{repo}/releases/download/{tag}/KaataGo-{version}.apk'
+html = re.sub(r'(var APK_URL = ")[^"]*(")', rf'\g<1>{apk}\g<2>', html)
+
 open(path, 'w').write(html)
 print(f'  versi → {version}, ukuran → ± {size} MB')
+print(f'  tautan unduh → KaataGo-{version}.apk')
 PY
 
 if $DRY_RUN; then
@@ -153,10 +160,17 @@ elif [[ ! -f "$ANNOUNCE_SECRET_FILE" ]]; then
   # belum cuma kabarnya, dan itu masih bisa dikirim manual.
   printf '  dilewati — %s belum ada\n' "$ANNOUNCE_SECRET_FILE"
 else
+  # Catatan rilisnya diambil dari docs/CATATAN-RILIS.md, bagian yang
+  # judulnya sama dengan versi ini. Versi tanpa bagiannya tetap terbit —
+  # pengumumannya memakai kalimat umum, dan itu lebih baik daripada
+  # menahan rilis karena catatannya belum sempat ditulis.
+  ANNOUNCE_BODY=$(python3 "$APP_DIR/scripts/catatan_rilis.py" \
+    "$APP_DIR/docs/CATATAN-RILIS.md" "$VERSION")
+
   ANNOUNCE_RESULT=$(curl -s -X POST "$ANNOUNCE_FN" \
     -H "Content-Type: application/json" \
     -H "x-kaata-release-secret: $(cat "$ANNOUNCE_SECRET_FILE")" \
-    -d "{\"version\":\"$VERSION\"}" || true)
+    -d "$ANNOUNCE_BODY" || true)
   printf '  %s\n' "${ANNOUNCE_RESULT:-tidak ada jawaban}"
 fi
 

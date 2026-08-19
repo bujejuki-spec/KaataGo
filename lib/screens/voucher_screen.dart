@@ -335,7 +335,7 @@ class _Kartu extends StatelessWidget {
           Text(
             [
               voucher.berlakuDiSemuaResto
-                  ? 'Semua resto'
+                  ? 'Semua merchant'
                   : voucher.restoIds.map((id) => nama[id] ?? id).join(', '),
               if (voucher.minPurchase > 0)
                 'min belanja ${_rupiah.format(voucher.minPurchase)}',
@@ -683,13 +683,13 @@ class _FormBatchState extends State<_FormBatch> {
               const SizedBox(height: 18),
               Row(
                 children: [
-                  const Text('Berlaku di Resto',
+                  const Text('Berlaku di Merchant',
                       style:
                           TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                   const Spacer(),
                   Text(
                     _sasaran.isEmpty
-                        ? 'Semua resto'
+                        ? 'Semua merchant'
                         : '${_sasaran.length} dipilih',
                     style: TextStyle(
                         fontSize: 11.5, color: KaataTheme.mutedOf(context)),
@@ -712,7 +712,7 @@ class _FormBatchState extends State<_FormBatch> {
                         style: const TextStyle(fontSize: 13.5),
                         decoration: InputDecoration(
                           isDense: true,
-                          hintText: 'Cari resto',
+                          hintText: 'Cari merchant',
                           prefixIcon: const Icon(Icons.search, size: 18),
                           suffixIcon: _cariResto.text.isEmpty
                               ? null
@@ -760,7 +760,7 @@ class _FormBatchState extends State<_FormBatch> {
                         padding: const EdgeInsets.symmetric(vertical: 18),
                         child: Center(
                           child: Text(
-                            'Tidak ada resto bernama itu',
+                            'Tidak ada merchant bernama itu',
                             style: TextStyle(
                                 fontSize: 12.5,
                                 color: KaataTheme.mutedOf(context)),
@@ -794,7 +794,7 @@ class _FormBatchState extends State<_FormBatch> {
                     style: TextStyle(fontSize: 13.5)),
                 subtitle: Text(
                   'Hanya bisa ditebus yang belum pernah memesan lewat '
-                  'KaataGo, di resto mana pun.',
+                  'KaataGo, di merchant mana pun.',
                   style: TextStyle(
                       fontSize: 11.5, color: KaataTheme.mutedOf(context)),
                 ),

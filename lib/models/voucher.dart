@@ -174,7 +174,7 @@ class VoucherClaim {
     if (status == VoucherClaimStatus.used) return 'Sudah dipakai';
     if (status == VoucherClaimStatus.expired || kedaluwarsa) return 'Hangus';
     if (restoIds.isNotEmpty && !restoIds.contains(restoId)) {
-      return 'Tidak berlaku di resto ini';
+      return 'Tidak berlaku di merchant ini';
     }
     if (total < minPurchase) return 'Belanja belum mencapai minimum';
     return null;

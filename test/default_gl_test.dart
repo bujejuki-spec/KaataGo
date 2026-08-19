@@ -65,7 +65,7 @@ void main() {
       expect(perintah, isNot(contains('do update')));
     });
 
-    test('resto baru terisi lewat pemicu, bukan lewat aplikasi', () {
+    test('merchant baru terisi lewat pemicu, bukan lewat aplikasi', () {
       // Resto bisa dibuat dari layar Super Admin, dari SQL saat
       // memulihkan data, atau dari alat lain nanti.
       expect(sql, contains('after insert on restaurants'));

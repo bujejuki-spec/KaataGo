@@ -4,7 +4,7 @@ import 'package:pos_app/models/gateway_settlement.dart';
 GatewaySettlement _s({required int gross, required int fee, required int net}) =>
     GatewaySettlement(
       id: 's1',
-      restoId: 'resto-1',
+      restoId: 'merchant-1',
       settledOn: DateTime.utc(2026, 8, 17),
       grossAmount: gross,
       feeAmount: fee,

@@ -64,7 +64,7 @@ const Map<String, String> _en = {
   'Kotak Masuk': 'Inbox',
   'Saldo & Pengeluaran': 'Balance & Expenses',
   'Setor Saldo Cash': 'Deposit Cash',
-  'Info Resto': 'Restaurant Info',
+  'Info Merchant': 'Restaurant Info',
   'Kelola Karyawan': 'Manage Staff',
   'QR Meja': 'Table QR',
   'Produk': 'Products',

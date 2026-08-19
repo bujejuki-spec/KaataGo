@@ -13,7 +13,7 @@ import '../widgets/responsive.dart';
 import '../widgets/required_label.dart';
 
 const _roleLabels = {
-  'super_admin': 'Super Admin',
+  'super_admin': 'KaataGo Admin',
   'owner': 'Owner',
   'admin': 'Admin',
   'kasir': 'Kasir',
@@ -153,13 +153,13 @@ class _EmployeeManagementScreenState extends State<EmployeeManagementScreen> {
   Map<String, List<Employee>> _groupByResto() {
     final byResto = <String, List<Employee>>{};
     for (final e in _employees) {
-      final key = e.restoId == null ? 'Super Admin' : _restoName(e.restoId);
+      final key = e.restoId == null ? 'KaataGo Admin' : _restoName(e.restoId);
       byResto.putIfAbsent(key, () => []).add(e);
     }
     final sortedKeys = byResto.keys.toList()
       ..sort((a, b) {
-        if (a == 'Super Admin') return -1;
-        if (b == 'Super Admin') return 1;
+        if (a == 'KaataGo Admin') return -1;
+        if (b == 'KaataGo Admin') return 1;
         return a.compareTo(b);
       });
     return {for (final k in sortedKeys) k: byResto[k]!};
@@ -284,7 +284,7 @@ class _EmployeeFormDialogState extends State<_EmployeeFormDialog> {
     if (!_formKey.currentState!.validate()) return;
     // super_admin isn't scoped to a resto — every other role requires one.
     if (_role != 'super_admin' && _restoId == null) {
-      showAppToast(context, 'Pilih resto untuk role ini.');
+      showAppToast(context, 'Pilih merchant untuk role ini.');
       return;
     }
 
@@ -362,7 +362,7 @@ class _EmployeeFormDialogState extends State<_EmployeeFormDialog> {
               if (_role != 'super_admin')
                 DropdownButtonFormField<String>(
                   value: _restoId,
-                  decoration: InputDecoration(label: requiredLabel('Resto')),
+                  decoration: InputDecoration(label: requiredLabel('Merchant')),
                   items: widget.restaurants
                       .map((r) => DropdownMenuItem(value: r.id, child: Text(r.name)))
                       .toList(),

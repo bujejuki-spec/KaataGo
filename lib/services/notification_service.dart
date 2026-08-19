@@ -50,7 +50,7 @@ class NotificationService {
     (
       id: 'kaata_announcement',
       name: 'Pengumuman',
-      description: 'Kabar dari resto dan pemberitahuan versi baru aplikasi',
+      description: 'Kabar dari merchant dan pemberitahuan versi baru aplikasi',
     ),
   ];
 
@@ -169,8 +169,19 @@ class NotificationService {
     required int id,
     required String title,
     required String body,
+    String? event,
   }) =>
-      _show(channel: _channels[3], id: id, title: title, body: body);
+      _show(
+        channel: _channels[3],
+        id: id,
+        title: title,
+        body: body,
+        // Diberi awalan supaya tidak tertukar dengan payload pemasang
+        // APK, yang isinya jalur berkas. Satu kolom payload dipakai dua
+        // hal, dan yang membedakannya harus terbaca — bukan ditebak
+        // dari bentuk isinya.
+        payload: event == null ? null : 'event:$event',
+      );
 
   /// Dipanggil saat notifikasi diketuk, dengan payload-nya.
   ///
@@ -281,6 +292,7 @@ class NotificationService {
     required int id,
     required String title,
     required String body,
+    String? payload,
   }) async {
     await init();
     try {
@@ -304,6 +316,7 @@ class NotificationService {
           ),
           iOS: const DarwinNotificationDetails(sound: 'kaata_notif.wav'),
         ),
+        payload: payload,
       );
       lastError = null;
     } catch (e) {

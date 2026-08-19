@@ -68,6 +68,9 @@ FILES=(
   balance_topup.sql
   voucher_new_customer.sql
   qris_receipt_fields.sql
+  order_number.sql
+  customer_display.sql
+  resto_facilities.sql
 )
 
 {

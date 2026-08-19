@@ -131,7 +131,13 @@ class CustomerOrderStatusScreen extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('Pesanan #${order.id.substring(0, 6).toUpperCase()}',
+                          // Nomor antrean harian kalau ada; potongan
+                          // UUID hanya untuk pesanan lama yang terbit
+                          // sebelum penomoran ini dipasang.
+                          Text(
+                              order.punyaNomor
+                                  ? 'Pesanan ${order.nomorTampil}'
+                                  : 'Pesanan #${order.id.substring(0, 6).toUpperCase()}',
                               style: const TextStyle(fontWeight: FontWeight.bold)),
                           Row(
                             children: [
@@ -156,13 +162,29 @@ class CustomerOrderStatusScreen extends StatelessWidget {
                       const SizedBox(height: 8),
                       Row(
                         children: [
+                          // Pesanan yang batal berhenti punya status
+                          // dapur.
+                          //
+                          // Kolom kitchen_status-nya memang berhenti di
+                          // nilai terakhirnya — jurnal dan riwayat butuh
+                          // itu — tapi menampilkannya apa adanya berarti
+                          // layar menyebut "Sedang Dimasak" untuk
+                          // pesanan yang sudah dibatalkan, dan pelanggan
+                          // menunggu makanan yang tidak akan datang.
                           Icon(Icons.circle,
-                              size: 10, color: _kitchenColors[order.kitchenStatus]),
+                              size: 10,
+                              color: order.dibatalkan
+                                  ? KaataTheme.mutedOf(context)
+                                  : _kitchenColors[order.kitchenStatus]),
                           const SizedBox(width: 6),
                           Text(
-                            _kitchenLabels[order.kitchenStatus]!,
+                            order.dibatalkan
+                                ? 'Dibatalkan'
+                                : _kitchenLabels[order.kitchenStatus]!,
                             style: TextStyle(
-                              color: _kitchenColors[order.kitchenStatus],
+                              color: order.dibatalkan
+                                  ? KaataTheme.mutedOf(context)
+                                  : _kitchenColors[order.kitchenStatus],
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -170,7 +192,10 @@ class CustomerOrderStatusScreen extends StatelessWidget {
                           Text(
                             switch (order.paymentStatus) {
                               OrderPaymentStatus.paid => 'Sudah Dibayar',
-                              OrderPaymentStatus.cancelled => 'Dibatalkan',
+                              // Sudah disebut di sebelah kiri; diulang
+                              // dua kali berdampingan malah terbaca
+                              // seperti dua hal berbeda.
+                              OrderPaymentStatus.cancelled => '',
                               OrderPaymentStatus.expired => 'Hangus, tidak dibayar',
                               OrderPaymentStatus.pending => 'Menunggu Pembayaran',
                             },

@@ -1,7 +1,7 @@
 # KaataGo — Functional Specification Document
 
-**Versi Aplikasi:** 2.7.0 (build 108)
-**Versi Dokumen:** 2.7
+**Versi Aplikasi:** 2.8.0 (build 109)
+**Versi Dokumen:** 2.8
 **Tanggal Terbit:** 17 Agustus 2026
 **Status:** Rilis
 **Jenis Dokumen:** FSD — sisi fungsional

@@ -286,7 +286,7 @@ class CartProvider extends ChangeNotifier {
     final applied = discountFor(orderType);
     final payable = tax.total - (applied?.amount ?? 0);
 
-    final tx = PosTransaction(
+    var tx = PosTransaction(
       id: _uuid.v4(),
       createdAt: DateTime.now(),
       paymentMethod: method,
@@ -327,7 +327,17 @@ class CartProvider extends ChangeNotifier {
     _firestoreProductRepo.decrementStockForOrder(stockDeltas).catchError((_) {});
 
     // Mirror into the shared order feed so the Chef sees walk-in sales too.
-    _orderRepo.create(CustomerOrder(
+    //
+    // Ditunggu sebentar, bukan dilepas begitu saja: nomor antreannya
+    // diberikan pemicu di basis data, dan struk yang dicetak sedetik
+    // kemudian harus menyebut nomor yang sama dengan yang diteriakkan
+    // ke ruangan.
+    //
+    // Batas waktunya pendek dan kegagalannya diabaikan. Kasir yang
+    // menunggu jaringan untuk mencetak struk adalah antrean yang
+    // berhenti; struk tanpa nomor jauh lebih murah daripada itu.
+    final nomor = await _orderRepo
+        .createReturningNo(CustomerOrder(
       id: '',
       createdAt: tx.createdAt,
       items: tx.items
@@ -355,9 +365,14 @@ class CartProvider extends ChangeNotifier {
       discountAmount: applied?.amount ?? 0,
       discountId: applied?.discount.id,
       discountName: applied?.discount.name,
-    )).catchError((_) {
-      return '';
-    });
+    ))
+        .timeout(const Duration(seconds: 4))
+        .catchError((_) => null);
+
+    if (nomor != null) {
+      tx = tx.denganNomor(nomor);
+      await _txRepo.updateNomor(tx.id, nomor);
+    }
 
     clear();
     return tx;

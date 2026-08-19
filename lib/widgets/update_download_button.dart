@@ -4,7 +4,6 @@ import '../theme.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../services/app_updater.dart';
-import 'update_download_banner.dart';
 
 /// Tombol unduh versi terbaru di dalam pengumuman kotak masuk.
 ///
@@ -34,9 +33,17 @@ class _UpdateDownloadButtonState extends State<UpdateDownloadButton> {
 
   Future<void> _start() async {
     _updater.start(widget.url);
-    // Rinciannya dibuka begitu dimulai, supaya jelas prosesnya berjalan
-    // — dan boleh ditutup kapan saja tanpa menghentikannya.
-    if (mounted) showUpdateDownloadDialog(context);
+    // Rinciannya TIDAK dibuka sendiri.
+    //
+    // Dulu popup Batalkan/Lanjutkan muncul begitu unduhannya dimulai,
+    // dan itu salah paham soal apa yang dibutuhkan saat itu: orang yang
+    // baru saja menekan Unduh sudah tahu unduhannya berjalan. Yang
+    // muncul justru menghalangi layar yang sedang dia pakai, dan
+    // menutupnya terasa seperti membatalkan.
+    //
+    // Kemajuannya tampil sebagai bulir di bawah layar, dan popupnya
+    // dibuka kalau bulir itu diketuk — yaitu saat orangnya memang
+    // sedang bertanya "sudah sampai mana" atau ingin menghentikannya.
   }
 
   @override

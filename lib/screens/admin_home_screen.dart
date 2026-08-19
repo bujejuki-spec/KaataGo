@@ -1,3 +1,4 @@
+import 'customer_display_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -83,6 +84,16 @@ class AdminHomeScreen extends StatelessWidget {
                       ),
                     ),
                     HubMenuTile(
+                      icon: Icons.tv_outlined,
+                      title: 'Layar Pelanggan',
+                      subtitle: 'Buka di perangkat kedua yang menghadap pelanggan',
+                      color: const Color(0xFF14B8A6),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                            builder: (_) => const CustomerDisplayScreen()),
+                      ),
+                    ),
+                    HubMenuTile(
                       icon: Icons.list_alt_outlined,
                       title: 'Pesanan Masuk',
                       subtitle: 'Pantau pesanan kasir & customer, status dapur',
@@ -132,7 +143,7 @@ class AdminHomeScreen extends StatelessWidget {
                     BadgedHubTile(
                       icon: Icons.account_balance_outlined,
                       title: 'Setor Saldo Cash',
-                      subtitle: 'Setor tunai di laci ke rekening resto',
+                      subtitle: 'Setor tunai di laci ke rekening merchant',
                       color: const Color(0xFF0EA5E9),
                       loadCount: () => restoId == null
                           ? Future.value(0)
@@ -168,7 +179,7 @@ class AdminHomeScreen extends StatelessWidget {
                     HubMenuTile(
                       icon: Icons.campaign_outlined,
                       title: 'Kirim Pengumuman',
-                      subtitle: 'Blast info & promo ke kotak masuk resto ini',
+                      subtitle: 'Blast info & promo ke kotak masuk merchant ini',
                       color: const Color(0xFF8B5CF6),
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(builder: (_) => const PublishAnnouncementScreen()),
@@ -180,7 +191,7 @@ class AdminHomeScreen extends StatelessWidget {
                 HubMenuTile(
                     icon: Icons.settings_outlined,
                     title: 'Pengaturan',
-                    subtitle: 'Info resto, QR meja, pengaturan pembayaran',
+                    subtitle: 'Info merchant, QR meja, pengaturan pembayaran',
                     color: const Color(0xFFEC4899),
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute(builder: (_) => const SettingsMenuScreen()),

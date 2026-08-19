@@ -168,7 +168,7 @@ class _AnnouncementFormState extends State<_AnnouncementForm>
     // sendiri — dan RLS menolak kalau bukan.
     final restoId = auth.isSuperAdmin ? null : auth.restoId;
     if (!_isUpdate && restoId == null && !auth.isSuperAdmin) {
-      toast.show('Akun ini belum punya Resto ID.', isError: true);
+      toast.show('Akun ini belum punya Merchant ID.', isError: true);
       return;
     }
 
@@ -225,12 +225,12 @@ class _AnnouncementFormState extends State<_AnnouncementForm>
                         'pada kotak masuk semua pengguna, dan sebagai banner di '
                         'layar awal untuk yang memesan tanpa akun.'
                     : toEveryone
-                        ? 'Pengumuman umum ke seluruh resto. Muncul di tab '
+                        ? 'Pengumuman umum ke seluruh merchant. Muncul di tab '
                             '"General" pada kotak masuk semua pengguna yang login.'
                         : 'Pengumuman umum untuk '
-                            '${_restoName ?? 'resto yang sedang kamu buka'}. '
+                            '${_restoName ?? 'merchant yang sedang kamu buka'}. '
                             'Masuk ke tab "General" di kotak masuk, berikut '
-                            'notifikasinya. Resto lain tidak menerimanya.',
+                            'notifikasinya. Merchant lain tidak menerimanya.',
                 style: const TextStyle(fontSize: 12.5, color: Color(0xFF075985)),
               ),
             ),

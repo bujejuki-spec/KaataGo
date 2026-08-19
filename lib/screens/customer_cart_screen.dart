@@ -307,8 +307,8 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
           children: [
             Text(
               nama.length == 1
-                  ? '${nama.first} baru saja ditandai habis oleh resto.'
-                  : 'Menu berikut baru saja ditandai habis oleh resto:',
+                  ? '${nama.first} baru saja ditandai habis oleh merchant.'
+                  : 'Menu berikut baru saja ditandai habis oleh merchant:',
               textAlign: TextAlign.center,
             ),
             if (nama.length > 1) ...[

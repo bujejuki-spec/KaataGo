@@ -1,3 +1,4 @@
+import '../db/customer_display_repository.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -35,6 +36,16 @@ class PaymentQrisScreen extends StatefulWidget {
 
 class _PaymentQrisScreenState extends State<PaymentQrisScreen> {
   final _gateway = PaymentGatewayService();
+  final _layar = CustomerDisplayRepository();
+
+  /// Resto ini, disimpan saat layar dibuka.
+  ///
+  /// Dibaca sekali di initState, bukan di dispose: saat dispose berjalan
+  /// context-nya sudah tidak boleh dipakai membaca provider, dan tanpa
+  /// ini layar depannya tidak pernah dipadamkan — tagihan orang
+  /// sebelumnya tetap terpampang beserta QR-nya, yang masih bisa
+  /// dipindai orang lain.
+  String? _restoId;
 
   QrisCharge? _charge;
   bool _loading = true;
@@ -48,13 +59,44 @@ class _PaymentQrisScreenState extends State<PaymentQrisScreen> {
   @override
   void initState() {
     super.initState();
+    _restoId = context.read<AuthProvider>().restoId;
     _createCharge();
+  }
+
+  /// Menyalakan layar pelanggan, kalau restonya memakainya.
+  ///
+  /// Kegagalannya diabaikan dengan sengaja: layar depan adalah pelengkap.
+  /// Kasir yang tidak bisa menyelesaikan pembayaran karena perangkat
+  /// kedua sedang mati adalah kerugian yang jauh lebih besar daripada
+  /// pelanggan yang harus melihat QR di layar kasir.
+  Future<void> _tampilkanDiLayarDepan() async {
+    final resto = _restoId;
+    if (resto == null) return;
+    try {
+      await _layar.tampilkan(
+        resto,
+        amount: widget.amount,
+        qrString: _charge?.qrString,
+      );
+    } catch (_) {}
+  }
+
+  Future<void> _padamkanLayarDepan() async {
+    final resto = _restoId;
+    if (resto == null) return;
+    try {
+      await _layar.kosongkan(resto);
+    } catch (_) {}
   }
 
   @override
   void dispose() {
     _poller?.cancel();
     _ticker?.cancel();
+    // Tanpa menunggu hasilnya: layar ini sudah ditutup, dan menahan
+    // penutupannya demi satu panggilan jaringan membuat kasir menunggu
+    // untuk sesuatu yang tidak dia lihat.
+    _padamkanLayarDepan();
     super.dispose();
   }
 
@@ -68,6 +110,11 @@ class _PaymentQrisScreenState extends State<PaymentQrisScreen> {
       _charge = charge;
       _loading = false;
     });
+
+    // Dinyalakan walau tagihannya gagal dibuat: nominalnya tetap perlu
+    // dibaca pelanggan, dan tanpa QR layarnya menyuruh membayar di
+    // kasir — yang memang jadi jalan keluarnya saat QRIS bermasalah.
+    unawaited(_tampilkanDiLayarDepan());
     if (charge == null) return;
 
     _remaining = charge.remaining;
@@ -88,6 +135,16 @@ class _PaymentQrisScreenState extends State<PaymentQrisScreen> {
   void _confirm() {
     _poller?.cancel();
     _ticker?.cancel();
+    // Layar depan menyatakan lunas lebih dulu, baru layar kasirnya
+    // ditutup. Pelanggan yang baru saja memindai butuh satu tanda bahwa
+    // pembayarannya sampai — dan tanda itu paling berguna di layar yang
+    // sedang dia lihat, bukan di layar kasir yang membelakanginya.
+    final resto = _restoId;
+    if (resto != null) {
+      unawaited(_layar
+          .lunas(resto, amount: widget.amount)
+          .catchError((_) {}));
+    }
     if (mounted) Navigator.of(context).pop(true);
   }
 
@@ -146,7 +203,7 @@ class _PaymentQrisScreenState extends State<PaymentQrisScreen> {
                 _WaitingLine(remaining: _remaining)
               else if (!_gatewayActive)
                 const Text(
-                  '(QR simulasi — payment gateway belum dipasang di resto ini)',
+                  '(QR simulasi — payment gateway belum dipasang di merchant ini)',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: Colors.grey, fontSize: 12),
                 ),

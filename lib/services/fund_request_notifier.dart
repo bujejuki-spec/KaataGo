@@ -88,7 +88,7 @@ class FundRequestNotifier {
       final (title, body) = switch (r.status) {
         DepositStatus.approved => (
             'Setoran tunai dikonfirmasi ✅',
-            '$amount sudah masuk rekening resto.',
+            '$amount sudah masuk rekening merchant.',
           ),
         DepositStatus.rejected => (
             'Setoran tunai ditolak',

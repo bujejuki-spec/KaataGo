@@ -319,15 +319,31 @@ class _CustomerInboxScreenState extends State<CustomerInboxScreen> {
                 onPressed: () => setState(() => _selecting = true),
               ),
             if (_selecting) ...[
-              IconButton(
-                icon: const Icon(Icons.select_all),
-                tooltip: 'Pilih semua di tab ini',
-                onPressed: () => setState(() {
-                  _selected
-                    ..clear()
-                    ..addAll(_itemsIn(_activeCategory(context)).map((i) => i.id));
-                }),
-              ),
+              Builder(builder: (context) {
+                final diTab = _itemsIn(_activeCategory(context))
+                    .map((i) => i.id)
+                    .toList();
+                final semuaTerpilih =
+                    diTab.isNotEmpty && diTab.every(_selected.contains);
+                return IconButton(
+                  icon: Icon(semuaTerpilih
+                      ? Icons.remove_done
+                      : Icons.select_all),
+                  tooltip: semuaTerpilih
+                      ? 'Batal pilih semua'
+                      : 'Pilih semua di tab ini',
+                  // Menekannya lagi melepas semuanya — tombol yang cuma
+                  // bisa satu arah memaksa orang melepas satu per satu
+                  // pilihan yang tadi dibuatnya sekali ketuk.
+                  onPressed: () => setState(() {
+                    if (semuaTerpilih) {
+                      _selected.removeAll(diTab);
+                    } else {
+                      _selected.addAll(diTab);
+                    }
+                  }),
+                );
+              }),
               IconButton(
                 icon: const Icon(Icons.mark_email_read_outlined),
                 tooltip: 'Tandai sudah dibaca',
@@ -401,7 +417,7 @@ class _CustomerInboxScreenState extends State<CustomerInboxScreen> {
                 Text(
                   category == AnnouncementCategory.update
                       ? 'Belum ada pemberitahuan versi baru.'
-                      : 'Belum ada promo dari resto yang pernah kamu pesan.',
+                      : 'Belum ada promo dari merchant yang pernah kamu pesan.',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: KaataTheme.mutedOf(context)),
                 ),

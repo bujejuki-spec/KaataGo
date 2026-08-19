@@ -60,7 +60,7 @@ class _ScanTableScreenState extends State<ScanTableScreen> {
           children: [
             TextField(
               controller: restoCtrl,
-              decoration: InputDecoration(label: requiredLabel('Resto ID')),
+              decoration: InputDecoration(label: requiredLabel('Merchant ID')),
               autofocus: true,
             ),
             const SizedBox(height: 12),

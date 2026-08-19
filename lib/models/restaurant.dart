@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'order_type.dart';
 
 /// Hardcoded restaurant category options, roughly matching the
@@ -73,12 +74,22 @@ class Restaurant {
   final bool dineInEnabled;
   final bool takeAwayEnabled;
 
+  /// Fasilitas yang tersedia di tempat ini — AC, Smoking Area, Live
+  /// Music, dan seterusnya.
+  ///
+  /// Daftar bebas, bukan pilihan tetap: tiap tempat punya hal yang
+  /// belum terpikirkan siapa pun saat daftarnya dibuat, dan daftar yang
+  /// menghambat pemiliknya menggambarkan tempatnya sendiri lebih buruk
+  /// daripada daftar yang sesekali salah ketik.
+  final List<String> facilities;
+
   /// Optional store logo, base64-encoded. Shared between Super Admin and
   /// Admin — whoever uploads it, either can replace or clear it.
   final String? logoBase64;
 
   Restaurant({
     required this.id,
+    this.facilities = const [],
     required this.name,
     required this.address,
     this.category,
@@ -114,12 +125,36 @@ class Restaurant {
         'service_percent': servicePercent,
         'dine_in_enabled': dineInEnabled,
         'take_away_enabled': takeAwayEnabled,
+        'facilities': facilities,
       };
+
+  static List<String> _facilities(Object? raw) {
+    if (raw is List) {
+      return [
+        for (final f in raw)
+          if (f.toString().trim().isNotEmpty) f.toString().trim(),
+      ];
+    }
+    if (raw is String && raw.trim().isNotEmpty) {
+      try {
+        final d = jsonDecode(raw);
+        if (d is List) return _facilities(d);
+      } catch (_) {
+        // Kolom lama yang isinya bukan JSON tidak boleh menjatuhkan
+        // seluruh baris restonya.
+      }
+    }
+    return const [];
+  }
 
   factory Restaurant.fromMap(String id, Map<String, dynamic> map) {
     return Restaurant(
       id: id,
-      name: map['name'] as String? ?? 'Resto',
+      name: map['name'] as String? ?? 'Merchant',
+      // Dua bentuk dibaca: List dari Postgres, dan teks JSON dari
+      // sqflite. Kolom yang sama sampai dalam bentuk berbeda tergantung
+      // dari mana barisnya datang.
+      facilities: _facilities(map['facilities']),
       address: map['address'] as String? ?? '',
       category: map['category'] as String?,
       active: map['active'] as bool? ?? true,

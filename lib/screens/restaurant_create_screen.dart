@@ -295,7 +295,7 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
         final existing = await _repo.getOnce(id);
         if (existing != null) {
           if (!mounted) return;
-          showAppToast(context, 'ID "$id" sudah dipakai resto lain, pakai ID lain.');
+          showAppToast(context, 'ID "$id" sudah dipakai merchant lain, pakai ID lain.');
           setState(() => _saving = false);
           return;
         }
@@ -333,7 +333,7 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
       await _saveGatewayAccount(id);
 
       if (!mounted) return;
-      showAppToast(context, _isEditing ? 'Resto "$id" diperbarui.' : 'Resto "$id" berhasil dibuat.');
+      showAppToast(context, _isEditing ? 'Merchant "$id" diperbarui.' : 'Merchant "$id" berhasil dibuat.');
       if (_isEditing) {
         setState(() {
           _saving = false;
@@ -353,7 +353,7 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEditing ? 'Edit Resto' : 'Buat Resto Baru'),
+        title: Text(_isEditing ? 'Edit Merchant' : 'Buat Merchant Baru'),
         actions: [
           if (_isEditing && !_editing)
             IconButton(
@@ -373,13 +373,13 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
                 controller: _nameCtrl,
                 enabled: _editing,
                 decoration: InputDecoration(
-                  label: requiredLabel('Nama resto'),
+                  label: requiredLabel('Nama merchant'),
                   filled: !_editing,
                   fillColor: _editing ? null : KaataTheme.disabledFillOf(context),
                 ),
                 inputFormatters: nameFormatters,
                 textCapitalization: TextCapitalization.words,
-                validator: (v) => validateName(v, label: 'Nama resto'),
+                validator: (v) => validateName(v, label: 'Nama merchant'),
                 onChanged: (v) {
                   if (_isEditing) return; // don't reshuffle an existing id
                   // Auto-fill a slug id from the name, but let the user
@@ -397,8 +397,8 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
                 // untuk id yang bentrok atau salah ketik.
                 enabled: false,
                 decoration: InputDecoration(
-                  labelText: 'ID resto (dibuat otomatis)',
-                  helperText: 'Mengikuti nama resto — dipakai internal, tidak bisa diubah',
+                  labelText: 'ID merchant (dibuat otomatis)',
+                  helperText: 'Mengikuti nama merchant — dipakai internal, tidak bisa diubah',
                   filled: true,
                   fillColor: KaataTheme.disabledFillOf(context),
                 ),
@@ -549,7 +549,7 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
                   labelText: 'ID Akun Xendit (opsional)',
                   filled: !_editing,
                   fillColor: _editing ? null : KaataTheme.disabledFillOf(context),
-                  helperText: 'Sub-akun resto ini di Xendit. Dana QRIS cair '
+                  helperText: 'Sub-akun merchant ini di Xendit. Dana QRIS cair '
                       'langsung ke rekening yang terdaftar di sub-akun itu. '
                       'Kosongkan kalau belum dibuat.',
                   helperMaxLines: 4,
@@ -572,7 +572,7 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
                   onCancel: _cancelEdit,
                   onSave: _save,
                   saving: _saving,
-                  saveLabel: _isEditing ? 'Simpan Perubahan' : 'Buat Resto',
+                  saveLabel: _isEditing ? 'Simpan Perubahan' : 'Buat Merchant',
                 ),
             ],
           ),

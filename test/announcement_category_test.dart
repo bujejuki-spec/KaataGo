@@ -49,23 +49,23 @@ void main() {
   });
 
   group('visibleTo', () {
-    test('tanpa resto berlaku untuk semua orang', () {
+    test('tanpa merchant berlaku untuk semua orang', () {
       final a = Announcement.fromMap(_row());
-      expect(a.visibleTo('resto-1'), isTrue);
-      expect(a.visibleTo('resto-2'), isTrue);
+      expect(a.visibleTo('merchant-1'), isTrue);
+      expect(a.visibleTo('merchant-2'), isTrue);
       expect(a.visibleTo(null), isTrue);
     });
 
-    test('yang terikat resto hanya untuk resto itu', () {
-      final a = Announcement.fromMap(_row(category: 'general', restoId: 'resto-1'));
-      expect(a.visibleTo('resto-1'), isTrue);
-      expect(a.visibleTo('resto-2'), isFalse);
+    test('yang terikat merchant hanya untuk merchant itu', () {
+      final a = Announcement.fromMap(_row(category: 'general', restoId: 'merchant-1'));
+      expect(a.visibleTo('merchant-1'), isTrue);
+      expect(a.visibleTo('merchant-2'), isFalse);
     });
 
-    test('orang tanpa resto tidak melihat pengumuman resto mana pun', () {
+    test('orang tanpa merchant tidak melihat pengumuman merchant mana pun', () {
       // Super Admin tidak terikat resto; kotak masuknya tidak seharusnya
       // dipenuhi promo tiap cabang.
-      final a = Announcement.fromMap(_row(category: 'general', restoId: 'resto-1'));
+      final a = Announcement.fromMap(_row(category: 'general', restoId: 'merchant-1'));
       expect(a.visibleTo(null), isFalse);
     });
   });
@@ -77,16 +77,16 @@ void main() {
       expect(Announcement.fromMap(_row(image: 'AAAA')).hasImage, isTrue);
     });
 
-    test('copyWith mempertahankan jenis, resto, dan gambarnya', () {
+    test('copyWith mempertahankan jenis, merchant, dan gambarnya', () {
       // copyWith dipakai saat menandai sudah dibaca. Kalau salah satunya
       // hilang di situ, pesannya akan melompat tab tepat setelah dibuka.
       final a = Announcement.fromMap(
-        _row(category: 'general', restoId: 'resto-1', image: 'AAAA'),
+        _row(category: 'general', restoId: 'merchant-1', image: 'AAAA'),
       );
       final read = a.copyWith(read: true);
       expect(read.read, isTrue);
       expect(read.category, AnnouncementCategory.general);
-      expect(read.restoId, 'resto-1');
+      expect(read.restoId, 'merchant-1');
       expect(read.imageBase64, 'AAAA');
     });
   });

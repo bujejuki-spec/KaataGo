@@ -173,7 +173,7 @@ class _RestaurantListScreenState extends State<RestaurantListScreen> {
     return Scaffold(
       backgroundColor: KaataTheme.backgroundOf(context),
       appBar: AppBar(
-        title: const Text('Pilih Resto'),
+        title: const Text('Pilih Merchant'),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(62),
           child: Padding(
@@ -183,7 +183,7 @@ class _RestaurantListScreenState extends State<RestaurantListScreen> {
               onChanged: (_) => setState(() {}),
               textInputAction: TextInputAction.search,
               decoration: InputDecoration(
-                hintText: 'Cari nama resto atau alamat',
+                hintText: 'Cari nama merchant atau alamat',
                 prefixIcon: const Icon(Icons.search),
                 isDense: true,
                 suffixIcon: searching
@@ -200,7 +200,7 @@ class _RestaurantListScreenState extends State<RestaurantListScreen> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _restaurants.isEmpty
-              ? const Center(child: Text('Belum ada resto terdaftar.'))
+              ? const Center(child: Text('Belum ada merchant terdaftar.'))
               : matching.isEmpty
                   ? _EmptySearch(query: _searchCtrl.text.trim())
                   : RefreshIndicator(
@@ -225,10 +225,10 @@ class _RestaurantListScreenState extends State<RestaurantListScreen> {
                           ],
                           _SectionHeader(
                             icon: Icons.storefront_outlined,
-                            title: 'Semua Resto',
+                            title: 'Semua Merchant',
                             subtitle: _me == null
-                                ? '${matching.length} resto'
-                                : '${matching.length} resto · terdekat dulu',
+                                ? '${matching.length} merchant'
+                                : '${matching.length} merchant · terdekat dulu',
                           ),
                           // Yang dekat tetap ikut muncul di sini. Daftar
                           // "semua" yang diam-diam menyembunyikan
@@ -276,9 +276,32 @@ class _RestaurantListScreenState extends State<RestaurantListScreen> {
                 ],
               ),
             ],
+            // Fasilitasnya berwarna dan berbentuk kartu kecil, bukan
+            // teks abu-abu sebaris.
+            //
+            // Ini yang paling sering menentukan pilihan — ada AC atau
+            // tidak, boleh merokok atau tidak, aman untuk anak atau
+            // tidak — dan keterangan yang sepucat alamat akan terlewat
+            // oleh mata yang sedang menyapu daftar.
+            if (resto.facilities.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  for (final f in resto.facilities.take(4))
+                    _FasilitasChip(nama: f),
+                  if (resto.facilities.length > 4)
+                    Text('+${resto.facilities.length - 4}',
+                        style: TextStyle(
+                            fontSize: 11,
+                            color: KaataTheme.mutedOf(context))),
+                ],
+              ),
+            ],
           ],
         ),
-        isThreeLine: km != null,
+        isThreeLine: km != null || resto.facilities.isNotEmpty,
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -359,7 +382,7 @@ class _LocationNote extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'Resto terdekat belum bisa ditampilkan. $message',
+              'Merchant terdekat belum bisa ditampilkan. $message',
               style: const TextStyle(fontSize: 12),
             ),
           ),
@@ -386,12 +409,77 @@ class _EmptySearch extends StatelessWidget {
             Icon(Icons.search_off, size: 52, color: KaataTheme.borderOf(context)),
             const SizedBox(height: 12),
             Text(
-              'Tidak ada resto bernama "$query".',
+              'Tidak ada merchant bernama "$query".',
               textAlign: TextAlign.center,
               style: TextStyle(color: KaataTheme.mutedOf(context)),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Satu fasilitas, sebagai kartu kecil berwarna.
+///
+/// Warnanya diambil dari namanya sendiri, bukan diacak tiap kali
+/// digambar: fasilitas yang sama harus berwarna sama di seluruh daftar,
+/// supaya mata bisa mengenalinya tanpa membaca ulang tiap barisnya.
+class _FasilitasChip extends StatelessWidget {
+  final String nama;
+
+  const _FasilitasChip({required this.nama});
+
+  static const _palet = [
+    Color(0xFF10B981),
+    Color(0xFF6366F1),
+    Color(0xFFF59E0B),
+    Color(0xFFEC4899),
+    Color(0xFF14B8A6),
+    Color(0xFF8B5CF6),
+  ];
+
+  static const _ikon = {
+    'ac': Icons.ac_unit,
+    'smoking area': Icons.smoking_rooms_outlined,
+    'kids friendly': Icons.child_friendly_outlined,
+    'live music': Icons.music_note_outlined,
+    'wifi gratis': Icons.wifi,
+    'parkir luas': Icons.local_parking_outlined,
+    'mushola': Icons.mosque_outlined,
+    'toilet': Icons.wc_outlined,
+    'colokan listrik': Icons.power_outlined,
+    'ramah difabel': Icons.accessible_outlined,
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final warna = _palet[nama.toLowerCase().hashCode.abs() % _palet.length];
+    final ikon = _ikon[nama.toLowerCase()];
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: warna.withOpacity(0.13),
+        borderRadius: BorderRadius.circular(7),
+        border: Border.all(color: warna.withOpacity(0.35)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (ikon != null) ...[
+            Icon(ikon, size: 12, color: warna),
+            const SizedBox(width: 4),
+          ],
+          Text(
+            nama,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: warna,
+            ),
+          ),
+        ],
       ),
     );
   }

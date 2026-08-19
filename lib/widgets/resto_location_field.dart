@@ -83,7 +83,7 @@ class RestoLocationField extends StatelessWidget {
               Icon(Icons.place_outlined,
                   size: 17, color: KaataTheme.mutedOf(context)),
               const SizedBox(width: 7),
-              const Text('Lokasi Resto',
+              const Text('Lokasi Merchant',
                   style:
                       TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
               const Spacer(),
@@ -149,7 +149,7 @@ class RestoLocationField extends StatelessWidget {
           Text(
             _hasPoint
                 ? '${latitude!.toStringAsFixed(6)}, ${longitude!.toStringAsFixed(6)}'
-                : 'Customer belum bisa membuka lokasi resto di peta.',
+                : 'Customer belum bisa membuka lokasi merchant di peta.',
             style: TextStyle(
               fontSize: 11.5,
               fontWeight: _hasPoint ? FontWeight.w600 : FontWeight.normal,
@@ -342,7 +342,7 @@ class _MapPickerScreenState extends State<_MapPickerScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Pilih Lokasi Resto')),
+      appBar: AppBar(title: const Text('Pilih Lokasi Merchant')),
       body: Stack(
         children: [
           FlutterMap(
@@ -391,7 +391,7 @@ class _MapPickerScreenState extends State<_MapPickerScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Geser peta sampai pin tepat di lokasi resto',
+                      'Geser peta sampai pin tepat di lokasi merchant',
                       style: TextStyle(
                           fontSize: 12, color: KaataTheme.mutedOf(context)),
                     ),

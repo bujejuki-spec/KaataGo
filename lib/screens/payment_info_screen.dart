@@ -6,7 +6,7 @@ import '../providers/auth_provider.dart';
 import '../providers/settings_provider.dart';
 import '../theme.dart';
 
-/// Admin's read-only look at the resto's payment details (QRIS merchant +
+/// Admin's read-only look at the merchant's payment details (QRIS merchant +
 /// bank account). Finance is the only role allowed to change these, so
 /// there's deliberately no form here at all — disabled text fields just
 /// look like something you ought to be able to type in. Plain detail rows
@@ -89,16 +89,13 @@ class _PaymentInfoScreenState extends State<PaymentInfoScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            _InfoCard(
-              icon: Icons.qr_code_2,
-              color: const Color(0xFF6366F1),
-              title: 'QRIS',
-              rows: [
-                ('Nama Merchant', _merchantName),
-                ('ID QRIS Merchant', _qrisId),
-              ],
-            ),
-            const SizedBox(height: 14),
+            // QRIS tidak lagi diisi resto.
+            //
+            // Kodenya dibuat Xendit per transaksi, atas nama sub-akun
+            // restonya — bukan dari ID merchant yang diketik di sini.
+            // Menyisakan kolomnya berarti menawarkan setelan yang tidak
+            // dipakai apa pun, dan yang mengisinya akan menunggu
+            // hasilnya sia-sia.
             _InfoCard(
               icon: Icons.account_balance_outlined,
               color: const Color(0xFFEC4899),

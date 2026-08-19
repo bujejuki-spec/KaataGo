@@ -52,7 +52,7 @@ void main() {
           isFalse);
     });
 
-    test('resto gratis tidak pernah diingatkan', () {
+    test('merchant gratis tidak pernah diingatkan', () {
       expect(_state(daysLeft: 0, price: 0).perluDiingatkan, isFalse);
     });
 
@@ -107,7 +107,7 @@ void main() {
       );
     });
 
-    test('setelan bawaan resto baru adalah gratis', () {
+    test('setelan bawaan merchant baru adalah gratis', () {
       const s = RestoBilling(restoId: 'r1');
       expect(s.gratis, isTrue);
       expect(s.billingDay, 1);
@@ -144,7 +144,7 @@ void main() {
       expect(sql, contains("t.status = 'unpaid'"));
     });
 
-    test('resto gratis tidak pernah dikunci', () {
+    test('merchant gratis tidak pernah dikunci', () {
       expect(sql, contains('s.monthly_price > 0'));
     });
 
@@ -158,11 +158,11 @@ void main() {
       expect(sql, contains('billing_day between 1 and 28'));
     });
 
-    test('satu tagihan per resto per periode', () {
+    test('satu tagihan per merchant per periode', () {
       expect(sql, contains('unique (resto_id, period_start)'));
     });
 
-    test('resto tidak bisa menyatakan dirinya lunas', () {
+    test('merchant tidak bisa menyatakan dirinya lunas', () {
       // submit_billing_payment hanya boleh menaikkan ke 'review'.
       final fungsi = sql.substring(sql.indexOf('function submit_billing_payment'),
           sql.indexOf('function review_billing_payment'));
@@ -175,7 +175,7 @@ void main() {
       expect(fungsi, contains('if not is_super_admin() then'));
     });
 
-    test('resto baru langsung punya barisnya, dan gratis', () {
+    test('merchant baru langsung punya barisnya, dan gratis', () {
       expect(sql, contains('after insert on restaurants'));
       expect(sql, contains('values (new.id, 0, 1)'));
     });
@@ -188,7 +188,7 @@ void main() {
     final hook = File('supabase/functions/xendit-billing-webhook/index.ts')
         .readAsStringSync();
 
-    test('VA langganan TIDAK memakai sub-akun resto', () {
+    test('VA langganan TIDAK memakai sub-akun merchant', () {
       // Ini kesalahan yang paling mahal dan paling sunyi di seluruh
       // fitur: dengan for-user-id terpasang, resto membayar tagihan
       // langganan ke rekeningnya sendiri. Tagihannya tetap lunas,

@@ -1,3 +1,4 @@
+import 'faq_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -52,7 +53,7 @@ class _AboutScreenState extends State<AboutScreen> {
                 ),
                 const SizedBox(height: 4),
                 const Text(
-                  'Order Cepat, Resto Hebat',
+                  'Order Cepat, Merchant Hebat',
                   style: TextStyle(
                     color: KaataTheme.brand,
                     fontSize: 13,
@@ -89,25 +90,34 @@ class _AboutScreenState extends State<AboutScreen> {
           const _Section(
             title: 'Untuk Pelanggan',
             child: _Features([
-              (Icons.qr_code_scanner, 'Scan QR di meja', 'Langsung lihat menu resto tanpa install apa pun'),
-              (Icons.storefront_outlined, 'Pilih resto', 'Pesan dari daftar resto walau tidak sedang di tempat'),
+              (Icons.qr_code_scanner, 'Scan QR di meja', 'Langsung lihat menu merchant tanpa install apa pun'),
+              (Icons.storefront_outlined, 'Pilih merchant', 'Pesan dari daftar merchant walau tidak sedang di tempat'),
               (Icons.restaurant_menu, 'Dine In / Take Away', 'Pilih makan di tempat atau dibungkus saat checkout'),
               (Icons.tune, 'Level & catatan', 'Atur tingkat pedas, ukuran, atau catatan khusus per item'),
               (Icons.timelapse, 'Lacak pesanan', 'Pantau pesanan dari dimasak sampai siap diambil'),
               (Icons.receipt_long_outlined, 'Struk digital', 'Simpan struk ke galeri atau kirim ke email'),
               (Icons.history, 'Riwayat pesanan', 'Tetap tersimpan walau memesan tanpa login'),
+              (Icons.confirmation_number_outlined, 'Voucher KaataGo', 'Tebus kode voucher dan pakai di merchant mana pun yang berlaku'),
+              (Icons.pin_outlined, 'Nomor pesanan', 'Nomor antrean harian, muncul sejak pesanan dibuat'),
+              (Icons.near_me_outlined, 'Merchant terdekat', 'Daftar tempat dalam radius 5 km berikut fasilitasnya'),
             ]),
           ),
           const SizedBox(height: 14),
           const _Section(
-            title: 'Untuk Resto',
+            title: 'Untuk Merchant',
             child: _Features([
               (Icons.point_of_sale_outlined, 'Kasir', 'Input pesanan, hitung total, terima Tunai/QRIS/Transfer'),
               (Icons.inventory_2_outlined, 'Kelola produk', 'Foto, harga, stok, kategori, dan varian produk'),
               (Icons.soup_kitchen_outlined, 'Layar dapur', 'Pesanan masuk real-time, dari Baru sampai Selesai'),
               (Icons.qr_code_2_outlined, 'Generator QR meja', 'Buat dan cetak QR untuk tiap nomor meja'),
               (Icons.list_alt_outlined, 'Pesanan masuk', 'Rekap harian, dikelompokkan Dine In dan Take Away'),
-              (Icons.storefront_outlined, 'Multi resto', 'Satu akun pusat mengelola banyak cabang'),
+              (Icons.storefront_outlined, 'Multi merchant', 'Satu akun pusat mengelola banyak cabang'),
+              (Icons.tv_outlined, 'Layar pelanggan', 'Perangkat kedua menghadap pelanggan, QR dan totalnya tampil di sana'),
+              (Icons.search, 'Cari menu', 'Temukan satu item tanpa menggulir seluruh kategori'),
+              (Icons.local_offer_outlined, 'Diskon & bundling', 'Potongan per menu, minimal qty, sampai paket beli-2'),
+              (Icons.add_circle_outline, 'Topping & level', 'Tambahan berbayar dan varian, masing-masing dengan harganya'),
+              (Icons.photo_size_select_actual_outlined, 'Banner promo', 'Tampil di halaman menu pelanggan, lengkap dengan masa berlakunya'),
+              (Icons.chair_outlined, 'Fasilitas tempat', 'AC, Smoking Area, Live Music — tampil saat pelanggan memilih'),
             ]),
           ),
           const SizedBox(height: 14),
@@ -120,17 +130,44 @@ class _AboutScreenState extends State<AboutScreen> {
               (Icons.numbers, 'Mapping GL Account', 'Hubungkan tiap transaksi ke nomor akun akuntansi'),
               (Icons.menu_book_outlined, 'Jurnal GL', 'Catatan otomatis setiap pergerakan uang, bisa diekspor'),
               (Icons.picture_as_pdf_outlined, 'Laporan PDF', 'Laporan transaksi siap cetak seperti rekening koran'),
+              (Icons.savings_outlined, 'Setoran modal', 'Uang masuk dari luar penjualan, tercatat di akunnya sendiri'),
+              (Icons.receipt_long_outlined, 'Tagihan langganan', 'Bayar lewat Virtual Account, invoice PDF-nya bisa diunduh'),
+              (Icons.sync_alt, 'Pencairan gateway', 'Catat dana QRIS yang masuk rekening berikut potongannya'),
             ]),
           ),
           const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => bukaWhatsAppKaataGo(context),
+              icon: const Icon(Icons.chat, size: 18, color: Color(0xFF25D366)),
+              label: const Text('Chat KaataGo Admin di WhatsApp'),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(48),
+                side: const BorderSide(color: Color(0xFF25D366)),
+                foregroundColor: const Color(0xFF25D366),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
           Center(
             child: Text(
-              'Butuh bantuan? Hubungi Call Center KaataGo.',
+              'Butuh bantuan? Hubungi KaataGo Admin.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 12, color: KaataTheme.mutedOf(context)),
             ),
           ),
+          // Ruang untuk tombol mengambang di bawah — tanpa ini baris
+          // terakhirnya selalu tertutup.
+          const SizedBox(height: 72),
         ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const FaqScreen()),
+        ),
+        icon: const Icon(Icons.help_outline),
+        label: const Text('FAQ'),
       ),
     );
   }

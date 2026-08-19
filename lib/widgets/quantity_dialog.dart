@@ -181,11 +181,20 @@ class _QuantityDialogState extends State<QuantityDialog> {
             if (widget.product.photoBase64 != null)
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
-                child: Image.memory(
-                  byteGambar(widget.product.photoBase64!),
-                  height: 120,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
+                // 4:3, bukan tinggi tetap 120.
+                //
+                // Tinggi tetap pada kotak selebar dialog memotong
+                // fotonya jadi pita — yang tersisa cuma sejalur tengah
+                // gambarnya, dan makanannya jadi tidak dikenali. Dengan
+                // perbandingan sisi, tingginya ikut lebar dialognya di
+                // layar mana pun.
+                child: AspectRatio(
+                  aspectRatio: 4 / 3,
+                  child: Image.memory(
+                    byteGambar(widget.product.photoBase64!),
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                  ),
                 ),
               ),
             if (widget.product.photoBase64 != null) const SizedBox(height: 12),
@@ -293,11 +302,23 @@ class _QuantityDialogState extends State<QuantityDialog> {
             TextField(
               controller: _notesCtrl,
               maxLines: 2,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 isDense: true,
                 hintText: 'Contoh: tanpa bawang, pisah kuah, dll',
-                border: OutlineInputBorder(),
-                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                // Lebih pudar dan tidak tebal — ini contoh, bukan isi.
+                //
+                // Teks contoh yang sepekat teks sungguhan terbaca
+                // seperti catatan yang sudah tertulis: kasir
+                // membacakannya ke dapur, dan dapur menyiapkan pesanan
+                // "pisah kuah" yang tidak pernah diminta siapa pun.
+                hintStyle: TextStyle(
+                  color: KaataTheme.mutedOf(context).withOpacity(0.7),
+                  fontWeight: FontWeight.normal,
+                  fontSize: 13.5,
+                ),
+                border: const OutlineInputBorder(),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               ),
             ),
             const SizedBox(height: 20),

@@ -69,7 +69,7 @@ class SettingsMenuScreen extends StatelessWidget {
                 const SizedBox(height: 10),
                 HubMenuTile(
                   icon: Icons.storefront_outlined,
-                  title: 'Info Resto',
+                  title: 'Info Merchant',
                   subtitle: 'Nama & alamat yang dilihat customer',
                   color: const Color(0xFF6366F1),
                   onTap: () => Navigator.of(context).push(

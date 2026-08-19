@@ -79,7 +79,7 @@ void main() {
   group('penyewa platform', () {
     final sql = File('supabase/platform_finance.sql').readAsStringSync();
 
-    test('KaataGo punya barisnya sendiri di tabel resto', () {
+    test('KaataGo punya barisnya sendiri di tabel merchant', () {
       expect(sql, contains("values ('kaatago', 'KaataGo'"));
       expect(kPlatformRestoId, 'kaatago');
     });
@@ -94,13 +94,13 @@ void main() {
       expect(sql, contains("update resto_billing set active = false"));
     });
 
-    test('daftar resto menyaring penyewa platform', () {
+    test('daftar merchant menyaring penyewa platform', () {
       final repo =
           File('lib/db/restaurant_repository.dart').readAsStringSync();
       expect(repo, contains(".eq('is_platform', false)"));
     });
 
-    test('punya bagan akun sendiri, bernomor beda dari resto', () {
+    test('punya bagan akun sendiri, bernomor beda dari merchant', () {
       // 11xxxxx supaya satu baris jurnal bisa dikenali pemiliknya hanya
       // dari nomornya.
       expect(sql, contains("'subscription',          '1100001'"));
@@ -138,7 +138,7 @@ void main() {
   group('akses Super Admin', () {
     final sql = File('supabase/platform_finance.sql').readAsStringSync();
 
-    test('jurnal lintas resto hanya bisa DIBACA', () {
+    test('jurnal lintas merchant hanya bisa DIBACA', () {
       // Tangan yang bisa menulis langsung ke jurnal adalah tangan yang
       // bisa membuat pembukuan berbeda dari yang benar-benar terjadi —
       // dan itu berlaku untuk Super Admin persis seperti untuk yang lain.
@@ -302,10 +302,10 @@ void main() {
   });
 
 
-  group('GL Diskon punya nilai bawaan di tiap resto', () {
+  group('GL Diskon punya nilai bawaan di tiap merchant', () {
     final sql = File('supabase/gl_discount_backfill.sql').readAsStringSync();
 
-    test('resto biasa dapat 2200002', () {
+    test('merchant biasa dapat 2200002', () {
       expect(sql, contains("'discount', '2200002', 'GL Diskon Penjualan'"));
     });
 
@@ -326,7 +326,7 @@ void main() {
       expect(sql, contains('tetap bisa diubah Finance'));
     });
 
-    test('penyewa platform tidak ikut kebagian nomor resto', () {
+    test('penyewa platform tidak ikut kebagian nomor merchant', () {
       expect(sql, contains('where r.is_platform = false'));
     });
   });
@@ -361,13 +361,13 @@ void main() {
   });
 
 
-  group('Jurnal GL Semua Resto', () {
+  group('Jurnal GL Semua Merchant', () {
     final layar =
         File('lib/screens/super_admin_finance_screen.dart').readAsStringSync();
     final perResto =
         File('lib/screens/finance_journal_screen.dart').readAsStringSync();
 
-    test('pembatalan tidak ikut dihitung, sama seperti jurnal per resto', () {
+    test('pembatalan tidak ikut dihitung, sama seperti jurnal per merchant', () {
       // Menjumlahkan semuanya membuat pembatalan justru MENAIKKAN kedua
       // totalnya — baris aslinya tetap masuk, lalu kebalikannya menambah
       // cerminnya di atas itu. Dua layar yang membaca data sama harus
@@ -402,7 +402,7 @@ void main() {
       expect(layar, contains("pilihan == '*' ? null : pilihan"));
     });
 
-    test('resto tanpa jurnal disebut apa adanya', () {
+    test('merchant tanpa jurnal disebut apa adanya', () {
       // Supaya "kosong" tidak terbaca sebagai saringan yang rusak.
       expect(layar, contains('Belum ada jurnal'));
     });
@@ -411,7 +411,7 @@ void main() {
       // Angka yang lebih kecil daripada yang diingat selalu jadi
       // kecurigaan lebih dulu, bukan saringan yang terlupa.
       expect(layar, contains('_PitaSaringan'));
-      expect(layar, contains("'Semua resto'"));
+      expect(layar, contains("'Semua merchant'"));
     });
 
     test('dikelompokkan per tanggal dan bisa dilipat', () {
@@ -501,7 +501,7 @@ void main() {
   });
 
 
-  group('Jurnal Semua Resto tidak mencampur pembukuan KaataGo', () {
+  group('Jurnal Semua Merchant tidak mencampur pembukuan KaataGo', () {
     final repo =
         File('lib/db/gl_journal_repository.dart').readAsStringSync();
     final layar =

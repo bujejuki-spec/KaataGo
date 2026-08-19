@@ -138,8 +138,15 @@ class _ChefHomeScreenState extends State<ChefHomeScreen> {
                 final orders = tab.$1 == null
                     ? allOrders.where(_awaitingPayment).toList()
                     : allOrders
+                        // Yang batal keluar dari antrean dapur. Kolom
+                        // kitchen_status-nya berhenti di nilai
+                        // terakhirnya — riwayat butuh itu — tapi
+                        // membiarkannya di tab "Sedang Dimasak" berarti
+                        // dapur memasak pesanan yang sudah dibatalkan.
                         .where((o) =>
-                            o.kitchenStatus == tab.$1 && !_awaitingPayment(o))
+                            o.kitchenStatus == tab.$1 &&
+                            !_awaitingPayment(o) &&
+                            !o.dibatalkan)
                         .toList();
                 if (orders.isEmpty) {
                   return Center(

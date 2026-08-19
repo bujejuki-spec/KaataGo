@@ -165,7 +165,7 @@ class FinanceHomeScreen extends StatelessWidget {
                 HubMenuTile(
                     icon: Icons.payments_outlined,
                     title: 'Pengaturan Pembayaran',
-                    subtitle: 'Atur QRIS & rekening bank resto',
+                    subtitle: 'Atur QRIS & rekening bank merchant',
                     color: const Color(0xFFEC4899),
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute(builder: (_) => const SettingsScreen()),

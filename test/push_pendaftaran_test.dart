@@ -14,20 +14,20 @@ void main() {
       File('supabase/functions/send-push/index.ts').readAsStringSync();
 
   group('pendaftaran perangkat', () {
-    test('karyawan didaftarkan walau belum punya resto', () {
+    test('karyawan didaftarkan walau belum punya merchant', () {
       // Super Admin tidak terikat resto mana pun. Syarat restoId != null
       // membuatnya tidak pernah mendaftar sama sekali.
       expect(binder, contains('if (auth.isEmployee) {'));
       expect(binder, isNot(contains('if (auth.isEmployee && auth.restoId != null)')));
     });
 
-    test('pelanggan yang sudah masuk didaftarkan walau belum buka resto', () {
+    test('pelanggan yang sudah masuk didaftarkan walau belum buka merchant', () {
       // Voucher menyasar emailnya, bukan restonya.
       expect(binder, contains('if (auth.isLoggedIn) {'));
       expect(binder, contains('session.hasActiveResto ? session.restoId : null'));
     });
 
-    test('tamu tetap butuh resto aktif', () {
+    test('tamu tetap butuh merchant aktif', () {
       // Tanpa resto, tidak ada satu pun penanda untuk memanggilnya.
       final blok = binder.substring(binder.indexOf('// Tamu hanya dikenal'));
       expect(blok, contains('if (session.hasActiveResto && session.restoId != null)'));
@@ -55,7 +55,7 @@ void main() {
       expect(blok.substring(0, 400), contains('not("role", "in"'));
     });
 
-    test('pengumuman tanpa resto tetap menghormati sasarannya', () {
+    test('pengumuman tanpa merchant tetap menghormati sasarannya', () {
       // Cabang ini dulu mengembalikan seluruh token apa pun sasarannya.
       final blok = push.substring(push.indexOf('if (!row.resto_id)'));
       expect(blok.substring(0, 700), contains('semua === "customers"'));

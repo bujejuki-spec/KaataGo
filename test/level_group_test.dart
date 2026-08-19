@@ -9,7 +9,7 @@ void main() {
       expect(LevelGroupRegistry.optionsOf('Level Pedas'), contains('Extra Pedas'));
     });
 
-    test('daftar resto menggantikan bawaannya', () {
+    test('daftar merchant menggantikan bawaannya', () {
       LevelGroupRegistry.replaceAll(const [
         LevelGroup(id: '1', name: 'Kematangan', options: ['Medium', 'Well Done']),
       ]);
@@ -47,7 +47,7 @@ void main() {
         options: ['Full Cream', 'Oat', 'Almond'],
       );
 
-      final ulang = LevelGroup.fromMap(group.toMap('resto-1'));
+      final ulang = LevelGroup.fromMap(group.toMap('merchant-1'));
 
       expect(ulang.name, 'Jenis Susu');
       expect(ulang.options, ['Full Cream', 'Oat', 'Almond']);

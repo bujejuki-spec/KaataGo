@@ -262,7 +262,7 @@ class _CustomerQrisScreenState extends State<CustomerQrisScreen> {
                     _StatusLine(remaining: _remaining)
                   else
                     const Text(
-                      '(QR simulasi — payment gateway belum dipasang di resto ini)',
+                      '(QR simulasi — payment gateway belum dipasang di merchant ini)',
                       textAlign: TextAlign.center,
                       style: TextStyle(color: Colors.grey, fontSize: 12),
                     ),

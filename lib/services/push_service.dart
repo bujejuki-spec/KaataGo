@@ -1,8 +1,9 @@
+import 'package:flutter/widgets.dart';
+import 'notification_router.dart';
 import 'dart:io';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'notification_service.dart';
@@ -72,6 +73,24 @@ class PushService {
 
       FirebaseMessaging.onMessage.listen(_onForeground);
 
+      // Ketukan pada notifikasi yang ditampilkan Android sendiri —
+      // saat aplikasinya di latar belakang.
+      FirebaseMessaging.onMessageOpenedApp.listen(_onTap);
+
+      // Dan saat aplikasinya sedang tertutup sama sekali: pesannya
+      // menunggu di sini, sekali. Tanpa ini, notifikasi yang diketuk
+      // dari layar kunci cuma membuka aplikasi di halaman terakhir —
+      // dan yang paling sering diketuk dari layar kunci justru yang
+      // paling mendesak.
+      final awal = await FirebaseMessaging.instance.getInitialMessage();
+      if (awal != null) {
+        // Ditunda satu frame: saat ini navigator-nya belum terpasang,
+        // dan mendorong halaman ke navigator yang belum ada tidak
+        // melakukan apa-apa selain menghilangkan niat orangnya.
+        WidgetsBinding.instance
+            .addPostFrameCallback((_) => _onTap(awal));
+      }
+
       _ready = true;
       lastError = null;
     } catch (e) {
@@ -93,6 +112,16 @@ class PushService {
   /// layarnya adalah satu-satunya yang tidak pernah dia dengar.
   static const _foregroundEvents = {'announcement'};
 
+  /// Membuka halaman yang dimaksud notifikasinya.
+  ///
+  /// Ketukan adalah pernyataan niat: orangnya ingin melihat hal itu,
+  /// sekarang. Membuangnya ke halaman terakhir berarti dia harus
+  /// mengingat sendiri apa yang barusan dikabarkan lalu mencarinya lewat
+  /// tiga ketukan lagi.
+  void _onTap(RemoteMessage message) {
+    NotificationRouter.buka(message.data['event'] as String?);
+  }
+
   void _onForeground(RemoteMessage message) {
     final event = message.data['event'] as String?;
     if (event == null || !_foregroundEvents.contains(event)) return;
@@ -101,6 +130,7 @@ class PushService {
     if (notification == null) return;
 
     NotificationService.instance.showAnnouncement(
+      event: event,
       // Dari hashCode pesannya, bukan penghitung yang naik terus:
       // pengumuman yang sama yang tiba dua kali menimpa dirinya
       // sendiri alih-alih berbaris dua kali di panel notifikasi.

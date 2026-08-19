@@ -68,7 +68,7 @@ class _InboxTileState extends State<InboxTile> {
       subtitle: _unread > 0
           ? '$_unread pesan belum dibaca'
           : widget.forCustomer
-              ? 'Promo resto & info versi terbaru'
+              ? 'Promo merchant & info versi terbaru'
               : 'Pengumuman & info versi terbaru KaataGo',
       color: const Color(0xFF0EA5E9),
       // Angkanya pindah dari judul ke penanda merah. Sebagai tulisan

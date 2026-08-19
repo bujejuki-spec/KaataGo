@@ -53,7 +53,7 @@ void main() {
       expect(sql, contains('when t.id is not null'));
     });
 
-    test('resto gratis atau nonaktif tidak punya tanggal berikutnya', () {
+    test('merchant gratis atau nonaktif tidak punya tanggal berikutnya', () {
       expect(sql, contains("coalesce(s.monthly_price, 0) = 0\n        then null"));
     });
 

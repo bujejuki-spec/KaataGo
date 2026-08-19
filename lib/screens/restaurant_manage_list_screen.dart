@@ -54,7 +54,7 @@ class _RestaurantManageListScreenState extends State<RestaurantManageListScreen>
       context: context,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Hapus resto?', style: TextStyle(fontSize: 17)),
+        title: const Text('Hapus merchant?', style: TextStyle(fontSize: 17)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -126,10 +126,10 @@ class _RestaurantManageListScreenState extends State<RestaurantManageListScreen>
       final confirm = await showDialog<bool>(
         context: context,
         builder: (_) => AlertDialog(
-          title: const Text('Nonaktifkan resto?'),
+          title: const Text('Nonaktifkan merchant?'),
           content: Text(
-            '${resto.name} akan hilang dari daftar "Pilih Resto" customer, dan '
-            'karyawan resto ini tidak akan bisa login sampai diaktifkan lagi.',
+            '${resto.name} akan hilang dari daftar "Pilih Merchant" customer, dan '
+            'karyawan merchant ini tidak akan bisa login sampai diaktifkan lagi.',
           ),
           actionsAlignment: MainAxisAlignment.center,
           actions: [
@@ -158,7 +158,7 @@ class _RestaurantManageListScreenState extends State<RestaurantManageListScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('List Resto'),
+        title: const Text('List Merchant'),
         actions: [
           IconButton(
             tooltip: _tampilkanTerhapus
@@ -182,12 +182,12 @@ class _RestaurantManageListScreenState extends State<RestaurantManageListScreen>
           _load();
         },
         icon: const Icon(Icons.add),
-        label: const Text('Resto Baru'),
+        label: const Text('Merchant Baru'),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _restaurants.isEmpty
-              ? const Center(child: Text('Belum ada resto terdaftar.'))
+              ? const Center(child: Text('Belum ada merchant terdaftar.'))
               : RefreshIndicator(
                   onRefresh: _load,
                   child: ListView.separated(

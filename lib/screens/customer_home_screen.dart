@@ -30,7 +30,6 @@ import '../widgets/cart_bottom_bar.dart';
 import '../widgets/hub_menu_tile.dart';
 import '../widgets/inbox_tile.dart';
 import '../widgets/update_banner.dart';
-import '../widgets/notification_test_tile.dart';
 import '../widgets/kaata_logo.dart';
 import '../widgets/loading_overlay.dart';
 import '../widgets/product_category_list.dart';
@@ -351,7 +350,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
         builder: (_) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           icon: const Icon(Icons.remove_shopping_cart_outlined, size: 40, color: Colors.orange),
-          title: const Text('Keluar dari resto ini?'),
+          title: const Text('Keluar dari merchant ini?'),
           content: const Text(
             'Keranjang belanja kamu akan dikosongkan.',
             textAlign: TextAlign.center,
@@ -378,19 +377,19 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
 
   /// Only offered when this session started via "Pilih Resto" (not a QR
   /// scan — a scanned table is tied to one resto, switching wouldn't make
-  /// sense there). Clears the cart (it's scoped to the old resto's
+  /// sense there). Clears the cart (it's scoped to the old merchant's
   /// products) and the current resto/session, then lets them pick a new
   /// one from the list.
   Future<void> _switchResto(BuildContext context) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Ganti Resto?'),
+        title: const Text('Ganti Merchant?'),
         content: const Text('Keranjang belanja kamu saat ini akan dikosongkan.'),
         actionsAlignment: MainAxisAlignment.center,
         actions: [
           DialogActions(
-            confirmLabel: 'Ganti Resto',
+            confirmLabel: 'Ganti Merchant',
             onConfirm: () => Navigator.pop(context, true),
           ),
         ],
@@ -577,7 +576,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                   HubMenuTile(
                     icon: Icons.restaurant_menu,
                     title: 'Pesan',
-                    subtitle: 'Scan QR meja atau pilih resto',
+                    subtitle: 'Scan QR meja atau pilih merchant',
                     color: const Color(0xFF10B981),
                     onTap: () => setState(() => _showChooser = true),
                   ),
@@ -635,7 +634,10 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                     onTap: () => showAppearanceDialog(context),
                   ),
                   const SizedBox(height: 12),
-                  const NotificationTestTile(),
+                  // Tombol tes notifikasi disembunyikan: push-nya sudah
+                  // berjalan, dan tombol uji yang tertinggal di layar
+                  // pemakai akhirnya ditekan seseorang yang mengira itu
+                  // fitur.
                   const SizedBox(height: 12),
                   HubMenuTile(
                     icon: Icons.logout,
@@ -754,7 +756,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                 const Icon(Icons.qr_code_scanner, size: 72, color: Colors.indigo),
                 const SizedBox(height: 16),
                 const Text(
-                  'Scan QR code di meja kamu, atau pilih resto dulu untuk mulai pesan.',
+                  'Scan QR code di meja kamu, atau pilih merchant dulu untuk mulai pesan.',
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 16),
                 ),
@@ -772,10 +774,10 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                     MaterialPageRoute(builder: (_) => const RestaurantListScreen()),
                   ),
                   icon: const Icon(Icons.storefront_outlined),
-                  label: const Text('Pilih Resto'),
+                  label: const Text('Pilih Merchant'),
                 ),
                 // Guests can only reach their history from here — once
-                // they're inside a resto the app bar's history action is
+                // they're inside a merchant the app bar's history action is
                 // login-only, and this chooser is the one screen that
                 // exists before any resto is picked.
                 if (!loggedInAsCustomer && _hasGuestHistory) ...[
@@ -825,7 +827,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
             if (!session.enteredViaQr)
               IconButton(
                 icon: const Icon(Icons.storefront_outlined),
-                tooltip: 'Ganti Resto',
+                tooltip: 'Ganti Merchant',
                 onPressed: () => _switchResto(context),
               ),
             IconButton(

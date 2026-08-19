@@ -640,6 +640,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                             isDense: true,
                             labelText: 'Nama topping',
                             hintText: 'Keju, Telur, Extra Pedas',
+                            floatingLabelBehavior: FloatingLabelBehavior.always,
                             border: const OutlineInputBorder(),
                             filled: !_editing,
                             fillColor: _editing
@@ -650,7 +651,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                       ),
                       const SizedBox(width: 8),
                       SizedBox(
-                        width: 120,
+                        width: 140,
                         child: TextFormField(
                           controller: _topping[i].harga,
                           enabled: _editing,
@@ -658,7 +659,26 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                           inputFormatters: [ThousandsInputFormatter()],
                           decoration: InputDecoration(
                             isDense: true,
-                            prefixText: 'Rp ',
+                            labelText: 'Harga',
+                            hintText: '0',
+                            // `prefixText` hanya muncul saat kolomnya
+                            // disentuh, jadi kotak yang masih kosong
+                            // tampak tanpa keterangan apa pun — dua
+                            // kotak berdampingan tanpa label, dan yang
+                            // mengisinya harus menebak mana yang mana.
+                            // Sebagai prefixIcon, "Rp" selalu terlihat.
+                            prefixIcon: Padding(
+                              padding: const EdgeInsets.only(left: 10, right: 4),
+                              child: Text(
+                                'Rp',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: KaataTheme.mutedOf(context),
+                                ),
+                              ),
+                            ),
+                            prefixIconConstraints:
+                                const BoxConstraints(minWidth: 0, minHeight: 0),
                             border: const OutlineInputBorder(),
                             filled: !_editing,
                             fillColor: _editing
@@ -771,7 +791,7 @@ class _SellingPricePreview extends StatelessWidget {
     if (ppnExempt) {
       note = 'Produk ini dibebaskan PPN';
     } else if (ppnPercent <= 0) {
-      note = 'Resto belum mengatur PPN';
+      note = 'Merchant belum mengatur PPN';
     } else {
       note = 'Termasuk PPN ${formatPercent(ppnPercent)} (${currency.format(ppn)})';
     }

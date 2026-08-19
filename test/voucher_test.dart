@@ -75,7 +75,7 @@ void main() {
       expect(_batch(claimed: 4, amount: 100000).nilaiTertebus, 400000);
     });
 
-    test('kosongnya daftar resto berarti semua resto', () {
+    test('kosongnya daftar merchant berarti semua merchant', () {
       expect(_batch().berlakuDiSemuaResto, isTrue);
     });
   });
@@ -105,7 +105,7 @@ void main() {
       expect(v.bisaDipakaiDi('r1', 50000), isTrue);
     });
 
-    test('resto yang tidak terdaftar ditolak', () {
+    test('merchant yang tidak terdaftar ditolak', () {
       final v = _claim(restoIds: const ['r1']);
       expect(v.bisaDipakaiDi('r2', 100000), isFalse);
       expect(v.bisaDipakaiDi('r1', 100000), isTrue);
@@ -119,7 +119,7 @@ void main() {
       expect(_claim(minPurchase: 50000).alasanTidakBisa('r1', 1),
           'Belanja belum mencapai minimum');
       expect(_claim(restoIds: const ['r1']).alasanTidakBisa('r2', 999999),
-          'Tidak berlaku di resto ini');
+          'Tidak berlaku di merchant ini');
       expect(_claim().alasanTidakBisa('r1', 999999), isNull);
     });
 
@@ -300,12 +300,12 @@ void main() {
     });
   });
 
-  group('memilih resto sasaran', () {
+  group('memilih merchant sasaran', () {
     final layar =
         File('lib/screens/voucher_screen.dart').readAsStringSync();
 
     test('daftarnya bisa dicari', () {
-      expect(layar, contains('hintText: \'Cari resto\''));
+      expect(layar, contains('hintText: \'Cari merchant\''));
       expect(layar, contains('r.name.toLowerCase().contains(q)'));
     });
 
@@ -322,11 +322,11 @@ void main() {
     });
 
     test('pencarian tanpa hasil mengatakannya', () {
-      expect(layar, contains('Tidak ada resto bernama itu'));
+      expect(layar, contains('Tidak ada merchant bernama itu'));
     });
   });
 
-  group('pencairan sungguhan ke resto', () {
+  group('pencairan sungguhan ke merchant', () {
     final sql = File('supabase/voucher_payouts.sql').readAsStringSync();
     final fn =
         File('supabase/functions/settle-voucher-payouts/index.ts').readAsStringSync();
@@ -359,7 +359,7 @@ void main() {
       expect(sql, isNot(contains('claim_id uuid')));
     });
 
-    test('hanya resto bersub-akun aktif yang diangkut', () {
+    test('hanya merchant bersub-akun aktif yang diangkut', () {
       expect(sql, contains('a.active and a.account_id'));
     });
 
@@ -386,7 +386,7 @@ void main() {
       expect(fn, contains('jawab.ok || sudahPernah'));
     });
 
-    test('satu resto bermasalah tidak menghentikan yang lain', () {
+    test('satu merchant bermasalah tidak menghentikan yang lain', () {
       expect(fn, contains('} catch (e) {'));
       expect(fn, contains('p_ok: false'));
     });
@@ -427,7 +427,7 @@ void main() {
       expect(sql, contains('select not exists ('));
     });
 
-    test('batasnya seluruh KaataGo, bukan per resto', () {
+    test('batasnya seluruh KaataGo, bukan per merchant', () {
       // Orang yang sudah rutin memesan di resto sebelah bukan pengguna
       // baru hanya karena belum pernah masuk resto ini.
       final fn = sql.substring(sql.indexOf('function _pelanggan_baru'),
@@ -484,7 +484,7 @@ void main() {
       expect(blok, contains("_jurnal_kaatago('voucher_redeem'"));
     });
 
-    test('dipakai: keluar dari Redeem, masuk ke GL resto', () {
+    test('dipakai: keluar dari Redeem, masuk ke GL merchant', () {
       final blok = sql.substring(sql.indexOf('function log_voucher_use'));
       expect(blok, contains("_jurnal_kaatago('voucher_redeem'"));
       expect(blok, contains("_gl_account_for(new.resto_id, 'transfer')"));

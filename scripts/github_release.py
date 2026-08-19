@@ -147,11 +147,25 @@ def main():
     print(f"  rilis dibuat: {tag}")
 
     upload_url = release["upload_url"].split("{")[0]
-    request(
-        token, "POST", f"{upload_url}?name=KaataGo.apk",
-        body_file=apk_path,
-        content_type="application/vnd.android.package-archive",
-    )
+
+    # Diunggah dua kali dengan nama berbeda, dan itu disengaja.
+    #
+    # Yang bernomor versi supaya berkas yang mendarat di HP orang bisa
+    # dibedakan — folder unduhan berisi lima "KaataGo.apk (3)" tidak
+    # memberi tahu siapa pun mana yang terbaru.
+    #
+    # Yang bernama tetap supaya URL "releases/latest/download/KaataGo.apk"
+    # tetap hidup. URL itu sudah tersebar di mana-mana, dan tautan yang
+    # mati karena penggantian nama adalah orang yang gagal memasang
+    # aplikasinya tanpa tahu kenapa.
+    versi = tag.lstrip("v")
+    for nama in (f"KaataGo-{versi}.apk", "KaataGo.apk"):
+        request(
+            token, "POST", f"{upload_url}?name={nama}",
+            body_file=apk_path,
+            content_type="application/vnd.android.package-archive",
+        )
+    print(f"  https://github.com/{repo}/releases/download/{tag}/KaataGo-{versi}.apk")
     print(f"  https://github.com/{repo}/releases/latest/download/KaataGo.apk")
 
 

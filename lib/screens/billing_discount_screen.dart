@@ -137,7 +137,7 @@ class _BillingDiscountScreenState extends State<BillingDiscountScreen> {
                       child: Padding(
                         padding: const EdgeInsets.all(30),
                         child: Text(
-                          'Belum ada diskon langganan.\nSeluruh resto membayar '
+                          'Belum ada diskon langganan.\nSeluruh merchant membayar '
                           'harga penuh.',
                           textAlign: TextAlign.center,
                           style:
@@ -242,8 +242,8 @@ class _Kartu extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               sasaran.isEmpty
-                  ? 'Belum ada resto dipilih — diskon ini tidak mengenai siapa pun'
-                  : '${sasaran.length} resto: ${sasaran.join(', ')}',
+                  ? 'Belum ada merchant dipilih — diskon ini tidak mengenai siapa pun'
+                  : '${sasaran.length} merchant: ${sasaran.join(', ')}',
               style: TextStyle(
                 fontSize: 11.5,
                 color:
@@ -308,7 +308,7 @@ class _FormDiskonState extends State<_FormDiskon> {
     // pernah memotong satu tagihan pun — dan yang mencarinya nanti akan
     // mencari di tempat yang salah.
     if (_sasaran.isEmpty) {
-      showAppToast(context, 'Pilih minimal satu resto.', isError: true);
+      showAppToast(context, 'Pilih minimal satu merchant.', isError: true);
       return;
     }
 
@@ -424,7 +424,7 @@ class _FormDiskonState extends State<_FormDiskon> {
               const SizedBox(height: 20),
               Row(
                 children: [
-                  const Text('Resto yang Dapat',
+                  const Text('Merchant yang Dapat',
                       style: TextStyle(
                           fontWeight: FontWeight.bold, fontSize: 13)),
                   const Spacer(),
@@ -443,7 +443,7 @@ class _FormDiskonState extends State<_FormDiskon> {
                 child: widget.resto.isEmpty
                     ? Padding(
                         padding: const EdgeInsets.all(16),
-                        child: Text('Belum ada resto terdaftar.',
+                        child: Text('Belum ada merchant terdaftar.',
                             style:
                                 TextStyle(color: KaataTheme.mutedOf(context))),
                       )

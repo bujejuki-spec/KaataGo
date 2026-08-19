@@ -46,6 +46,12 @@ enum PaymentMethod { cash, qris, transfer }
 
 class PosTransaction {
   final String id;
+
+  /// Nomor antrean harian restonya, sama dengan yang dilihat pelanggan.
+  ///
+  /// Struk yang menyebut nomor berbeda dari yang diteriakkan kasir
+  /// adalah struk yang tidak bisa dipakai mencocokkan apa pun.
+  final int? orderNo;
   final DateTime createdAt;
   final List<TransactionItem> items;
   final PaymentMethod paymentMethod;
@@ -77,6 +83,7 @@ class PosTransaction {
 
   PosTransaction({
     required this.id,
+    this.orderNo,
     required this.createdAt,
     required this.items,
     required this.paymentMethod,
@@ -106,8 +113,35 @@ class PosTransaction {
       'baseAmount': baseAmount,
       'serviceAmount': serviceAmount,
       'ppnAmount': ppnAmount,
+      'orderNo': orderNo,
     };
   }
+
+  /// Nomor yang siap ditampilkan, mis. "#014".
+  String get nomorTampil =>
+      orderNo == null ? '' : '#${orderNo.toString().padLeft(3, '0')}';
+
+  bool get punyaNomor => orderNo != null;
+
+  /// Salinan dengan nomor antreannya terisi.
+  ///
+  /// Nomornya baru diketahui sesudah pesanannya tersimpan di server,
+  /// sementara struknya sudah terbentuk sebelum itu.
+  PosTransaction denganNomor(int nomor) => PosTransaction(
+        id: id,
+        orderNo: nomor,
+        createdAt: createdAt,
+        items: items,
+        paymentMethod: paymentMethod,
+        total: total,
+        orderType: orderType,
+        customerName: customerName,
+        cashierName: cashierName,
+        cashReceived: cashReceived,
+        baseAmount: baseAmount,
+        serviceAmount: serviceAmount,
+        ppnAmount: ppnAmount,
+      );
 
   factory PosTransaction.fromMap(
     Map<String, dynamic> map,
@@ -115,6 +149,11 @@ class PosTransaction {
   ) {
     return PosTransaction(
       id: map['id'] as String,
+      // Dua sumber, dua nama kolom: baris sqflite memakai `orderNo`,
+      // baris Supabase memakai `order_no`. Keduanya dibaca di sini
+      // supaya struk lama maupun baru sama-sama menemukan nomornya.
+      orderNo: (map['orderNo'] as num?)?.toInt() ??
+          (map['order_no'] as num?)?.toInt(),
       createdAt: DateTime.parse(map['createdAt'] as String),
       items: items,
       paymentMethod: PaymentMethod.values.firstWhere(

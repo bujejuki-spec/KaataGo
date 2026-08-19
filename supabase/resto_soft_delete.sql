@@ -151,7 +151,7 @@ set search_path = public
 as $$
 begin
   if not is_super_admin() then
-    raise exception 'Hanya Super Admin yang dapat menghapus resto';
+    raise exception 'Hanya Super Admin yang dapat menghapus merchant';
   end if;
 
   if p_resto_id = 'kaatago' then

@@ -83,7 +83,7 @@ class TransactionHistoryScreen extends StatelessWidget {
     if (restoId == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Riwayat Kasir')),
-        body: const Center(child: Text('Akun ini belum punya Resto ID.')),
+        body: const Center(child: Text('Akun ini belum punya Merchant ID.')),
       );
     }
 

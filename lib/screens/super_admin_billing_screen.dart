@@ -153,7 +153,7 @@ class _SuperAdminBillingScreenState extends State<SuperAdminBillingScreen> {
       child: Scaffold(
         backgroundColor: KaataTheme.backgroundOf(context),
         appBar: AppBar(
-          title: const Text('Billing Resto'),
+          title: const Text('Billing Merchant'),
           actions: [
             IconButton(
               tooltip: 'Terbitkan tagihan sekarang',
@@ -495,7 +495,7 @@ class _DialogSetelanState extends State<_DialogSetelan> {
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               decoration: const InputDecoration(
                 labelText: 'Tenggang (hari)',
-                helperText: 'Resto terkunci setelah lewat tenggang ini',
+                helperText: 'Merchant terkunci setelah lewat tenggang ini',
                 helperMaxLines: 2,
               ),
             ),
@@ -566,7 +566,7 @@ class _DialogTolakState extends State<_DialogTolak> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Alasannya dibaca resto. Tanpa alasan, yang ditolak tidak tahu '
+            'Alasannya dibaca merchant. Tanpa alasan, yang ditolak tidak tahu '
             'apa yang harus diperbaiki — dan akan mengirim bukti yang sama '
             'lagi.',
             style: TextStyle(fontSize: 12, color: KaataTheme.mutedOf(context)),

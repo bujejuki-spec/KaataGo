@@ -45,7 +45,7 @@ class _RoleChoiceScreenState extends State<RoleChoiceScreen> {
         title: const Text('Login dengan Gmail?'),
         content: const Text(
           'Login supaya riwayat pesanan kamu tersimpan dan bisa dilihat lagi '
-          'dari resto mana pun. Nggak login juga tetap bisa pesan seperti biasa — '
+          'dari merchant mana pun. Nggak login juga tetap bisa pesan seperti biasa — '
           'riwayatnya cuma tersimpan di HP ini.',
           textAlign: TextAlign.center,
         ),
@@ -136,7 +136,7 @@ class _RoleChoiceScreenState extends State<RoleChoiceScreen> {
   /// Karyawan" screen at all. If it succeeds and the account is a
   /// registered employee, RootScreen (watching AuthProvider) swaps to the
   /// staff app on its own. If the picker is cancelled, or the account
-  /// isn't a registered employee (or their resto's been deactivated), we
+  /// isn't a registered employee (or their merchant's been deactivated), we
   /// just stay right here on the choice screen — same page as before.
   Future<void> _chooseEmployee() async {
     setState(() => _signingInEmployee = true);
@@ -219,7 +219,7 @@ class _RoleChoiceScreenState extends State<RoleChoiceScreen> {
               ),
               const SizedBox(height: 6),
               Text(
-                'Order Cepat, Resto Hebat',
+                'Order Cepat, Merchant Hebat',
                 style: TextStyle(
                   color: KaataTheme.brandOf(context),
                   fontSize: 14,

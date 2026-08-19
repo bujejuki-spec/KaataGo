@@ -244,7 +244,7 @@ begin
                    when 'approved' then 'Setoran tunai dikonfirmasi ✅'
                    else 'Setoran tunai ditolak' end,
         'body', case new.status
-                  when 'approved' then v_amount || ' sudah masuk rekening resto.'
+                  when 'approved' then v_amount || ' sudah masuk rekening merchant.'
                   else v_amount || ' dikembalikan ke Saldo Cash'
                        || coalesce(' — ' || nullif(trim(new.review_note), ''), '.')
                 end

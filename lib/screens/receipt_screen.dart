@@ -84,7 +84,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> with SingleTickerProvider
     final dateFmt = DateFormat('dd MMM yyyy, HH:mm', 'id_ID');
 
     return ReceiptData(
-      restoName: _resto?.name ?? 'Resto',
+      restoName: _resto?.name ?? 'Merchant',
       restoAddress: _resto?.address,
       restoPhone: _resto?.phone,
       restoLogoBase64: _resto?.logoBase64,
@@ -93,6 +93,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> with SingleTickerProvider
       // checkout, so this is already local time — no WIB shift here.
       dateTime: tx.createdAt,
       headerRows: [
+        if (tx.punyaNomor) ('No. Pesanan', tx.nomorTampil),
         ('No.', '#${tx.id.substring(0, 8).toUpperCase()}'),
         if (tx.cashierName != null && tx.cashierName!.isNotEmpty) ('Kasir', tx.cashierName!),
         ('Tipe', kOrderTypeLabels[tx.orderType]!),

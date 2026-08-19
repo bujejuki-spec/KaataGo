@@ -21,7 +21,7 @@ import '../widgets/required_label.dart';
 /// Lets the Admin update this restaurant's category and address —
 /// shown to customers at the top of their self-order screen once they
 /// scan a table QR. The name itself is read-only here; only Super Admin
-/// can rename a resto (via List Resto), since it's the resto's
+/// can rename a resto (via List Resto), since it's the merchant's
 /// identifying label across the whole platform.
 ///
 /// Opens in view-only mode (all fields greyed out) — tap "Edit" to make
@@ -39,6 +39,29 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
   final _nameCtrl = TextEditingController();
   final _addressCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
+
+  /// Fasilitas yang tersedia di tempat ini.
+  final List<String> _fasilitas = [];
+  final _fasilitasBaru = TextEditingController();
+
+  /// Yang paling sering dipakai, ditawarkan sebagai ketukan cepat.
+  ///
+  /// Bukan daftar tertutup — yang punya sesuatu di luar ini tetap bisa
+  /// mengetiknya sendiri. Daftar yang menghambat pemiliknya
+  /// menggambarkan tempatnya sendiri lebih buruk daripada daftar yang
+  /// sesekali salah ketik.
+  static const _fasilitasUmum = [
+    'AC',
+    'Smoking Area',
+    'Kids Friendly',
+    'Live Music',
+    'WiFi Gratis',
+    'Parkir Luas',
+    'Mushola',
+    'Toilet',
+    'Colokan Listrik',
+    'Ramah Difabel',
+  ];
   final _repo = RestaurantRepository();
   bool _loading = true;
   bool _editing = false;
@@ -103,6 +126,9 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
       _ppnPercent = resto.ppnPercent;
       _servicePercent = resto.servicePercent;
       _phoneCtrl.text = resto.phone ?? '';
+      _fasilitas
+        ..clear()
+        ..addAll(resto.facilities);
       _selectedCategory = resto.category;
       _existingLogo = resto.logoBase64;
       _active = resto.active;
@@ -117,6 +143,7 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
     _nameCtrl.dispose();
     _addressCtrl.dispose();
     _phoneCtrl.dispose();
+    _fasilitasBaru.dispose();
     super.dispose();
   }
 
@@ -239,6 +266,21 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
     setState(() => _addressCtrl.text = address);
   }
 
+  /// Menambahkan fasilitas yang diketik sendiri.
+  ///
+  /// Yang sama diabaikan diam-diam, tanpa pesan galat: mengetik ulang
+  /// sesuatu yang sudah ada bukan kesalahan yang perlu ditegur.
+  void _tambahFasilitas() {
+    final teks = _fasilitasBaru.text.trim();
+    if (teks.isEmpty) return;
+    setState(() {
+      if (!_fasilitas.any((f) => f.toLowerCase() == teks.toLowerCase())) {
+        _fasilitas.add(teks);
+      }
+      _fasilitasBaru.clear();
+    });
+  }
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     final toast = AppToast.of(context);
@@ -266,6 +308,7 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
         active: _active,
         dineInEnabled: _dineIn,
         takeAwayEnabled: _takeAway,
+        facilities: List<String>.from(_fasilitas),
       ));
       // Keep local state in step with what was just written, so a second
       // edit round doesn't re-upload or resurrect a removed logo.
@@ -277,7 +320,7 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
         _editing = false;
         _saving = false;
       });
-      toast.show('Info resto disimpan');
+      toast.show('Info merchant disimpan');
     } catch (e) {
       if (!mounted) return;
       setState(() => _saving = false);
@@ -289,7 +332,7 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Info Resto'),
+        title: const Text('Info Merchant'),
         actions: [
           if (!_loading && !_editing)
             IconButton(
@@ -328,7 +371,7 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Nama Resto',
+                            'Nama Merchant',
                             style: TextStyle(
                               fontSize: 12,
                               color: KaataTheme.mutedOf(context),
@@ -347,9 +390,9 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Hanya KaataGo Admin yang bisa ubah nama resto, '
+                      'Hanya KaataGo Admin yang bisa ubah nama merchant, '
                       'silahkan hubungi KaataGo Admin jika ada perubahan '
-                      'nama resto',
+                      'nama merchant',
                       style: TextStyle(
                         fontSize: 11.5,
                         color: KaataTheme.mutedOf(context),
@@ -359,7 +402,7 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
                     DropdownButtonFormField<String>(
                       value: _selectedCategory,
                       decoration: InputDecoration(
-                        label: requiredLabel('Kategori Resto'),
+                        label: requiredLabel('Kategori Merchant'),
                         filled: !_editing,
                         fillColor: _editing ? null : KaataTheme.disabledFillOf(context),
                       ),
@@ -449,6 +492,96 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
                           ? null
                           : (v) => setState(() => _takeAway = v),
                     ),
+                    const SizedBox(height: 22),
+                    const Text('Fasilitas',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 15)),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Ditampilkan ke pelanggan saat memilih tempat. Yang '
+                      'membuat orang memilih satu tempat dibanding lainnya '
+                      'sering bukan menunya.',
+                      style: TextStyle(
+                          fontSize: 12, color: KaataTheme.mutedOf(context)),
+                    ),
+                    const SizedBox(height: 10),
+                    if (_fasilitas.isEmpty && !_editing)
+                      Text('Belum ada fasilitas yang dicantumkan.',
+                          style: TextStyle(
+                              fontSize: 12.5,
+                              color: KaataTheme.mutedOf(context)))
+                    else
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (final f in _fasilitas)
+                            Chip(
+                              label: Text(f,
+                                  style: const TextStyle(fontSize: 12.5)),
+                              onDeleted: _editing
+                                  ? () => setState(() => _fasilitas.remove(f))
+                                  : null,
+                            ),
+                        ],
+                      ),
+                    if (_editing) ...[
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: SizedBox(
+                              height: 44,
+                              child: TextField(
+                                controller: _fasilitasBaru,
+                                textCapitalization: TextCapitalization.words,
+                                onSubmitted: (_) => _tambahFasilitas(),
+                                decoration: InputDecoration(
+                                  isDense: true,
+                                  hintText: 'Tulis fasilitas lain',
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          SizedBox(
+                            width: 104,
+                            height: 44,
+                            child: FilledButton(
+                              style: FilledButton.styleFrom(
+                                minimumSize: const Size(104, 44),
+                                padding: EdgeInsets.zero,
+                              ),
+                              onPressed: _tambahFasilitas,
+                              child: const Text('Tambah'),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Text('Yang sering dipakai',
+                          style: TextStyle(
+                              fontSize: 11.5,
+                              color: KaataTheme.mutedOf(context))),
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (final f in _fasilitasUmum)
+                            if (!_fasilitas.contains(f))
+                              ActionChip(
+                                label: Text(f,
+                                    style: const TextStyle(fontSize: 12)),
+                                onPressed: () =>
+                                    setState(() => _fasilitas.add(f)),
+                              ),
+                        ],
+                      ),
+                    ],
                     const SizedBox(height: 20),
                     LogoPicker(
                       existingBase64: _existingLogo,

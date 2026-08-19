@@ -118,7 +118,7 @@ class _PitaPengingat extends StatelessWidget {
     final pesan = state.menungguVerifikasi
         ? 'Bukti bayar sedang diperiksa KaataGo.'
         : mendesak
-            ? 'Tagihan lewat ${-sisa} hari. Resto terkunci kalau belum '
+            ? 'Tagihan lewat ${-sisa} hari. Merchant terkunci kalau belum '
                 'dibayar.'
             : sisa == 0
                 ? 'Tagihan jatuh tempo hari ini.'
@@ -218,7 +218,7 @@ class _LayarTerkunci extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  'Tagihan langganan KaataGo belum lunas. Resto ini bisa '
+                  'Tagihan langganan KaataGo belum lunas. Merchant ini bisa '
                   'dipakai lagi begitu pembayarannya diterima.',
                   textAlign: TextAlign.center,
                   style: TextStyle(

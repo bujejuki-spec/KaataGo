@@ -629,7 +629,7 @@ class _ProductPicker extends StatelessWidget {
             ],
           )
         else if (products.isEmpty)
-          Text('Belum ada produk di resto ini.', style: TextStyle(color: muted))
+          Text('Belum ada produk di merchant ini.', style: TextStyle(color: muted))
         else
           Container(
             constraints: const BoxConstraints(maxHeight: 340),

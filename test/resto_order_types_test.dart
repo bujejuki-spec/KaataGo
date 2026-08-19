@@ -4,7 +4,7 @@ import 'package:pos_app/models/restaurant.dart';
 
 Restaurant _resto({bool dineIn = true, bool takeAway = true}) => Restaurant(
       id: 'r1',
-      name: 'Kaata Resto',
+      name: 'Kaata Merchant',
       address: 'Jl. Contoh',
       dineInEnabled: dineIn,
       takeAwayEnabled: takeAway,
@@ -12,7 +12,7 @@ Restaurant _resto({bool dineIn = true, bool takeAway = true}) => Restaurant(
 
 void main() {
   group('Restaurant.orderTypes', () {
-    test('resto lama tanpa kolomnya melayani keduanya', () {
+    test('merchant lama tanpa kolomnya melayani keduanya', () {
       final resto = Restaurant.fromMap('r1', {'name': 'Lama', 'address': 'x'});
 
       expect(resto.dineInEnabled, isTrue);

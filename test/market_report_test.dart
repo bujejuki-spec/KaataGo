@@ -47,7 +47,7 @@ void main() {
       expect("payment_status = 'paid'".allMatches(sql).length, 4);
     });
 
-    test('resto platform dan yang terhapus tidak ikut', () {
+    test('merchant platform dan yang terhapus tidak ikut', () {
       expect('coalesce(r.is_platform, false) = false'.allMatches(sql).length, 3);
       expect('coalesce(r.is_deleted, false) = false'.allMatches(sql).length, 3);
     });
@@ -57,7 +57,7 @@ void main() {
       expect(sql, contains('exists (select 1 from customers c2'));
     });
 
-    test('resto tanpa penghasilan dicari lewat LEFT JOIN', () {
+    test('merchant tanpa penghasilan dicari lewat LEFT JOIN', () {
       // Resto yang seluruh pesanannya batal punya baris di orders tapi
       // nol rupiah — dan itu justru yang paling perlu ditengok.
       expect(sql, contains('left join orders o'));

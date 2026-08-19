@@ -92,11 +92,11 @@ class _MarketReportScreenState extends State<MarketReportScreen> {
                     _Bagian(
                       icon: Icons.storefront_outlined,
                       warna: const Color(0xFF10B981),
-                      judul: 'Top 5 Resto',
+                      judul: 'Top 5 Merchant',
                       catatan: totalTop == 0
                           ? null
                           : 'Lima ini menyumbang ${_rupiah.format(totalTop)}.',
-                      kosong: 'Belum ada resto yang menghasilkan.',
+                      kosong: 'Belum ada merchant yang menghasilkan.',
                       baris: _topResto,
                       nilai: (r) => _rupiah.format(r.amount),
                       bawah: (r) => '${r.count} pesanan',
@@ -118,11 +118,11 @@ class _MarketReportScreenState extends State<MarketReportScreen> {
                     _Bagian(
                       icon: Icons.store_mall_directory_outlined,
                       warna: const Color(0xFFEF4444),
-                      judul: 'Resto Belum Ada Penghasilan',
+                      judul: 'Merchant Belum Ada Penghasilan',
                       catatan: 'Yang jumlah pesanannya bukan nol berarti '
                           'sudah mencoba memakainya tapi tidak ada yang '
                           'sampai terbayar.',
-                      kosong: 'Semua resto sudah menghasilkan.',
+                      kosong: 'Semua merchant sudah menghasilkan.',
                       baris: _restoDiam,
                       nilai: null,
                       bawah: (r) =>

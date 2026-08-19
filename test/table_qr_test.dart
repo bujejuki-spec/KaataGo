@@ -41,7 +41,7 @@ void main() {
 
   group('TableQrCard.fileName', () {
     test('pembuatan satuan tanpa nomor urut', () {
-      const card = TableQrCard(restoName: 'Resto', table: '7', payload: 'x');
+      const card = TableQrCard(restoName: 'Merchant', table: '7', payload: 'x');
       expect(card.fileName, 'qr-meja-7.png');
     });
 
@@ -50,7 +50,7 @@ void main() {
       // meja 10 nyempil di antara 1 dan 2 — dan yang memasangnya di meja
       // harus membaca satu per satu.
       const card = TableQrCard(
-        restoName: 'Resto',
+        restoName: 'Merchant',
         table: '7',
         payload: 'x',
         sequence: 7,
@@ -62,7 +62,7 @@ void main() {
       final names = [
         for (var i = 1; i <= 12; i++)
           TableQrCard(
-            restoName: 'Resto',
+            restoName: 'Merchant',
             table: '$i',
             payload: 'x',
             sequence: i,
@@ -77,7 +77,7 @@ void main() {
     test('karakter yang tidak aman untuk nama berkas diganti', () {
       // Nomor meja bebas diketik, jadi "VIP/2" bisa saja masuk — dan
       // garis miring di situ akan dibaca sebagai pemisah folder.
-      const card = TableQrCard(restoName: 'Resto', table: 'VIP/2', payload: 'x');
+      const card = TableQrCard(restoName: 'Merchant', table: 'VIP/2', payload: 'x');
       expect(card.fileName, 'qr-meja-VIP-2.png');
     });
   });

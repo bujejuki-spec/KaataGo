@@ -1,3 +1,4 @@
+import 'services/notification_router.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -35,6 +36,13 @@ Future<void> main() async {
   // di sini, sekali, bukan di layar mana pun.
   NotificationService.instance.onNotificationTap = (payload) {
     if (payload == null || payload.isEmpty) return;
+    // Satu kolom payload dipakai dua hal: jalur berkas APK dari
+    // pemasang pembaruan, dan nama kejadian dari notifikasi biasa.
+    // Awalannya yang membedakan, bukan tebakan dari bentuk isinya.
+    if (payload.startsWith('event:')) {
+      NotificationRouter.buka(payload.substring(6));
+      return;
+    }
     OpenFilex.open(payload, type: 'application/vnd.android.package-archive');
   };
 
@@ -63,6 +71,10 @@ class PosApp extends StatelessWidget {
       // tombolnya sedang menunggu layarnya berubah saat itu juga.
       child: Consumer<AppPrefsProvider>(
         builder: (context, prefs, _) => MaterialApp(
+          // Dipakai notifikasi untuk membuka halaman yang dimaksudnya.
+          // Notifikasi tiba di luar pohon widget; tanpa kunci ini tidak
+          // ada context yang bisa dipakai bernavigasi dari sana.
+          navigatorKey: navigatorKey,
           title: 'KaataGo',
           debugShowCheckedModeBanner: false,
           theme: KaataTheme.light(),

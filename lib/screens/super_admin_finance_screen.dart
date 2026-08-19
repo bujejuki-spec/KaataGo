@@ -50,7 +50,7 @@ class SuperAdminFinanceScreen extends StatelessWidget {
             HubMenuTile(
               icon: Icons.receipt_long_outlined,
               title: 'Riwayat Langganan',
-              subtitle: 'Tagihan yang sudah dibayar resto, per bulan',
+              subtitle: 'Tagihan yang sudah dibayar merchant, per bulan',
               color: const Color(0xFF10B981),
               onTap: () => Navigator.of(context).push(MaterialPageRoute(
                 builder: (_) => const BillingHistoryScreen(),
@@ -60,7 +60,7 @@ class SuperAdminFinanceScreen extends StatelessWidget {
             HubMenuTile(
               icon: Icons.local_offer_outlined,
               title: 'Diskon Langganan',
-              subtitle: 'Potongan harga untuk resto tertentu',
+              subtitle: 'Potongan harga untuk merchant tertentu',
               color: const Color(0xFF6366F1),
               onTap: () => Navigator.of(context).push(MaterialPageRoute(
                 builder: (_) => const BillingDiscountScreen(),
@@ -124,8 +124,8 @@ class SuperAdminFinanceScreen extends StatelessWidget {
             const SizedBox(height: 10),
             HubMenuTile(
               icon: Icons.travel_explore_outlined,
-              title: 'Jurnal GL Semua Resto',
-              subtitle: 'Pembukuan resto klien, hanya untuk dilihat',
+              title: 'Jurnal GL Semua Merchant',
+              subtitle: 'Pembukuan merchant klien, hanya untuk dilihat',
               color: const Color(0xFF64748B),
               onTap: () => Navigator.of(context).push(MaterialPageRoute(
                 builder: (_) => const AllRestoJournalScreen(),
@@ -458,7 +458,7 @@ class _AllRestoJournalScreenState extends State<AllRestoJournalScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             const SizedBox(height: 12),
-            const Text('Saring per Resto',
+            const Text('Saring per Merchant',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
             const SizedBox(height: 8),
             Flexible(
@@ -467,7 +467,7 @@ class _AllRestoJournalScreenState extends State<AllRestoJournalScreen> {
                 children: [
                   ListTile(
                     leading: const Icon(Icons.clear_all),
-                    title: const Text('Semua resto'),
+                    title: const Text('Semua merchant'),
                     trailing: _saring == null
                         ? const Icon(Icons.check, size: 18)
                         : null,
@@ -539,10 +539,10 @@ class _AllRestoJournalScreenState extends State<AllRestoJournalScreen> {
     return Scaffold(
       backgroundColor: KaataTheme.backgroundOf(context),
       appBar: AppBar(
-        title: const Text('Jurnal GL Semua Resto'),
+        title: const Text('Jurnal GL Semua Merchant'),
         actions: [
           IconButton(
-            tooltip: 'Saring per resto',
+            tooltip: 'Saring per merchant',
             icon: const Icon(Icons.filter_list),
             onPressed: _memuat ? null : _pilihResto,
           ),
@@ -575,7 +575,7 @@ class _AllRestoJournalScreenState extends State<AllRestoJournalScreen> {
                             // lebih dulu, bukan saringan yang terlupa.
                             _PitaSaringan(
                               nama: _saring == null
-                                  ? 'Semua resto'
+                                  ? 'Semua merchant'
                                   : _namaResto[_saring] ?? _saring!,
                               menyaring: _saring != null,
                               onUbah: _pilihResto,

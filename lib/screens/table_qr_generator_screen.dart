@@ -143,7 +143,7 @@ class _TableQrGeneratorScreenState extends State<TableQrGeneratorScreen> {
     if (restoId == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Generator QR Meja')),
-        body: const Center(child: Text('Akun ini belum punya Resto ID.')),
+        body: const Center(child: Text('Akun ini belum punya Merchant ID.')),
       );
     }
 
@@ -208,7 +208,7 @@ class _TableQrGeneratorScreenState extends State<TableQrGeneratorScreen> {
             _Card(
               icon: Icons.storefront_outlined,
               color: KaataTheme.brand,
-              title: 'Data Resto',
+              title: 'Data Merchant',
               subtitle: 'Otomatis dari akun yang sedang login',
               children: [
                 // Resto ID sengaja tidak ditampilkan di sini. Itu kunci
@@ -222,7 +222,7 @@ class _TableQrGeneratorScreenState extends State<TableQrGeneratorScreen> {
                     initialValue: _restoName,
                     enabled: false,
                     decoration: InputDecoration(
-                      labelText: 'Nama Resto',
+                      labelText: 'Nama Merchant',
                       filled: true,
                       fillColor: KaataTheme.disabledFillOf(context),
                     ),

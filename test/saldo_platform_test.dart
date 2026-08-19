@@ -174,7 +174,7 @@ void main() {
     });
   });
 
-  group('resto terdekat', () {
+  group('merchant terdekat', () {
     test('radiusnya 5 km', () {
       final layar =
           File('lib/screens/restaurant_list_screen.dart').readAsStringSync();

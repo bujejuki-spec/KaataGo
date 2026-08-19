@@ -131,7 +131,10 @@ void main() {
       // Menu yang bersembunyi di balik judul kategori adalah menu yang
       // tidak ditemukan — dan halaman berisi tiga baris judul terbaca
       // seperti resto yang belum mengisi menunya.
-      expect(daftar, contains('initiallyExpanded: true,'));
+      // Bawaannya terbuka: yang belum pernah dilipat orangnya tidak ada
+      // di daftar `_terlipat`.
+      expect(daftar,
+          contains('mencari || !_terlipat.contains(category)'));
       expect(daftar, isNot(contains('initiallyExpanded: false,')));
     });
 

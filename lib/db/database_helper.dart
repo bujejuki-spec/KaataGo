@@ -24,7 +24,7 @@ class DatabaseHelper {
 
     return openDatabase(
       path,
-      version: 13,
+      version: 14,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE products (
@@ -62,7 +62,8 @@ class DatabaseHelper {
             cashReceived INTEGER,
             baseAmount INTEGER,
             serviceAmount INTEGER,
-            ppnAmount INTEGER
+            ppnAmount INTEGER,
+            orderNo INTEGER
           )
         ''');
 
@@ -155,6 +156,13 @@ class DatabaseHelper {
           await db.execute('ALTER TABLE products ADD COLUMN toppings TEXT');
           await db.execute(
               'ALTER TABLE products ADD COLUMN max_toppings INTEGER NOT NULL DEFAULT 0');
+        }
+
+        if (oldVersion < 14) {
+          // Nomor antrean harian, disalin dari baris `orders` yang
+          // dicerminkan ke server. Struk lama tetap tanpa nomor — dan
+          // itu benar: nomornya memang belum ada saat struk itu dicetak.
+          await db.execute('ALTER TABLE transactions ADD COLUMN orderNo INTEGER');
         }
       },
     );

@@ -19,25 +19,25 @@ Announcement _a({
 
 void main() {
   group('jangkauan kotak masuk pelanggan', () {
-    test('promo resto sampai ke pelanggan yang pernah pesan di sana', () {
+    test('promo merchant sampai ke pelanggan yang pernah pesan di sana', () {
       // Inti perubahannya: bukan hanya ke orang yang kebetulan sedang
       // membuka menu resto itu — orang yang paling tidak membutuhkannya,
       // karena dia sudah ada di sana.
       expect(_a(restoId: 'warung-a').visibleToCustomer({'warung-a'}), isTrue);
     });
 
-    test('tetap sampai walau sedang membuka resto lain', () {
+    test('tetap sampai walau sedang membuka merchant lain', () {
       expect(
         _a(restoId: 'warung-a').visibleToCustomer({'warung-a', 'kedai-b'}),
         isTrue,
       );
     });
 
-    test('promo resto lain tidak ikut masuk', () {
+    test('promo merchant lain tidak ikut masuk', () {
       expect(_a(restoId: 'warung-a').visibleToCustomer({'kedai-b'}), isFalse);
     });
 
-    test('pengumuman tanpa resto berlaku untuk semua', () {
+    test('pengumuman tanpa merchant berlaku untuk semua', () {
       // Pemberitahuan versi baru dari Super Admin.
       expect(_a().visibleToCustomer({}), isTrue);
       expect(_a().visibleToCustomer({'warung-a'}), isTrue);
@@ -92,7 +92,7 @@ void main() {
       expect(semua.visibleToEmployee('warung-a'), isTrue);
     });
 
-    test('karyawan resto lain tetap tidak menerimanya', () {
+    test('karyawan merchant lain tetap tidak menerimanya', () {
       final internal = _a(
         restoId: 'warung-a',
         audience: AnnouncementAudience.employees,

@@ -62,7 +62,7 @@ class LogoPicker extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Logo Resto',
+        Text('Logo Merchant',
             style: TextStyle(
                 fontSize: 12, fontWeight: FontWeight.w600, color: KaataTheme.mutedOf(context))),
         const SizedBox(height: 8),

@@ -21,6 +21,18 @@ class TransactionRepository {
     });
   }
 
+  /// Menempelkan nomor antrean pada transaksi yang sudah tersimpan.
+  ///
+  /// Nomornya datang dari server sesudah barisnya masuk, sementara
+  /// transaksinya sudah lebih dulu ditulis ke penyimpanan lokal —
+  /// menahan penulisan lokal sampai jaringan menjawab berarti penjualan
+  /// hilang kalau jaringannya sedang mati.
+  Future<void> updateNomor(String id, int nomor) async {
+    final db = await _dbHelper.database;
+    await db.update('transactions', {'orderNo': nomor},
+        where: 'id = ?', whereArgs: [id]);
+  }
+
   Future<List<PosTransaction>> getAll() async {
     final db = await _dbHelper.database;
     final txMaps = await db.query('transactions', orderBy: 'createdAt DESC');

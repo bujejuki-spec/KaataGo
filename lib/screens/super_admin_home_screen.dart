@@ -36,7 +36,7 @@ class SuperAdminHomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
-    final name = auth.employeeName?.isNotEmpty == true ? auth.employeeName! : 'Super Admin';
+    final name = auth.employeeName?.isNotEmpty == true ? auth.employeeName! : 'KaataGo Admin';
     final email = auth.user?.email;
 
     return Scaffold(
@@ -49,7 +49,7 @@ class SuperAdminHomeScreen extends StatelessWidget {
           HubHeader(
             logo: const KaataLogo(size: 64),
             title: name,
-            subtitle: email == null ? 'Super Admin' : 'Super Admin • $email',
+            subtitle: email == null ? 'KaataGo Admin' : 'KaataGo Admin • $email',
             colorA: KaataTheme.brand,
             colorB: KaataTheme.brandDark,
           ),
@@ -58,14 +58,14 @@ class SuperAdminHomeScreen extends StatelessWidget {
               tiles: [
                 HubGroupTile(
                   icon: Icons.storefront_outlined,
-                  title: 'Resto & Karyawan',
-                  subtitle: 'Daftar resto dan akun karyawan semua resto',
+                  title: 'Merchant & Karyawan',
+                  subtitle: 'Daftar merchant dan akun karyawan semua merchant',
                   color: const Color(0xFF0EA5E9),
                   tiles: () => [
                     HubMenuTile(
                       icon: Icons.storefront_outlined,
-                      title: 'List Resto',
-                      subtitle: 'Lihat & edit semua resto terdaftar di KaataGo',
+                      title: 'List Merchant',
+                      subtitle: 'Lihat & edit semua merchant terdaftar di KaataGo',
                       color: const Color(0xFF0EA5E9),
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(builder: (_) => const RestaurantManageListScreen()),
@@ -85,13 +85,13 @@ class SuperAdminHomeScreen extends StatelessWidget {
                 HubGroupTile(
                   icon: Icons.workspace_premium_outlined,
                   title: 'Langganan & Keuangan',
-                  subtitle: 'Billing resto, pendapatan, pembukuan KaataGo',
+                  subtitle: 'Billing merchant, pendapatan, pembukuan KaataGo',
                   color: const Color(0xFF10B981),
                   tiles: () => [
                     HubMenuTile(
                       icon: Icons.receipt_long_outlined,
-                      title: 'Billing Resto',
-                      subtitle: 'Harga & tanggal langganan tiap resto, verifikasi pembayaran',
+                      title: 'Billing Merchant',
+                      subtitle: 'Harga & tanggal langganan tiap merchant, verifikasi pembayaran',
                       color: const Color(0xFF10B981),
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(builder: (_) => const SuperAdminBillingScreen()),
@@ -100,7 +100,7 @@ class SuperAdminHomeScreen extends StatelessWidget {
                     HubMenuTile(
                       icon: Icons.account_balance_outlined,
                       title: 'Finance',
-                      subtitle: 'Pendapatan langganan, pembukuan KaataGo, jurnal semua resto',
+                      subtitle: 'Pendapatan langganan, pembukuan KaataGo, jurnal semua merchant',
                       color: const Color(0xFF14B8A6),
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(builder: (_) => const SuperAdminFinanceScreen()),
@@ -112,7 +112,7 @@ class SuperAdminHomeScreen extends StatelessWidget {
                   icon: Icons.insights_outlined,
                   title: 'Analisa Pasar',
                   subtitle:
-                      'Pelanggan & resto teratas, dan yang belum bergerak',
+                      'Pelanggan & merchant teratas, dan yang belum bergerak',
                   color: const Color(0xFF6366F1),
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute(

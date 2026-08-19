@@ -149,11 +149,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  String? _requiredValidator(String? v) {
-    if (!_editing) return null; // view-only: nothing to validate
-    return (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null;
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -199,13 +194,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 validator: (v) =>
                     _editing ? validateName(v, label: 'Nama merchant') : null,
               ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _qrisIdCtrl,
-                enabled: _editing,
-                decoration: _decoration('ID QRIS Merchant'),
-                validator: _requiredValidator,
-              ),
+              // Kolom ID QRIS Merchant dihapus: kodenya dibuat Xendit
+              // per transaksi atas nama sub-akun restonya. Nilainya
+              // tetap disimpan apa adanya supaya data lama tidak
+              // terhapus hanya karena kolomnya tidak lagi tampil.
               const SizedBox(height: 24),
               const Text(
                 'Transfer Bank',

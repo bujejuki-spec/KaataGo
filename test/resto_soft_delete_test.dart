@@ -68,7 +68,7 @@ void main() {
 
   group('wewenang dan pengaman', () {
     test('hanya Super Admin yang boleh menghapus', () {
-      expect(sql, contains('Hanya Super Admin yang dapat menghapus resto'));
+      expect(sql, contains('Hanya Super Admin yang dapat menghapus merchant'));
     });
 
     test('penyewa platform tidak bisa dihapus', () {
@@ -87,7 +87,7 @@ void main() {
     });
   });
 
-  group('daftar resto', () {
+  group('daftar merchant', () {
     test('menyaring yang terhapus secara bawaan', () {
       expect(repo, contains("if (!includeDeleted) q = q.eq('is_deleted', false)"));
     });

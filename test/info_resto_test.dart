@@ -6,19 +6,19 @@ void main() {
   final layar =
       File('lib/screens/restaurant_info_screen.dart').readAsStringSync();
 
-  group('nama resto di Info Resto', () {
+  group('nama merchant di Info Merchant', () {
     test('bukan isian yang dimatikan', () {
       // Kotak isian yang selalu abu-abu menjanjikan sesuatu yang tidak
       // pernah terjadi.
-      expect(layar, isNot(contains("label: requiredLabel('Nama Resto')")));
-      expect(layar, contains("'Nama Resto',"));
+      expect(layar, isNot(contains("label: requiredLabel('Nama Merchant')")));
+      expect(layar, contains("'Nama Merchant',"));
     });
 
     test('tanpa label mengambang yang bisa terpotong', () {
       // Label mengambang selalu terpotong di tepi atas area gulir, dan
       // di sini ia tidak perlu ada.
       final blok = layar.substring(
-          layar.indexOf("'Nama Resto',") - 900, layar.indexOf("'Nama Resto',"));
+          layar.indexOf("'Nama Merchant',") - 900, layar.indexOf("'Nama Merchant',"));
       expect(blok, isNot(contains('InputDecoration')));
     });
 
@@ -37,8 +37,8 @@ void main() {
       final rapat = layar.replaceAll(RegExp(r"'\s*\n\s*'"), '');
       expect(
           rapat,
-          contains('Hanya KaataGo Admin yang bisa ubah nama resto, '
-              'silahkan hubungi KaataGo Admin jika ada perubahan nama resto'));
+          contains('Hanya KaataGo Admin yang bisa ubah nama merchant, '
+              'silahkan hubungi KaataGo Admin jika ada perubahan nama merchant'));
     });
 
     test('wording lamanya sudah tidak ada', () {

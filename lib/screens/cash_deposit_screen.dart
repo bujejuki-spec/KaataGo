@@ -302,7 +302,7 @@ class _CashDepositScreenState extends State<CashDepositScreen> {
                           width: double.infinity,
                           child: FilledButton.icon(
                             icon: const Icon(Icons.account_balance_outlined),
-                            label: const Text('Setor ke Rekening Resto'),
+                            label: const Text('Setor ke Rekening Merchant'),
                             style: FilledButton.styleFrom(
                               minimumSize: const Size.fromHeight(50),
                             ),
@@ -722,7 +722,7 @@ class _AddDepositDialogState extends State<_AddDepositDialog> {
                         children: [
                           Text('Setor Saldo Cash',
                               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
-                          Text('Tunai di laci ke rekening resto',
+                          Text('Tunai di laci ke rekening merchant',
                               style: TextStyle(fontSize: 12, color: Colors.grey)),
                         ],
                       ),
@@ -796,7 +796,7 @@ class _AddDepositDialogState extends State<_AddDepositDialog> {
                       SizedBox(width: 6),
                       Expanded(
                         child: Text(
-                          'Rekening resto belum diatur. Minta Finance mengisinya di '
+                          'Rekening merchant belum diatur. Minta Finance mengisinya di '
                           'Pengaturan Pembayaran sebelum menyetor.',
                           style: TextStyle(fontSize: 11.5, color: Colors.redAccent),
                         ),

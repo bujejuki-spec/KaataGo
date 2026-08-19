@@ -63,6 +63,19 @@ enum KitchenStatus { waiting, onProgress, done }
 /// mirror of a sale rung up by an Employee Kasir (any payment method).
 class CustomerOrder {
   final String id;
+
+  /// Nomor antrean harian resto ini.
+  ///
+  /// Dimulai dari 1 tiap hari dan berdiri sendiri di tiap resto. UUID
+  /// pesanannya cukup untuk mesin, tapi tidak untuk orang: kasir tidak
+  /// bisa memanggil "pesanan 8f3a1c2e" ke ruangan, dan pelanggan tidak
+  /// bisa mengingatnya sampai makanannya datang.
+  ///
+  /// Diberikan server saat pesanannya dibuat — apa pun status bayarnya,
+  /// termasuk yang masih menunggu QRIS. Null hanya pada pesanan yang
+  /// dibuat sebelum penomoran ini dipasang.
+  final int? orderNo;
+
   final DateTime createdAt;
   final List<CustomerOrderItem> items;
   final int total;
@@ -128,6 +141,7 @@ class CustomerOrder {
 
   CustomerOrder({
     required this.id,
+    this.orderNo,
     required this.createdAt,
     required this.items,
     required this.total,
@@ -280,6 +294,23 @@ class CustomerOrder {
   /// kembalian tersimpan yang tidak lagi cocok dengan totalnya.
   int? get changeDue => cashReceived == null ? null : cashReceived! - total;
 
+  /// Nomor yang siap ditampilkan, mis. "#014".
+  ///
+  /// Tiga digit supaya deretannya rata di layar dapur dan di struk —
+  /// resto yang tembus seribu pesanan sehari tinggal memakai empat.
+  String get nomorTampil =>
+      orderNo == null ? '' : '#${orderNo.toString().padLeft(3, '0')}';
+
+  bool get punyaNomor => orderNo != null;
+
+  /// Pesanan ini sudah dibatalkan atau hangus.
+  ///
+  /// Keduanya berarti sama bagi yang memesan: makanannya tidak akan
+  /// datang. Bedanya hanya siapa yang menghentikannya.
+  bool get dibatalkan =>
+      paymentStatus == OrderPaymentStatus.cancelled ||
+      paymentStatus == OrderPaymentStatus.expired;
+
   factory CustomerOrder.fromMap(Map<String, dynamic> data) {
     return CustomerOrder(
       id: data['id'] as String,
@@ -310,6 +341,7 @@ class CustomerOrder {
         orElse: () => KitchenStatus.waiting,
       ),
       restoId: data['resto_id'] as String? ?? '',
+      orderNo: (data['order_no'] as num?)?.toInt(),
       orderType: OrderTypeDb.fromDb(data['order_type'] as String?),
       customerName: data['customer_name'] as String?,
       cashierName: data['cashier_name'] as String?,

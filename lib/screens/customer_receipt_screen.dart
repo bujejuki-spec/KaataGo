@@ -63,13 +63,14 @@ class _CustomerReceiptScreenState extends State<CustomerReceiptScreen> {
     final paidAt = order.createdAt.toWib();
 
     return ReceiptData(
-      restoName: _resto?.name ?? 'Resto',
+      restoName: _resto?.name ?? 'Merchant',
       restoAddress: _resto?.address,
       restoPhone: _resto?.phone,
       restoLogoBase64: _resto?.logoBase64,
       reference: '#${order.id.substring(0, 8).toUpperCase()}',
       dateTime: paidAt,
       headerRows: [
+        if (order.punyaNomor) ('No. Pesanan', order.nomorTampil),
         ('No.', '#${order.id.substring(0, 8).toUpperCase()}'),
         if (order.cashierName != null && order.cashierName!.isNotEmpty)
           ('Diinput oleh', order.cashierName!),

@@ -1297,7 +1297,7 @@ class _AddExpenseDialogState extends State<_AddExpenseDialog> {
                         children: [
                           Text('Catat Pengeluaran',
                               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
-                          Text('Uang keluar dari saldo resto',
+                          Text('Uang keluar dari saldo merchant',
                               style: TextStyle(fontSize: 12, color: Colors.grey)),
                         ],
                       ),

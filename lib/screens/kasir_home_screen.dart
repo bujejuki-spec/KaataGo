@@ -1,3 +1,4 @@
+import 'customer_display_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -77,6 +78,16 @@ class KasirHomeScreen extends StatelessWidget {
                         MaterialPageRoute(builder: (_) => const PosHomeScreen()),
                       ),
                     ),
+                    HubMenuTile(
+                      icon: Icons.tv_outlined,
+                      title: 'Layar Pelanggan',
+                      subtitle: 'Buka di perangkat kedua yang menghadap pelanggan',
+                      color: const Color(0xFF14B8A6),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                            builder: (_) => const CustomerDisplayScreen()),
+                      ),
+                    ),
                     BadgedHubTile(
                       icon: Icons.pending_actions_outlined,
                       title: 'Pending Payment',
@@ -118,7 +129,7 @@ class KasirHomeScreen extends StatelessWidget {
                     BadgedHubTile(
                       icon: Icons.account_balance_outlined,
                       title: 'Setor Saldo Cash',
-                      subtitle: 'Setor tunai di laci ke rekening resto',
+                      subtitle: 'Setor tunai di laci ke rekening merchant',
                       color: const Color(0xFF0EA5E9),
                       loadCount: () => restoId == null
                           ? Future.value(0)

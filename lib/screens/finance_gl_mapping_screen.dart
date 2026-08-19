@@ -671,7 +671,7 @@ class _FinanceGlMappingScreenState extends State<FinanceGlMappingScreen> {
                           icon: Icons.workspace_premium_outlined,
                           color: const Color(0xFF6366F1),
                           title: 'GL Langganan',
-                          subtitle: 'Pendapatan KaataGo dari biaya langganan resto',
+                          subtitle: 'Pendapatan KaataGo dari biaya langganan merchant',
                           children: [
                             _GlAccountRow(
                               icon: Icons.trending_up,
@@ -686,7 +686,7 @@ class _FinanceGlMappingScreenState extends State<FinanceGlMappingScreen> {
                             _GlAccountRow(
                               icon: Icons.local_offer_outlined,
                               label: 'GL Diskon Langganan',
-                              hint: 'Potongan harga langganan untuk resto '
+                              hint: 'Potongan harga langganan untuk merchant '
                                   'tertentu',
                               color: const Color(0xFF6366F1),
                               codeCtrl:

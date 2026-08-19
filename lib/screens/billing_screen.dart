@@ -307,7 +307,7 @@ class _KartuPaket extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             gratis
-                ? 'Resto ini belum dikenai biaya langganan.'
+                ? 'Merchant ini belum dikenai biaya langganan.'
                 : 'Jatuh tempo tiap tanggal ${s.billingDay}. '
                     'Tenggang ${s.graceDays} hari sesudahnya.'
                     '${potongan > 0 ? '\nSudah termasuk potongan '
@@ -461,7 +461,7 @@ class _KartuTagihan extends StatelessWidget {
           if (invoice.status == InvoiceStatus.review) ...[
             const SizedBox(height: 8),
             Text(
-              'Bukti sudah diterima dan sedang diperiksa. Resto tetap bisa '
+              'Bukti sudah diterima dan sedang diperiksa. Merchant tetap bisa '
               'dipakai selama pemeriksaan.',
               style:
                   TextStyle(fontSize: 11.5, color: KaataTheme.mutedOf(context)),

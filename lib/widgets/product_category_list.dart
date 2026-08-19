@@ -11,7 +11,7 @@ import 'product_grid_card.dart';
 /// Cards are portrait-shaped so the photo gets real room, and the column
 /// count follows the available width rather than being pinned at 2 — on a
 /// tablet (a likely Kasir setup) two stretched columns looked wrong.
-class ProductCategoryList extends StatelessWidget {
+class ProductCategoryList extends StatefulWidget {
   final List<Product> products;
   final int Function(String productId) quantityOf;
   final void Function(Product product) onTapProduct;
@@ -40,9 +40,56 @@ class ProductCategoryList extends StatelessWidget {
   });
 
   @override
+  State<ProductCategoryList> createState() => _ProductCategoryListState();
+}
+
+class _ProductCategoryListState extends State<ProductCategoryList> {
+  /// Kategori yang sedang dilipat orangnya.
+  ///
+  /// Disimpan di sini, bukan diserahkan ke ExpansionTile lewat
+  /// PageStorageKey.
+  ///
+  /// Kunci itu dipakai bersama oleh dua penghuni yang tidak saling
+  /// tahu: ExpansionTile menyimpan keadaan buka/tutup sebagai bool, dan
+  /// GridView di dalamnya menyimpan posisi gulir sebagai double — di
+  /// ember penyimpanan yang sama. Begitu kategorinya dibuka lagi, grid
+  /// membaca bool itu sebagai double, melempar "type 'bool' is not a
+  /// subtype of type 'double?'", dan menyisakan blok kosong di tempat
+  /// menunya.
+  ///
+  /// Disimpan di sini, keadaannya juga selamat dari daur ulang
+  /// ListView — yang justru jadi alasan kunci itu dipasang.
+  final Set<String> _terlipat = <String>{};
+
+  final _cari = TextEditingController();
+
+  @override
+  void dispose() {
+    _cari.dispose();
+    super.dispose();
+  }
+
+  /// Menu yang cocok dengan pencarian.
+  ///
+  /// Namanya saja yang dicari, bukan keterangannya: yang mengetik "nasi"
+  /// mencari menu bernama nasi, bukan menu yang keterangannya kebetulan
+  /// menyebut nasi sebagai pelengkap.
+  List<Product> get _cocok {
+    final q = _cari.text.trim().toLowerCase();
+    if (q.isEmpty) return widget.products;
+    return [
+      for (final p in widget.products)
+        if (p.name.toLowerCase().contains(q)) p,
+    ];
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final cocok = _cocok;
+    final mencari = _cari.text.trim().isNotEmpty;
+
     final byCategory = <String, List<Product>>{};
-    for (final p in products) {
+    for (final p in cocok) {
       byCategory.putIfAbsent(p.category, () => []).add(p);
     }
     final categoryNames = byCategory.keys.toList()..sort();
@@ -53,14 +100,61 @@ class ProductCategoryList extends StatelessWidget {
         // always gets 2 and a wide tablet never goes past 5.
         final columns = (constraints.maxWidth / 190).floor().clamp(2, 5);
 
+        // Kolom cari selalu ada, bahkan saat menunya sedikit — yang
+        // mencarinya tidak tahu menunya sedikit sampai dia sudah
+        // menggulir seluruhnya.
+        final kolomCari = Padding(
+          padding: const EdgeInsets.fromLTRB(14, 8, 14, 4),
+          child: SizedBox(
+            height: 42,
+            child: TextField(
+              controller: _cari,
+              onChanged: (_) => setState(() {}),
+              textInputAction: TextInputAction.search,
+              style: const TextStyle(fontSize: 14),
+              decoration: InputDecoration(
+                isDense: true,
+                hintText: 'Cari menu',
+                prefixIcon: const Icon(Icons.search, size: 19),
+                suffixIcon: _cari.text.isEmpty
+                    ? null
+                    : IconButton(
+                        icon: const Icon(Icons.close, size: 17),
+                        tooltip: 'Hapus pencarian',
+                        onPressed: () => setState(() => _cari.clear()),
+                      ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(11),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        // Header (banner promo) tetap di atas kolom cari — ia bagian
+        // dari halamannya, bukan bagian dari daftarnya.
+        final atas = <Widget>[
+          if (widget.header != null) widget.header!,
+          kolomCari,
+          if (mencari && categoryNames.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 40),
+              child: Center(
+                child: Text(
+                  'Tidak ada menu bernama "${_cari.text.trim()}"',
+                  style: TextStyle(color: KaataTheme.mutedOf(context)),
+                ),
+              ),
+            ),
+        ];
+
         return ListView.builder(
           padding: const EdgeInsets.only(top: 4, bottom: 12),
-          itemCount: categoryNames.length + (header != null ? 1 : 0),
+          itemCount: categoryNames.length + atas.length,
           itemBuilder: (context, index) {
-            if (header != null) {
-              if (index == 0) return header!;
-              index -= 1;
-            }
+            if (index < atas.length) return atas[index];
+            index -= atas.length;
             final category = categoryNames[index];
             final items = byCategory[category]!;
 
@@ -76,7 +170,7 @@ class ProductCategoryList extends StatelessWidget {
                 // lagi, lalu memainkan animasi bukanya dari awal. Yang
                 // terlihat: menu berkedip tiap kali digulir, dan
                 // kategori yang barusan dilipat membuka sendiri.
-                key: PageStorageKey<String>(category),
+                key: ValueKey<String>(category),
                 // Terbuka sejak awal. Menu yang bersembunyi di balik
                 // judul kategori adalah menu yang tidak ditemukan —
                 // kasir yang sedang melayani antrean tidak membuka satu
@@ -86,7 +180,17 @@ class ProductCategoryList extends StatelessWidget {
                 //
                 // Melipatnya tetap bisa, dan itu yang berguna: yang
                 // sudah tahu isinya bisa merapikan layar sendiri.
-                initiallyExpanded: true,
+                // Saat mencari, semuanya dibuka: hasil pencarian yang
+                // bersembunyi di balik kategori terlipat sama saja
+                // dengan tidak ada hasil.
+                initiallyExpanded: mencari || !_terlipat.contains(category),
+                onExpansionChanged: (buka) => setState(() {
+                  if (buka) {
+                    _terlipat.remove(category);
+                  } else {
+                    _terlipat.add(category);
+                  }
+                }),
                 tilePadding: const EdgeInsets.symmetric(horizontal: 16),
                 title: Row(
                   children: [
@@ -146,10 +250,10 @@ class ProductCategoryList extends StatelessWidget {
                       final product = items[i];
                       return ProductGridCard(
                         product: product,
-                        quantityInCart: quantityOf(product.id),
-                        ppnPercent: ppnPercent,
-                        showStock: showStock,
-                        onTap: () => onTapProduct(product),
+                        quantityInCart: widget.quantityOf(product.id),
+                        ppnPercent: widget.ppnPercent,
+                        showStock: widget.showStock,
+                        onTap: () => widget.onTapProduct(product),
                       );
                     },
                   ),

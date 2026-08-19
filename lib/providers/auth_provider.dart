@@ -40,7 +40,7 @@ extension EmployeeRoleDb on EmployeeRole {
 }
 
 const _roleDisplayLabels = {
-  EmployeeRole.superAdmin: 'Super Admin',
+  EmployeeRole.superAdmin: 'KaataGo Admin',
   EmployeeRole.owner: 'Owner',
   EmployeeRole.admin: 'Admin',
   EmployeeRole.kasir: 'Kasir',
@@ -191,7 +191,7 @@ class AuthProvider extends ChangeNotifier {
       }
 
       if (intent == LoginIntent.employee && !found.isEmployee) {
-        lastError = 'Akun $email belum terdaftar sebagai karyawan resto.\n'
+        lastError = 'Akun $email belum terdaftar sebagai karyawan merchant.\n'
             'Minta admin untuk menambahkan email ini ke daftar karyawan.';
         await _discardSession();
         return;
@@ -199,8 +199,8 @@ class AuthProvider extends ChangeNotifier {
 
       if (intent == LoginIntent.customer && found.isEmployee) {
         final label = _roleDisplayLabels[found.role] ?? 'karyawan';
-        lastError = 'Akun $email terdaftar sebagai $label resto.\n'
-            'Masuk lewat pilihan "Resto", bukan "Customer".';
+        lastError = 'Akun $email terdaftar sebagai $label merchant.\n'
+            'Masuk lewat pilihan "Merchant", bukan "Customer".';
         await _discardSession();
         return;
       }
@@ -329,7 +329,7 @@ class AuthProvider extends ChangeNotifier {
 
       if (activeIds.isEmpty) {
         return const _EmployeeLookup(
-          blockedReason: 'Resto ini sedang dinonaktifkan sementara.\n'
+          blockedReason: 'Merchant ini sedang dinonaktifkan sementara.\n'
               'Silakan hubungi Call Center KaataGo untuk info lebih lanjut.',
         );
       }
