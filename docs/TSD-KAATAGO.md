@@ -1,7 +1,7 @@
 # KaataGo — Technical Specification Document
 
-**Versi Aplikasi:** 2.6.3 (build 107)
-**Versi Dokumen:** 1.5
+**Versi Aplikasi:** 2.7.0 (build 108)
+**Versi Dokumen:** 1.6
 **Tanggal Terbit:** 17 Agustus 2026
 **Status:** Rilis
 **Jenis Dokumen:** TSD — sisi teknis
@@ -1038,6 +1038,39 @@ Pengumuman, Unduhan Pembaruan.
 > di depan harus membangun notifikasinya sendiri lewat
 > `flutter_local_notifications` — kalau tidak, kasir yang sedang menatap
 > layarnya justru satu-satunya yang tidak dikabari.
+
+---
+
+### 8.1b Siapa yang perangkatnya terdaftar
+
+Pengumuman yang masuk kotak masuk tapi tidak pernah muncul sebagai
+notifikasi hampir selalu berarti perangkatnya tidak pernah terdaftar —
+bukan penargetannya yang salah.
+
+`_syncPushToken` dulu menuntut `auth.isEmployee && auth.restoId != null`.
+Super Admin tidak terikat resto mana pun, jadi tokennya tidak pernah
+ada di server; Owner yang belum memilih cabang kena hal yang sama.
+Sekarang karyawan didaftarkan apa pun restonya, dan pelanggan yang
+sudah masuk didaftarkan walau belum membuka resto — voucher menyasar
+emailnya, bukan restonya. Tamu tetap butuh resto aktif: tanpa itu tidak
+ada satu pun penanda untuk memanggilnya kembali.
+
+Baris tanpa `resto_id` tidak ikut terjaring pengumuman milik sebuah
+resto, dan itu memang benar — Super Admin tidak perlu menerima promo
+tiap resto.
+
+**Peran perangkat pelanggan.** Aplikasi menyimpannya sebagai
+`role = 'customer'`; `send-push` dulu menganggap "pelanggan = peran
+kosong". Salah dua arah: pengumuman khusus pelanggan menyaring
+`role IS NULL` sehingga tidak sampai ke satu pun pelanggan versi
+sekarang, sementara pengumuman khusus karyawan menyaring
+`role IS NOT NULL` sehingga justru ikut sampai ke mereka. Sekarang
+dipakai `PERAN_PELANGGAN`/`FILTER_PELANGGAN`, yang menghitung
+`'customer'` maupun baris lama yang perannya kosong.
+
+Cabang tanpa resto juga dulu mengembalikan **seluruh** token apa pun
+sasarannya — pengumuman voucher untuk pelanggan ikut membangunkan kasir
+dan chef di tengah shift. `target` kini dihormati di kedua cabang.
 
 ---
 

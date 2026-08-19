@@ -1,4 +1,4 @@
-import 'dart:convert';
+import '../utils/gambar_base64.dart';
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -182,7 +182,7 @@ class _QuantityDialogState extends State<QuantityDialog> {
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
                 child: Image.memory(
-                  base64Decode(widget.product.photoBase64!),
+                  byteGambar(widget.product.photoBase64!),
                   height: 120,
                   width: double.infinity,
                   fit: BoxFit.cover,

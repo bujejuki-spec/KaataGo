@@ -137,7 +137,11 @@ class _PromoBannerScreenState extends State<PromoBannerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final aktif = _banners.where((b) => b.active).length;
+    // Yang dihitung yang benar-benar dilihat pelanggan, bukan yang
+    // saklarnya menyala. Banner yang masa berlakunya sudah lewat tetap
+    // menyala saklarnya — menghitungnya sebagai tayang membuat angka di
+    // layar ini menjanjikan promo yang sudah tidak ada.
+    final aktif = _banners.where((b) => b.isLive()).length;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Banner Promo')),
@@ -276,14 +280,24 @@ class _BannerCard extends StatelessWidget {
                   ),
                 ),
               ),
-              if (!banner.active)
+              // Sebabnya disebut, bukan cuma "tidak tampil".
+              //
+              // Banner yang saklarnya menyala tapi tanggalnya sudah
+              // lewat dulu tidak bertanda apa pun — terlihat tayang
+              // padahal tidak, dan pemiliknya baru tahu saat ada yang
+              // menanyakan promonya di kasir.
+              if (!banner.isLive())
                 Positioned.fill(
                   child: Container(
                     color: Colors.black.withOpacity(0.45),
                     alignment: Alignment.center,
-                    child: const Text(
-                      'TIDAK TAMPIL',
-                      style: TextStyle(
+                    child: Text(
+                      !banner.active
+                          ? 'TIDAK TAMPIL'
+                          : banner.period.isExpired()
+                              ? 'SUDAH LEWAT'
+                              : 'BELUM MULAI',
+                      style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1,

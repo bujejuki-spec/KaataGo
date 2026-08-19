@@ -5,7 +5,16 @@ import '../models/promo_banner.dart';
 class PromoBannerRepository {
   final _client = Supabase.instance.client;
 
-  /// Semua banner resto, termasuk yang nonaktif — untuk layar admin.
+  /// Seluruh banner resto — untuk layar admin dan owner.
+  ///
+  /// Tidak disaring sama sekali: yang nonaktif maupun yang masa
+  /// berlakunya sudah lewat tetap ikut. Banner yang menghilang sendiri
+  /// dari layar pengelolanya adalah banner yang tidak bisa dihapus,
+  /// tidak bisa dipakai ulang tahun depan, dan tidak bisa diperiksa
+  /// kenapa dulu berhenti tampil — yang tersisa cuma barisnya di
+  /// database yang tidak pernah dilihat siapa pun lagi.
+  ///
+  /// Menghapusnya keputusan orangnya, bukan keputusan tanggal.
   Future<List<PromoBanner>> getForResto(String restoId) async {
     final rows = await _client
         .from('promo_banners')
@@ -13,17 +22,20 @@ class PromoBannerRepository {
         .eq('resto_id', restoId)
         .order('sort_order')
         .order('created_at');
-    // Masa berlakunya disaring di sini, bukan lewat `where` tanggal:
-    // aturan "hari terakhir ikut berlaku penuh" sudah tertulis satu kali
-    // di PromoPeriod, dan menulis ulang aturan yang sama sebagai SQL
-    // berarti dua tempat yang harus selalu sepakat.
-    return rows
-        .map((r) => PromoBanner.fromMap(r))
-        .where((b) => b.isLive())
-        .toList();
+    return rows.map((r) => PromoBanner.fromMap(r)).toList();
   }
 
-  /// Hanya yang aktif — untuk customer.
+  /// Hanya yang benar-benar sedang tayang — untuk customer.
+  ///
+  /// Saklar aktifnya saja tidak cukup: banner yang saklarnya masih
+  /// menyala tapi masa berlakunya sudah lewat tetap tampil ke
+  /// pelanggan, dan promo yang sudah berakhir tapi masih terpampang
+  /// adalah janji yang akan ditagih di kasir.
+  ///
+  /// Masa berlakunya disaring di sini, bukan lewat `where` tanggal:
+  /// aturan "hari terakhir ikut berlaku penuh" sudah tertulis satu kali
+  /// di PromoPeriod, dan menulis ulang aturan yang sama sebagai SQL
+  /// berarti dua tempat yang harus selalu sepakat.
   Future<List<PromoBanner>> activeForResto(String restoId) async {
     final rows = await _client
         .from('promo_banners')
@@ -32,7 +44,10 @@ class PromoBannerRepository {
         .eq('active', true)
         .order('sort_order')
         .order('created_at');
-    return rows.map((r) => PromoBanner.fromMap(r)).toList();
+    return rows
+        .map((r) => PromoBanner.fromMap(r))
+        .where((b) => b.isLive())
+        .toList();
   }
 
   Future<void> create(PromoBanner banner) async {

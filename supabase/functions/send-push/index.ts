@@ -55,6 +55,19 @@ interface OutboxRow {
   };
 }
 
+/// Peran yang dipakai perangkat pelanggan.
+///
+/// Aplikasi mendaftarkannya sebagai 'customer'. Versi lama
+/// mendaftarkannya tanpa peran sama sekali, dan barisnya masih ada di
+/// tabel — jadi keduanya harus dihitung sebagai pelanggan.
+///
+/// Sempat ditulis sebagai "peran kosong berarti pelanggan", dan itu
+/// salah dua arah sekaligus: pengumuman khusus pelanggan tidak sampai
+/// ke satu pun pelanggan yang memakai aplikasi versi sekarang,
+/// sementara pengumuman khusus karyawan justru ikut sampai ke mereka.
+const PERAN_PELANGGAN = "customer";
+const FILTER_PELANGGAN = `role.eq.${PERAN_PELANGGAN},role.is.null`;
+
 const admin = createClient(
   Deno.env.get("SUPABASE_URL")!,
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
@@ -154,6 +167,14 @@ async function resolveTokens(row: OutboxRow): Promise<string[]> {
     // Pengumuman. Resto kosong berarti dari Super Admin — kabar versi
     // baru menyangkut semua orang yang memasang aplikasinya.
     if (!row.resto_id) {
+      // Sasarannya tetap dihormati. Sebelumnya cabang ini mengembalikan
+      // SELURUH token apa pun sasarannya — jadi pengumuman voucher yang
+      // ditujukan ke pelanggan ikut membangunkan kasir dan chef di
+      // tengah shift, dan kabar khusus karyawan sampai ke pelanggan.
+      const semua = p.target ?? "all";
+      if (semua === "customers") q = q.or(FILTER_PELANGGAN);
+      if (semua === "employees") q = q.not("role", "in", `(${PERAN_PELANGGAN})`)
+        .not("role", "is", null);
       const { data, error } = await q;
       if (error) throw new Error(`Gagal membaca device_tokens: ${error.message}`);
       return (data ?? []).map((r: { token: string }) => r.token);
@@ -199,7 +220,11 @@ async function resolveTokens(row: OutboxRow): Promise<string[]> {
     // itulah satu-satunya penanda yang tersedia di tabel token.
     const target = p.target ?? "all";
     if (target === "employees") {
-      return await tokensOf(q.eq("resto_id", row.resto_id).not("role", "is", null));
+      return await tokensOf(
+        q.eq("resto_id", row.resto_id)
+          .not("role", "is", null)
+          .not("role", "in", `(${PERAN_PELANGGAN})`),
+      );
     }
 
     const bagian: string[] = [];
@@ -211,7 +236,7 @@ async function resolveTokens(row: OutboxRow): Promise<string[]> {
     if (bagian.length === 0) return [];
     q = q.or(bagian.join(","));
 
-    if (target === "customers") q = q.is("role", null);
+    if (target === "customers") q = q.or(FILTER_PELANGGAN);
   } else {
     // Pemilik pesanan TIDAK disaring restonya.
     //

@@ -1,3 +1,4 @@
+import '../utils/gambar_base64.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:ui';
@@ -114,7 +115,7 @@ class _PromoBannerCarouselState extends State<PromoBannerCarousel> {
           children: [
             InteractiveViewer(
               child: Image.memory(
-                base64Decode(banner.imageBase64),
+                byteGambar(banner.imageBase64),
                 fit: BoxFit.contain,
                 errorBuilder: (_, __, ___) => const SizedBox.shrink(),
               ),
@@ -185,7 +186,18 @@ class _PromoBannerCarouselState extends State<PromoBannerCarousel> {
         // selebar tablet berarti banner ratusan piksel tingginya yang
         // mendorong seluruh menunya keluar layar. Di HP batas ini tidak
         // berpengaruh apa-apa — layarnya memang lebih sempit.
-        Center(
+        // Jaraknya dari tepi layar dipasang DI LUAR rasio, bukan di
+        // dalam tiap halaman.
+        //
+        // Sebelumnya tiap halaman punya padding 14 di kiri-kanan
+        // sementara rasionya dipasang pada kotak sebelum padding itu —
+        // jadi gambarnya 28 piksel lebih sempit daripada kotaknya, dan
+        // sisa tingginya menyembul sebagai pita berwarna lain di atas
+        // dan bawah. Pita itulah yang membuat bannernya terlihat lebih
+        // besar daripada gambarnya sendiri.
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 560),
             child: AspectRatio(
@@ -200,9 +212,7 @@ class _PromoBannerCarouselState extends State<PromoBannerCarousel> {
             onPageChanged: (i) => setState(() => _index = i),
             itemBuilder: (context, i) {
               final banner = _banners[i];
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                child: GestureDetector(
+              return GestureDetector(
                   onTap: () => _openDetail(banner),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(14),
@@ -219,14 +229,14 @@ class _PromoBannerCarouselState extends State<PromoBannerCarousel> {
                         ImageFiltered(
                           imageFilter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
                           child: Image.memory(
-                            base64Decode(banner.imageBase64),
+                            byteGambar(banner.imageBase64),
                             fit: BoxFit.cover,
                             errorBuilder: (_, __, ___) =>
                                 Container(color: KaataTheme.softFillOf(context)),
                           ),
                         ),
                         Image.memory(
-                          base64Decode(banner.imageBase64),
+                          byteGambar(banner.imageBase64),
                           // Utuh, tidak dipotong: yang terpotong biasanya
                           // justru nominal diskon atau tanggal
                           // berlakunya, yang ditaruh perancangnya di tepi
@@ -268,11 +278,11 @@ class _PromoBannerCarouselState extends State<PromoBannerCarousel> {
                       ],
                     ),
                   ),
-                ),
               );
             },
           ),
             ),
+          ),
           ),
         ),
         if (_banners.length > 1) ...[

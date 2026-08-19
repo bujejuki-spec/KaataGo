@@ -1,4 +1,4 @@
-import 'dart:convert';
+import '../utils/gambar_base64.dart';
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -235,7 +235,7 @@ class _ProductPhoto extends StatelessWidget {
 
     final Widget image = photo != null
         ? Image.memory(
-            base64Decode(photo),
+            byteGambar(photo),
             width: double.infinity,
             fit: BoxFit.cover,
             // A corrupt/truncated base64 payload would otherwise throw

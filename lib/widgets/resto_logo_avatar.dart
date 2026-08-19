@@ -1,4 +1,4 @@
-import 'dart:convert';
+import '../utils/gambar_base64.dart';
 
 import 'package:flutter/material.dart';
 
@@ -37,7 +37,7 @@ class RestoLogoAvatar extends StatelessWidget {
       backgroundColor: Colors.white,
       // A corrupt blob would otherwise throw during paint and blank the
       // whole list, so fall back to the icon instead.
-      backgroundImage: MemoryImage(base64Decode(logoBase64!)),
+      backgroundImage: MemoryImage(byteGambar(logoBase64!)),
       onBackgroundImageError: (_, __) {},
       child: null,
     );

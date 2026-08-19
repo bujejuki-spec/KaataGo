@@ -57,6 +57,72 @@ void main() {
     expect(s.height, lessThan(800 * 0.45));
   });
 
+  group('tidak ada pita di tepi gambarnya', () {
+    // Pita itu latar kabur yang menyembul: kotaknya lebih tinggi
+    // daripada gambarnya, dan yang mengisi sisanya jadi berbeda warna.
+    Widget susunan({required bool paddingDiDalam}) {
+      const rasio = 1200 / 628;
+      final halaman = Container(key: const Key('gambar'), color: Colors.red);
+      return MaterialApp(
+        home: Scaffold(
+          body: Column(
+            children: [
+              if (paddingDiDalam)
+                AspectRatio(
+                  aspectRatio: rasio,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    child: halaman,
+                  ),
+                )
+              else
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  child: AspectRatio(aspectRatio: rasio, child: halaman),
+                ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    Future<void> pasang(WidgetTester tester, Widget w) async {
+      tester.view.physicalSize = const Size(400, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(w);
+    }
+
+    testWidgets('padding di dalam rasio menyisakan pita', (tester) async {
+      await pasang(tester, susunan(paddingDiDalam: true));
+      final g = tester.getSize(find.byKey(const Key('gambar')));
+      // Lebarnya menyusut 28 tapi tingginya tetap — bentuknya jadi
+      // lebih jangkung daripada gambarnya, dan selisihnya jadi pita.
+      expect(g.width, 400 - 28);
+      expect(g.width / g.height, lessThan(1200 / 628));
+    });
+
+    testWidgets('padding di luar rasio membuatnya pas', (tester) async {
+      await pasang(tester, susunan(paddingDiDalam: false));
+      final g = tester.getSize(find.byKey(const Key('gambar')));
+      expect(g.width, 400 - 28);
+      expect(g.width / g.height, closeTo(1200 / 628, 0.001),
+          reason: 'kotaknya harus sebentuk gambarnya');
+    });
+
+    test('yang dipakai versi yang di luar', () {
+      final berkas =
+          File('lib/widgets/promo_banner_carousel.dart').readAsStringSync();
+      final i = berkas.indexOf("padding: const EdgeInsets.symmetric(horizontal: 14)");
+      final j = berkas.indexOf('aspectRatio: _rasio');
+      expect(i, lessThan(j), reason: 'paddingnya harus membungkus rasionya');
+      // Dan tidak ada lagi padding per halaman di dalam PageView.
+      final blokHalaman = berkas.substring(berkas.indexOf('itemBuilder:'));
+      expect(blokHalaman.substring(0, 300),
+          isNot(contains('EdgeInsets.symmetric(horizontal: 14)')));
+    });
+  });
+
   group('kategori menu', () {
     final daftar =
         File('lib/widgets/product_category_list.dart').readAsStringSync();

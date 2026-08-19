@@ -1,7 +1,7 @@
 # KaataGo — Functional Specification Document
 
-**Versi Aplikasi:** 2.6.3 (build 107)
-**Versi Dokumen:** 2.6
+**Versi Aplikasi:** 2.7.0 (build 108)
+**Versi Dokumen:** 2.7
 **Tanggal Terbit:** 17 Agustus 2026
 **Status:** Rilis
 **Jenis Dokumen:** FSD — sisi fungsional
@@ -328,6 +328,9 @@ kasir **tidak boleh** muncul di daftar ini.
 | F-IN-17 | Selesai mengunduh memunculkan notifikasi **"ketuk untuk memasang"** |
 | F-IN-18 | Popup unduhan menawarkan **Batalkan** atau **Lanjutkan** |
 | F-IN-19 | Galat unduhan diringkas satu kalimat; pembatalan tidak ditampilkan sebagai galat |
+| F-IN-10 | **Semua peran karyawan** menerima push, termasuk Super Admin dan Owner yang belum memilih cabang |
+| F-IN-11 | Pelanggan yang sudah masuk menerima push walau belum membuka resto mana pun |
+| F-IN-12 | Pengumuman khusus pelanggan tidak sampai ke karyawan, dan sebaliknya |
 
 
 ### 4.10 Diskon

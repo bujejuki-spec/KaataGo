@@ -100,7 +100,20 @@ class _OrderNotificationBinderState extends State<OrderNotificationBinder> {
   /// menukar cabang. Yang dicatat harus selalu keadaan sekarang, bukan
   /// keadaan saat terakhir kali seseorang mengetuk tombol masuk.
   void _syncPushToken(AuthProvider auth, TableSessionProvider session) {
-    if (auth.isEmployee && auth.restoId != null) {
+    // Karyawan didaftarkan walau belum punya resto.
+    //
+    // Syarat `restoId != null` dulu ada di sini, dan akibatnya Super
+    // Admin tidak pernah mendaftar sama sekali — ia memang tidak
+    // terikat resto mana pun. Pengumuman versi baru masuk ke kotak
+    // masuknya, tapi notifikasinya tidak pernah sampai, karena
+    // perangkatnya tidak dikenal server.
+    //
+    // Owner yang belum memilih cabang kena hal yang sama.
+    //
+    // Baris tanpa resto tidak ikut terjaring pengumuman milik sebuah
+    // resto — penyaringnya memang `resto_id`, dan itu benar: Super
+    // Admin tidak perlu menerima promo tiap resto.
+    if (auth.isEmployee) {
       PushService.instance.register(
         email: auth.user?.email,
         restoId: auth.restoId,
@@ -108,9 +121,29 @@ class _OrderNotificationBinderState extends State<OrderNotificationBinder> {
       );
       return;
     }
-    if (!auth.isEmployee && session.hasActiveResto && session.restoId != null) {
+
+    // Pelanggan yang sudah masuk didaftarkan walau belum membuka resto
+    // mana pun.
+    //
+    // Voucher dan kabar versi baru menyasar emailnya, bukan restonya —
+    // dan sebelum ini, pelanggan yang cuma membuka aplikasinya tanpa
+    // masuk ke menu resto tidak punya baris token sama sekali. Yang
+    // paling dirugikan justru yang ditunggu kabarnya: pemberitahuan
+    // voucher baru.
+    if (auth.isLoggedIn) {
       PushService.instance.register(
-        email: auth.isLoggedIn ? auth.user?.email : null,
+        email: auth.user?.email,
+        restoId: session.hasActiveResto ? session.restoId : null,
+        role: 'customer',
+        sessionId: session.hasActiveResto ? session.sessionId : null,
+      );
+      return;
+    }
+
+    // Tamu hanya dikenal lewat sesi mejanya. Tanpa resto aktif, tidak
+    // ada satu pun penanda yang bisa dipakai memanggilnya kembali.
+    if (session.hasActiveResto && session.restoId != null) {
+      PushService.instance.register(
         restoId: session.restoId,
         role: 'customer',
         sessionId: session.sessionId,

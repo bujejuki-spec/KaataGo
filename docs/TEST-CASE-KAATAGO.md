@@ -1,7 +1,7 @@
 # KaataGo — Test Case
 
-**Versi Aplikasi:** 2.6.3 (build 107)
-**Versi Dokumen:** 1.5
+**Versi Aplikasi:** 2.7.0 (build 108)
+**Versi Dokumen:** 1.6
 **Tanggal Terbit:** 17 Agustus 2026
 **Status:** Rilis
 **Jenis Dokumen:** Test Case — pengujian manual
@@ -379,6 +379,13 @@ dibaca. Tiap kasus di bawah menguji satu perbedaan yang halus.
 | TC-IN-12 | P2 | Pelanggan tamu membuka kotak masuk | Tombol tandai/hapus **tidak ditawarkan** — tamu tidak punya tempat menyimpan penandanya | F-IN-03 |
 | TC-IN-13 | P1 | Terbitkan pengumuman baru saat aplikasi tertutup | Notifikasi sampai ke HP | F-IN-07, A-08 |
 | TC-IN-14 | P2 | Terbitkan pengumuman saat aplikasi sedang **dibuka** | Notifikasi tetap muncul di bar notifikasi | TSD §8 |
+| TC-IN-15 | P1 | Masuk sebagai Super Admin, terbitkan rilis baru | Notifikasinya sampai ke HP Super Admin | F-IN-10 |
+| TC-IN-16 | P1 | Owner multi-cabang sebelum memilih cabang | Tetap menerima push | F-IN-10 |
+| TC-IN-17 | P1 | Pelanggan login, belum buka resto, terbitkan voucher | Notifikasi vouchernya sampai | F-IN-11 |
+| TC-IN-18 | P1 | Terbitkan voucher, periksa HP kasir dan chef | **Tidak** menerima — sasarannya pelanggan | F-IN-12 |
+| TC-IN-19 | P1 | Pengumuman resto khusus karyawan | Tidak sampai ke pelanggan resto itu | F-IN-12 |
+| TC-IN-20 | P2 | Tamu tanpa resto aktif | Tidak menerima — memang tidak ada penandanya | F-IN-11 |
+| TC-IN-21 | P2 | Periksa `device_tokens` sesudah Super Admin membuka aplikasi | Ada barisnya dengan `resto_id` kosong | F-IN-10 |
 
 ---
 
@@ -945,7 +952,7 @@ lima kelompok hilang sama sekali dari daftar.
 | Topping (TP) | 12 | TC-TP-01…12 |
 | QR Meja (QR) | 8 | TC-QR-01…08 |
 | Diskon (DS) | 29 | TC-DS-01…29 |
-| Kotak Masuk (IN) | 14 | TC-IN-01…14 |
+| Kotak Masuk (IN) | 21 | TC-IN-01…21 |
 | QRIS (PG) | 19 | TC-PG-01…19 |
 | Pembatalan (CN) | 9 | TC-CN-01…09 |
 | Sesi Meja (SS) | 7 | TC-SS-01…07 |
@@ -961,7 +968,7 @@ lima kelompok hilang sama sekali dari daftar.
 | Analisa Pasar (MR) | 13 | TC-MR-01…13 |
 | Pengaturan & Sesi (TS) | 19 | TC-TS-01…19 |
 | Peran & Akses (RG) | 14 | TC-RG-01…14 |
-| **Total** | **507** | **507 kasus + 9 alur ujung-ke-ujung** |
+| **Total** | **514** | **514 kasus + 9 alur ujung-ke-ujung** |
 
 Kriteria penerimaan A-01…A-20 di FSD §9 seluruhnya terpetakan lewat
 kolom Rujukan di atas. Bab TSD yang diuji: §1.2, §4, §5, §6, §7, §8,
