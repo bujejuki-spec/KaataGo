@@ -69,7 +69,16 @@ class ProductCategoryList extends StatelessWidget {
               // above/below.
               data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
               child: ExpansionTile(
-                initiallyExpanded: false,
+                // Terbuka sejak awal. Menu yang bersembunyi di balik
+                // judul kategori adalah menu yang tidak ditemukan —
+                // kasir yang sedang melayani antrean tidak membuka satu
+                // per satu kategori untuk mencari satu item, dan
+                // pelanggan yang membuka halaman berisi tiga baris judul
+                // akan mengira restonya belum mengisi menunya.
+                //
+                // Melipatnya tetap bisa, dan itu yang berguna: yang
+                // sudah tahu isinya bisa merapikan layar sendiri.
+                initiallyExpanded: true,
                 tilePadding: const EdgeInsets.symmetric(horizontal: 16),
                 title: Row(
                   children: [

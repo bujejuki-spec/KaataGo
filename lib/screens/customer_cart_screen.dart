@@ -38,7 +38,18 @@ import '../widgets/app_toast.dart';
 /// there's no table number yet, so this screen makes it a mandatory
 /// field before "Pesan & Bayar" can be pressed.
 class CustomerCartScreen extends StatefulWidget {
-  const CustomerCartScreen({super.key});
+  /// Ditanam sebagai panel di samping daftar menu, bukan halaman
+  /// sendiri.
+  ///
+  /// Yang berubah hanya bungkusnya — tanpa Scaffold dan tanpa AppBar.
+  /// Isinya tetap yang ini juga: jenis pesanan, nomor meja, voucher,
+  /// rincian tagihan, dan tombol bayarnya. Menyalinnya jadi panel
+  /// terpisah berarti dua tempat yang harus diingat berbarengan tiap
+  /// kali aturan pembayarannya berubah, dan yang kedua selalu
+  /// ketinggalan.
+  final bool embedded;
+
+  const CustomerCartScreen({super.key, this.embedded = false});
 
   @override
   State<CustomerCartScreen> createState() => _CustomerCartScreenState();
@@ -425,36 +436,35 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
     final tableKnown = context.watch<TableSessionProvider>().tableNumber != null;
     final isDineIn = _orderType == OrderType.dineIn;
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Keranjang')),
-      body: Consumer<CustomerCartProvider>(
+    final isi = Consumer<CustomerCartProvider>(
         builder: (context, cart, _) {
           if (cart.items.isEmpty) {
             return const Center(child: Text('Keranjang kosong.'));
           }
           return Form(
             key: _formKey,
-            child: Column(
+            // Satu gulungan untuk daftar item dan rinciannya sekaligus,
+            // bukan dua bagian yang berebut tinggi lewat Expanded.
+            //
+            // Dengan Expanded, blok rincian di bawah — jenis pesanan,
+            // nomor meja, nama, tagihan, voucher, cara bayar — lebih
+            // tinggi daripada layar tablet yang pendek. Daftar itemnya
+            // diperas jadi nol dan tombol bayarnya terpotong di tepi
+            // bawah, dan tidak ada yang bisa digulir untuk menemukannya.
+            child: ListView(
               children: [
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: cart.items.length,
-                    itemBuilder: (context, index) {
-                      final item = cart.items[index];
-                      return CartLineTile(
-                        item: item,
-                        unitPrice: cart.menuSubtotalOf(item) ~/ item.quantity,
-                        lineTotal: cart.menuSubtotalOf(item),
-                        currency: currency,
-                        onIncrement: () => cart.incrementLine(item.lineId),
-                        onDecrement: () => cart.decrementLine(item.lineId),
-                        onDelete: () => cart.removeLine(item.lineId),
-                        onEdit: () => _editLine(context, cart, item),
-                        soldOut: _soldOut.contains(item.product.id),
-                      );
-                    },
+                for (final item in cart.items)
+                  CartLineTile(
+                    item: item,
+                    unitPrice: cart.menuSubtotalOf(item) ~/ item.quantity,
+                    lineTotal: cart.menuSubtotalOf(item),
+                    currency: currency,
+                    onIncrement: () => cart.incrementLine(item.lineId),
+                    onDecrement: () => cart.decrementLine(item.lineId),
+                    onDelete: () => cart.removeLine(item.lineId),
+                    onEdit: () => _editLine(context, cart, item),
+                    soldOut: _soldOut.contains(item.product.id),
                   ),
-                ),
                 const Divider(height: 1),
                 Padding(
                   padding: const EdgeInsets.all(16),
@@ -622,7 +632,13 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
             ),
           );
         },
-      ),
+    );
+
+    if (widget.embedded) return isi;
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Keranjang')),
+      body: isi,
     );
   }
 }

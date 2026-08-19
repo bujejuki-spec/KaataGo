@@ -1,3 +1,5 @@
+import '../widgets/responsive.dart';
+import '../widgets/side_cart_dialog.dart';
 import 'dart:convert';
 import 'dart:async';
 
@@ -374,6 +376,31 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
     );
   }
 
+  /// Menaruh keranjang sebagai panel tetap di kanan pada layar lebar.
+  ///
+  /// Alasannya sama dengan di layar kasir: ruangnya ada, dan memaksa
+  /// orang berpindah halaman untuk melihat apa yang sudah dipesan
+  /// membuat mereka menghitungnya dari ingatan. Di HP tata letaknya
+  /// tidak berubah sama sekali — di sana ruangnya memang tidak ada.
+  ///
+  /// Panelnya isi halaman keranjang yang sama, bukan salinannya. Dua
+  /// tempat yang harus diingat berbarengan tiap kali aturan
+  /// pembayarannya berubah akan berpisah, dan yang kedua selalu
+  /// ketinggalan.
+  Widget _denganKeranjangSamping(BuildContext context, Widget menu) {
+    if (!Breakpoints.isWide(context)) return menu;
+    return Row(
+      children: [
+        Expanded(child: menu),
+        const VerticalDivider(width: 1),
+        const SizedBox(
+          width: kSideCartWidth,
+          child: CustomerCartScreen(embedded: true),
+        ),
+      ],
+    );
+  }
+
   /// Menu yang belum ada di keranjang langsung membuka popup jumlah.
   /// Yang sudah ada membuka daftar barisnya, supaya jumlahnya bisa
   /// diubah atau dihapus tanpa harus maju dulu ke keranjang.
@@ -394,7 +421,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
     CustomerCartProvider cart,
     Product product,
   ) async {
-    final result = await showDialog<QuantityDialogResult>(
+    final result = await showDialogBesideCart<QuantityDialogResult>(
       context: context,
       builder: (_) => QuantityDialog(product: product, ppnPercent: cart.ppnPercent),
     );
@@ -413,7 +440,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
     CustomerCartProvider cart,
     CartItem line,
   ) async {
-    final result = await showDialog<QuantityDialogResult>(
+    final result = await showDialogBesideCart<QuantityDialogResult>(
       context: context,
       builder: (_) => QuantityDialog(
         product: line.product,
@@ -752,7 +779,9 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
             if (!loggedInAsCustomer) ..._customerAppBarActions(context),
           ],
         ),
-        body: Column(
+        body: _denganKeranjangSamping(
+          context,
+          Column(
           children: [
             StreamBuilder<Restaurant?>(
               stream: restoRepo.watch(session.restoId!),
@@ -833,21 +862,27 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
             ),
           ],
         ),
-        bottomNavigationBar: Consumer<CustomerCartProvider>(
-          builder: (context, cart, _) {
-            return CartBottomBar(
-              itemCount: cart.itemCount,
-              total: cart.total,
-              actionLabel: 'Keranjang',
-              actionIcon: Icons.shopping_cart_outlined,
-              onPressed: cart.items.isEmpty
-                  ? null
-                  : () => Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const CustomerCartScreen()),
-                      ),
-            );
-          },
         ),
+        // Di layar lebar keranjangnya sudah berdiri di kanan, jadi bar
+        // bawah cuma menawarkan jalan ke tempat yang sedang terbuka.
+        bottomNavigationBar: Breakpoints.isWide(context)
+            ? null
+            : Consumer<CustomerCartProvider>(
+                builder: (context, cart, _) {
+                  return CartBottomBar(
+                    itemCount: cart.itemCount,
+                    total: cart.total,
+                    actionLabel: 'Keranjang',
+                    actionIcon: Icons.shopping_cart_outlined,
+                    onPressed: cart.items.isEmpty
+                        ? null
+                        : () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                  builder: (_) => const CustomerCartScreen()),
+                            ),
+                  );
+                },
+              ),
       ),
     );
   }

@@ -307,14 +307,52 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
                 key: _formKey,
                 child: ListView(
                   children: [
-                    TextFormField(
-                      controller: _nameCtrl,
-                      enabled: false,
-                      decoration: InputDecoration(
-                        label: requiredLabel('Nama Resto'),
-                        helperText: 'Cuma Super Admin yang bisa ubah nama resto',
-                        filled: true,
-                        fillColor: KaataTheme.disabledFillOf(context),
+                    // Bukan isian yang dimatikan, tapi keterangan biasa.
+                    //
+                    // Nama resto tidak pernah bisa diubah dari halaman
+                    // ini oleh siapa pun, jadi kotak isian yang selalu
+                    // abu-abu cuma menjanjikan sesuatu yang tidak
+                    // pernah terjadi. Label mengambangnya juga yang
+                    // terpotong di tepi atas begitu daftarnya tergulir
+                    // — label semacam itu memang selalu terpotong di
+                    // area gulir, dan di sini ia tidak perlu ada.
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                      decoration: BoxDecoration(
+                        color: KaataTheme.disabledFillOf(context),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: KaataTheme.borderOf(context)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Nama Resto',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: KaataTheme.mutedOf(context),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _nameCtrl.text,
+                            style: const TextStyle(
+                              fontSize: 15.5,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Hanya KaataGo Admin yang bisa ubah nama resto, '
+                      'silahkan hubungi KaataGo Admin jika ada perubahan '
+                      'nama resto',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        color: KaataTheme.mutedOf(context),
                       ),
                     ),
                     const SizedBox(height: 12),

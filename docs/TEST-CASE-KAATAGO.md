@@ -1,7 +1,7 @@
 # KaataGo — Test Case
 
-**Versi Aplikasi:** 2.5.0 (build 103)
-**Versi Dokumen:** 1.4
+**Versi Aplikasi:** 2.6.0 (build 104)
+**Versi Dokumen:** 1.5
 **Tanggal Terbit:** 17 Agustus 2026
 **Status:** Rilis
 **Jenis Dokumen:** Test Case — pengujian manual
@@ -619,6 +619,26 @@ sudah membayar berhenti berjualan.
 | TC-CB-02 | P1 | Resto berjarak 7 km | Tidak di Terdekat, tapi ada di Semua Resto | F-CB-01, F-CB-02 |
 | TC-CB-03 | P2 | Periksa keterangan di judul bagian Terdekat | Tertulis "Dalam 5 km dari kamu" | F-CB-01 |
 | TC-CB-04 | P2 | Tolak izin lokasi | Bagian Terdekat tidak tampil; Semua Resto tetap ada | F-CB-02 |
+| TC-TB-01 | P1 | Tablet, Kasir: ketuk sebuah menu | Popup muncul di kiri; keranjang kanan tetap terbaca penuh | F-TB-02 |
+| TC-TB-02 | P1 | Tablet, Kasir: ketuk ikon edit pada baris keranjang | Popup editnya juga di kiri | F-TB-02 |
+| TC-TB-03 | P1 | Tablet, Pelanggan: buka menu resto | Keranjang tampil sebagai panel kanan | F-TB-01 |
+| TC-TB-04 | P1 | Tablet, Pelanggan: ketuk sebuah menu | Popup di kiri, panel keranjang tidak tertutup | F-TB-02 |
+| TC-TB-05 | P1 | Tablet, Pelanggan: isi meja, pilih voucher, lalu bayar dari panel | Berjalan sama persis dengan halaman keranjang | F-TB-01 |
+| TC-TB-06 | P2 | Tablet: periksa bagian bawah layar | Tidak ada bar keranjang | F-TB-03 |
+| TC-TB-07 | P1 | HP: ketuk sebuah menu | Popup tetap di tengah; keranjang tetap bar bawah | F-TB-04 |
+| TC-TB-08 | P2 | Putar tablet ke potret sampai di bawah 1000px | Kembali ke tata letak HP tanpa kehilangan isi keranjang | F-TB-04 |
+| TC-TB-09 | P1 | Tablet melintang: buka checkout dari Kasir dengan 3 item | Daftar itemnya terlihat; tidak ada yang terpotong | F-TB-05 |
+| TC-TB-10 | P1 | Gulir sampai bawah di halaman itu | Tombol bayarnya tercapai penuh | F-TB-05 |
+| TC-TB-11 | P1 | Ulangi keduanya dari sisi Pelanggan | Sama — keduanya diperbaiki, bukan salah satunya | F-TB-05 |
+| TC-TB-12 | P2 | Buka menu sebagai Admin lalu Owner | Sama persis dengan Kasir — satu layar yang sama | F-TB-05, F-TB-06 |
+| TC-TB-13 | P1 | Buka daftar menu | Semua kategori sudah terbuka | F-TB-06 |
+| TC-TB-14 | P2 | Lipat satu kategori | Tetap bisa dilipat | F-TB-06 |
+| TC-TB-15 | P1 | Tablet: lihat banner promo | Tingginya di bawah 45% layar, tidak mendorong menu keluar | F-TB-07 |
+| TC-TB-16 | P2 | Pasang banner yang bukan 16:9 | Kotaknya mengikuti gambar; tidak ada pita kabur di sisinya | F-TB-07 |
+| TC-TB-17 | P2 | Pasang banner potret ekstrem | Dijepit — tidak mengambil alih halaman menu | F-TB-07 |
+| TC-TB-18 | P1 | Buka Info Resto lalu gulir | "Nama Resto" tidak terpotong di tepi atas | F-TB-08 |
+| TC-TB-19 | P1 | Simpan Info Resto | Nama restonya tidak berubah dan tidak kosong | F-TB-08 |
+| TC-TB-20 | P2 | Baca keterangan di bawah nama resto | Menyebut KaataGo Admin dan cara menghubunginya | F-TB-08 |
 | TC-TU-01 | P1 | Owner → Saldo & Pengeluaran → Top Up Saldo | Tersimpan; Saldo Total naik sebesar nominalnya | F-TU-01, F-TU-02 |
 | TC-TU-01b | P1 | Super Admin top up, periksa Saldo Total KaataGo | Naik sebesar nominalnya — bukan tetap | F-TU-02, F-TU-05 |
 | TC-TU-02 | P1 | Periksa Jurnal GL sesudahnya | Satu baris kredit ke GL Setoran Modal | F-TU-05 |
@@ -922,12 +942,13 @@ lima kelompok hilang sama sekali dari daftar.
 | Langganan (BL) | 55 | TC-BL-01…47 (+8 sisipan) |
 | Finance KaataGo (PF) | 39 | TC-PF-01…38 (+1 sisipan) |
 | Pilih Resto (CB) | 4 | TC-CB-01…04 |
+| Tata Letak Tablet (TB) | 20 | TC-TB-01…20 |
 | Setoran Modal (TU) | 13 | TC-TU-01…12 (+1 sisipan) |
 | Voucher (VC) | 77 | TC-VC-01…77 |
 | Analisa Pasar (MR) | 13 | TC-MR-01…13 |
 | Pengaturan & Sesi (TS) | 19 | TC-TS-01…19 |
 | Peran & Akses (RG) | 14 | TC-RG-01…14 |
-| **Total** | **474** | **474 kasus + 9 alur ujung-ke-ujung** |
+| **Total** | **494** | **494 kasus + 9 alur ujung-ke-ujung** |
 
 Kriteria penerimaan A-01…A-20 di FSD §9 seluruhnya terpetakan lewat
 kolom Rujukan di atas. Bab TSD yang diuji: §1.2, §4, §5, §6, §7, §8,

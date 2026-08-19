@@ -1,7 +1,7 @@
 # KaataGo — Functional Specification Document
 
-**Versi Aplikasi:** 2.5.0 (build 103)
-**Versi Dokumen:** 2.5
+**Versi Aplikasi:** 2.6.0 (build 104)
+**Versi Dokumen:** 2.6
 **Tanggal Terbit:** 17 Agustus 2026
 **Status:** Rilis
 **Jenis Dokumen:** FSD — sisi fungsional
@@ -584,6 +584,14 @@ keuangan lain di aplikasi ini.
 | F-PF-10 | Layar Saldo KaataGo tidak menampilkan Saldo Cash/Non Cash — KaataGo tidak punya laci kasir |
 | F-CB-01 | Daftar **Terdekat** hanya memuat resto dalam radius **5 km** dari titik pelanggan |
 | F-CB-02 | Resto di luar radius tetap tersedia di daftar **Semua Resto** |
+| F-TB-01 | Di layar lebar, keranjang tampil sebagai **panel tetap di kanan** — untuk Kasir maupun Pelanggan |
+| F-TB-02 | Popup menu dan popup edit baris muncul **di sisi kiri**, tidak menutupi panel keranjang |
+| F-TB-03 | Bar keranjang di bawah tidak muncul saat panelnya tampil |
+| F-TB-04 | Di HP tata letaknya tidak berubah: keranjang tetap bar bawah, popup tetap di tengah |
+| F-TB-05 | Halaman checkout menggulir sebagai **satu kesatuan** — daftar item dan rinciannya, di layar tinggi berapa pun |
+| F-TB-06 | Kategori menu **terbuka sejak awal**, masih bisa dilipat |
+| F-TB-07 | Banner promo dibatasi lebarnya dan mengikuti **bentuk gambarnya sendiri** |
+| F-TB-08 | Nama resto di Info Resto tampil sebagai keterangan, bukan isian yang dimatikan |
 | F-TU-01 | **Top Up Saldo** tersedia di Saldo & Pengeluaran untuk Owner, Finance, dan Super Admin |
 | F-TU-02 | Setoran modal menambah **saldo utama**, dan tercatat di **GL Setoran Modal** — bukan sebagai pendapatan |
 | F-TU-03 | Nama penyetor **wajib**; keterangan dan bukti transfer opsional |
@@ -697,6 +705,35 @@ satunya.
 > tahu — kuotanya habis oleh siapa pun yang kebetulan membuka layarnya,
 > sisanya hangus tanpa pernah dilihat orang. Dua langkah yang harus
 > diingat berurutan berarti suatu saat yang kedua terlewat.
+
+> **Kenapa checkout jadi satu gulungan.** Daftar item dan blok
+> rinciannya dulu berbagi tinggi lewat `Expanded`. Di tablet melintang,
+> blok rinciannya lebih tinggi daripada layarnya sendiri — daftar
+> itemnya kebagian nol dan tidak pernah dibangun, sementara tombol
+> bayarnya melimpah keluar layar. Yang bisa digulir justru bagian yang
+> tingginya nol.
+
+> **Kenapa kategori terbuka sejak awal.** Menu yang bersembunyi di
+> balik judul kategori adalah menu yang tidak ditemukan. Kasir yang
+> melayani antrean tidak membuka satu per satu kategori untuk mencari
+> satu item, dan pelanggan yang melihat tiga baris judul akan mengira
+> restonya belum mengisi menunya.
+
+> **Kenapa banner mengikuti bentuk gambarnya.** Kotak yang dipatok 16:9
+> menyisakan pita kabur di sisi gambar yang bentuknya lain, dan pita itu
+> yang membuatnya terlihat tidak menyatu dengan halamannya.
+
+> **Kenapa popupnya menepi, bukan sekadar dikecilkan.** Kasir
+> membacakan pesanan sambil pelanggan menyebutkannya, dan keranjang di
+> kanan itu yang sedang dibaca. Popup yang menutupinya memaksa kasir
+> menutup popup untuk memeriksa lalu membukanya lagi — dan yang paling
+> sering hilang dari ingatan justru baris yang barusan diucapkan.
+
+> **Kenapa panel pelanggan memakai halaman keranjang yang sama.**
+> Isinya bukan sekadar daftar: ada jenis pesanan, nomor meja, voucher,
+> rincian tagihan, dan aturan cara bayarnya. Menyalinnya jadi panel
+> terpisah berarti dua tempat yang harus diingat berbarengan tiap kali
+> aturan itu berubah, dan yang kedua selalu ketinggalan.
 
 > **Kenapa modal punya akun sendiri.** Uangnya benar-benar masuk, tapi
 > tidak dijual ke siapa pun. Mencatatnya sebagai penghasilan membuat

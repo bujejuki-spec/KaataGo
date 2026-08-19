@@ -29,6 +29,17 @@ class _PromoBannerCarouselState extends State<PromoBannerCarousel> {
   int _index = 0;
   Timer? _timer;
 
+  /// Perbandingan sisi gambar bannernya, dibaca dari gambarnya sendiri.
+  ///
+  /// Sebelumnya kotaknya dipatok 16:9 dengan anggapan banner promo
+  /// hampir selalu dibuat begitu. Yang bukan 16:9 jadi menyisakan pita
+  /// kabur di sisinya — dan pita itu yang membuat bannernya terlihat
+  /// tidak menyatu dengan halamannya.
+  ///
+  /// Null selama gambarnya belum selesai dibaca; selama itu kotaknya
+  /// memakai 16:9 supaya tata letaknya tidak melompat dua kali.
+  double? _rasio;
+
   @override
   void initState() {
     super.initState();
@@ -57,7 +68,9 @@ class _PromoBannerCarouselState extends State<PromoBannerCarousel> {
       setState(() {
         _banners = items;
         _index = 0;
+        _rasio = null;
       });
+      unawaited(_bacaRasio(items));
       _restartAutoplay();
     } catch (_) {
       // Offline atau tabelnya belum ada — halaman menunya tetap jalan
@@ -128,6 +141,30 @@ class _PromoBannerCarouselState extends State<PromoBannerCarousel> {
     );
   }
 
+  /// Membaca ukuran asli tiap banner, lalu memakai yang paling jangkung.
+  ///
+  /// Yang paling jangkung, bukan rata-ratanya: kotak yang lebih pendek
+  /// dari salah satu gambarnya akan menyisakan pita untuk gambar itu —
+  /// dan tidak ada satu kotak pun yang pas untuk semuanya kalau
+  /// bannernya beda-beda bentuk.
+  Future<void> _bacaRasio(List<PromoBanner> items) async {
+    double? paling;
+    for (final b in items) {
+      try {
+        final gambar = await decodeImageFromList(base64Decode(b.imageBase64));
+        final r = gambar.width / gambar.height;
+        gambar.dispose();
+        if (paling == null || r < paling) paling = r;
+      } catch (_) {
+        // Satu banner rusak tidak boleh menghentikan pembacaan yang lain.
+      }
+    }
+    if (!mounted || paling == null) return;
+    // Dijepit supaya banner yang salah ukuran — potret, atau pita
+    // sangat panjang — tidak mengambil alih halaman menunya.
+    setState(() => _rasio = paling!.clamp(1.6, 3.2));
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_banners.isEmpty) return const SizedBox.shrink();
@@ -135,12 +172,19 @@ class _PromoBannerCarouselState extends State<PromoBannerCarousel> {
     return Column(
       children: [
         const SizedBox(height: 10),
-        AspectRatio(
-          // 16:9, bukan tinggi tetap. Banner promo hampir selalu dibuat
-          // dengan perbandingan itu, jadi gambarnya mengisi kotaknya
-          // hampir persis — dan tinggi tetap 148 memaksa gambar apa pun
-          // masuk ke kotak yang bukan bentuknya.
-          aspectRatio: 16 / 9,
+        // Lebarnya dibatasi lalu ditaruh di tengah. Tanpa ini, 16:9
+        // selebar tablet berarti banner ratusan piksel tingginya yang
+        // mendorong seluruh menunya keluar layar. Di HP batas ini tidak
+        // berpengaruh apa-apa — layarnya memang lebih sempit.
+        Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 560),
+            child: AspectRatio(
+          // Mengikuti bentuk gambarnya, bukan angka yang dipatok. Kotak
+          // yang bentuknya berbeda dari gambarnya menyisakan pita di
+          // sisinya, dan pita itu yang membuat bannernya terlihat tidak
+          // menyatu dengan halamannya.
+          aspectRatio: _rasio ?? 16 / 9,
           child: PageView.builder(
             controller: _controller,
             itemCount: _banners.length,
@@ -218,6 +262,8 @@ class _PromoBannerCarouselState extends State<PromoBannerCarousel> {
                 ),
               );
             },
+          ),
+            ),
           ),
         ),
         if (_banners.length > 1) ...[

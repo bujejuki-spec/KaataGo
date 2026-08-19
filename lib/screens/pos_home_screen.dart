@@ -1,3 +1,4 @@
+import '../widgets/side_cart_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -71,7 +72,7 @@ class _PosHomeScreenState extends State<PosHomeScreen> {
 
   Future<void> _addLine(BuildContext context, Product product) async {
     final cart = context.read<CartProvider>();
-    final result = await showDialog<QuantityDialogResult>(
+    final result = await showDialogBesideCart<QuantityDialogResult>(
       context: context,
       builder: (_) => QuantityDialog(product: product, ppnPercent: cart.ppnPercent, showStock: true),
     );
@@ -87,7 +88,7 @@ class _PosHomeScreenState extends State<PosHomeScreen> {
 
   Future<void> _editLine(BuildContext context, CartItem line) async {
     final cart = context.read<CartProvider>();
-    final result = await showDialog<QuantityDialogResult>(
+    final result = await showDialogBesideCart<QuantityDialogResult>(
       context: context,
       builder: (_) => QuantityDialog(
         showStock: true,
@@ -198,7 +199,7 @@ class _PosHomeScreenState extends State<PosHomeScreen> {
               Expanded(child: grid),
               const VerticalDivider(width: 1),
               SizedBox(
-                width: 360,
+                width: kSideCartWidth,
                 child: _CartPanel(
                   onEditLine: (line) => _editLine(context, line),
                   onCheckout: cart.items.isEmpty

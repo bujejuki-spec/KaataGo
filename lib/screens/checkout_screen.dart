@@ -159,27 +159,27 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           if (cart.items.isEmpty) {
             return const Center(child: Text('Keranjang kosong. Pilih produk dulu.'));
           }
-          return Column(
+          // Satu gulungan untuk daftar item dan rinciannya sekaligus,
+          // bukan dua bagian yang berebut tinggi lewat Expanded.
+          //
+          // Dengan Expanded, blok rincian di bawah lebih tinggi daripada
+          // layar tablet yang pendek: daftar itemnya diperas jadi nol
+          // dan tombol bayarnya terpotong di tepi bawah, tanpa ada yang
+          // bisa digulir untuk menemukannya.
+          return ListView(
             children: [
-              Expanded(
-                child: ListView.builder(
-                  itemCount: cart.items.length,
-                  itemBuilder: (context, index) {
-                    final item = cart.items[index];
-                    return CartLineTile(
-                      item: item,
-                      unitPrice: cart.menuSubtotalOf(item) ~/ item.quantity,
-                      lineTotal: cart.menuSubtotalOf(item),
-                      currency: currency,
-                      onIncrement: () => cart.incrementLine(item.lineId),
-                      onDecrement: () => cart.decrementLine(item.lineId),
-                      onDelete: () => cart.removeLine(item.lineId),
-                      onEdit: () => _editLine(context, cart, item),
-                      soldOut: _soldOut.contains(item.product.id),
-                    );
-                  },
+              for (final item in cart.items)
+                CartLineTile(
+                  item: item,
+                  unitPrice: cart.menuSubtotalOf(item) ~/ item.quantity,
+                  lineTotal: cart.menuSubtotalOf(item),
+                  currency: currency,
+                  onIncrement: () => cart.incrementLine(item.lineId),
+                  onDecrement: () => cart.decrementLine(item.lineId),
+                  onDelete: () => cart.removeLine(item.lineId),
+                  onEdit: () => _editLine(context, cart, item),
+                  soldOut: _soldOut.contains(item.product.id),
                 ),
-              ),
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(

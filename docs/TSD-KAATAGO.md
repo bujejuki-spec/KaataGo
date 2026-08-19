@@ -1,7 +1,7 @@
 # KaataGo — Technical Specification Document
 
-**Versi Aplikasi:** 2.5.0 (build 103)
-**Versi Dokumen:** 1.4
+**Versi Aplikasi:** 2.6.0 (build 104)
+**Versi Dokumen:** 1.5
 **Tanggal Terbit:** 17 Agustus 2026
 **Status:** Rilis
 **Jenis Dokumen:** TSD — sisi teknis
@@ -874,6 +874,49 @@ lima tempat. Nomornya sederet dengan GL Diskon: **1100073** Voucher,
 **1100074** Voucher Redeem.
 
 ---
+
+---
+
+### 6.2b Tata letak tablet: panel keranjang
+
+`lib/widgets/side_cart_dialog.dart` menyimpan `kSideCartWidth = 360` —
+satu angka yang dipakai tata letaknya maupun batas popupnya, karena dua
+angka terpisah akan berpisah dan hasilnya popup yang menutupi keranjang
+persis sedikit.
+
+`showDialogBesideCart()` membungkus `showDialog` dengan
+`Align(centerLeft)` + `ConstrainedBox` selebar ruang tersisa, dijepit
+`clamp(320, 720)`: `Dialog` punya lebar minimum 280 di dalamnya, jadi
+ruang kiri yang lebih sempit dari itu akan membuat popupnya melebar
+melewati batas — lebih baik kembali ke tengah. Di bawah
+`Breakpoints.isWide` fungsinya langsung meneruskan ke `showDialog`
+biasa.
+
+Panel pelanggan memakai `CustomerCartScreen(embedded: true)`, yang
+melewati Scaffold dan AppBar-nya sendiri lalu mengembalikan badannya
+saja. Bukan salinan: isinya memuat jenis pesanan, nomor meja, voucher,
+rincian tagihan, dan aturan cara bayar — dua tempat yang harus diingat
+berbarengan akan berpisah.
+
+---
+
+### 6.2c Checkout: satu gulungan, bukan dua bagian berebut tinggi
+
+`CheckoutScreen` (Kasir/Admin/Owner) dan `CustomerCartScreen`
+(Pelanggan) dulu memakai `Column[Expanded(ListView), rincian]`. Di
+layar pendek, blok rinciannya lebih tinggi daripada layar: `Expanded`
+kebagian nol, ListView-nya tidak membangun satu baris pun, dan sisanya
+melempar `RenderFlex overflowed` sehingga tombol bayarnya terpotong.
+
+Keduanya kini satu `ListView` berisi baris item disusul blok
+rinciannya. Tesnya merender kedua pola di 1280×800: pola lama melempar
+overflow dan `item0` tidak ditemukan sama sekali.
+
+`ProductCategoryList` memakai `initiallyExpanded: true`.
+`PromoBannerCarousel` membaca rasio gambarnya lewat
+`decodeImageFromList`, memakai yang paling jangkung di antara
+bannernya, dijepit `clamp(1.6, 3.2)`, dan lebarnya dibatasi 560 lalu
+ditengahkan.
 
 ---
 
