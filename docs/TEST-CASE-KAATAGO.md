@@ -1,6 +1,6 @@
 # KaataGo — Test Case
 
-**Versi Aplikasi:** 2.6.2 (build 106)
+**Versi Aplikasi:** 2.6.3 (build 107)
 **Versi Dokumen:** 1.5
 **Tanggal Terbit:** 17 Agustus 2026
 **Status:** Rilis

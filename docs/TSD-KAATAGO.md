@@ -1,6 +1,6 @@
 # KaataGo — Technical Specification Document
 
-**Versi Aplikasi:** 2.6.2 (build 106)
+**Versi Aplikasi:** 2.6.3 (build 107)
 **Versi Dokumen:** 1.5
 **Tanggal Terbit:** 17 Agustus 2026
 **Status:** Rilis
@@ -951,10 +951,26 @@ saat digulir, dan kategori yang barusan dilipat membuka sendiri.
 Layar pelanggan membuat stream produk dan info resto **di dalam
 `build`**. `StreamBuilder` menilai stream dari identitasnya, jadi tiap
 rebuild — dan itu terjadi tiap kali keranjang berubah — ia kembali ke
-`ConnectionState.waiting` dan menampilkan lingkaran memuat. Streamnya
-kini disiapkan lewat `_siapkanStream(restoId)` dan hanya dibuat ulang
-saat restonya berganti. Sisi kasir tidak terkena: ia memakai Provider,
-bukan stream.
+`ConnectionState.waiting` dan menampilkan lingkaran memuat. Perbaikan pertamanya menyimpan `asBroadcastStream()` di State — dan
+itu memperkenalkan kerusakan yang lebih buruk. Stream realtime
+mengirim potret pertamanya sekali, saat mulai didengarkan; layar yang
+ditutup lalu dibuka lagi memakai stream yang sama, pendengar barunya
+melewatkan potret itu, dan menunggu perubahan yang tidak pernah datang.
+Tidak ada data, tidak ada galat, lingkarannya berputar selamanya.
+
+Sekarang layar itu tidak memakai `StreamBuilder` sama sekali:
+`_siapkanStream(restoId)` memegang `StreamSubscription`-nya sendiri,
+menyimpan hasilnya di `_produk`/`_restoInfo`, membatalkan langganan lama
+saat restonya berganti, dan membatalkan keduanya di `dispose`. Datanya
+yang tersimpan juga membuat kembali ke layar itu langsung menampilkan
+menu terakhir, bukan memuat dari nol. Sisi kasir tidak terkena: ia
+memakai Provider, bukan stream.
+
+`PromoBannerCarousel` membaca ukuran gambarnya **sebelum** memasang
+`_banners`, bukan sesudahnya. Mengisi rasionya lewat `setState` kedua
+membuat bannernya tampil pada 16:9 lalu melompat ke bentuk aslinya —
+dua perubahan tata letak untuk satu banner, dan yang kedua terjadi
+tepat saat orangnya mulai membaca.
 
 ---
 

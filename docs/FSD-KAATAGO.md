@@ -1,6 +1,6 @@
 # KaataGo — Functional Specification Document
 
-**Versi Aplikasi:** 2.6.2 (build 106)
+**Versi Aplikasi:** 2.6.3 (build 107)
 **Versi Dokumen:** 2.6
 **Tanggal Terbit:** 17 Agustus 2026
 **Status:** Rilis

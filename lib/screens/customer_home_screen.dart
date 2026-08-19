@@ -81,8 +81,23 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
   /// menunya berkedip hilang-muncul tiap menambah satu item.
   final _productRepo = FirestoreProductRepository();
   final _restoInfoRepo = RestaurantRepository();
-  Stream<List<Product>>? _produkStream;
-  Stream<Restaurant?>? _restoStream;
+
+  /// Langganannya dipegang layar ini, bukan diserahkan ke StreamBuilder.
+  ///
+  /// Sempat dicoba dengan `asBroadcastStream()` yang disimpan di sini,
+  /// dan itu justru merusak: stream siaran ikut selesai begitu
+  /// pendengar terakhirnya berhenti. Layar yang ditutup lalu dibuka
+  /// lagi mendengarkan stream yang sudah mati — tidak ada data yang
+  /// datang, tidak ada galat, dan lingkarannya berputar selamanya.
+  ///
+  /// Datanya disimpan di sini juga. Kembali ke layar ini langsung
+  /// menampilkan menu yang terakhir diketahui, bukan lingkaran memuat
+  /// yang mengulang dari nol tiap kali.
+  StreamSubscription<List<Product>>? _produkSub;
+  StreamSubscription<Restaurant?>? _restoSub;
+  List<Product>? _produk;
+  Restaurant? _restoInfo;
+  Object? _galatProduk;
   String? _streamRestoId;
 
   StreamSubscription<List<CustomerOrder>>? _orderWatch;
@@ -214,6 +229,8 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
   void dispose() {
     _orderWatch?.cancel();
     _remoteActiveWatch?.cancel();
+    _produkSub?.cancel();
+    _restoSub?.cancel();
     _autoEndTimer?.cancel();
     super.dispose();
   }
@@ -647,10 +664,32 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
   /// Menyiapkan stream sekali untuk sebuah resto, dan membuatnya ulang
   /// hanya kalau restonya benar-benar berganti.
   void _siapkanStream(String restoId) {
-    if (_streamRestoId == restoId && _produkStream != null) return;
+    if (_streamRestoId == restoId && _produkSub != null) return;
     _streamRestoId = restoId;
-    _produkStream = _productRepo.watchAll(restoId).asBroadcastStream();
-    _restoStream = _restoInfoRepo.watch(restoId).asBroadcastStream();
+    _produkSub?.cancel();
+    _restoSub?.cancel();
+    _produk = null;
+    _restoInfo = null;
+    _galatProduk = null;
+
+    _produkSub = _productRepo.watchAll(restoId).listen(
+      (items) {
+        if (!mounted) return;
+        setState(() {
+          _produk = items;
+          _galatProduk = null;
+        });
+      },
+      onError: (Object e) {
+        if (!mounted) return;
+        setState(() => _galatProduk = e);
+      },
+    );
+
+    _restoSub = _restoInfoRepo.watch(restoId).listen((r) {
+      if (!mounted) return;
+      setState(() => _restoInfo = r);
+    });
   }
 
   @override
@@ -807,10 +846,9 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
           context,
           Column(
           children: [
-            StreamBuilder<Restaurant?>(
-              stream: _restoStream,
-              builder: (context, snapshot) {
-                final resto = snapshot.data;
+            Builder(
+              builder: (context) {
+                final resto = _restoInfo;
                 if (resto == null) return const SizedBox.shrink();
                 return Container(
                   width: double.infinity,
@@ -852,19 +890,18 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
               },
             ),
             Expanded(
-              child: StreamBuilder<List<Product>>(
-                stream: _produkStream,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  if (snapshot.hasError) {
+              child: Builder(
+                builder: (context) {
+                  if (_galatProduk != null) {
                     return Center(
-                      child: Text('Gagal memuat produk.\n${snapshot.error}',
+                      child: Text('Gagal memuat produk.\n$_galatProduk',
                           textAlign: TextAlign.center),
                     );
                   }
-                  final products = snapshot.data ?? [];
+                  if (_produk == null) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  final products = _produk!;
                   if (products.isEmpty) {
                     return const Center(child: Text('Belum ada produk tersedia.'));
                   }

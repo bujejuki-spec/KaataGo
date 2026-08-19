@@ -100,25 +100,26 @@ void main() {
       expect(berkas, contains('key: PageStorageKey<String>(category),'));
     });
 
-    test('layar pelanggan tidak membuat stream di dalam build', () {
+    test('layar pelanggan tidak berlangganan ulang tiap build', () {
       final layar =
           File('lib/screens/customer_home_screen.dart').readAsStringSync();
       expect(layar, contains('void _siapkanStream(String restoId)'));
-      expect(layar, contains('stream: _produkStream,'));
-      expect(layar, contains('stream: _restoStream,'));
       // Yang lama: repo dibuat di dalam build, lalu stream barunya
       // dibuat tiap kali layar dibangun ulang.
       expect(layar,
           isNot(contains('stream: repo.watchAll(session.restoId!),')));
       expect(layar,
           isNot(contains('final repo = FirestoreProductRepository();')));
+      // Dan sekarang tidak lewat StreamBuilder sama sekali: langganannya
+      // dipegang layar ini supaya hidupnya seumur layar.
+      expect(layar, isNot(contains('StreamBuilder<List<Product>>')));
     });
 
-    test('streamnya dibuat ulang hanya kalau restonya berganti', () {
+    test('langganannya dibuat ulang hanya kalau restonya berganti', () {
       final layar =
           File('lib/screens/customer_home_screen.dart').readAsStringSync();
       expect(layar,
-          contains('if (_streamRestoId == restoId && _produkStream != null) return;'));
+          contains('if (_streamRestoId == restoId && _produkSub != null) return;'));
     });
 
     test('berlaku untuk semua yang menampilkan menu', () {

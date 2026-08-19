@@ -36,8 +36,9 @@ class _PromoBannerCarouselState extends State<PromoBannerCarousel> {
   /// kabur di sisinya — dan pita itu yang membuat bannernya terlihat
   /// tidak menyatu dengan halamannya.
   ///
-  /// Null selama gambarnya belum selesai dibaca; selama itu kotaknya
-  /// memakai 16:9 supaya tata letaknya tidak melompat dua kali.
+  /// Sudah terisi sebelum bannernya pertama kali tampil — ukurannya
+  /// dibaca lebih dulu, supaya tidak ada lompatan tata letak. Null cuma
+  /// kalau seluruh gambarnya gagal dibaca, dan 16:9 jadi jatuhannya.
   double? _rasio;
 
   @override
@@ -65,12 +66,21 @@ class _PromoBannerCarouselState extends State<PromoBannerCarousel> {
     try {
       final items = await PromoBannerRepository().activeForResto(widget.restoId);
       if (!mounted) return;
+
+      // Ukuran gambarnya dibaca DULU, baru bannernya ditampilkan.
+      //
+      // Sempat sebaliknya: bannernya muncul pada 16:9 lalu melompat ke
+      // bentuk aslinya begitu ukurannya selesai dibaca. Dua perubahan
+      // tata letak untuk satu banner, dan yang kedua terjadi tepat saat
+      // orangnya mulai membaca — itu kedipannya.
+      final rasio = await _hitungRasio(items);
+      if (!mounted) return;
+
       setState(() {
         _banners = items;
         _index = 0;
-        _rasio = null;
+        _rasio = rasio;
       });
-      unawaited(_bacaRasio(items));
       _restartAutoplay();
     } catch (_) {
       // Offline atau tabelnya belum ada — halaman menunya tetap jalan
@@ -147,7 +157,7 @@ class _PromoBannerCarouselState extends State<PromoBannerCarousel> {
   /// dari salah satu gambarnya akan menyisakan pita untuk gambar itu —
   /// dan tidak ada satu kotak pun yang pas untuk semuanya kalau
   /// bannernya beda-beda bentuk.
-  Future<void> _bacaRasio(List<PromoBanner> items) async {
+  Future<double?> _hitungRasio(List<PromoBanner> items) async {
     double? paling;
     for (final b in items) {
       try {
@@ -159,10 +169,9 @@ class _PromoBannerCarouselState extends State<PromoBannerCarousel> {
         // Satu banner rusak tidak boleh menghentikan pembacaan yang lain.
       }
     }
-    if (!mounted || paling == null) return;
     // Dijepit supaya banner yang salah ukuran — potret, atau pita
     // sangat panjang — tidak mengambil alih halaman menunya.
-    setState(() => _rasio = paling!.clamp(1.6, 3.2));
+    return paling?.clamp(1.6, 3.2);
   }
 
   @override
