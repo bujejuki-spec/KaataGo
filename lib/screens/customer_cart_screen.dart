@@ -75,6 +75,15 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
 
   /// Voucher milik pelanggan yang sedang dipasang di tagihan ini.
   VoucherClaim? _voucher;
+
+  /// Voucher hanya untuk yang sudah masuk dengan akunnya.
+  ///
+  /// Penebusannya pun menuntut akun — server menolak tanpa email — jadi
+  /// tamu tidak akan pernah punya satu pun untuk dipakai.
+  bool get _bisaPakaiVoucher {
+    final auth = context.read<AuthProvider>();
+    return auth.isLoggedIn && !auth.isEmployee;
+  }
   bool _memeriksaVoucher = false;
 
   /// Yang benar-benar dibayar: sesudah diskon resto, lalu sesudah
@@ -568,14 +577,22 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
                           currency: currency,
                         ),
                       ],
-                      const SizedBox(height: 10),
-                      _BarisVoucher(
-                        voucher: _voucher,
-                        memeriksa: _memeriksaVoucher,
-                        currency: currency,
-                        onPilih: _pilihVoucher,
-                        onLepas: _lepasVoucher,
-                      ),
+                      // Voucher menempel pada akun, bukan pada
+                      // perangkat. Tamu yang belum masuk tidak punya
+                      // tempat menyimpannya — menawarkan "Pakai
+                      // Voucher" kepadanya cuma menjanjikan daftar yang
+                      // selalu kosong, dan yang menekannya akan mengira
+                      // vouchernya hilang.
+                      if (_bisaPakaiVoucher) ...[
+                        const SizedBox(height: 10),
+                        _BarisVoucher(
+                          voucher: _voucher,
+                          memeriksa: _memeriksaVoucher,
+                          currency: currency,
+                          onPilih: _pilihVoucher,
+                          onLepas: _lepasVoucher,
+                        ),
+                      ],
                       const SizedBox(height: 14),
                       const Align(
                         alignment: Alignment.centerLeft,

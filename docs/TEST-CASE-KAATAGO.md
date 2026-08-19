@@ -1,6 +1,6 @@
 # KaataGo — Test Case
 
-**Versi Aplikasi:** 2.6.0 (build 104)
+**Versi Aplikasi:** 2.6.1 (build 105)
 **Versi Dokumen:** 1.5
 **Tanggal Terbit:** 17 Agustus 2026
 **Status:** Rilis
@@ -736,6 +736,10 @@ sudah membayar berhenti berjualan.
 | TC-VC-75 | P2 | Periksa pengumuman kotak masuknya | Menyebut "Khusus pengguna baru" | F-VC-28 |
 | TC-VC-76 | P2 | Terbitkan batch tanpa ceklis itu | Siapa pun bisa menebus; kalimat syaratnya tidak muncul | F-VC-26, F-VC-28 |
 | TC-VC-77 | P2 | Periksa batch lama yang terbit sebelum fitur ini | Tetap terbuka untuk siapa saja | F-VC-26 |
+| TC-VC-78 | P1 | Buka aplikasi sebagai tamu, lihat layar awal pelanggan | Tidak ada menu Voucher Saya | F-VC-29 |
+| TC-VC-79 | P1 | Tamu memesan lalu buka keranjang | Baris **Pakai Voucher** tidak muncul | F-VC-29 |
+| TC-VC-80 | P2 | Masuk dengan akun, buka keranjang yang sama | Baris Pakai Voucher muncul kembali | F-VC-29 |
+| TC-VC-81 | P2 | Tamu menyelesaikan pesanan | Tersimpan tanpa voucher, nilai vouchernya nol | F-VC-29 |
 
 ---
 
@@ -944,11 +948,11 @@ lima kelompok hilang sama sekali dari daftar.
 | Pilih Resto (CB) | 4 | TC-CB-01…04 |
 | Tata Letak Tablet (TB) | 20 | TC-TB-01…20 |
 | Setoran Modal (TU) | 13 | TC-TU-01…12 (+1 sisipan) |
-| Voucher (VC) | 77 | TC-VC-01…77 |
+| Voucher (VC) | 81 | TC-VC-01…81 |
 | Analisa Pasar (MR) | 13 | TC-MR-01…13 |
 | Pengaturan & Sesi (TS) | 19 | TC-TS-01…19 |
 | Peran & Akses (RG) | 14 | TC-RG-01…14 |
-| **Total** | **494** | **494 kasus + 9 alur ujung-ke-ujung** |
+| **Total** | **498** | **498 kasus + 9 alur ujung-ke-ujung** |
 
 Kriteria penerimaan A-01…A-20 di FSD §9 seluruhnya terpetakan lewat
 kolom Rujukan di atas. Bab TSD yang diuji: §1.2, §4, §5, §6, §7, §8,

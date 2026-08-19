@@ -69,6 +69,14 @@ class ProductCategoryList extends StatelessWidget {
               // above/below.
               data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
               child: ExpansionTile(
+                // Kuncinya wajib. ListView.builder membuang widget yang
+                // tergulir keluar layar lalu membangunnya lagi saat
+                // kembali terlihat — dan tanpa kunci, ExpansionTile
+                // kehilangan ingatannya, memakai `initiallyExpanded`
+                // lagi, lalu memainkan animasi bukanya dari awal. Yang
+                // terlihat: menu berkedip tiap kali digulir, dan
+                // kategori yang barusan dilipat membuka sendiri.
+                key: PageStorageKey<String>(category),
                 // Terbuka sejak awal. Menu yang bersembunyi di balik
                 // judul kategori adalah menu yang tidak ditemukan —
                 // kasir yang sedang melayani antrean tidak membuka satu

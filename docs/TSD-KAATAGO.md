@@ -1,6 +1,6 @@
 # KaataGo — Technical Specification Document
 
-**Versi Aplikasi:** 2.6.0 (build 104)
+**Versi Aplikasi:** 2.6.1 (build 105)
 **Versi Dokumen:** 1.5
 **Tanggal Terbit:** 17 Agustus 2026
 **Status:** Rilis
@@ -897,6 +897,24 @@ melewati Scaffold dan AppBar-nya sendiri lalu mengembalikan badannya
 saja. Bukan salinan: isinya memuat jenis pesanan, nomor meja, voucher,
 rincian tagihan, dan aturan cara bayar — dua tempat yang harus diingat
 berbarengan akan berpisah.
+
+---
+
+### 6.2d Dua sumber kedipan di daftar menu
+
+`ExpansionTile` di dalam `ListView.builder` wajib berkunci.
+Widget yang tergulir keluar layar dibuang lalu dibangun ulang; tanpa
+`PageStorageKey`, ia kehilangan keadaannya, memakai `initiallyExpanded`
+lagi, dan memainkan animasi bukanya dari awal. Gejalanya: menu berkedip
+saat digulir, dan kategori yang barusan dilipat membuka sendiri.
+
+Layar pelanggan membuat stream produk dan info resto **di dalam
+`build`**. `StreamBuilder` menilai stream dari identitasnya, jadi tiap
+rebuild — dan itu terjadi tiap kali keranjang berubah — ia kembali ke
+`ConnectionState.waiting` dan menampilkan lingkaran memuat. Streamnya
+kini disiapkan lewat `_siapkanStream(restoId)` dan hanya dibuat ulang
+saat restonya berganti. Sisi kasir tidak terkena: ia memakai Provider,
+bukan stream.
 
 ---
 

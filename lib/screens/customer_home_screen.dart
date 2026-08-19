@@ -72,6 +72,19 @@ class CustomerHomeScreen extends StatefulWidget {
 class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
   static const _autoEndDelay = Duration(minutes: 5);
 
+  /// Stream menu dan info resto, dibuat sekali per resto.
+  ///
+  /// Sebelumnya keduanya dibuat di dalam `build`, jadi tiap kali layar
+  /// dibangun ulang — dan itu terjadi tiap kali keranjang berubah —
+  /// StreamBuilder menerima stream yang berbeda, kembali ke keadaan
+  /// "menunggu", lalu menampilkan lingkaran memuat. Yang terlihat:
+  /// menunya berkedip hilang-muncul tiap menambah satu item.
+  final _productRepo = FirestoreProductRepository();
+  final _restoInfoRepo = RestaurantRepository();
+  Stream<List<Product>>? _produkStream;
+  Stream<Restaurant?>? _restoStream;
+  String? _streamRestoId;
+
   StreamSubscription<List<CustomerOrder>>? _orderWatch;
   StreamSubscription<bool>? _remoteActiveWatch;
   String? _watchedSessionId;
@@ -631,10 +644,17 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
     );
   }
 
+  /// Menyiapkan stream sekali untuk sebuah resto, dan membuatnya ulang
+  /// hanya kalau restonya benar-benar berganti.
+  void _siapkanStream(String restoId) {
+    if (_streamRestoId == restoId && _produkStream != null) return;
+    _streamRestoId = restoId;
+    _produkStream = _productRepo.watchAll(restoId).asBroadcastStream();
+    _restoStream = _restoInfoRepo.watch(restoId).asBroadcastStream();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final repo = FirestoreProductRepository();
-    final restoRepo = RestaurantRepository();
     final session = context.watch<TableSessionProvider>();
     final auth = context.watch<AuthProvider>();
     // Once logged in, this screen is the customer's "home" — back
@@ -739,6 +759,10 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
       );
     }
 
+    // Sesudah titik ini restonya sudah pasti terpilih, jadi streamnya
+    // aman disiapkan — dan hanya dibuat ulang kalau restonya berganti.
+    _siapkanStream(session.restoId!);
+
     // The chooser and this menu are the same route — which one shows
     // depends on hasActiveResto — so "back" here can't pop to the chooser,
     // it has to drop the resto session and let this screen rebuild into
@@ -784,7 +808,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
           Column(
           children: [
             StreamBuilder<Restaurant?>(
-              stream: restoRepo.watch(session.restoId!),
+              stream: _restoStream,
               builder: (context, snapshot) {
                 final resto = snapshot.data;
                 if (resto == null) return const SizedBox.shrink();
@@ -829,7 +853,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
             ),
             Expanded(
               child: StreamBuilder<List<Product>>(
-                stream: repo.watchAll(session.restoId!),
+                stream: _produkStream,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());

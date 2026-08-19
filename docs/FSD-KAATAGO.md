@@ -1,6 +1,6 @@
 # KaataGo — Functional Specification Document
 
-**Versi Aplikasi:** 2.6.0 (build 104)
+**Versi Aplikasi:** 2.6.1 (build 105)
 **Versi Dokumen:** 2.6
 **Tanggal Terbit:** 17 Agustus 2026
 **Status:** Rilis
@@ -675,6 +675,7 @@ satunya.
 | F-VC-26 | Batch dapat ditandai **khusus pengguna baru** — hanya bisa ditebus yang belum pernah punya pesanan terbayar di resto mana pun |
 | F-VC-27 | Penolakannya menyebut sebabnya: "Voucher ini hanya untuk pengguna baru KaataGo" |
 | F-VC-28 | Syarat itu ikut disebut di pengumuman kotak masuknya |
+| F-VC-29 | Pelanggan **tamu** tidak melihat menu Voucher Saya maupun **Pakai Voucher** di keranjang |
 
 > **Kenapa nominalnya exact, bukan persentase.** Anggaran promo yang
 > ditetapkan di muka bisa dihitung sampai habis. "Diskon 20%" pada
@@ -744,6 +745,11 @@ satunya.
 > tanpa uang sungguhan adalah cara paling rapi menutupi selisih laci.
 > Kasir tetap boleh melihatnya, karena angkanya memengaruhi saldo yang
 > dia pertanggungjawabkan.
+
+> **Kenapa voucher disembunyikan dari tamu.** Voucher menempel pada
+> akun, bukan pada perangkat, dan penebusannya ditolak server tanpa
+> email. Daftar yang dibuka tamu selalu kosong — dan yang menekannya
+> akan mengira vouchernya hilang, padahal ia memang belum pernah punya.
 
 > **Kenapa "pengguna baru" dihitung se-KaataGo, bukan per resto.**
 > Voucher ini promo KaataGo. Orang yang sudah rutin memesan di resto
