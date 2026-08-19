@@ -1,7 +1,7 @@
 # KaataGo — Technical Specification Document
 
-**Versi Aplikasi:** 2.8.1 (build 110)
-**Versi Dokumen:** 1.6
+**Versi Aplikasi:** 2.9.0 (build 111)
+**Versi Dokumen:** 1.7
 **Tanggal Terbit:** 17 Agustus 2026
 **Status:** Rilis
 **Jenis Dokumen:** TSD — sisi teknis

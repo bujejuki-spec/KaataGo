@@ -1,4 +1,6 @@
 import 'dart:convert';
+
+import 'opening_hours.dart';
 import 'order_type.dart';
 
 /// Hardcoded restaurant category options, roughly matching the
@@ -83,6 +85,11 @@ class Restaurant {
   /// daripada daftar yang sesekali salah ketik.
   final List<String> facilities;
 
+  /// Jam buka per hari. Kosong berarti belum diisi — bukan berarti
+  /// tutup selamanya, jadi layarnya tidak boleh menyimpulkan apa pun
+  /// dari daftar yang kosong.
+  final OpeningHours openingHours;
+
   /// Optional store logo, base64-encoded. Shared between Super Admin and
   /// Admin — whoever uploads it, either can replace or clear it.
   final String? logoBase64;
@@ -90,6 +97,7 @@ class Restaurant {
   Restaurant({
     required this.id,
     this.facilities = const [],
+    this.openingHours = OpeningHours.kosong,
     required this.name,
     required this.address,
     this.category,
@@ -126,6 +134,7 @@ class Restaurant {
         'dine_in_enabled': dineInEnabled,
         'take_away_enabled': takeAwayEnabled,
         'facilities': facilities,
+        'opening_hours': openingHours.toJson(),
       };
 
   static List<String> _facilities(Object? raw) {
@@ -155,6 +164,7 @@ class Restaurant {
       // sqflite. Kolom yang sama sampai dalam bentuk berbeda tergantung
       // dari mana barisnya datang.
       facilities: _facilities(map['facilities']),
+      openingHours: OpeningHours.fromRaw(map['opening_hours']),
       address: map['address'] as String? ?? '',
       category: map['category'] as String?,
       active: map['active'] as bool? ?? true,

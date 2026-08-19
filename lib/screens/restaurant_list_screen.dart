@@ -1,3 +1,5 @@
+import '../widgets/app_toast.dart';
+import 'merchant_info_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
@@ -134,6 +136,14 @@ class _RestaurantListScreenState extends State<RestaurantListScreen> {
     if (_me == null) return matched;
 
     matched.sort((a, b) {
+      // Yang tutup selalu di bawah, sedekat apa pun. Tempat terdekat
+      // yang sedang tutup bukan tempat yang bisa dipilih — menaruhnya
+      // di puncak daftar berarti baris teratas justru satu-satunya yang
+      // tidak berguna sekarang.
+      final ta = _tutup(a);
+      final tb = _tutup(b);
+      if (ta != tb) return ta ? 1 : -1;
+
       final da = _distanceKm(a);
       final db = _distanceKm(b);
       if (da == null && db == null) return a.name.compareTo(b.name);
@@ -152,11 +162,37 @@ class _RestaurantListScreenState extends State<RestaurantListScreen> {
       final km = _distanceKm(r);
       if (km != null && km <= _nearbyRadiusKm) withDistance.add((r, km));
     }
-    withDistance.sort((a, b) => a.$2.compareTo(b.$2));
+    withDistance.sort((a, b) {
+      final ta = _tutup(a.$1);
+      final tb = _tutup(b.$1);
+      if (ta != tb) return ta ? 1 : -1;
+      return a.$2.compareTo(b.$2);
+    });
     return withDistance.map((e) => e.$1).toList();
   }
 
+  /// Sedang tutup menurut jam bukanya sendiri.
+  ///
+  /// Merchant yang belum mengisi jam bukanya tidak dianggap tutup —
+  /// daftar kosong berarti belum diisi, bukan berarti tutup selamanya,
+  /// dan menutup pintunya karena setelan yang belum disentuh adalah
+  /// kehilangan pesanan yang tidak pernah dia sadari.
+  bool _tutup(Restaurant resto) =>
+      resto.openingHours.adaIsinya &&
+      !resto.openingHours.bukaPada(DateTime.now());
+
   Future<void> _select(Restaurant resto) async {
+    if (_tutup(resto)) {
+      // Dihentikan di sini, bukan dibiarkan masuk lalu gagal saat
+      // checkout. Yang sudah memilih menu dan menyusun keranjang lalu
+      // ditolak di ujung akan mengira aplikasinya yang rusak.
+      AppToast.show(
+        context,
+        'Merchant lagi tutup nih, silakan pilih merchant lainnya dulu ya.',
+        isError: true,
+      );
+      return;
+    }
     await context.read<TableSessionProvider>().setResto(resto.id);
     if (!mounted) return;
     // Pola yang sama dengan ScanTableScreen: kembali ke layar customer,
@@ -250,7 +286,33 @@ class _RestaurantListScreenState extends State<RestaurantListScreen> {
       clipBehavior: Clip.antiAlias,
       child: ListTile(
         leading: RestoLogoAvatar(logoBase64: resto.logoBase64),
-        title: Text(resto.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Row(
+          children: [
+            Flexible(
+              child: Text(resto.name,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
+            ),
+            if (_tutup(resto)) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.13),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Text(
+                  'Tutup',
+                  style: TextStyle(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.red),
+                ),
+              ),
+            ],
+          ],
+        ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -291,11 +353,32 @@ class _RestaurantListScreenState extends State<RestaurantListScreen> {
                 children: [
                   for (final f in resto.facilities.take(4))
                     _FasilitasChip(nama: f),
+                  // "+6" yang tidak bisa dibuka cuma memberi tahu ada
+                  // yang disembunyikan tanpa cara melihatnya — dan yang
+                  // disembunyikan itu bisa jadi justru yang dicari.
                   if (resto.facilities.length > 4)
-                    Text('+${resto.facilities.length - 4}',
-                        style: TextStyle(
+                    InkWell(
+                      onTap: () => _bukaInfo(context, resto),
+                      borderRadius: BorderRadius.circular(7),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(7),
+                          border: Border.all(
+                              color: KaataTheme.brandOf(context)
+                                  .withOpacity(0.5)),
+                        ),
+                        child: Text(
+                          '+${resto.facilities.length - 4} lainnya',
+                          style: TextStyle(
                             fontSize: 11,
-                            color: KaataTheme.mutedOf(context))),
+                            fontWeight: FontWeight.w600,
+                            color: KaataTheme.brandOf(context),
+                          ),
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ],
@@ -308,6 +391,11 @@ class _RestaurantListScreenState extends State<RestaurantListScreen> {
             // Ikut ditawarkan di sini, bukan hanya setelah masuk:
             // memilih resto sering justru soal "yang mana yang paling
             // dekat".
+            IconButton(
+              icon: const Icon(Icons.info_outline),
+              tooltip: 'Info merchant',
+              onPressed: () => _bukaInfo(context, resto),
+            ),
             if (resto.hasLocation)
               IconButton(
                 icon: const Icon(Icons.directions_outlined),
@@ -483,4 +571,13 @@ class _FasilitasChip extends StatelessWidget {
       ),
     );
   }
+}
+
+
+/// Membuka Info Merchant — alamat, fasilitas lengkap, jam buka, dan
+/// penilaian orang yang sudah ke sana.
+void _bukaInfo(BuildContext context, Restaurant merchant) {
+  Navigator.of(context).push(
+    MaterialPageRoute(builder: (_) => MerchantInfoScreen(merchant: merchant)),
+  );
 }

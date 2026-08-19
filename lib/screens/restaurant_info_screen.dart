@@ -1,3 +1,4 @@
+import '../models/opening_hours.dart';
 import 'dart:convert';
 import 'dart:io';
 
@@ -42,6 +43,9 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
 
   /// Fasilitas yang tersedia di tempat ini.
   final List<String> _fasilitas = [];
+
+  /// Jam buka per hari. Hari yang tidak ada di sini berarti tutup.
+  final Map<int, (String, String)> _jam = {};
   final _fasilitasBaru = TextEditingController();
 
   /// Yang paling sering dipakai, ditawarkan sebagai ketukan cepat.
@@ -129,6 +133,9 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
       _fasilitas
         ..clear()
         ..addAll(resto.facilities);
+      _jam
+        ..clear()
+        ..addAll(resto.openingHours.perHari);
       _selectedCategory = resto.category;
       _existingLogo = resto.logoBase64;
       _active = resto.active;
@@ -281,6 +288,90 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
     });
   }
 
+  /// Satu baris jam buka: hari, saklarnya, dan dua jamnya.
+  Widget _barisJam(int hari) {
+    final ada = _jam.containsKey(hari);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 96,
+            child: Row(
+              children: [
+                Checkbox(
+                  value: ada,
+                  visualDensity: VisualDensity.compact,
+                  onChanged: !_editing
+                      ? null
+                      : (v) => setState(() {
+                            if (v == true) {
+                              // Jam bawaannya diisi supaya yang
+                              // mencentang tidak menyimpan hari buka
+                              // tanpa jam sama sekali.
+                              _jam[hari] = ('08:00', '22:00');
+                            } else {
+                              _jam.remove(hari);
+                            }
+                          }),
+                ),
+                Expanded(
+                  child: Text(OpeningHours.namaHari[hari]!,
+                      style: const TextStyle(fontSize: 13)),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: !ada
+                ? Text('Tutup',
+                    style: TextStyle(
+                        fontSize: 13, color: KaataTheme.mutedOf(context)))
+                : Row(
+                    children: [
+                      Expanded(child: _pilihJam(hari, buka: true)),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 6),
+                        child: Text('–'),
+                      ),
+                      Expanded(child: _pilihJam(hari, buka: false)),
+                    ],
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _pilihJam(int hari, {required bool buka}) {
+    final nilai = buka ? _jam[hari]!.$1 : _jam[hari]!.$2;
+    return OutlinedButton(
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 6),
+        minimumSize: const Size(0, 38),
+      ),
+      onPressed: !_editing
+          ? null
+          : () async {
+              final bagian = nilai.split(':');
+              final awal = TimeOfDay(
+                hour: int.tryParse(bagian.first) ?? 8,
+                minute: int.tryParse(bagian.last) ?? 0,
+              );
+              final pilih =
+                  await showTimePicker(context: context, initialTime: awal);
+              if (pilih == null || !mounted) return;
+              final teks = '${pilih.hour.toString().padLeft(2, '0')}:'
+                  '${pilih.minute.toString().padLeft(2, '0')}';
+              setState(() {
+                final lama = _jam[hari]!;
+                _jam[hari] = buka ? (teks, lama.$2) : (lama.$1, teks);
+              });
+            },
+      child: Text(nilai, style: const TextStyle(fontSize: 13)),
+    );
+  }
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     final toast = AppToast.of(context);
@@ -309,6 +400,7 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
         dineInEnabled: _dineIn,
         takeAwayEnabled: _takeAway,
         facilities: List<String>.from(_fasilitas),
+        openingHours: OpeningHours(Map<int, (String, String)>.from(_jam)),
       ));
       // Keep local state in step with what was just written, so a second
       // edit round doesn't re-upload or resurrect a removed logo.
@@ -492,6 +584,19 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
                           ? null
                           : (v) => setState(() => _takeAway = v),
                     ),
+                    const SizedBox(height: 22),
+                    const Text('Jam Buka',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 15)),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Hari yang tidak dicentang berarti tutup. Ditampilkan '
+                      'ke pelanggan di Info Merchant.',
+                      style: TextStyle(
+                          fontSize: 12, color: KaataTheme.mutedOf(context)),
+                    ),
+                    const SizedBox(height: 8),
+                    for (var h = 1; h <= 7; h++) _barisJam(h),
                     const SizedBox(height: 22),
                     const Text('Fasilitas',
                         style: TextStyle(

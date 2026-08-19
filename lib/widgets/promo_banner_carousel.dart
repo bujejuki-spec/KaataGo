@@ -285,25 +285,12 @@ class _PromoBannerCarouselState extends State<PromoBannerCarousel> {
           ),
           ),
         ),
-        if (_banners.length > 1) ...[
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              for (var i = 0; i < _banners.length; i++)
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 250),
-                  margin: const EdgeInsets.symmetric(horizontal: 3),
-                  width: i == _index ? 18 : 6,
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: i == _index ? KaataTheme.brand : KaataTheme.borderOf(context),
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                ),
-            ],
-          ),
-        ],
+        // Titik penanda halaman disembunyikan.
+        //
+        // Bannernya berganti sendiri tiap lima detik dan bisa digeser;
+        // titik-titik di bawahnya tidak menambah apa pun yang belum
+        // terlihat, dan justru memisahkan bannernya dari daftar menu
+        // yang mestinya langsung menyambung.
         const SizedBox(height: 4),
       ],
     );

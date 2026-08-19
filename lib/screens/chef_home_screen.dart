@@ -1,3 +1,4 @@
+import '../widgets/penilaian_tile.dart';
 import 'package:flutter/material.dart';
 
 import '../theme.dart';
@@ -9,7 +10,6 @@ import '../db/order_repository.dart';
 import '../models/customer_order.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/inbox_icon_button.dart';
-import '../widgets/notification_test_tile.dart';
 import '../widgets/kitchen_checklist_dialog.dart';
 import '../utils/logout_confirm.dart';
 import '../widgets/grouped_order_list.dart';
@@ -92,10 +92,18 @@ class _ChefHomeScreenState extends State<ChefHomeScreen> {
             if (!auth.isOwner) ...[
               const AppearanceIconButton(),
               const InboxIconButton(),
+              // Tombol Tes Notifikasi dibuang: push-nya sudah berjalan,
+              // dan tombol uji yang tertinggal di layar pemakai
+              // akhirnya ditekan seseorang yang mengira itu fitur.
+              //
+              // Penilaian pelanggan menggantikannya di sini. Layar ini
+              // berupa tab, bukan daftar menu, jadi pintunya berupa
+              // ikon — chef yang menerima keluhan di meja juga yang
+              // paling perlu tahu apa yang ditulis orang setelah pulang.
               IconButton(
-                icon: const Icon(Icons.notifications_active_outlined),
-                tooltip: 'Tes Notifikasi',
-                onPressed: () => showNotificationTest(context),
+                icon: const Icon(Icons.star_outline),
+                tooltip: 'Penilaian Pelanggan',
+                onPressed: () => bukaPenilaian(context),
               ),
             ],
             // Owner membuka layar ini dari hub-nya, dan hub itu sudah

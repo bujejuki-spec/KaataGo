@@ -71,6 +71,8 @@ FILES=(
   order_number.sql
   customer_display.sql
   resto_facilities.sql
+  merchant_reviews.sql
+  review_prompt.sql
 )
 
 {

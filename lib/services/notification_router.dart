@@ -1,3 +1,5 @@
+import '../screens/merchant_review_form.dart';
+import '../db/restaurant_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -36,12 +38,26 @@ class NotificationRouter {
   /// Aplikasinya tetap terbuka seperti biasa — itu lebih baik daripada
   /// melempar orangnya ke halaman yang salah karena nama kejadiannya
   /// berubah di server dan aplikasinya belum diperbarui.
-  static void buka(String? event) {
+  static Future<void> buka(String? event, {Map<String, dynamic>? data}) async {
     final nav = navigatorKey.currentState;
     if (nav == null || event == null) return;
 
     final context = nav.context;
     final auth = context.read<AuthProvider>();
+
+    // Ajakan menilai butuh merchant-nya, dan merchant-nya harus dibaca
+    // dulu — jadi ia ditangani terpisah dari tabel tujuan yang serba
+    // langsung di bawah.
+    if (event == 'review_prompt') {
+      final restoId = data?['resto_id'] as String?;
+      if (restoId == null) return;
+      final m = await RestaurantRepository().getOnce(restoId);
+      if (m == null) return;
+      nav.push(MaterialPageRoute(
+        builder: (_) => MerchantReviewForm(merchant: m),
+      ));
+      return;
+    }
 
     final tujuan = _tujuanUntuk(event, auth);
     if (tujuan == null) return;

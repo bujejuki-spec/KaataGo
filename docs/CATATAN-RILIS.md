@@ -13,6 +13,17 @@ Formatnya dibaca `scripts/release.sh`: judul `## <versi>`, lalu
 poin-poinnya. Versi yang tidak punya bagiannya di sini tetap terbit,
 hanya pengumumannya memakai kalimat umum.
 
+## 2.9.0
+
+- Kasih ulasan untuk merchant: bintang, komentar, dan foto — muncul di
+  daftar pilih merchant dan di halaman Info Merchant
+- Info Merchant baru: alamat, nomor telepon, fasilitas, jam buka, dan
+  apa kata pelanggan lain
+- Jam buka per hari, diatur merchant sendiri — yang sedang tutup
+  ditandai dan turun ke bawah daftar
+- Sejam sesudah bayar, KaataGo mengajak kamu menilai tempatnya
+- Merchant bisa membaca seluruh penilaian yang masuk
+
 ## 2.8.1
 
 - Jarak tombol Keluar di menu utama disamakan dengan tombol lainnya

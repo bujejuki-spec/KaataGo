@@ -746,12 +746,20 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
           ),
           body: Column(
             children: [
+              // Hanya untuk tamu.
+              //
               // Tamu tidak punya kotak masuk, jadi inilah satu-satunya
-              // jalan pemberitahuan versi baru sampai ke mereka.
-              const Padding(
-                padding: EdgeInsets.only(top: 12),
-                child: UpdateBanner(),
-              ),
+              // jalan pemberitahuan versi baru sampai ke mereka. Yang
+              // sudah masuk punya kotak masuknya sendiri — menampilkan
+              // spanduk yang sama di sini berarti kabar yang sama
+              // ditawarkan dua kali di dua tempat, dan yang kedua
+              // muncul justru di layar tempat orang sedang memilih mau
+              // makan di mana.
+              if (!loggedInAsCustomer)
+                const Padding(
+                  padding: EdgeInsets.only(top: 12),
+                  child: UpdateBanner(),
+                ),
               Expanded(
                 child: Padding(
             padding: const EdgeInsets.all(24),

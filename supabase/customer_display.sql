@@ -122,11 +122,16 @@ revoke all on function set_customer_display(text, text, bigint, text, text)
 -- Tanpa ini layarnya baru berubah saat dimuat ulang — dan tidak ada
 -- yang memuat ulang layar yang menghadap pelanggan.
 --
--- Kalau tabelnya sudah terdaftar, perintah ini gagal dengan "already
--- member of publication". Itu bukan kesalahan; lanjutkan ke bagian
--- berikutnya.
-
-alter publication supabase_realtime add table customer_displays;
+-- Dibungkus penangkap galat, bukan sekadar diberi catatan "abaikan
+-- kalau gagal". Menjalankan ulang berkas ini adalah hal biasa, dan
+-- galat di sini menghentikan sisa bagiannya — jadi catatan yang
+-- menyuruh mengabaikannya justru menyuruh mengabaikan sesuatu yang
+-- sudah terlanjur merusak jalannya.
+do $$
+begin
+  alter publication supabase_realtime add table customer_displays;
+exception when duplicate_object then null;
+end $$;
 
 -- ─────────────────────────────────────────────────────────────────────
 -- Memeriksanya

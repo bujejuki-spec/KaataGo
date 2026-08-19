@@ -110,7 +110,11 @@ class PushService {
   /// Pengumuman tidak punya aliran realtime yang menampilkannya. Tanpa
   /// daftar ini, pengumuman yang tiba selagi orangnya memandangi
   /// layarnya adalah satu-satunya yang tidak pernah dia dengar.
-  static const _foregroundEvents = {'announcement'};
+  ///
+  /// Ajakan menilai ikut di sini dengan alasan yang sama: ia tidak
+  /// punya aliran realtime yang menampilkannya, dan yang tiba selagi
+  /// orangnya memandangi layar akan hilang tanpa pernah terlihat.
+  static const _foregroundEvents = {'announcement', 'review_prompt'};
 
   /// Membuka halaman yang dimaksud notifikasinya.
   ///
@@ -119,7 +123,12 @@ class PushService {
   /// mengingat sendiri apa yang barusan dikabarkan lalu mencarinya lewat
   /// tiga ketukan lagi.
   void _onTap(RemoteMessage message) {
-    NotificationRouter.buka(message.data['event'] as String?);
+    // Seluruh datanya ikut: sebagian tujuan butuh lebih dari nama
+    // kejadiannya — ajakan menilai perlu tahu merchant mana.
+    NotificationRouter.buka(
+      message.data['event'] as String?,
+      data: Map<String, dynamic>.from(message.data),
+    );
   }
 
   void _onForeground(RemoteMessage message) {
@@ -131,6 +140,7 @@ class PushService {
 
     NotificationService.instance.showAnnouncement(
       event: event,
+      restoId: message.data['resto_id'] as String?,
       // Dari hashCode pesannya, bukan penghitung yang naik terus:
       // pengumuman yang sama yang tiba dua kali menimpa dirinya
       // sendiri alih-alih berbaris dua kali di panel notifikasi.

@@ -72,7 +72,7 @@ void main() {
       // Notifikasi yang ditampilkan sendiri oleh aplikasi membawa nama
       // kejadiannya di payload.
       expect(push, contains('event: event,'));
-      expect(notif, contains("payload: event == null ? null : 'event:\$event'"));
+      expect(notif, contains("'event:\$event\${restoId == null ? '' : '?resto_id=\$restoId'}'"));
     });
   });
 
@@ -80,7 +80,8 @@ void main() {
     test('dibedakan awalannya, bukan ditebak dari bentuknya', () {
       // Kolom yang sama dipakai pemasang APK, yang isinya jalur berkas.
       expect(main_, contains("payload.startsWith('event:')"));
-      expect(main_, contains('NotificationRouter.buka(payload.substring(6))'));
+      expect(main_, contains("final isi = payload.substring(6);"));
+      expect(main_, contains('NotificationRouter.buka(isi)'));
     });
 
     test('pemasang APK tetap jalan', () {

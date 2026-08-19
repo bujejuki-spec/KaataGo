@@ -40,7 +40,16 @@ Future<void> main() async {
     // pemasang pembaruan, dan nama kejadian dari notifikasi biasa.
     // Awalannya yang membedakan, bukan tebakan dari bentuk isinya.
     if (payload.startsWith('event:')) {
-      NotificationRouter.buka(payload.substring(6));
+      final isi = payload.substring(6);
+      final pisah = isi.indexOf('?');
+      if (pisah < 0) {
+        NotificationRouter.buka(isi);
+        return;
+      }
+      NotificationRouter.buka(
+        isi.substring(0, pisah),
+        data: Uri.splitQueryString(isi.substring(pisah + 1)),
+      );
       return;
     }
     OpenFilex.open(payload, type: 'application/vnd.android.package-archive');

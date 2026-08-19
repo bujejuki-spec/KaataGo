@@ -116,8 +116,35 @@ create policy "public read/write mail_requests" on mail_requests for all using (
 
 -- Enable realtime (Firestore-style live streams) on the tables the app
 -- watches with .stream()/.channel() subscriptions.
-alter publication supabase_realtime add table orders;
-alter publication supabase_realtime add table sessions;
-alter publication supabase_realtime add table products;
-alter publication supabase_realtime add table restaurants;
-alter publication supabase_realtime add table settings;
+--
+-- Dibungkus penangkap galat: tabel yang sudah terdaftar membuat
+-- perintahnya gagal, dan galat itu menghentikan sisa berkasnya.
+do $$
+begin
+  alter publication supabase_realtime add table orders;
+exception when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  alter publication supabase_realtime add table sessions;
+exception when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  alter publication supabase_realtime add table products;
+exception when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  alter publication supabase_realtime add table restaurants;
+exception when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  alter publication supabase_realtime add table settings;
+exception when duplicate_object then null;
+end $$;

@@ -1,12 +1,12 @@
+import '../widgets/kaata_qr_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 
 import '../db/customer_display_repository.dart';
+import '../db/restaurant_repository.dart';
 import '../providers/auth_provider.dart';
-import '../providers/settings_provider.dart';
 import '../theme.dart';
 import '../widgets/promo_banner_carousel.dart';
 
@@ -33,7 +33,17 @@ class CustomerDisplayScreen extends StatefulWidget {
 
 class _CustomerDisplayScreenState extends State<CustomerDisplayScreen> {
   final _repo = CustomerDisplayRepository();
+  final _merchantRepo = RestaurantRepository();
   Stream<TampilanLayar>? _aliran;
+
+  /// Nama merchant-nya, dibaca dari barisnya sendiri.
+  ///
+  /// Bukan dari SettingsProvider: nilai bawaannya "Toko Kamu", dan itu
+  /// yang terpampang ke pelanggan selama setelannya belum sempat
+  /// dimuat — nama yang jelas bukan nama tempat itu, di layar yang
+  /// justru paling dilihat orang luar.
+  String? _namaMerchant;
+
   String? _restoId;
 
   @override
@@ -51,6 +61,17 @@ class _CustomerDisplayScreenState extends State<CustomerDisplayScreen> {
     super.dispose();
   }
 
+  Future<void> _muatNama(String restoId) async {
+    try {
+      final m = await _merchantRepo.getOnce(restoId);
+      if (!mounted || m == null) return;
+      setState(() => _namaMerchant = m.name);
+    } catch (_) {
+      // Namanya gagal dibaca: layarnya tetap jalan tanpa judul, bukan
+      // menampilkan nama yang salah.
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final restoId = context.watch<AuthProvider>().restoId;
@@ -62,6 +83,7 @@ class _CustomerDisplayScreenState extends State<CustomerDisplayScreen> {
     if (_restoId != restoId) {
       _restoId = restoId;
       _aliran = _repo.watch(restoId);
+      _muatNama(restoId);
     }
 
     return Scaffold(
@@ -72,9 +94,13 @@ class _CustomerDisplayScreenState extends State<CustomerDisplayScreen> {
           builder: (context, snapshot) {
             final t = snapshot.data ?? const TampilanLayar();
             return switch (t.status) {
-              StatusLayar.menunggu => _Menunggu(tampilan: t),
+              StatusLayar.menunggu =>
+                _Menunggu(tampilan: t, nama: _namaMerchant),
               StatusLayar.lunas => _Lunas(tampilan: t),
-              StatusLayar.menganggur => _Menganggur(restoId: restoId),
+              StatusLayar.menganggur => _Menganggur(
+                  restoId: restoId,
+                  nama: _namaMerchant,
+                ),
             };
           },
         ),
@@ -90,22 +116,20 @@ class _CustomerDisplayScreenState extends State<CustomerDisplayScreen> {
 /// adalah ruang iklan yang dibuang.
 class _Menganggur extends StatelessWidget {
   final String restoId;
+  final String? nama;
 
-  const _Menganggur({required this.restoId});
+  const _Menganggur({required this.restoId, this.nama});
 
   @override
   Widget build(BuildContext context) {
-    final nama = context.watch<SettingsProvider>().merchantName;
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text(nama,
-            style: const TextStyle(fontSize: 30, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 6),
-        Text('Selamat datang',
-            style:
-                TextStyle(fontSize: 16, color: KaataTheme.mutedOf(context))),
-        const SizedBox(height: 24),
+        if (nama != null)
+          Text(nama!,
+              style:
+                  const TextStyle(fontSize: 30, fontWeight: FontWeight.bold)),
+        if (nama != null) const SizedBox(height: 24),
         PromoBannerCarousel(restoId: restoId),
       ],
     );
@@ -114,8 +138,9 @@ class _Menganggur extends StatelessWidget {
 
 class _Menunggu extends StatelessWidget {
   final TampilanLayar tampilan;
+  final String? nama;
 
-  const _Menunggu({required this.tampilan});
+  const _Menunggu({required this.tampilan, this.nama});
 
   @override
   Widget build(BuildContext context) {
@@ -147,22 +172,25 @@ class _Menunggu extends StatelessWidget {
           ),
           const SizedBox(height: 22),
           if (tampilan.adaQr) ...[
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: QrImageView(
+            // Kartu QR KaataGo yang sama dengan di layar kasir dan QR
+            // meja — bingkai, logo, dan tulisannya sudah dirancang
+            // untuk dipindai dari seberang meja. Kotak putih polos
+            // tanpa bingkai terbaca seperti gambar yang belum selesai
+            // dimuat.
+            //
+            // Center, bukan sekadar ikut Column: lebarnya dipatok
+            // sendiri oleh kartunya, jadi tanpa ini ia menempel ke kiri
+            // pada layar yang lebih lebar dari kartunya.
+            Center(
+              child: KaataQrCard(
                 data: tampilan.qrString!,
-                size: 260,
-                backgroundColor: Colors.white,
+                kicker: 'BAYAR DENGAN QRIS',
+                title: nama ?? 'Pembayaran',
+                subtitle: 'Pindai kodenya dengan aplikasi pembayaranmu',
+                footer: 'Arahkan kamera HP ke kode di atas',
+                width: 300,
               ),
             ),
-            const SizedBox(height: 14),
-            Text('Pindai untuk membayar',
-                style: TextStyle(
-                    fontSize: 14, color: KaataTheme.mutedOf(context))),
           ] else
             Text('Silakan bayar di kasir',
                 style: TextStyle(

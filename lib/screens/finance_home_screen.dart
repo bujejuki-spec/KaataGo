@@ -1,3 +1,4 @@
+import '../widgets/penilaian_tile.dart';
 import 'billing_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -171,6 +172,8 @@ class FinanceHomeScreen extends StatelessWidget {
                       MaterialPageRoute(builder: (_) => const SettingsScreen()),
                     ),
                   ),
+                const PenilaianTile(),
+                const SizedBox(height: 12),
                 const InboxTile(),
                 HubMenuTile(
                     icon: Icons.brightness_6_outlined,

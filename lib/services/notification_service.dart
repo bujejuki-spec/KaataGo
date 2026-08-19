@@ -170,6 +170,7 @@ class NotificationService {
     required String title,
     required String body,
     String? event,
+    String? restoId,
   }) =>
       _show(
         channel: _channels[3],
@@ -180,7 +181,14 @@ class NotificationService {
         // APK, yang isinya jalur berkas. Satu kolom payload dipakai dua
         // hal, dan yang membedakannya harus terbaca — bukan ditebak
         // dari bentuk isinya.
-        payload: event == null ? null : 'event:$event',
+        //
+        // Sebagian tujuan butuh lebih dari nama kejadiannya: ajakan
+        // menilai perlu tahu merchant mana. Ditempel sebagai kueri,
+        // bentuk yang sudah dikenal semua orang dan gampang dibaca
+        // manusia saat menelusuri log.
+        payload: event == null
+            ? null
+            : 'event:$event${restoId == null ? '' : '?resto_id=$restoId'}',
       );
 
   /// Dipanggil saat notifikasi diketuk, dengan payload-nya.

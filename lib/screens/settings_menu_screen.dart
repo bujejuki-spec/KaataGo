@@ -1,3 +1,4 @@
+import '../widgets/penilaian_tile.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -76,6 +77,8 @@ class SettingsMenuScreen extends StatelessWidget {
                     MaterialPageRoute(builder: (_) => const RestaurantInfoScreen()),
                   ),
                 ),
+                const SizedBox(height: 12),
+                const PenilaianTile(),
                 const SizedBox(height: 12),
                 HubMenuTile(
                   icon: Icons.campaign_outlined,
