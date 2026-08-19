@@ -633,11 +633,16 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                     color: const Color(0xFF0EA5E9),
                     onTap: () => showAppearanceDialog(context),
                   ),
-                  const SizedBox(height: 12),
                   // Tombol tes notifikasi disembunyikan: push-nya sudah
                   // berjalan, dan tombol uji yang tertinggal di layar
                   // pemakai akhirnya ditekan seseorang yang mengira itu
                   // fitur.
+                  //
+                  // Jaraknya cuma satu, bukan dua. Saat tilenya dibuang,
+                  // kedua SizedBox pengapitnya sempat tertinggal — dan
+                  // celah 24 di antara barisan yang semuanya berjarak 12
+                  // terbaca seperti ada sesuatu yang gagal dimuat di
+                  // situ.
                   const SizedBox(height: 12),
                   HubMenuTile(
                     icon: Icons.logout,
