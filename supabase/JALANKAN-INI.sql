@@ -17,7 +17,7 @@
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 1 dari 44 — employee_surrogate_key.sql
+-- BAGIAN 1 dari 45 — employee_surrogate_key.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — email karyawan jadi bisa diubah.
@@ -68,7 +68,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 2 dari 44 — promo_banner.sql
+-- BAGIAN 2 dari 45 — promo_banner.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — banner promo per resto.
@@ -130,7 +130,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 3 dari 44 — rilis_setor_petty_inbox.sql
+-- BAGIAN 3 dari 45 — rilis_setor_petty_inbox.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — setoran & top up petty cash berjenjang, GL Suspense, dan
@@ -615,7 +615,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 4 dari 44 — customer_cash_payment.sql
+-- BAGIAN 4 dari 45 — customer_cash_payment.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pelanggan boleh memilih bayar tunai di kasir.
@@ -685,7 +685,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 5 dari 44 — push_notifications.sql
+-- BAGIAN 5 dari 45 — push_notifications.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — notifikasi yang tetap sampai walau aplikasinya tertutup.
@@ -1033,7 +1033,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 6 dari 44 — announcement_categories.sql
+-- BAGIAN 6 dari 45 — announcement_categories.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pengumuman dibagi dua jenis, dan admin resto boleh mengirim.
@@ -1122,7 +1122,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 7 dari 44 — fix_device_tokens_rls.sql
+-- BAGIAN 7 dari 45 — fix_device_tokens_rls.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pendaftaran token push lewat fungsi, bukan tulis langsung.
@@ -1241,7 +1241,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 8 dari 44 — push_trigger_pg_net.sql
+-- BAGIAN 8 dari 45 — push_trigger_pg_net.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — panggil Edge Function langsung dari database, tanpa webhook.
@@ -1354,7 +1354,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 9 dari 44 — payment_gateway.sql
+-- BAGIAN 9 dari 45 — payment_gateway.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — QRIS sungguhan lewat Xendit.
@@ -1508,7 +1508,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 10 dari 44 — gateway_settlement.sql
+-- BAGIAN 10 dari 45 — gateway_settlement.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pencairan dana dari payment gateway.
@@ -1689,7 +1689,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 11 dari 44 — resto_payment_accounts.sql
+-- BAGIAN 11 dari 45 — resto_payment_accounts.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pencairan langsung ke rekening masing-masing resto.
@@ -1782,7 +1782,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 12 dari 44 — counter_charge.sql
+-- BAGIAN 12 dari 45 — counter_charge.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — tagihan QRIS di meja kasir.
@@ -1819,7 +1819,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 13 dari 44 — announcement_push.sql
+-- BAGIAN 13 dari 45 — announcement_push.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pengumuman ikut membunyikan HP.
@@ -1876,7 +1876,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 14 dari 44 — cash_payment_expiry.sql
+-- BAGIAN 14 dari 45 — cash_payment_expiry.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pesanan tunai yang tidak dilunasi di kasir hangus sendiri.
@@ -1962,7 +1962,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 15 dari 44 — level_groups.sql
+-- BAGIAN 15 dari 45 — level_groups.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — tiap resto menyusun sendiri kelompok levelnya.
@@ -2088,7 +2088,7 @@ create trigger trg_seed_level_groups
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 16 dari 44 — resto_order_types.sql
+-- BAGIAN 16 dari 45 — resto_order_types.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — resto menentukan sendiri melayani Dine In, Take Away, atau
@@ -2126,7 +2126,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 17 dari 44 — product_out_of_stock.sql
+-- BAGIAN 17 dari 45 — product_out_of_stock.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — ketersediaan produk ditandai, bukan dihitung.
@@ -2170,7 +2170,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 18 dari 44 — discounts.sql
+-- BAGIAN 18 dari 45 — discounts.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — diskon: per menu (termasuk bundling) atau minimum belanja.
@@ -2377,7 +2377,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 19 dari 44 — promo_banner_period.sql
+-- BAGIAN 19 dari 45 — promo_banner_period.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — banner promo punya masa berlaku.
@@ -2405,7 +2405,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 20 dari 44 — default_gl_accounts.sql
+-- BAGIAN 20 dari 45 — default_gl_accounts.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — resto baru langsung punya bagan akun dan tarif pajaknya.
@@ -2571,7 +2571,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 21 dari 44 — gateway_account_super_admin.sql
+-- BAGIAN 21 dari 45 — gateway_account_super_admin.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pengenal sub-akun Xendit jadi urusan Super Admin saja.
@@ -2612,7 +2612,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 22 dari 44 — announcement_audience.sql
+-- BAGIAN 22 dari 45 — announcement_audience.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pengumuman resto memilih sasarannya: karyawan, pelanggan,
@@ -2685,7 +2685,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 23 dari 44 — kasir_journal_read.sql
+-- BAGIAN 23 dari 45 — kasir_journal_read.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — kasir boleh melihat jurnal dari catatan yang dia buat.
@@ -2721,7 +2721,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 24 dari 44 — cancel_order.sql
+-- BAGIAN 24 dari 45 — cancel_order.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pelanggan boleh membatalkan pesanannya sendiri selama
@@ -2813,7 +2813,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 25 dari 44 — settled_at_counter.sql
+-- BAGIAN 25 dari 45 — settled_at_counter.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — menandai pesanan mandiri yang uangnya diterima di meja
@@ -2855,7 +2855,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 26 dari 44 — discount_min_qty.sql
+-- BAGIAN 26 dari 45 — discount_min_qty.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — diskon dengan syarat jumlah pembelian.
@@ -2885,7 +2885,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 27 dari 44 — discount_product_rules.sql
+-- BAGIAN 27 dari 45 — discount_product_rules.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — syarat jumlah menempel di tiap menu, bukan di promonya.
@@ -2938,7 +2938,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 28 dari 44 — billing.sql
+-- BAGIAN 28 dari 45 — billing.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — langganan bulanan resto.
@@ -3354,7 +3354,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 29 dari 44 — billing_va.sql
+-- BAGIAN 29 dari 45 — billing_va.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — tagihan langganan dibayar lewat Virtual Account Xendit.
@@ -3524,7 +3524,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 30 dari 44 — platform_finance.sql
+-- BAGIAN 30 dari 45 — platform_finance.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — keuangan KaataGo sendiri, terpisah dari keuangan resto.
@@ -3881,7 +3881,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 31 dari 44 — resto_soft_delete.sql
+-- BAGIAN 31 dari 45 — resto_soft_delete.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — menghapus resto tanpa membuang datanya.
@@ -4060,7 +4060,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 32 dari 44 — billing_discount_apply.sql
+-- BAGIAN 32 dari 45 — billing_discount_apply.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — diskon ikut memotong tagihan yang sudah terbit.
@@ -4227,7 +4227,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 33 dari 44 — billing_journal_gross.sql
+-- BAGIAN 33 dari 45 — billing_journal_gross.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pendapatan langganan dicatat sebesar harga penuh.
@@ -4378,7 +4378,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 34 dari 44 — gl_discount_backfill.sql
+-- BAGIAN 34 dari 45 — gl_discount_backfill.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — GL Diskon terisi bawaannya di tiap resto.
@@ -4440,7 +4440,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 35 dari 44 — platform_gl_renumber.sql
+-- BAGIAN 35 dari 45 — platform_gl_renumber.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — nomor akun penyewa platform dipindah ke golongan 11xxxxx.
@@ -4540,7 +4540,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 36 dari 44 — product_toppings.sql
+-- BAGIAN 36 dari 45 — product_toppings.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — topping per menu, berikut harga dan batas pilihnya.
@@ -4582,7 +4582,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 37 dari 44 — vouchers.sql
+-- BAGIAN 37 dari 45 — vouchers.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — voucher untuk pelanggan, dananya benar-benar berpindah.
@@ -5068,7 +5068,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 38 dari 44 — voucher_payouts.sql
+-- BAGIAN 38 dari 45 — voucher_payouts.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — voucher yang dipakai pelanggan dibayarkan sungguhan ke resto.
@@ -5411,7 +5411,7 @@ select cron.schedule('settle-voucher-payouts', '*/15 * * * *',
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 39 dari 44 — voucher_announcement.sql
+-- BAGIAN 39 dari 45 — voucher_announcement.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — voucher yang terbit langsung mengabari pelanggan.
@@ -5539,7 +5539,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 40 dari 44 — voucher_manage.sql
+-- BAGIAN 40 dari 45 — voucher_manage.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — banner voucher, dan menghapus batch yang tidak jadi.
@@ -5727,7 +5727,7 @@ revoke all on function delete_voucher_batch(text) from public, anon;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 41 dari 44 — market_report.sql
+-- BAGIAN 41 dari 45 — market_report.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — laporan pasar untuk Super Admin.
@@ -5886,7 +5886,7 @@ revoke all on function report_idle_restos(integer) from public, anon;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 42 dari 44 — billing_due_day.sql
+-- BAGIAN 42 dari 45 — billing_due_day.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — tanggal tagih 29, 30, 31, dan jatuh tempo berikutnya.
@@ -6042,7 +6042,7 @@ $$;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 43 dari 44 — balance_topup.sql
+-- BAGIAN 43 dari 45 — balance_topup.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — setoran modal ke saldo utama.
@@ -6209,7 +6209,7 @@ create trigger trg_log_balance_topup
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 44 dari 44 — voucher_new_customer.sql
+-- BAGIAN 44 dari 45 — voucher_new_customer.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — voucher khusus pengguna baru.
@@ -6441,3 +6441,140 @@ $$;
 --   order by created_at desc limit 5;
 --
 --   select _pelanggan_baru('orang@contoh.com');
+
+
+-- ═══════════════════════════════════════════════════════════════════
+-- BAGIAN 45 dari 45 — qris_receipt_fields.sql
+-- ═══════════════════════════════════════════════════════════════════
+
+-- KaataGo — rincian kuitansi QRIS dari Xendit, jadi kolomnya sendiri.
+--
+-- Jalankan SETELAH payment_gateway.sql. Aman dijalankan berulang kali.
+--
+-- Seluruh data ini sebenarnya sudah tersimpan sejak awal di kolom
+-- `raw`, apa adanya dari Xendit. Tapi terkubur di dalam JSON ia tidak
+-- bisa dicari, tidak bisa diurutkan, dan tidak bisa dicocokkan
+-- baris-per-baris dengan mutasi di dashboard penyedia — dan itu persis
+-- yang dibutuhkan saat ada satu pembayaran yang angkanya tidak cocok.
+--
+-- `raw` tetap disimpan dan tetap jadi sumber kebenarannya. Kolom di
+-- bawah ini salinan yang dikeluarkan untuk dibaca; kalau suatu saat
+-- Xendit mengganti nama medannya, yang hilang cuma salinannya.
+
+begin;
+
+-- ID Transaksi — pengenal pembayaran di sisi Xendit.
+alter table payment_charges add column if not exists transaction_id text;
+
+-- ID QR — pengenal QR yang dipindai.
+alter table payment_charges add column if not exists qr_id text;
+
+-- ID Product.
+alter table payment_charges add column if not exists product_id text;
+
+-- Mitra, dan nama partnernya.
+alter table payment_charges add column if not exists partner_code text;
+alter table payment_charges add column if not exists partner_name text;
+
+-- ID Kuitansi Mitra — nomor struk di sisi mitra pembayaran.
+alter table payment_charges add column if not exists partner_receipt_id text;
+
+-- Sumber dana.
+alter table payment_charges add column if not exists payment_source text;
+
+-- ID Pengakuisisi.
+alter table payment_charges add column if not exists acquirer_id text;
+
+-- Customer PAN, dan merchant PAN pasangannya.
+--
+-- PAN pelanggan disimpan sebagaimana dikirim Xendit — sudah tersamar
+-- di sisi mereka, dan yang sampai ke sini bukan nomor kartu utuh.
+-- Kolomnya ikut aturan baca yang sama dengan seluruh baris ini:
+-- pegawai resto yang bersangkutan dan Super Admin, bukan pelanggan.
+alter table payment_charges add column if not exists customer_pan text;
+alter table payment_charges add column if not exists merchant_pan text;
+
+-- Status apa adanya dari penyedia, berikut kapan terakhir berubah.
+--
+-- Terpisah dari kolom `status` milik kita sendiri. Yang kita catat
+-- hanya mengenal 'pending' dan 'paid' karena itu yang menentukan
+-- pesanannya boleh jalan atau tidak; yang dikirim Xendit jauh lebih
+-- banyak — ACTIVE, INACTIVE, EXPIRED, FAILED — dan menimpanya ke satu
+-- kolom yang sama berarti kehilangan bedanya antara "belum dibayar"
+-- dan "sudah gagal".
+alter table payment_charges add column if not exists provider_status text;
+alter table payment_charges
+  add column if not exists provider_status_at timestamptz;
+
+-- Sebabnya kalau gagal, apa adanya dari penyedia.
+--
+-- Disimpan supaya yang menanyakan besok pagi tidak perlu membuka log
+-- fungsi edge — dan supaya pelanggan yang bilang "sudah saya bayar tapi
+-- ditolak" bisa dijawab dengan sebab yang sebenarnya.
+alter table payment_charges add column if not exists failure_reason text;
+
+-- Dicari saat mencocokkan satu pembayaran dengan mutasi penyedia.
+create index if not exists payment_charges_transaction_idx
+  on payment_charges (transaction_id);
+create index if not exists payment_charges_partner_receipt_idx
+  on payment_charges (partner_receipt_id);
+
+commit;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- Mengisinya dari yang sudah terlanjur tersimpan
+-- ─────────────────────────────────────────────────────────────────────
+--
+-- Pembayaran yang sudah lewat tetap punya rinciannya di `raw`. Tanggal
+-- berkas ini dijalankan bukan garis pemisah antara yang bisa dicocokkan
+-- dan yang tidak.
+--
+-- Nama medannya dicari di dua tempat: badan callback Xendit membungkus
+-- isinya di `data`, tapi sebagian versi mengirimnya rata di akar.
+
+update payment_charges c
+set provider_status    = coalesce(c.provider_status, d.d ->> 'status'),
+    failure_reason     = coalesce(c.failure_reason,
+                                  d.d ->> 'failure_code',
+                                  d.d ->> 'failure_reason'),
+    transaction_id     = coalesce(c.transaction_id, d.d ->> 'id'),
+    qr_id              = coalesce(c.qr_id, d.d ->> 'qr_id'),
+    product_id         = coalesce(c.product_id, d.d ->> 'product_id'),
+    partner_code       = coalesce(c.partner_code, d.d ->> 'channel_code'),
+    partner_name       = coalesce(c.partner_name, d.d ->> 'partner'),
+    partner_receipt_id = coalesce(c.partner_receipt_id,
+                                  d.pd ->> 'receipt_id'),
+    payment_source     = coalesce(c.payment_source, d.pd ->> 'source'),
+    acquirer_id        = coalesce(c.acquirer_id, d.pd ->> 'acquirer_id'),
+    customer_pan       = coalesce(c.customer_pan, d.pd ->> 'customer_pan'),
+    merchant_pan       = coalesce(c.merchant_pan, d.pd ->> 'merchant_pan')
+from (
+  select id,
+         coalesce(raw -> 'data', raw) as d,
+         coalesce(raw -> 'data' -> 'payment_detail',
+                  raw -> 'payment_detail',
+                  '{}'::jsonb) as pd
+  from payment_charges
+  where raw is not null
+) as d(id, d, pd)
+where c.id = d.id;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- Memeriksanya
+-- ─────────────────────────────────────────────────────────────────────
+--
+--   select created_at, status, provider_status, amount, transaction_id,
+--          qr_id, partner_code, partner_receipt_id, payment_source,
+--          acquirer_id, customer_pan, failure_reason
+--   from payment_charges
+--   order by created_at desc limit 20;
+--
+-- Yang masih menunggu dan yang gagal ikut tersimpan — status penyedia
+-- di kolomnya sendiri, dan `status` milik kita baru berubah jadi 'paid'
+-- saat uangnya benar-benar diterima.
+--
+-- Kolom yang kosong berarti Xendit memang tidak mengirim medan itu
+-- untuk pembayaran tersebut — bukan berarti datanya hilang. Yang
+-- sebenarnya dikirim selalu bisa dilihat utuh:
+--
+--   select raw from payment_charges where reference_id = '...';

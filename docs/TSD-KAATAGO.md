@@ -1,6 +1,6 @@
 # KaataGo — Technical Specification Document
 
-**Versi Aplikasi:** 2.6.1 (build 105)
+**Versi Aplikasi:** 2.6.2 (build 106)
 **Versi Dokumen:** 1.5
 **Tanggal Terbit:** 17 Agustus 2026
 **Status:** Rilis
@@ -529,6 +529,46 @@ Resto yang belum punya sub-akun tetap bisa memakai QR simulasi berikut
 konfirmasi manual. Begitu penyedianya aktif, tombol konfirmasi manual
 itu **dihilangkan** dari layar kasir — meninggalkannya berarti
 menyediakan jalan menyatakan lunas tanpa uang.
+
+### 7.1b Rincian kuitansi QRIS
+
+`supabase/qris_receipt_fields.sql` menambah sepuluh kolom ke
+`payment_charges`: `transaction_id`, `qr_id`, `product_id`,
+`partner_code`, `partner_name`, `partner_receipt_id`, `payment_source`,
+`acquirer_id`, `customer_pan`, `merchant_pan`. `reference_id` sudah ada
+sejak `payment_gateway.sql`.
+
+Semuanya sudah tersimpan di `raw` sejak awal — dan `raw` tetap jadi
+sumber kebenarannya. Yang ditambahkan salinan yang bisa dicari,
+diurutkan, dan dicocokkan baris-per-baris dengan mutasi di dashboard
+penyedia; kalau suatu saat Xendit mengganti nama medannya, yang hilang
+cuma salinannya.
+
+Rinciannya dibaca untuk **setiap** kabar, apa pun statusnya. Yang gagal
+justru paling sering ditanyakan belakangan — "sudah saya bayar tapi
+ditolak" tidak bisa dijawab kalau yang tersimpan hanya yang berhasil.
+
+Status penyedia punya kolomnya sendiri (`provider_status`,
+`provider_status_at`, `failure_reason`), terpisah dari `status` milik
+kita. Yang kita catat hanya mengenal `pending` dan `paid` karena itu
+yang menentukan pesanannya boleh jalan; yang dikirim Xendit jauh lebih
+banyak, dan menimpanya ke kolom yang sama berarti kehilangan bedanya
+antara "belum dibayar" dan "sudah gagal". Kabar non-sukses **tidak**
+menyentuh `status` sama sekali: pelanggan yang QR-nya kedaluwarsa masih
+boleh membayar tunai di kasir.
+
+Pada pembayaran sukses, penulisannya menyusul **sesudah**
+`settle_gateway_payment` berhasil, dan
+kegagalannya dicatat ke log tanpa mengembalikan 500 — 500 di titik itu
+membuat Xendit mengulang kabar pembayaran yang sudah sah tercatat.
+`bersihkan()` membuang medan kosong supaya kabar kedua yang lebih
+ringkas tidak menimpa nilai yang sudah terisi.
+
+Backfill-nya membaca `raw` dengan `coalesce(raw -> 'data', raw)`:
+sebagian versi callback membungkus isinya di `data`, sebagian
+mengirimnya rata di akar.
+
+---
 
 ### 7.2 Tunai
 

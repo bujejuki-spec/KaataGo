@@ -67,6 +67,7 @@ FILES=(
   billing_due_day.sql
   balance_topup.sql
   voucher_new_customer.sql
+  qris_receipt_fields.sql
 )
 
 {

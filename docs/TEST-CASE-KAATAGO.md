@@ -1,6 +1,6 @@
 # KaataGo — Test Case
 
-**Versi Aplikasi:** 2.6.1 (build 105)
+**Versi Aplikasi:** 2.6.2 (build 106)
 **Versi Dokumen:** 1.5
 **Tanggal Terbit:** 17 Agustus 2026
 **Status:** Rilis
@@ -396,6 +396,15 @@ dibaca. Tiap kasus di bawah menguji satu perbedaan yang halus.
 | TC-PG-08 | P1 | Buka Info Pembayaran sebagai Finance dan Owner | Pengenal sub-akun **tidak terlihat** | F-PG-04 |
 | TC-PG-09 | P1 | Buka layar resto sebagai Super Admin | Pengenal sub-akun terlihat dan bisa diubah | F-PG-04, F-SA-05 |
 | TC-PG-10 | P2 | Simpan QR ke galeri dari layar pelanggan | Tersimpan dan masih bisa dipindai dari galeri | — |
+| TC-PG-11 | P1 | Bayar QRIS sampai sukses, periksa `payment_charges` | Sepuluh kolom rincian kuitansinya terisi | F-PG-11 |
+| TC-PG-12 | P1 | Cocokkan `transaction_id` dengan dashboard Xendit | Sama persis | F-PG-11 |
+| TC-PG-13 | P2 | Jalankan bagian SQL-nya pada basis data berisi pembayaran lama | Pembayaran lama ikut terisi dari `raw` | F-PG-11 |
+| TC-PG-14 | P2 | Kirim ulang callback yang sama | Nilai yang sudah terisi tidak tertimpa kosong | F-PG-11 |
+| TC-PG-15 | P1 | Pembayaran gagal / kedaluwarsa | Rinciannya **tetap tersimpan**; `provider_status` terisi | F-PG-12, F-PG-13 |
+| TC-PG-16 | P1 | Buat QR lalu biarkan menunggu, periksa barisnya | Rincian yang sudah diketahui tersimpan; `status` masih pending | F-PG-12 |
+| TC-PG-17 | P1 | Bayar QR yang tadi menunggu | `status` jadi paid, `provider_status` jadi SUCCEEDED | F-PG-14 |
+| TC-PG-18 | P1 | QR kedaluwarsa lalu pelanggan bayar tunai di kasir | Pesanannya tetap bisa dilunasi — `status` tidak ikut ditutup | F-PG-14 |
+| TC-PG-19 | P2 | Periksa `failure_reason` pada pembayaran yang ditolak | Terisi sebabnya dari penyedia | F-PG-13 |
 
 ---
 
@@ -937,7 +946,7 @@ lima kelompok hilang sama sekali dari daftar.
 | QR Meja (QR) | 8 | TC-QR-01…08 |
 | Diskon (DS) | 29 | TC-DS-01…29 |
 | Kotak Masuk (IN) | 14 | TC-IN-01…14 |
-| QRIS (PG) | 10 | TC-PG-01…10 |
+| QRIS (PG) | 19 | TC-PG-01…19 |
 | Pembatalan (CN) | 9 | TC-CN-01…09 |
 | Sesi Meja (SS) | 7 | TC-SS-01…07 |
 | Tampilan (TM) | 15 | TC-TM-01…15 |
@@ -952,7 +961,7 @@ lima kelompok hilang sama sekali dari daftar.
 | Analisa Pasar (MR) | 13 | TC-MR-01…13 |
 | Pengaturan & Sesi (TS) | 19 | TC-TS-01…19 |
 | Peran & Akses (RG) | 14 | TC-RG-01…14 |
-| **Total** | **498** | **498 kasus + 9 alur ujung-ke-ujung** |
+| **Total** | **507** | **507 kasus + 9 alur ujung-ke-ujung** |
 
 Kriteria penerimaan A-01…A-20 di FSD §9 seluruhnya terpetakan lewat
 kolom Rujukan di atas. Bab TSD yang diuji: §1.2, §4, §5, §6, §7, §8,

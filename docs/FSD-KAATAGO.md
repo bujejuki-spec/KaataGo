@@ -1,6 +1,6 @@
 # KaataGo — Functional Specification Document
 
-**Versi Aplikasi:** 2.6.1 (build 105)
+**Versi Aplikasi:** 2.6.2 (build 106)
 **Versi Dokumen:** 2.6
 **Tanggal Terbit:** 17 Agustus 2026
 **Status:** Rilis
@@ -381,6 +381,10 @@ membacanya.
 | F-PG-05 | Layar QRIS menampilkan hitungan mundur masa berlaku QR-nya |
 | F-PG-06 | Resto yang belum punya sub-akun tetap dapat memakai QR simulasi berikut konfirmasi manual |
 | F-PG-07 | Dengan penyedia aktif, tombol konfirmasi manual **dihilangkan** dari layar kasir |
+| F-PG-11 | Pembayaran QRIS menyimpan rincian kuitansinya: ID Transaksi, ID Referensi, ID Product, Mitra, ID QR, Customer PAN, ID Kuitansi Mitra, Sumber, ID Pengakuisisi, Partner |
+| F-PG-12 | Rinciannya disimpan untuk **semua** keadaan — menunggu, gagal, maupun sukses |
+| F-PG-13 | Status penyedia disimpan terpisah dari status pembayaran KaataGo, berikut sebab kegagalannya |
+| F-PG-14 | Transaksi yang menunggu **berubah jadi lunas** saat kabar suksesnya datang; yang gagal tidak menutup pesanannya |
 
 ### 4.12 Pembatalan Pesanan
 
