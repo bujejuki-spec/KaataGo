@@ -8,6 +8,7 @@ Voucher _batch({
   int quantity = 10,
   int amount = 100000,
   int claimed = 0,
+  int menggantung = 0,
   DateTime? expiresOn,
   bool active = true,
 }) =>
@@ -22,6 +23,7 @@ Voucher _batch({
       active: active,
       createdAt: DateTime(2026, 8, 1),
       claimed: claimed,
+      menggantung: menggantung,
     );
 
 VoucherClaim _claim({
@@ -71,8 +73,11 @@ void main() {
     });
 
     test('nilai yang menggantung di tangan pelanggan', () {
-      // Sudah keluar dari saldo bebas, belum jadi apa pun.
-      expect(_batch(claimed: 4, amount: 100000).nilaiTertebus, 400000);
+      // Sudah keluar dari saldo bebas, belum jadi apa pun — dan yang
+      // sudah hangus tidak ikut, karena dananya sudah kembali.
+      expect(
+          _batch(claimed: 4, menggantung: 4, amount: 100000).nilaiTertebus,
+          400000);
     });
 
     test('kosongnya daftar merchant berarti semua merchant', () {
@@ -467,6 +472,75 @@ void main() {
     test('kolomnya bawaan false, bukan null', () {
       // Voucher lama tidak boleh tiba-tiba jadi terbatas.
       expect(sql, contains('boolean not null default false'));
+    });
+  });
+
+  group('yang menggantung dan yang sudah kembali', () {
+    Voucher batch({int claimed = 0, int menggantung = 0}) => Voucher(
+          id: 'VC-1',
+          code: 'HEMAT1',
+          name: 'Hemat 1',
+          totalAmount: 100,
+          quantity: 10,
+          amount: 10,
+          expiresOn: DateTime.now().add(const Duration(days: 30)),
+          createdAt: DateTime(2026, 8, 1),
+          claimed: claimed,
+          menggantung: menggantung,
+        );
+
+    test('yang hangus tidak lagi dihitung menggantung', () {
+      // Dananya sudah kembali ke GL Total Saldo; menghitungnya lagi
+      // membuat angka di kepala layar lebih besar daripada yang
+      // benar-benar tertahan, dan tidak pernah turun.
+      expect(batch(claimed: 1, menggantung: 0).nilaiTertebus, 0);
+    });
+
+    test('yang masih di tangan orang tetap dihitung', () {
+      expect(batch(claimed: 3, menggantung: 2).nilaiTertebus, 20);
+    });
+
+    test('kuotanya tetap memakai seluruh penebusan', () {
+      // Jatah yang sudah diserahkan tidak kembali jadi jatah hanya
+      // karena orangnya lupa memakainya.
+      final v = batch(claimed: 10, menggantung: 0);
+      expect(v.sisa, 0);
+      expect(v.habis, isTrue);
+    });
+
+    test('repo memisahkan keduanya dari statusnya', () {
+      final repo =
+          File('lib/db/voucher_repository.dart').readAsStringSync();
+      expect(repo, contains("select('voucher_id, status')"));
+      expect(repo, contains("if (r['status'] == 'claimed')"));
+    });
+  });
+
+  group('dana hangus kembali ke saldo', () {
+    final sql = File('supabase/vouchers.sql').readAsStringSync();
+    final fn = sql.substring(sql.indexOf('function expire_vouchers'));
+
+    test('yang sudah ditebus tapi tidak dipakai dikembalikan', () {
+      expect(fn, contains("cl.status = 'claimed' and vc.expires_on < current_date"));
+      expect(fn, contains("_jurnal_kaatago('voucher_redeem'"));
+    });
+
+    test('yang tidak pernah ditebus juga dikembalikan', () {
+      expect(fn, contains('v.amount * (v.quantity - count(*))'));
+      expect(fn, contains("_jurnal_kaatago('voucher', v.id, v_sisa"));
+    });
+
+    test('keduanya mendarat di GL Total Saldo', () {
+      expect("_jurnal_kaatago('total_balance'".allMatches(fn).length, 2);
+    });
+
+    test('tidak dikembalikan dua kali', () {
+      expect(fn, contains('settled_at is null'));
+      expect(fn, contains('update vouchers set settled_at = now()'));
+    });
+
+    test('dijadwalkan tiap hari, bukan menunggu dijalankan orang', () {
+      expect(sql, contains("cron.schedule('expire-vouchers', '10 17 * * *'"));
     });
   });
 

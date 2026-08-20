@@ -65,8 +65,23 @@ class Voucher {
   /// orang yang belum pernah mencoba sama sekali.
   final bool newCustomersOnly;
 
-  /// Sudah ditebus berapa — hanya terisi di layar Super Admin.
+  /// Sudah ditebus berapa — hanya terisi di layar KaataGo Admin.
+  ///
+  /// Menghitung seluruh penebusan, termasuk yang sudah dipakai maupun
+  /// hangus. Inilah yang menentukan kuotanya: jatah yang sudah
+  /// diserahkan tidak kembali jadi jatah hanya karena orangnya lupa
+  /// memakainya.
   final int claimed;
+
+  /// Yang masih benar-benar menggantung — sudah ditebus, belum dipakai,
+  /// belum hangus.
+  ///
+  /// Dipisah dari [claimed] karena keduanya menjawab pertanyaan yang
+  /// berbeda. Dulu keduanya satu angka, dan akibatnya voucher yang sudah
+  /// hangus — dananya sudah kembali ke GL Total Saldo — tetap tercatat
+  /// sebagai uang yang menggantung. Angka di kepala layar jadi lebih
+  /// besar daripada yang benar-benar tertahan, dan tidak pernah turun.
+  final int menggantung;
 
   const Voucher({
     required this.id,
@@ -85,6 +100,7 @@ class Voucher {
     this.bannerBase64,
     this.newCustomersOnly = false,
     this.claimed = 0,
+    this.menggantung = 0,
   });
 
   bool get punyaBanner => bannerBase64 != null && bannerBase64!.isNotEmpty;
@@ -112,7 +128,7 @@ class Voucher {
 
   /// Nilai yang masih menggantung di tangan pelanggan — sudah keluar dari
   /// saldo bebas, belum jadi apa pun.
-  int get nilaiTertebus => claimed * amount;
+  int get nilaiTertebus => menggantung * amount;
 }
 
 /// Voucher milik seorang pelanggan.
@@ -233,7 +249,12 @@ class ClaimResult {
       );
 }
 
-Voucher voucherFromMap(Map<String, dynamic> map, {int claimed = 0}) => Voucher(
+Voucher voucherFromMap(
+  Map<String, dynamic> map, {
+  int claimed = 0,
+  int menggantung = 0,
+}) =>
+    Voucher(
       id: map['id'] as String,
       code: map['code'] as String? ?? '',
       name: map['name'] as String? ?? 'Voucher',
@@ -255,4 +276,5 @@ Voucher voucherFromMap(Map<String, dynamic> map, {int claimed = 0}) => Voucher(
       bannerBase64: map['banner_base64'] as String?,
       newCustomersOnly: map['new_customers_only'] == true,
       claimed: claimed,
+      menggantung: menggantung,
     );

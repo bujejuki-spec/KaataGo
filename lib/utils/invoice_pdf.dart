@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -29,6 +30,17 @@ Future<void> cetakInvoiceLangganan({
   final regular = await PdfGoogleFonts.notoSansRegular();
   final bold = await PdfGoogleFonts.notoSansBold();
 
+  // Logonya boleh gagal dimuat tanpa menjatuhkan strukmya. Bukti bayar
+  // yang tidak terbit karena satu gambar tidak ada adalah kehilangan
+  // yang jauh lebih besar daripada kepala surat tanpa logo.
+  pw.MemoryImage? logo;
+  try {
+    final data = await rootBundle.load('assets/icon/kaata_icon.png');
+    logo = pw.MemoryImage(data.buffer.asUint8List());
+  } catch (_) {
+    logo = null;
+  }
+
   final potongan =
       listPrice > invoice.amount ? listPrice - invoice.amount : 0;
 
@@ -47,16 +59,29 @@ Future<void> cetakInvoiceLangganan({
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              pw.Column(
+              pw.Row(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: [
-                  pw.Text('KaataGo',
-                      style: pw.TextStyle(
-                          fontSize: 22, fontWeight: pw.FontWeight.bold)),
-                  pw.SizedBox(height: 2),
-                  pw.Text('Bukti Pembayaran Langganan',
-                      style: const pw.TextStyle(
-                          fontSize: 11, color: PdfColors.grey700)),
+                  if (logo != null) ...[
+                    pw.ClipRRect(
+                      horizontalRadius: 7,
+                      verticalRadius: 7,
+                      child: pw.Image(logo, width: 34, height: 34),
+                    ),
+                    pw.SizedBox(width: 10),
+                  ],
+                  pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text('KaataGo',
+                          style: pw.TextStyle(
+                              fontSize: 22, fontWeight: pw.FontWeight.bold)),
+                      pw.SizedBox(height: 2),
+                      pw.Text('Bukti Pembayaran Langganan',
+                          style: const pw.TextStyle(
+                              fontSize: 11, color: PdfColors.grey700)),
+                    ],
+                  ),
                 ],
               ),
               pw.Container(

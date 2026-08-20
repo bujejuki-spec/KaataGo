@@ -16,16 +16,31 @@ class VoucherRepository {
         .from('vouchers')
         .select()
         .order('created_at', ascending: false);
-    final klaim = await _client.from('voucher_claims').select('voucher_id');
+    final klaim =
+        await _client.from('voucher_claims').select('voucher_id, status');
 
+    // Dua hitungan, karena keduanya menjawab pertanyaan berbeda:
+    // berapa jatah yang sudah diserahkan, dan berapa yang benar-benar
+    // masih tertahan di tangan orang.
     final hitung = <String, int>{};
+    final gantung = <String, int>{};
     for (final r in klaim) {
       final id = r['voucher_id'] as String;
       hitung[id] = (hitung[id] ?? 0) + 1;
+      // Yang sudah dipakai maupun hangus tidak menggantung lagi —
+      // dananya sudah berpindah, masing-masing ke GL restonya dan ke
+      // GL Total Saldo.
+      if (r['status'] == 'claimed') {
+        gantung[id] = (gantung[id] ?? 0) + 1;
+      }
     }
     return [
       for (final r in rows)
-        voucherFromMap(r, claimed: hitung[r['id'] as String] ?? 0),
+        voucherFromMap(
+          r,
+          claimed: hitung[r['id'] as String] ?? 0,
+          menggantung: gantung[r['id'] as String] ?? 0,
+        ),
     ];
   }
 

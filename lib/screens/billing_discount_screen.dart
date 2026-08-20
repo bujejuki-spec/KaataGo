@@ -34,7 +34,33 @@ class BillingDiscountScreen extends StatefulWidget {
   State<BillingDiscountScreen> createState() => _BillingDiscountScreenState();
 }
 
-class _BillingDiscountScreenState extends State<BillingDiscountScreen> {
+class _BillingDiscountScreenState extends State<BillingDiscountScreen>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tab = TabController(length: 2, vsync: this);
+
+  @override
+  void dispose() {
+    _tab.dispose();
+    super.dispose();
+  }
+
+  /// Sudah lewat masa berlakunya.
+  ///
+  /// Yang tanpa tanggal akhir tidak pernah lewat — itu memang diskon
+  /// yang berlaku sampai dicabut orangnya.
+  bool _lewat(BillingDiscount d) {
+    final akhir = d.endsOn;
+    if (akhir == null) return false;
+    final kini = DateTime.now();
+    return DateTime(kini.year, kini.month, kini.day).isAfter(akhir);
+  }
+
+  List<BillingDiscount> get _aktif =>
+      [for (final d in _items) if (!_lewat(d)) d];
+
+  List<BillingDiscount> get _lampau =>
+      [for (final d in _items) if (_lewat(d)) d];
+
   final _repo = BillingRepository();
   final _restoRepo = RestaurantRepository();
 
@@ -115,7 +141,19 @@ class _BillingDiscountScreenState extends State<BillingDiscountScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: KaataTheme.backgroundOf(context),
-      appBar: AppBar(title: const Text('Diskon Langganan')),
+      appBar: AppBar(
+        title: const Text('Diskon Langganan'),
+        // Dipisah supaya yang berlaku tidak tenggelam di bawah yang
+        // sudah lewat — dan yang sudah lewat tetap bisa dibaca, karena
+        // itu satu-satunya catatan kenapa tagihan bulan lalu berbeda.
+        bottom: TabBar(
+          controller: _tab,
+          tabs: [
+            Tab(text: 'Berlaku (${_aktif.length})'),
+            Tab(text: 'Sudah Lewat (${_lampau.length})'),
+          ],
+        ),
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _ubah(),
         icon: const Icon(Icons.add),
@@ -132,34 +170,46 @@ class _BillingDiscountScreenState extends State<BillingDiscountScreen> {
                         style: TextStyle(color: KaataTheme.mutedOf(context))),
                   ),
                 )
-              : _items.isEmpty
-                  ? Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(30),
-                        child: Text(
-                          'Belum ada diskon langganan.\nSeluruh merchant membayar '
-                          'harga penuh.',
-                          textAlign: TextAlign.center,
-                          style:
-                              TextStyle(color: KaataTheme.mutedOf(context)),
-                        ),
-                      ),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: _muat,
-                      child: ResponsiveCenter(
-                        child: ListView.builder(
-                          padding: const EdgeInsets.fromLTRB(14, 14, 14, 88),
-                          itemCount: _items.length,
-                          itemBuilder: (_, i) => _Kartu(
-                            diskon: _items[i],
-                            resto: _resto,
-                            onTap: () => _ubah(_items[i]),
-                            onHapus: () => _hapus(_items[i]),
-                          ),
-                        ),
-                      ),
-                    ),
+              : TabBarView(
+                  controller: _tab,
+                  children: [
+                    _daftar(_aktif, aktif: true),
+                    _daftar(_lampau, aktif: false),
+                  ],
+                ),
+    );
+  }
+
+  Widget _daftar(List<BillingDiscount> items, {required bool aktif}) {
+    if (items.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(30),
+          child: Text(
+            aktif
+                ? 'Belum ada diskon langganan yang berlaku.\nSeluruh '
+                    'merchant membayar harga penuh.'
+                : 'Belum ada diskon yang sudah lewat.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: KaataTheme.mutedOf(context)),
+          ),
+        ),
+      );
+    }
+    return RefreshIndicator(
+      onRefresh: _muat,
+      child: ResponsiveCenter(
+        child: ListView.builder(
+          padding: const EdgeInsets.fromLTRB(14, 14, 14, 88),
+          itemCount: items.length,
+          itemBuilder: (_, i) => _Kartu(
+            diskon: items[i],
+            resto: _resto,
+            onTap: () => _ubah(items[i]),
+            onHapus: () => _hapus(items[i]),
+          ),
+        ),
+      ),
     );
   }
 }

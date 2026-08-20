@@ -173,7 +173,6 @@ class FinanceHomeScreen extends StatelessWidget {
                     ),
                   ),
                 const PenilaianTile(),
-                const SizedBox(height: 12),
                 const InboxTile(),
                 HubMenuTile(
                     icon: Icons.brightness_6_outlined,

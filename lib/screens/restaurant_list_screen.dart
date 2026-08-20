@@ -185,14 +185,17 @@ class _RestaurantListScreenState extends State<RestaurantListScreen> {
     final withDistance = <(Restaurant, double)>[];
     for (final r in _matching) {
       final km = _distanceKm(r);
-      if (km != null && km <= _nearbyRadiusKm) withDistance.add((r, km));
+      if (km != null && km <= _nearbyRadiusKm && !_tutup(r)) {
+        withDistance.add((r, km));
+      }
     }
-    withDistance.sort((a, b) {
-      final ta = _tutup(a.$1);
-      final tb = _tutup(b.$1);
-      if (ta != tb) return ta ? 1 : -1;
-      return a.$2.compareTo(b.$2);
-    });
+    // Yang tutup tidak masuk saran sama sekali.
+    //
+    // "Terdekat" adalah saran, bukan katalog — dan menyarankan tempat
+    // yang tidak bisa dipilih membuat bagian ini berhenti berarti apa
+    // pun. Yang tutup tetap ada di Semua Merchant, di bawah, lengkap
+    // dengan tandanya.
+    withDistance.sort((a, b) => a.$2.compareTo(b.$2));
     return withDistance.map((e) => e.$1).toList();
   }
 
@@ -395,57 +398,9 @@ class _RestaurantListScreenState extends State<RestaurantListScreen> {
             // oleh mata yang sedang menyapu daftar.
             if (resto.facilities.isNotEmpty) ...[
               const SizedBox(height: 6),
-              // Satu baris ke samping, bukan membungkus ke bawah.
-              //
-              // Kartu yang tingginya berubah-ubah mengikuti jumlah
-              // fasilitas membuat daftarnya bergelombang, dan yang
-              // menyapu daftar kehilangan garis baca. Tiga cukup untuk
-              // memberi gambaran; sisanya di balik "+N".
-              //
-              // Bisa digeser, karena tiga nama panjang — "Ramah
-              // Difabel", "Colokan Listrik", "Smoking Area" — melimpah
-              // 484 piksel di HP selebar 360. Baris kaku di sana
-              // berubah jadi garis kuning-hitam, bukan daftar fasilitas.
-              SizedBox(
-                height: 24,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  // Digulir bersama daftarnya secara vertikal; yang
-                  // horizontal hanya kalau jarinya memang menyamping.
-                  physics: const ClampingScrollPhysics(),
-                  children: [
-                  for (final f in resto.facilities.take(3)) ...[
-                    _FasilitasChip(nama: f),
-                    const SizedBox(width: 6),
-                  ],
-                  // "+6" yang tidak bisa dibuka cuma memberi tahu ada
-                  // yang disembunyikan tanpa cara melihatnya — dan yang
-                  // disembunyikan itu bisa jadi justru yang dicari.
-                  if (resto.facilities.length > 3)
-                    InkWell(
-                      onTap: () => _bukaInfo(context, resto),
-                      borderRadius: BorderRadius.circular(7),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(7),
-                          border: Border.all(
-                              color: KaataTheme.brandOf(context)
-                                  .withOpacity(0.5)),
-                        ),
-                        child: Text(
-                          '+${resto.facilities.length - 3}',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: KaataTheme.brandOf(context),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+              _BarisFasilitas(
+                nama: resto.facilities,
+                onLainnya: () => _bukaInfo(context, resto),
               ),
             ],
           ],
@@ -593,6 +548,10 @@ class _FasilitasChip extends StatelessWidget {
     Color(0xFF8B5CF6),
   ];
 
+  /// Fasilitas yang punya ikonnya sendiri — dipakai menghitung lebar
+  /// chip sebelum digambar.
+  static bool punyaIkon(String nama) => _ikon.containsKey(nama.toLowerCase());
+
   static const _ikon = {
     'ac': Icons.ac_unit,
     'smoking area': Icons.smoking_rooms_outlined,
@@ -625,12 +584,21 @@ class _FasilitasChip extends StatelessWidget {
             Icon(ikon, size: 12, color: warna),
             const SizedBox(width: 4),
           ],
-          Text(
-            nama,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: warna,
+          // Dipotong rapi kalau ruangnya kurang. Perkiraan lebar di
+          // _BarisFasilitas bisa meleset beberapa piksel — dan tanpa
+          // ini, selisih sekecil apa pun berubah jadi garis
+          // kuning-hitam alih-alih nama yang terpotong satu huruf.
+          Flexible(
+            child: Text(
+              nama,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              softWrap: false,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: warna,
+              ),
             ),
           ),
         ],
@@ -646,4 +614,118 @@ void _bukaInfo(BuildContext context, Restaurant merchant) {
   Navigator.of(context).push(
     MaterialPageRoute(builder: (_) => MerchantInfoScreen(merchant: merchant)),
   );
+}
+
+/// Fasilitas dalam satu baris, sebanyak yang muat.
+///
+/// Sebelumnya barisnya bisa digeser menyamping — dan itu salah dua arah:
+/// chip yang tergulir keluar terlihat terpotong di tepi kartu seperti
+/// tampilan yang rusak, dan tidak ada yang menyangka baris sesempit itu
+/// bisa digeser, jadi sisanya tidak pernah dilihat siapa pun.
+///
+/// Sekarang lebarnya diukur lebih dulu: yang muat ditampilkan utuh,
+/// sisanya diringkas jadi "+N" yang bisa diketuk. Tidak ada yang
+/// terpotong, dan yang disembunyikan punya jalan untuk dilihat.
+class _BarisFasilitas extends StatelessWidget {
+  final List<String> nama;
+  final VoidCallback onLainnya;
+
+  const _BarisFasilitas({required this.nama, required this.onLainnya});
+
+  /// Lebar sebuah chip, dihitung dari teksnya.
+  ///
+  /// Angka-angkanya mengikuti _FasilitasChip: padding 8+8, ikon 12,
+  /// jarak 4, plus 2 untuk garis tepinya.
+  double _lebar(BuildContext context, String teks, {required bool berikon}) {
+    final tp = TextPainter(
+      text: TextSpan(
+        text: teks,
+        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+      ),
+      textDirection: Directionality.of(context),
+    )..layout();
+    // Dilebihkan sedikit: padding 16, garis tepi 2, ikon 12 + jarak 4.
+    // Dan dua piksel lagi sebagai kelonggaran — huruf yang diukur
+    // TextPainter tidak selalu selebar huruf yang benar-benar
+    // digambar, dan meleset ke bawah berarti melimpah.
+    return tp.width + 20 + (berikon ? 16 : 0);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, c) {
+        const jarak = 6.0;
+        // Ruang untuk "+N" disisihkan sejak awal. Menghitungnya
+        // belakangan berarti chip terakhir sudah terlanjur masuk, lalu
+        // "+N"-nya yang melimpah keluar kartu.
+        const lebarLainnya = 42.0;
+
+        final muat = <String>[];
+        var dipakai = 0.0;
+        for (final f in nama) {
+          final w = _lebar(context, f, berikon: _FasilitasChip.punyaIkon(f));
+          final sisaSetelahIni = c.maxWidth - (dipakai + w);
+          final adaSisa = nama.length > muat.length + 1;
+          // Chip terakhir hanya boleh masuk kalau "+N" masih kebagian
+          // tempat — kecuali memang tidak ada sisanya lagi.
+          if (sisaSetelahIni < (adaSisa ? lebarLainnya : 0)) break;
+          muat.add(f);
+          dipakai += w + jarak;
+        }
+
+        // Selalu tampilkan minimal satu, walau namanya panjang sekali.
+        // Baris kosong berarti fasilitasnya seolah tidak ada.
+        if (muat.isEmpty) muat.add(nama.first);
+
+        final sisa = nama.length - muat.length;
+        return Row(
+          children: [
+            for (final f in muat) ...[
+              Flexible(child: _FasilitasChip(nama: f)),
+              const SizedBox(width: jarak),
+            ],
+            if (sisa > 0)
+              InkWell(
+                onTap: onLainnya,
+                borderRadius: BorderRadius.circular(7),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(7),
+                    border: Border.all(
+                        color: KaataTheme.brandOf(context).withOpacity(0.5)),
+                  ),
+                  child: Text(
+                    '+$sisa',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: KaataTheme.brandOf(context),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+
+/// Pembungkus untuk pengujian tata letak barisan fasilitas.
+///
+/// Widget aslinya privat dan hanya masuk akal di dalam kartunya; yang
+/// perlu diuji cuma perilaku muat-tidaknya, dan itu tidak butuh seluruh
+/// layar daftar merchant beserta lokasinya.
+class RestaurantFacilityRowForTest extends StatelessWidget {
+  final List<String> nama;
+
+  const RestaurantFacilityRowForTest({super.key, required this.nama});
+
+  @override
+  Widget build(BuildContext context) =>
+      _BarisFasilitas(nama: nama, onLainnya: () {});
 }

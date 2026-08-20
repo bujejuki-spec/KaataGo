@@ -13,6 +13,16 @@ Formatnya dibaca `scripts/release.sh`: judul `## <versi>`, lalu
 poin-poinnya. Versi yang tidak punya bagiannya di sini tetap terbit,
 hanya pengumumannya memakai kalimat umum.
 
+## 2.9.4
+
+- Voucher, diskon langganan, dan Voucher Saya dipisah antara yang masih
+  berlaku dan yang sudah lewat
+- Fasilitas merchant tampil sampai tepi kartu, sisanya di balik "+N"
+- Merchant yang tutup tidak lagi muncul di saran terdekat
+- Foto ulasan bisa dilihat selayar penuh
+- Logo KaataGo di invoice langganan
+- KaataGo tidak lagi muncul dua kali di Recent Apps
+
 ## 2.9.3
 
 - Bintang merchant muncul langsung di daftar pilih merchant

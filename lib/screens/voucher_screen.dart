@@ -33,7 +33,27 @@ class VoucherScreen extends StatefulWidget {
   State<VoucherScreen> createState() => _VoucherScreenState();
 }
 
-class _VoucherScreenState extends State<VoucherScreen> {
+class _VoucherScreenState extends State<VoucherScreen>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tab = TabController(length: 2, vsync: this);
+
+  @override
+  void dispose() {
+    _tab.dispose();
+    super.dispose();
+  }
+
+  /// Yang masih hidup: belum kedaluwarsa.
+  ///
+  /// Yang ditutup manual tetap di sini — ia bisa dibuka lagi, dan
+  /// memindahkannya ke tab riwayat berarti menyembunyikan sesuatu yang
+  /// masih bisa diubah.
+  List<Voucher> get _aktif =>
+      [for (final v in _items) if (!v.kedaluwarsa) v];
+
+  List<Voucher> get _lampau =>
+      [for (final v in _items) if (v.kedaluwarsa) v];
+
   final _repo = VoucherRepository();
   final _restoRepo = RestaurantRepository();
 
@@ -148,7 +168,19 @@ class _VoucherScreenState extends State<VoucherScreen> {
 
     return Scaffold(
       backgroundColor: KaataTheme.backgroundOf(context),
-      appBar: AppBar(title: const Text('Voucher Pelanggan')),
+      appBar: AppBar(
+        title: const Text('Voucher Pelanggan'),
+        // Dipisah supaya yang berjalan tidak tenggelam di bawah tumpukan
+        // yang sudah lewat. Batch menumpuk terus dan tidak pernah
+        // menyusut — dan yang dicari hampir selalu yang masih hidup.
+        bottom: TabBar(
+          controller: _tab,
+          tabs: [
+            Tab(text: 'Berjalan (${_aktif.length})'),
+            Tab(text: 'Kedaluwarsa (${_lampau.length})'),
+          ],
+        ),
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _terbitkan,
         icon: const Icon(Icons.add),
@@ -165,13 +197,32 @@ class _VoucherScreenState extends State<VoucherScreen> {
                         style: TextStyle(color: KaataTheme.mutedOf(context))),
                   ),
                 )
-              : RefreshIndicator(
+              : TabBarView(
+                  controller: _tab,
+                  children: [
+                    _daftar(_aktif, menggantung: menggantung, aktif: true),
+                    _daftar(_lampau, menggantung: menggantung, aktif: false),
+                  ],
+                ),
+    );
+  }
+
+  Widget _daftar(
+    List<Voucher> items, {
+    required int menggantung,
+    required bool aktif,
+  }) {
+    return RefreshIndicator(
                   onRefresh: _muat,
                   child: ResponsiveCenter(
                     child: ListView(
                       padding: const EdgeInsets.fromLTRB(14, 14, 14, 88),
                       children: [
-                        if (_items.isNotEmpty) ...[
+                        // Kartu ringkasannya hanya di tab yang berjalan:
+                        // yang menggantung selalu berasal dari voucher
+                        // yang belum hangus, jadi mengulangnya di tab
+                        // riwayat cuma menimbulkan pertanyaan.
+                        if (aktif && _items.isNotEmpty) ...[
                           Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
@@ -205,17 +256,19 @@ class _VoucherScreenState extends State<VoucherScreen> {
                           ),
                           const SizedBox(height: 14),
                         ],
-                        if (_items.isEmpty)
+                        if (items.isEmpty)
                           Padding(
                             padding: const EdgeInsets.all(30),
                             child: Text(
-                              'Belum ada voucher diterbitkan.',
+                              aktif
+                                  ? 'Belum ada voucher yang berjalan.'
+                                  : 'Belum ada voucher yang kedaluwarsa.',
                               textAlign: TextAlign.center,
                               style:
                                   TextStyle(color: KaataTheme.mutedOf(context)),
                             ),
                           ),
-                        for (final v in _items)
+                        for (final v in items)
                           _Kartu(
                             voucher: v,
                             resto: _resto,
@@ -226,8 +279,7 @@ class _VoucherScreenState extends State<VoucherScreen> {
                       ],
                     ),
                   ),
-                ),
-    );
+                );
   }
 }
 

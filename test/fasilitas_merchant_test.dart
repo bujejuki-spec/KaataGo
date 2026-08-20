@@ -82,7 +82,7 @@ void main() {
       final daftar =
           File('lib/screens/restaurant_list_screen.dart').readAsStringSync();
       expect(daftar, contains('_FasilitasChip'));
-      expect(daftar, contains('resto.facilities.take(3)'));
+      expect(daftar, contains('nama: resto.facilities'));
     });
 
     test('warnanya tetap sama untuk fasilitas yang sama', () {
@@ -97,23 +97,31 @@ void main() {
     final daftar =
         File('lib/screens/restaurant_list_screen.dart').readAsStringSync();
 
-    test('fasilitasnya menyamping, bukan membungkus ke bawah', () {
+    test('fasilitasnya satu baris, bukan membungkus ke bawah', () {
       // Kartu yang tingginya berubah-ubah membuat daftarnya
       // bergelombang, dan yang menyapu daftar kehilangan garis baca.
-      expect(daftar, contains('scrollDirection: Axis.horizontal'));
-      expect(daftar, isNot(contains('resto.facilities.take(4)')));
+      expect(daftar, contains('_BarisFasilitas('));
+      expect(daftar, isNot(contains('scrollDirection: Axis.horizontal')));
     });
 
-    test('tiga tampil, sisanya di balik +N', () {
-      expect(daftar, contains('resto.facilities.take(3)'));
-      expect(daftar, contains('resto.facilities.length - 3'));
+    test('sebanyak yang muat, sisanya di balik +N', () {
+      // Bukan angka yang dipatok: lebar kartunya yang menentukan, dan
+      // nama fasilitas panjangnya berbeda-beda.
+      expect(daftar, contains('final sisa = nama.length - muat.length;'));
     });
 
-    test('bisa digeser supaya tidak melimpah di HP sempit', () {
-      // Tiga nama panjang melimpah 484 piksel di layar selebar 360;
-      // baris kaku di sana berubah jadi garis kuning-hitam.
-      expect(daftar, contains('height: 24,'));
-      expect(daftar, contains('ClampingScrollPhysics()'));
+    test('lebarnya diukur supaya tidak melimpah', () {
+      // Chip yang tergulir keluar terlihat terpotong di tepi kartu
+      // seperti tampilan yang rusak.
+      expect(daftar, contains('TextPainter('));
+      expect(daftar, contains('const lebarLainnya = 42.0;'));
+    });
+
+    test('selisih perkiraan tidak berubah jadi limpahan', () {
+      // Perkiraan lebar bisa meleset beberapa piksel; chip yang bisa
+      // menyusut memotong satu huruf, bukan menghasilkan garis
+      // kuning-hitam.
+      expect(daftar, contains('overflow: TextOverflow.ellipsis'));
     });
 
     test('bintangnya tampil di barisnya', () {

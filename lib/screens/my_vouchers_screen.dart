@@ -37,6 +37,15 @@ class _MyVouchersScreenState extends State<MyVouchersScreen> {
   bool _menebus = false;
   String? _galat;
 
+  /// Tab mana yang sedang dilihat.
+  ///
+  /// Sebagai pilihan berdampingan, bukan tab di bilah atas: kartu
+  /// "Siap dipakai" dan kolom tebus kode harus tetap terlihat di
+  /// keduanya — kode voucher datang kapan saja, dan menyembunyikan
+  /// kolomnya di balik satu tab berarti orang harus tahu dulu tab mana
+  /// yang benar sebelum bisa menebus.
+  bool _lihatRiwayat = false;
+
   @override
   void initState() {
     super.initState();
@@ -223,26 +232,40 @@ class _MyVouchersScreenState extends State<MyVouchersScreen> {
                           style:
                               TextStyle(color: KaataTheme.mutedOf(context)))
                     else ...[
-                      if (siap.isNotEmpty) ...[
-                        const Text('Siap Dipakai',
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 13)),
-                        const SizedBox(height: 8),
-                        for (final v in siap) _Kartu(claim: v),
-                        const SizedBox(height: 16),
-                      ],
-                      if (lampau.isNotEmpty) ...[
-                        const Text('Riwayat',
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 13)),
-                        const SizedBox(height: 8),
-                        for (final v in lampau) _Kartu(claim: v),
-                      ],
-                      if (_items.isEmpty)
+                      // Yang hangus dan yang sudah dipakai dipisah,
+                      // supaya voucher yang masih bisa dipakai tidak
+                      // tenggelam di bawah tumpukan yang sudah lewat.
+                      SizedBox(
+                        width: double.infinity,
+                        child: SegmentedButton<bool>(
+                          segments: [
+                            ButtonSegment(
+                              value: false,
+                              label: Text('Siap Dipakai (${siap.length})'),
+                            ),
+                            ButtonSegment(
+                              value: true,
+                              label: Text('Riwayat (${lampau.length})'),
+                            ),
+                          ],
+                          selected: {_lihatRiwayat},
+                          showSelectedIcon: false,
+                          onSelectionChanged: (v) =>
+                              setState(() => _lihatRiwayat = v.first),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      for (final v in (_lihatRiwayat ? lampau : siap))
+                        _Kartu(claim: v),
+                      if ((_lihatRiwayat ? lampau : siap).isEmpty)
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 24),
                           child: Text(
-                            'Belum pernah menebus voucher.',
+                            _lihatRiwayat
+                                ? 'Belum ada voucher yang sudah dipakai atau '
+                                    'hangus.'
+                                : 'Belum ada voucher yang siap dipakai. Punya '
+                                    'kode? Tebus di atas.',
                             textAlign: TextAlign.center,
                             style:
                                 TextStyle(color: KaataTheme.mutedOf(context)),

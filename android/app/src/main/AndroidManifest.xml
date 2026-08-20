@@ -29,11 +29,24 @@
         android:label="KaataGo"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon">
+        <!--
+          singleTask, dan TANPA taskAffinity="".
+
+          taskAffinity kosong berarti activity ini tidak berkerabat
+          dengan task mana pun — termasuk task-nya sendiri. Apa pun yang
+          membukanya dengan FLAG_ACTIVITY_NEW_TASK, dan notifikasi
+          selalu begitu, membuat Android menaruhnya di task baru alih-alih
+          memakai yang sudah ada. Hasilnya dua KaataGo berjajar di
+          Recent Apps, masing-masing dengan keadaannya sendiri.
+
+          singleTop saja tidak cukup: ia hanya mencegah tumpukan ganda di
+          dalam SATU task, sementara masalahnya justru task keduanya.
+          singleTask menarik kembali task yang sudah ada.
+        -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:launchMode="singleTop"
-            android:taskAffinity=""
+            android:launchMode="singleTask"
             android:theme="@style/LaunchTheme"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"

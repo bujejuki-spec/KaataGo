@@ -125,8 +125,8 @@ void main() {
       // Yang disembunyikan itu bisa jadi justru yang dicari.
       final daftar =
           File('lib/screens/restaurant_list_screen.dart').readAsStringSync();
-      final blok = daftar.substring(daftar.indexOf('resto.facilities.length > 3'));
-      expect(blok.substring(0, 300), contains('onTap: () => _bukaInfo'));
+      expect(daftar, contains('onLainnya: () => _bukaInfo(context, resto)'));
+      expect(daftar, contains('onTap: onLainnya,'));
     });
 
     test('pegawai membacanya lewat satu widget bersama', () {
