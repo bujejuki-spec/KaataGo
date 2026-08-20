@@ -1,6 +1,6 @@
 # KaataGo — Technical Specification Document
 
-**Versi Aplikasi:** 2.9.2 (build 113)
+**Versi Aplikasi:** 2.9.3 (build 114)
 **Versi Dokumen:** 1.7
 **Tanggal Terbit:** 17 Agustus 2026
 **Status:** Rilis

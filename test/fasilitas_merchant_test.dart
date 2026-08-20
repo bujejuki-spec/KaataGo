@@ -82,7 +82,7 @@ void main() {
       final daftar =
           File('lib/screens/restaurant_list_screen.dart').readAsStringSync();
       expect(daftar, contains('_FasilitasChip'));
-      expect(daftar, contains('resto.facilities.take(4)'));
+      expect(daftar, contains('resto.facilities.take(3)'));
     });
 
     test('warnanya tetap sama untuk fasilitas yang sama', () {
@@ -90,6 +90,51 @@ void main() {
       final daftar =
           File('lib/screens/restaurant_list_screen.dart').readAsStringSync();
       expect(daftar, contains('nama.toLowerCase().hashCode.abs() % _palet.length'));
+    });
+  });
+
+  group('baris di daftar pilih merchant', () {
+    final daftar =
+        File('lib/screens/restaurant_list_screen.dart').readAsStringSync();
+
+    test('fasilitasnya menyamping, bukan membungkus ke bawah', () {
+      // Kartu yang tingginya berubah-ubah membuat daftarnya
+      // bergelombang, dan yang menyapu daftar kehilangan garis baca.
+      expect(daftar, contains('scrollDirection: Axis.horizontal'));
+      expect(daftar, isNot(contains('resto.facilities.take(4)')));
+    });
+
+    test('tiga tampil, sisanya di balik +N', () {
+      expect(daftar, contains('resto.facilities.take(3)'));
+      expect(daftar, contains('resto.facilities.length - 3'));
+    });
+
+    test('bisa digeser supaya tidak melimpah di HP sempit', () {
+      // Tiga nama panjang melimpah 484 piksel di layar selebar 360;
+      // baris kaku di sana berubah jadi garis kuning-hitam.
+      expect(daftar, contains('height: 24,'));
+      expect(daftar, contains('ClampingScrollPhysics()'));
+    });
+
+    test('bintangnya tampil di barisnya', () {
+      expect(daftar, contains('_rating[resto.id]!.teks'));
+      expect(daftar, contains('_rating[resto.id]!.jumlah'));
+    });
+
+    test('bintangnya dihitung sekali untuk seluruh daftar', () {
+      // Satu panggilan per baris berarti puluhan permintaan berbaris
+      // tiap kali layarnya dibuka.
+      expect(daftar, contains('MerchantReviewRepository().ringkasan()'));
+      expect(daftar, contains('Map<String, RatingRingkas> _rating'));
+    });
+
+    test('yang belum dinilai tidak menampilkan bintang kosong', () {
+      expect(daftar, contains('_rating[resto.id]?.adaPenilaian ?? false'));
+    });
+
+    test('gagal membaca bintang tidak menjatuhkan daftarnya', () {
+      final blok = daftar.substring(daftar.indexOf('Future<void> _muatRating()'));
+      expect(blok.substring(0, 400), contains('} catch (_) {'));
     });
   });
 

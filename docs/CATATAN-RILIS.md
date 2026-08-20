@@ -13,6 +13,12 @@ Formatnya dibaca `scripts/release.sh`: judul `## <versi>`, lalu
 poin-poinnya. Versi yang tidak punya bagiannya di sini tetap terbit,
 hanya pengumumannya memakai kalimat umum.
 
+## 2.9.3
+
+- Bintang merchant muncul langsung di daftar pilih merchant
+- Fasilitas ditampilkan menyamping — tiga terlihat, sisanya di balik
+  "+N" yang bisa diketuk
+
 ## 2.9.2
 
 - Pesanan yang dibatalkan tidak lagi berstatus "Sedang Dimasak" atau

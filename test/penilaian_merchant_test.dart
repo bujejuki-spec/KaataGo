@@ -125,7 +125,7 @@ void main() {
       // Yang disembunyikan itu bisa jadi justru yang dicari.
       final daftar =
           File('lib/screens/restaurant_list_screen.dart').readAsStringSync();
-      final blok = daftar.substring(daftar.indexOf('resto.facilities.length > 4'));
+      final blok = daftar.substring(daftar.indexOf('resto.facilities.length > 3'));
       expect(blok.substring(0, 300), contains('onTap: () => _bukaInfo'));
     });
 

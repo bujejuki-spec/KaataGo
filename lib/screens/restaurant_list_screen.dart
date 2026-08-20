@@ -1,3 +1,5 @@
+import '../models/merchant_review.dart';
+import '../db/merchant_review_repository.dart';
 import '../widgets/app_toast.dart';
 import 'merchant_info_screen.dart';
 import 'package:flutter/material.dart';
@@ -40,6 +42,13 @@ class _RestaurantListScreenState extends State<RestaurantListScreen> {
   final _searchCtrl = TextEditingController();
 
   List<Restaurant> _restaurants = [];
+
+  /// Bintang tiap merchant, dihitung server sekali untuk seluruh daftar.
+  ///
+  /// Bukan per baris: daftar ini menampilkan puluhan merchant sekaligus,
+  /// dan satu panggilan per baris berarti puluhan permintaan berbaris
+  /// tiap kali layarnya dibuka.
+  Map<String, RatingRingkas> _rating = const {};
   Position? _me;
   bool _loading = true;
 
@@ -70,6 +79,22 @@ class _RestaurantListScreenState extends State<RestaurantListScreen> {
       _loading = false;
     });
     _locate();
+    _muatRating();
+  }
+
+  /// Bintangnya menyusul setelah daftarnya tampil.
+  ///
+  /// Menahan daftarnya sampai ratingnya selesai dibaca berarti layar
+  /// kosong demi satu angka kecil — dan yang paling dicari di sini
+  /// tetap nama dan jaraknya.
+  Future<void> _muatRating() async {
+    try {
+      final r = await MerchantReviewRepository().ringkasan();
+      if (!mounted) return;
+      setState(() => _rating = r);
+    } catch (_) {
+      // Gagal membaca bintangnya bukan alasan menjatuhkan daftarnya.
+    }
   }
 
   /// Lokasinya diminta setelah daftarnya tampil, bukan sebelum.
@@ -321,20 +346,43 @@ class _RestaurantListScreenState extends State<RestaurantListScreen> {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
-            if (km != null) ...[
+            // Bintang dan jarak sebaris: keduanya angka pendek, dan
+            // keduanya yang paling menentukan pilihan.
+            if (km != null || (_rating[resto.id]?.adaPenilaian ?? false)) ...[
               const SizedBox(height: 3),
               Row(
                 children: [
-                  const Icon(Icons.near_me, size: 12, color: KaataTheme.brand),
-                  const SizedBox(width: 4),
-                  Text(
-                    _distanceText(km),
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: KaataTheme.brand,
+                  if (_rating[resto.id]?.adaPenilaian ?? false) ...[
+                    const Icon(Icons.star,
+                        size: 13, color: Color(0xFFF59E0B)),
+                    const SizedBox(width: 3),
+                    Text(
+                      _rating[resto.id]!.teks,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFFF59E0B),
+                      ),
                     ),
-                  ),
+                    Text(
+                      ' (${_rating[resto.id]!.jumlah})',
+                      style: TextStyle(
+                          fontSize: 11, color: KaataTheme.mutedOf(context)),
+                    ),
+                    if (km != null) const SizedBox(width: 10),
+                  ],
+                  if (km != null) ...[
+                    const Icon(Icons.near_me, size: 12, color: KaataTheme.brand),
+                    const SizedBox(width: 4),
+                    Text(
+                      _distanceText(km),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: KaataTheme.brand,
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ],
@@ -347,16 +395,33 @@ class _RestaurantListScreenState extends State<RestaurantListScreen> {
             // oleh mata yang sedang menyapu daftar.
             if (resto.facilities.isNotEmpty) ...[
               const SizedBox(height: 6),
-              Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: [
-                  for (final f in resto.facilities.take(4))
+              // Satu baris ke samping, bukan membungkus ke bawah.
+              //
+              // Kartu yang tingginya berubah-ubah mengikuti jumlah
+              // fasilitas membuat daftarnya bergelombang, dan yang
+              // menyapu daftar kehilangan garis baca. Tiga cukup untuk
+              // memberi gambaran; sisanya di balik "+N".
+              //
+              // Bisa digeser, karena tiga nama panjang — "Ramah
+              // Difabel", "Colokan Listrik", "Smoking Area" — melimpah
+              // 484 piksel di HP selebar 360. Baris kaku di sana
+              // berubah jadi garis kuning-hitam, bukan daftar fasilitas.
+              SizedBox(
+                height: 24,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  // Digulir bersama daftarnya secara vertikal; yang
+                  // horizontal hanya kalau jarinya memang menyamping.
+                  physics: const ClampingScrollPhysics(),
+                  children: [
+                  for (final f in resto.facilities.take(3)) ...[
                     _FasilitasChip(nama: f),
+                    const SizedBox(width: 6),
+                  ],
                   // "+6" yang tidak bisa dibuka cuma memberi tahu ada
                   // yang disembunyikan tanpa cara melihatnya — dan yang
                   // disembunyikan itu bisa jadi justru yang dicari.
-                  if (resto.facilities.length > 4)
+                  if (resto.facilities.length > 3)
                     InkWell(
                       onTap: () => _bukaInfo(context, resto),
                       borderRadius: BorderRadius.circular(7),
@@ -370,7 +435,7 @@ class _RestaurantListScreenState extends State<RestaurantListScreen> {
                                   .withOpacity(0.5)),
                         ),
                         child: Text(
-                          '+${resto.facilities.length - 4} lainnya',
+                          '+${resto.facilities.length - 3}',
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
@@ -379,7 +444,8 @@ class _RestaurantListScreenState extends State<RestaurantListScreen> {
                         ),
                       ),
                     ),
-                ],
+                  ],
+                ),
               ),
             ],
           ],
