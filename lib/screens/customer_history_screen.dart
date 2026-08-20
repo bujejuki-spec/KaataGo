@@ -55,11 +55,13 @@ class _CustomerHistoryScreenState extends State<CustomerHistoryScreen> {
     KitchenStatus.waiting: 'Menunggu Diproses',
     KitchenStatus.onProgress: 'Sedang Dimasak',
     KitchenStatus.done: 'Selesai',
+    KitchenStatus.cancelled: 'Dibatalkan',
   };
   static const _kitchenColors = {
     KitchenStatus.waiting: Colors.grey,
     KitchenStatus.onProgress: Colors.orange,
     KitchenStatus.done: Colors.green,
+    KitchenStatus.cancelled: Colors.grey,
   };
 
   void _refresh() {
@@ -172,20 +174,37 @@ class _CustomerHistoryScreenState extends State<CustomerHistoryScreen> {
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    Icon(Icons.circle, size: 8, color: _kitchenColors[order.kitchenStatus]),
+                    // Pesanan yang batal berhenti punya status dapur.
+                    //
+                    // Datanya sudah dibetulkan pemicu di basis data,
+                    // tapi baris lama yang terbit sebelum itu masih
+                    // membawa nilai lamanya — dan riwayat memang tempat
+                    // baris lama berkumpul.
+                    Icon(Icons.circle,
+                        size: 8,
+                        color: order.dibatalkan
+                            ? Colors.grey
+                            : _kitchenColors[order.kitchenStatus]),
                     const SizedBox(width: 4),
                     Text(
-                      _kitchenLabels[order.kitchenStatus]!,
+                      order.dibatalkan
+                          ? 'Dibatalkan'
+                          : _kitchenLabels[order.kitchenStatus]!,
                       style: TextStyle(
                         fontSize: 11,
-                        color: _kitchenColors[order.kitchenStatus],
+                        color: order.dibatalkan
+                            ? Colors.grey
+                            : _kitchenColors[order.kitchenStatus],
                       ),
                     ),
                     const SizedBox(width: 8),
                     Text(
                       switch (order.paymentStatus) {
                         OrderPaymentStatus.paid => 'Sudah Dibayar',
-                        OrderPaymentStatus.cancelled => 'Dibatalkan',
+                        // Sudah disebut di sebelah kiri; diulang dua
+                        // kali berdampingan malah terbaca seperti dua
+                        // hal berbeda.
+                        OrderPaymentStatus.cancelled => '',
                         OrderPaymentStatus.expired => 'Hangus, tidak dibayar',
                         OrderPaymentStatus.pending => 'Menunggu Pembayaran',
                       },

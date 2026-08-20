@@ -13,6 +13,11 @@ Formatnya dibaca `scripts/release.sh`: judul `## <versi>`, lalu
 poin-poinnya. Versi yang tidak punya bagiannya di sini tetap terbit,
 hanya pengumumannya memakai kalimat umum.
 
+## 2.9.2
+
+- Pesanan yang dibatalkan tidak lagi berstatus "Sedang Dimasak" atau
+  "Menunggu Diproses", termasuk di Riwayat Pesanan
+
 ## 2.9.1
 
 - Foto di ulasan bisa diketuk untuk dilihat selayar penuh

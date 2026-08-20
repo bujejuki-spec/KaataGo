@@ -56,7 +56,12 @@ enum OrderSource { customer, kasir }
 
 /// Kitchen prep status, tracked by the Chef and mirrored live to the
 /// customer's order-status screen.
-enum KitchenStatus { waiting, onProgress, done }
+/// Keadaan pesanan di dapur.
+///
+/// `cancelled` ditulis pemicu saat pembayarannya batal atau hangus —
+/// bukan dipilih chef. Tanpa nilai itu, kolomnya berhenti di nilai
+/// terakhirnya dan tiap layar harus ingat sendiri untuk mengabaikannya.
+enum KitchenStatus { waiting, onProgress, done, cancelled }
 
 /// An order visible in the shared "Pesanan Masuk" feed: either a
 /// self-service order placed by a customer (always paid via QRIS), or a

@@ -31,11 +31,13 @@ class CustomerOrderStatusScreen extends StatelessWidget {
     KitchenStatus.waiting: 'Menunggu Diproses',
     KitchenStatus.onProgress: 'Sedang Dimasak',
     KitchenStatus.done: 'Selesai',
+    KitchenStatus.cancelled: 'Dibatalkan',
   };
   static const _kitchenColors = {
     KitchenStatus.waiting: Colors.grey,
     KitchenStatus.onProgress: Colors.orange,
     KitchenStatus.done: Colors.green,
+    KitchenStatus.cancelled: Colors.grey,
   };
 
   Future<void> _confirmEndSession(BuildContext context) async {

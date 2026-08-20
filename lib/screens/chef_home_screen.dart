@@ -280,6 +280,11 @@ class _ChefHomeScreenState extends State<ChefHomeScreen> {
           ],
         );
       case KitchenStatus.done:
+      // Yang batal tidak punya tombol apa pun: tidak ada yang perlu
+      // dikerjakan dapur, dan barisnya pun sudah disaring keluar dari
+      // tab mana pun. Dicantumkan di sini supaya penambahan nilai baru
+      // pada KitchenStatus tidak lolos diam-diam.
+      case KitchenStatus.cancelled:
         return null;
     }
   }

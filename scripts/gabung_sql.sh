@@ -73,6 +73,7 @@ FILES=(
   resto_facilities.sql
   merchant_reviews.sql
   review_prompt.sql
+  order_cancel_kitchen.sql
 )
 
 {
