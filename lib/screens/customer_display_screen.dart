@@ -1,3 +1,6 @@
+import '../widgets/kaata_logo.dart';
+import '../utils/gambar_base64.dart';
+import '../models/restaurant.dart';
 import '../widgets/kaata_qr_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -36,13 +39,15 @@ class _CustomerDisplayScreenState extends State<CustomerDisplayScreen> {
   final _merchantRepo = RestaurantRepository();
   Stream<TampilanLayar>? _aliran;
 
-  /// Nama merchant-nya, dibaca dari barisnya sendiri.
+  /// Merchant-nya, dibaca dari barisnya sendiri.
   ///
   /// Bukan dari SettingsProvider: nilai bawaannya "Toko Kamu", dan itu
   /// yang terpampang ke pelanggan selama setelannya belum sempat
   /// dimuat — nama yang jelas bukan nama tempat itu, di layar yang
   /// justru paling dilihat orang luar.
-  String? _namaMerchant;
+  Restaurant? _merchant;
+
+  String? get _namaMerchant => _merchant?.name;
 
   String? _restoId;
 
@@ -65,7 +70,7 @@ class _CustomerDisplayScreenState extends State<CustomerDisplayScreen> {
     try {
       final m = await _merchantRepo.getOnce(restoId);
       if (!mounted || m == null) return;
-      setState(() => _namaMerchant = m.name);
+      setState(() => _merchant = m);
     } catch (_) {
       // Namanya gagal dibaca: layarnya tetap jalan tanpa judul, bukan
       // menampilkan nama yang salah.
@@ -89,7 +94,10 @@ class _CustomerDisplayScreenState extends State<CustomerDisplayScreen> {
     return Scaffold(
       backgroundColor: KaataTheme.backgroundOf(context),
       body: SafeArea(
-        child: StreamBuilder<TampilanLayar>(
+        child: Column(
+          children: [
+            Expanded(
+              child: StreamBuilder<TampilanLayar>(
           stream: _aliran,
           builder: (context, snapshot) {
             final t = snapshot.data ?? const TampilanLayar();
@@ -99,10 +107,17 @@ class _CustomerDisplayScreenState extends State<CustomerDisplayScreen> {
               StatusLayar.lunas => _Lunas(tampilan: t),
               StatusLayar.menganggur => _Menganggur(
                   restoId: restoId,
-                  nama: _namaMerchant,
+                  merchant: _merchant,
                 ),
             };
           },
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.only(bottom: 10, top: 4),
+              child: _PoweredBy(),
+            ),
+          ],
         ),
       ),
     );
@@ -116,21 +131,87 @@ class _CustomerDisplayScreenState extends State<CustomerDisplayScreen> {
 /// adalah ruang iklan yang dibuang.
 class _Menganggur extends StatelessWidget {
   final String restoId;
-  final String? nama;
+  final Restaurant? merchant;
 
-  const _Menganggur({required this.restoId, this.nama});
+  const _Menganggur({required this.restoId, this.merchant});
 
   @override
   Widget build(BuildContext context) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        if (nama != null)
-          Text(nama!,
+        _LogoMerchant(merchant: merchant, ukuran: 84),
+        if (merchant != null) ...[
+          const SizedBox(height: 12),
+          Text(merchant!.name,
               style:
                   const TextStyle(fontSize: 30, fontWeight: FontWeight.bold)),
-        if (nama != null) const SizedBox(height: 24),
+        ],
+        const SizedBox(height: 24),
         PromoBannerCarousel(restoId: restoId),
+      ],
+    );
+  }
+}
+
+/// Logo merchant, dengan logo KaataGo sebagai penggantinya.
+///
+/// Merchant yang belum memasang logo tetap butuh sesuatu di sana —
+/// ruang kosong di puncak layar yang menghadap pelanggan terbaca seperti
+/// gambar yang gagal dimuat. Logo KaataGo mengisinya, dan itu memang
+/// benar: yang mereka pakai memang KaataGo.
+class _LogoMerchant extends StatelessWidget {
+  final Restaurant? merchant;
+  final double ukuran;
+
+  const _LogoMerchant({required this.merchant, this.ukuran = 64});
+
+  @override
+  Widget build(BuildContext context) {
+    final logo = merchant?.logoBase64;
+    if (logo == null || logo.isEmpty) {
+      return KaataLogo(size: ukuran);
+    }
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(ukuran * 0.22),
+      child: Image.memory(
+        byteGambar(logo),
+        width: ukuran,
+        height: ukuran,
+        fit: BoxFit.cover,
+        // Logo yang rusak jangan mengosongkan puncak layarnya; jatuhkan
+        // ke logo KaataGo, sama seperti merchant yang belum memasangnya.
+        errorBuilder: (_, __, ___) => KaataLogo(size: ukuran),
+      ),
+    );
+  }
+}
+
+/// Tanda kecil di dasar layar.
+///
+/// Layar ini menghadap pelanggan sepanjang jam buka — satu-satunya
+/// tempat di seluruh aplikasi yang dilihat orang yang belum tentu
+/// memakai KaataGo.
+class _PoweredBy extends StatelessWidget {
+  const _PoweredBy();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text('powered by',
+            style:
+                TextStyle(fontSize: 11, color: KaataTheme.mutedOf(context))),
+        const SizedBox(width: 6),
+        const KaataLogo(size: 18, showBadgeBackground: false),
+        const SizedBox(width: 5),
+        Text('KaataGo',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: KaataTheme.brandOf(context),
+            )),
       ],
     );
   }

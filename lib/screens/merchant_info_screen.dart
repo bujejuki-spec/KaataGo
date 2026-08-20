@@ -1,4 +1,5 @@
 
+import '../widgets/penampil_foto.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -301,14 +302,18 @@ class _BarisUlasan extends StatelessWidget {
                 scrollDirection: Axis.horizontal,
                 itemCount: ulasan.photos.length,
                 separatorBuilder: (_, __) => const SizedBox(width: 8),
-                itemBuilder: (context, i) => ClipRRect(
+                itemBuilder: (context, i) => InkWell(
+                  onTap: () => lihatFoto(context, ulasan.photos, mulai: i),
                   borderRadius: BorderRadius.circular(9),
-                  child: Image.memory(
-                    byteGambar(ulasan.photos[i]),
-                    width: 82,
-                    height: 82,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(9),
+                    child: Image.memory(
+                      byteGambar(ulasan.photos[i]),
+                      width: 82,
+                      height: 82,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                    ),
                   ),
                 ),
               ),

@@ -20,11 +20,73 @@ void main() {
     });
 
     test('kosong lebih baik daripada nama yang salah', () {
-      expect(layar, contains('if (nama != null)'));
+      expect(layar, contains('if (merchant != null) ...['));
     });
 
     test('gagal membacanya tidak menjatuhkan layarnya', () {
       expect(layar, contains('} catch (_) {'));
+    });
+  });
+
+  group('logo dan tanda KaataGo', () {
+    test('logo merchant tampil di layar menganggur', () {
+      expect(layar, contains('_LogoMerchant(merchant: merchant'));
+    });
+
+    test('yang belum punya logo memakai logo KaataGo', () {
+      // Ruang kosong di puncak layar yang menghadap pelanggan terbaca
+      // seperti gambar yang gagal dimuat.
+      expect(layar, contains('if (logo == null || logo.isEmpty)'));
+      expect(layar, contains('return KaataLogo(size: ukuran);'));
+    });
+
+    test('logo rusak jatuh ke logo KaataGo juga', () {
+      expect(layar,
+          contains('errorBuilder: (_, __, ___) => KaataLogo(size: ukuran)'));
+    });
+
+    test('tanda powered by ada di dasar layar, semua keadaan', () {
+      // Satu-satunya layar yang dilihat orang yang belum tentu memakai
+      // KaataGo.
+      expect(layar, contains('_PoweredBy()'));
+      final blok = layar.substring(layar.indexOf('body: SafeArea('));
+      expect(blok.indexOf('_PoweredBy()'),
+          greaterThan(blok.indexOf('StreamBuilder<TampilanLayar>')));
+    });
+  });
+
+  group('foto ulasan', () {
+    final info =
+        File('lib/screens/merchant_info_screen.dart').readAsStringSync();
+    final penampil =
+        File('lib/widgets/penampil_foto.dart').readAsStringSync();
+
+    test('bisa diketuk untuk dilihat besar', () {
+      // Petak 82 piksel cukup untuk tahu ada fotonya, tidak cukup untuk
+      // melihat apa isinya.
+      expect(info, contains('lihatFoto(context, ulasan.photos, mulai: i)'));
+    });
+
+    test('membuka dari foto yang diketuk, bukan selalu yang pertama', () {
+      expect(penampil, contains('PageController(initialPage: widget.mulai)'));
+    });
+
+    test('bisa dizoom dan digeser antar foto', () {
+      expect(penampil, contains('InteractiveViewer('));
+      expect(penampil, contains('PageView.builder('));
+    });
+
+    test('memakai layar penuh, bukan dialog', () {
+      // Foto yang dizoom di dalam kotak dialog tetap terpotong kotaknya.
+      expect(penampil, contains('fullscreenDialog: true'));
+    });
+
+    test('satu foto rusak tidak mengosongkan penampilnya', () {
+      expect(penampil, contains('Icons.broken_image_outlined'));
+    });
+
+    test('daftar kosong tidak membuka apa pun', () {
+      expect(penampil, contains('if (foto.isEmpty) return Future.value();'));
     });
   });
 
