@@ -174,14 +174,11 @@ void main() {
   group('diskon menyasar level atau topping', () {
     // "Gratis ukuran besar": menunya tetap dibayar penuh, yang hilang
     // cuma selisih ukurannya.
+    // Meniru cara provider menghitungnya: sasaran yang dicentang
+    // dijumlahkan, dan tanpa sasaran berarti seluruh menunya.
     int dasar(DiscountItem item, Product p, {int qty = 1}) {
-      if (item.toppingName != null) {
-        return p.toppingPrice(item.toppingName!) * qty;
-      }
-      if (item.levelOption != null) {
-        return p.priceDeltaFor(item.levelGroup!, item.levelOption!) * qty;
-      }
-      return p.price * qty;
+      if (item.targets.isEmpty) return p.price * qty;
+      return item.targets.fold<int>(0, (s, t) => s + t.tambahanHarga(p)) * qty;
     }
 
     final p = Product(
@@ -198,7 +195,7 @@ void main() {
 
     test('sasaran level memotong tambahannya saja', () {
       const item = DiscountItem(
-          productId: 'p1', levelGroup: 'Ukuran', levelOption: 'Besar');
+          productId: 'p1', targets: [DiscountTarget.level('Ukuran', 'Besar')]);
       expect(dasar(item, p), 5000);
 
       final promo = Discount(
@@ -216,7 +213,8 @@ void main() {
     });
 
     test('sasaran topping memotong harga toppingnya saja', () {
-      const item = DiscountItem(productId: 'p1', toppingName: 'Keju');
+      const item = DiscountItem(
+          productId: 'p1', targets: [DiscountTarget.topping('Keju')]);
       expect(dasar(item, p), 5000);
     });
 
@@ -229,41 +227,104 @@ void main() {
     test('sasarannya punya nama untuk ditampilkan', () {
       expect(
         const DiscountItem(
-                productId: 'p1', levelGroup: 'Ukuran', levelOption: 'Besar')
+                productId: 'p1',
+                targets: [DiscountTarget.level('Ukuran', 'Besar')])
             .targetLabel,
         'Ukuran: Besar',
       );
       expect(
-        const DiscountItem(productId: 'p1', toppingName: 'Keju').targetLabel,
+        const DiscountItem(
+                productId: 'p1', targets: [DiscountTarget.topping('Keju')])
+            .targetLabel,
         'Topping: Keju',
       );
       expect(const DiscountItem(productId: 'p1').targetLabel, isNull);
     });
 
+    test('beberapa sasaran disebut semuanya', () {
+      const item = DiscountItem(productId: 'p1', targets: [
+        DiscountTarget.topping('Keju'),
+        DiscountTarget.topping('Telur'),
+      ]);
+      expect(item.targetLabel, 'Topping: Keju, Topping: Telur');
+    });
+
     test('sasarannya ikut tersimpan dan terbaca kembali', () {
       const item = DiscountItem(
-          productId: 'p1', levelGroup: 'Ukuran', levelOption: 'Besar');
+          productId: 'p1', targets: [DiscountTarget.level('Ukuran', 'Besar')]);
       final lagi = DiscountItem.fromMap(item.toMap());
-      expect(lagi.levelGroup, 'Ukuran');
-      expect(lagi.levelOption, 'Besar');
-      expect(lagi.toppingName, isNull);
+      expect(lagi.targets.single, const DiscountTarget.level('Ukuran', 'Besar'));
+    });
+
+    test('beberapa sasaran bolak-balik utuh', () {
+      const item = DiscountItem(productId: 'p1', targets: [
+        DiscountTarget.topping('Keju'),
+        DiscountTarget.level('Ukuran', 'Besar'),
+        DiscountTarget.menuUtama(),
+      ]);
+      expect(DiscountItem.fromMap(item.toMap()).targets, item.targets);
+    });
+
+    // Versi aplikasi yang belum mengenal `targets` membaca medan lama.
+    // Tanpa ini, promo yang disunting di HP baru berubah jadi promo
+    // seluruh menu di HP lama, dan potongannya melonjak.
+    test('bentuk lamanya ikut ditulis untuk aplikasi versi lama', () {
+      const item = DiscountItem(
+          productId: 'p1', targets: [DiscountTarget.topping('Keju')]);
+      expect(item.toMap()['topping'], 'Keju');
+    });
+
+    test('baris lama bersasaran tunggal terbaca jadi satu sasaran', () {
+      final lagi = DiscountItem.fromMap({
+        'product_id': 'p1',
+        'qty': 1,
+        'topping': 'Keju',
+      });
+      expect(lagi.targets.single, const DiscountTarget.topping('Keju'));
     });
 
     test('promo lama tanpa sasaran tetap mengenai seluruh menu', () {
       final lagi = DiscountItem.fromMap({'product_id': 'p1', 'qty': 1});
       expect(lagi.targetsAddOn, isFalse);
+      expect(lagi.targets, isEmpty);
     });
 
-    test('mengganti sasaran membuang sasaran sebelumnya', () {
-      // Tanpa ini, sebuah item bisa menunjuk level DAN topping sekaligus
-      // — dua sasaran untuk satu potongan, dan yang menang tergantung
-      // urutan pemeriksaan.
-      const semula = DiscountItem(
-          productId: 'p1', levelGroup: 'Ukuran', levelOption: 'Besar');
-      final jadi = semula.copyWith(
-          levelGroup: null, levelOption: null, toppingName: 'Keju');
-      expect(jadi.levelOption, isNull);
-      expect(jadi.toppingName, 'Keju');
+    group('harga menu utama', () {
+      test('yang dipotong harga menunya, bukan tambahannya', () {
+        expect(const DiscountTarget.menuUtama().tambahanHarga(p), 25000);
+      });
+
+      // Dicentang bersama topping, keduanya dijumlahkan — itulah
+      // gunanya: "diskon menu utama plus keju gratis" jadi satu promo,
+      // bukan dua yang saling meniadakan.
+      test('bisa dicentang bersama sasaran lain', () {
+        const item = DiscountItem(productId: 'p1', targets: [
+          DiscountTarget.menuUtama(),
+          DiscountTarget.topping('Keju'),
+        ]);
+        expect(dasar(item, p), 30000);
+      });
+
+      test('cocok dengan baris apa pun, tanpa memandang pilihannya', () {
+        expect(const DiscountTarget.menuUtama().cocok(const {}, const []),
+            isTrue);
+      });
+    });
+
+    group('kunci sasaran', () {
+      test('bolak-balik lewat kuncinya', () {
+        for (final t in const [
+          DiscountTarget.menuUtama(),
+          DiscountTarget.topping('Keju'),
+          DiscountTarget.level('Ukuran', 'Besar'),
+        ]) {
+          expect(DiscountTarget.dariKunci(t.kunci), t);
+        }
+      });
+
+      test('kunci asing dibaca sebagai bukan sasaran', () {
+        expect(DiscountTarget.dariKunci('entah'), isNull);
+      });
     });
   });
 

@@ -101,6 +101,10 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
 
   /// Label promo, bintang, dan angka terjual tiap menu.
   MenuMeta _meta = MenuMeta.kosong;
+
+  /// Nama menu, untuk menyebut isi paket bundling di keterangan promo.
+  Map<String, String> get _namaMenu =>
+      {for (final p in _produk ?? const <Product>[]) p.id: p.name};
   String? _streamRestoId;
 
   StreamSubscription<List<CustomerOrder>>? _orderWatch;
@@ -461,6 +465,8 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
         ppnPercent: cart.ppnPercent,
         stats: _meta.stats[product.id],
         sedangDiskon: _meta.diskonProductIds.contains(product.id),
+        diskon: _meta.diskonUntuk(product.id),
+        namaMenu: _namaMenu,
       ),
     );
     if (result == null) return;
@@ -490,6 +496,8 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
         editing: true,
         stats: _meta.stats[line.product.id],
         sedangDiskon: _meta.diskonProductIds.contains(line.product.id),
+        diskon: _meta.diskonUntuk(line.product.id),
+        namaMenu: _namaMenu,
       ),
     );
     if (result == null) return;

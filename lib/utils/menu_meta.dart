@@ -11,12 +11,23 @@ import '../models/product_review.dart';
 /// memuatnya ke keduanya berarti dua tempat yang harus selalu sepakat,
 /// dan yang satu akan tertinggal saat yang lain diperbaiki.
 class MenuMeta {
-  final Set<String> diskonProductIds;
+  /// Promo yang sedang berlaku, dikelompokkan per menu yang dikenainya.
+  ///
+  /// Bukan sekadar daftar id yang kena promo. Labelnya memang cuma
+  /// butuh tahu "kena atau tidak", tapi yang mengetuk menunya berhak
+  /// tahu promonya apa — dan menyimpan hanya id berarti harus memanggil
+  /// server lagi justru pada saat orangnya sedang menunggu.
+  final Map<String, List<Discount>> diskon;
+
   final Map<String, ProductStats> stats;
 
-  const MenuMeta({this.diskonProductIds = const {}, this.stats = const {}});
+  const MenuMeta({this.diskon = const {}, this.stats = const {}});
 
   static const kosong = MenuMeta();
+
+  Set<String> get diskonProductIds => diskon.keys.toSet();
+
+  List<Discount> diskonUntuk(String productId) => diskon[productId] ?? const [];
 }
 
 /// Memuat keduanya. Gagal berarti kosong, bukan galat yang dilempar ke
@@ -29,19 +40,25 @@ Future<MenuMeta> muatMenuMeta(String restoId) async {
     _stats(restoId),
   ]);
   return MenuMeta(
-    diskonProductIds: hasil[0] as Set<String>,
+    diskon: hasil[0] as Map<String, List<Discount>>,
     stats: hasil[1] as Map<String, ProductStats>,
   );
 }
 
-Future<Set<String>> _diskon(String restoId) async {
+Future<Map<String, List<Discount>>> _diskon(String restoId) async {
   try {
     final live = await DiscountRepository().liveForResto(restoId);
-    return {
-      for (final d in live)
-        if (d.basis == DiscountBasis.products)
-          for (final i in d.items) i.productId,
-    };
+    final map = <String, List<Discount>>{};
+    for (final d in live) {
+      if (d.basis != DiscountBasis.products) continue;
+      // Satu promo bisa mengenai beberapa menu sekaligus — itulah cara
+      // bundling dinyatakan — jadi promo yang sama sengaja muncul di
+      // beberapa kunci.
+      for (final i in d.items) {
+        map.putIfAbsent(i.productId, () => []).add(d);
+      }
+    }
+    return map;
   } catch (_) {
     return const {};
   }

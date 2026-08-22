@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/product.dart';
+import '../utils/foto_menu_bertahan.dart';
 
 /// Mirrors the local product catalog into Supabase's `products` table so
 /// the customer self-order app (a different device/install, no shared
@@ -29,13 +30,63 @@ class FirestoreProductRepository {
     await _client.from('products').delete().eq('id', id);
   }
 
+  /// Menu resto ini, terus diperbarui.
+  ///
+  /// Baris yang datang lewat realtime tidak selalu membawa
+  /// `photo_base64` yang utuh — dan itu paling sering terjadi tepat
+  /// setelah sebuah pesanan masuk, karena stok menu yang dipesan
+  /// dikurangi dan barisnya terkirim ulang. Yang terlihat pemesan: foto
+  /// menu yang barusan dia pesan mendadak hilang.
+  ///
+  /// Karena itu foto yang mendadak hilang tidak langsung dipercaya.
+  /// Barisnya ditanyakan ulang lewat REST — yang selalu utuh — dan foto
+  /// lama dipasang sementara sambil menunggu jawabannya. Kalau server
+  /// memang bilang fotonya sudah tidak ada, barulah ia dilepas: merchant
+  /// berhak menghapus foto menunya, dan menolak mengakui penghapusan itu
+  /// sama salahnya dengan menghilangkan fotonya sendiri.
   Stream<List<Product>> watchAll(String restoId) {
+    final ingatan = IngatanFotoMenu();
+
     return _client
         .from('products')
         .stream(primaryKey: ['id'])
         .eq('resto_id', restoId)
         .order('name')
-        .map((rows) => rows.map((r) => Product.fromMap(r)).toList());
+        .asyncMap((rows) async {
+          var items = rows.map((r) => Product.fromMap(r)).toList();
+
+          final curiga = ingatan.curiga(items);
+          if (curiga.isNotEmpty) {
+            items = ingatan.pulihkan(items, curiga);
+            try {
+              final ulang = await _client
+                  .from('products')
+                  .select()
+                  .inFilter('id', curiga);
+              final utuh = {
+                for (final r in ulang)
+                  r['id'].toString(): r['photo_base64'] as String?,
+              };
+              items = [
+                for (final p in items)
+                  if (utuh.containsKey(p.id))
+                    p.copyWith(photoBase64: utuh[p.id])
+                  else
+                    p,
+              ];
+              for (final e in utuh.entries) {
+                if (e.value == null) ingatan.lupakan(e.key);
+              }
+            } catch (_) {
+              // Gagal menanyakan ulang berarti foto lama yang dipakai.
+              // Menu berfoto basi jauh lebih berguna daripada menu
+              // tanpa foto.
+            }
+          }
+
+          ingatan.catat(items);
+          return items;
+        });
   }
 
   Future<List<Product>> getAllOnce(String restoId) async {

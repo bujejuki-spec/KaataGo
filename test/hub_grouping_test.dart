@@ -62,6 +62,21 @@ void main() {
       }
     });
 
+    test('Shift Kasir tidak ditumpuk di dalam kelompok mana pun', () {
+      // Dibuka dua kali sehari pada dua saat tersibuk: awal shift ketika
+      // antrean mulai, dan akhir shift ketika sudah ingin pulang. Pernah
+      // ditaruh di dalam grup Keuangan, dan yang pertama mencarinya tidak
+      // menemukannya sama sekali.
+      for (final peran in ['kasir', 'admin', 'owner', 'finance']) {
+        final teks = isi(peran);
+        final posisi = teks.indexOf("title: 'Shift Kasir'");
+        expect(posisi, greaterThan(0), reason: '$peran tanpa Shift Kasir');
+        final sebelum = teks.substring(0, posisi);
+        // Kelompok pertama belum dibuka sama sekali di titik ini.
+        expect('tiles: () => ['.allMatches(sebelum), isEmpty, reason: peran);
+      }
+    });
+
     test('Keluar selalu berdiri sendiri', () {
       for (final peran in jumlahMenu.keys) {
         final teks = isi(peran);

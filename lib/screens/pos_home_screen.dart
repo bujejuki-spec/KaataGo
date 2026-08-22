@@ -70,6 +70,15 @@ class _PosHomeScreenState extends State<PosHomeScreen> {
     }
   }
 
+  /// Nama menu, untuk menyebut isi paket bundling di keterangan promo.
+  ///
+  /// Dibaca dari katalog yang sudah ada di layar ini, bukan diambil
+  /// lagi dari server: promo bundling menyebut menu lain milik resto
+  /// yang sama, dan daftarnya sudah ada di tangan.
+  Map<String, String> _namaMenu(BuildContext context) => {
+        for (final p in context.read<ProductProvider>().products) p.id: p.name,
+      };
+
   /// Menu yang belum ada di keranjang langsung membuka popup jumlah.
   /// Yang sudah ada membuka daftar barisnya, supaya jumlahnya bisa
   /// dikurangi atau dihapus tanpa harus maju dulu ke keranjang — di
@@ -93,6 +102,8 @@ class _PosHomeScreenState extends State<PosHomeScreen> {
         showStock: true,
         stats: _meta.stats[product.id],
         sedangDiskon: _meta.diskonProductIds.contains(product.id),
+        diskon: _meta.diskonUntuk(product.id),
+        namaMenu: _namaMenu(context),
       ),
     );
     if (result == null) return;
@@ -120,6 +131,8 @@ class _PosHomeScreenState extends State<PosHomeScreen> {
         editing: true,
         stats: _meta.stats[line.product.id],
         sedangDiskon: _meta.diskonProductIds.contains(line.product.id),
+        diskon: _meta.diskonUntuk(line.product.id),
+        namaMenu: _namaMenu(context),
       ),
     );
     if (result == null) return;

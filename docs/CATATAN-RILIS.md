@@ -13,6 +13,17 @@ Formatnya dibaca `scripts/release.sh`: judul `## <versi>`, lalu
 poin-poinnya. Versi yang tidak punya bagiannya di sini tetap terbit,
 hanya pengumumannya memakai kalimat umum.
 
+## 2.11.0
+
+- Foto menu tidak lagi hilang setelah pesanan masuk
+- Satu menu bisa didiskon di beberapa bagian sekaligus — centang topping
+  dan tambahan ukuran mana saja yang ikut dipotong
+- Pilihan baru "Harga menu utama": memotong harga menunya saja, tanpa
+  ikut memotong topping yang ditambahkan pemesan
+- Menu berlabel DISKON, saat diketuk, menjelaskan promonya — berapa
+  potongannya, syaratnya, dan menu apa saja yang harus dibeli bersama
+- Shift Kasir naik ke halaman utama, tidak lagi di dalam grup Keuangan
+
 ## 2.10.0
 
 - Menu bisa diberi label BARU, TERLARIS, dan REKOMENDASI lewat Kelola

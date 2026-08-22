@@ -6,9 +6,11 @@ import 'package:intl/intl.dart';
 import '../theme.dart';
 
 import '../models/level_option.dart';
+import '../models/discount.dart';
 import '../models/product.dart';
 import '../models/product_badge.dart';
 import '../models/product_review.dart';
+import '../utils/deskripsi_diskon.dart';
 import '../utils/tax_calculator.dart';
 import 'dialog_actions.dart';
 import 'product_badge_chips.dart';
@@ -66,6 +68,18 @@ class QuantityDialog extends StatefulWidget {
   /// Sedang kena promo hari ini.
   final bool sedangDiskon;
 
+  /// Promo yang mengenai menu ini, untuk dijelaskan isinya.
+  ///
+  /// Label DISKON di kartunya cuma memberi tahu ada potongan, tidak
+  /// berapa dan tidak syaratnya. Yang sudah tertarik lalu mengetuk
+  /// menunya justru sedang menanyakan dua hal itu — dan sebelumnya
+  /// jawabannya baru muncul di layar bayar, saat pesanannya sudah
+  /// terlanjur disusun.
+  final List<Discount> diskon;
+
+  /// Nama menu lain, untuk menyebut isi paket bundling.
+  final Map<String, String> namaMenu;
+
   const QuantityDialog({
     super.key,
     required this.product,
@@ -78,6 +92,8 @@ class QuantityDialog extends StatefulWidget {
     this.showStock = false,
     this.stats,
     this.sedangDiskon = false,
+    this.diskon = const [],
+    this.namaMenu = const {},
   });
 
   @override
@@ -256,6 +272,20 @@ class _QuantityDialogState extends State<QuantityDialog> {
                       ),
                     ProductStatsLine(stats: widget.stats, fontSize: 11.5),
                   ],
+                ),
+              );
+            }(),
+            () {
+              final promo = deskripsiDiskon(
+                diskon: widget.diskon,
+                productId: widget.product.id,
+                namaMenu: widget.namaMenu,
+              );
+              if (promo.isEmpty) return const SizedBox.shrink();
+              return Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Column(
+                  children: [for (final p in promo) _KartuPromo(promo: p)],
                 ),
               );
             }(),
@@ -444,6 +474,72 @@ class _QuantityDialogState extends State<QuantityDialog> {
           ],
         ),
       ],
+    );
+  }
+}
+
+/// Satu promo yang mengenai menu ini, dijelaskan isinya.
+///
+/// Diletakkan di dialog pesan, bukan di kartu menu: kartu selebar
+/// setengah layar tidak muat menampung syarat jumlah dan daftar isi
+/// paket, dan memaksakannya berarti kalimat terpotong — yang justru
+/// lebih menyesatkan daripada tidak ada.
+class _KartuPromo extends StatelessWidget {
+  final DeskripsiDiskon promo;
+
+  const _KartuPromo({required this.promo});
+
+  @override
+  Widget build(BuildContext context) {
+    const merah = Color(0xFFDC2626);
+    final muted = KaataTheme.mutedOf(context);
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 11),
+      decoration: BoxDecoration(
+        color: merah.withOpacity(0.07),
+        border: Border.all(color: merah.withOpacity(0.35)),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.sell_outlined, size: 15, color: merah),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  promo.judul,
+                  style: const TextStyle(
+                      fontSize: 13, fontWeight: FontWeight.bold, color: merah),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 5),
+          Text(promo.potongan,
+              style: const TextStyle(
+                  fontSize: 14.5, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 3),
+          Text(promo.syarat,
+              style: TextStyle(fontSize: 12, color: muted, height: 1.35)),
+          if (promo.paket.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              'Harus dibeli bersama: ${promo.paket.join(', ')}',
+              style: TextStyle(fontSize: 12, color: muted, height: 1.35),
+            ),
+          ],
+          if (promo.sampai != null) ...[
+            const SizedBox(height: 4),
+            Text(promo.sampai!,
+                style: TextStyle(fontSize: 11.5, color: muted)),
+          ],
+        ],
+      ),
     );
   }
 }

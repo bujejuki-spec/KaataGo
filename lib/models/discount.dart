@@ -1,4 +1,5 @@
 import '../utils/promo_period.dart';
+import 'product.dart';
 
 /// Dasar perhitungan diskon.
 enum DiscountBasis {
@@ -87,34 +88,35 @@ class DiscountItem {
   final int qty;
   final QtyMode mode;
 
-  /// Sasaran yang lebih sempit dari seluruh menunya.
+  /// Bagian-bagian menu yang dipotong, lebih sempit dari seluruh
+  /// menunya.
   ///
-  /// Diisi kalau promonya cuma mengenai satu pilihan — "Ukuran: Besar"
-  /// atau topping "Keju". Yang dipotong bukan harga menunya, melainkan
-  /// tambahan harga pilihan itu saja. Dengan potongan 100%, "Ukuran
-  /// Besar" jadi gratis: menunya tetap dibayar penuh, tambahannya
-  /// hilang.
-  final String? levelGroup;
-  final String? levelOption;
-  final String? toppingName;
+  /// Kosong berarti yang dipotong harga menunya sendiri. Berisi berarti
+  /// yang dipotong hanya tambahan harga dari sasaran-sasaran itu —
+  /// dengan potongan 100%, "Ukuran Besar" jadi gratis sementara menunya
+  /// tetap dibayar penuh.
+  ///
+  /// Daftar, bukan satu. Promo "topping gratis" nyaris tidak pernah
+  /// berarti satu topping tertentu: yang dimaksud biasanya beberapa
+  /// sekaligus, dan menyatakannya sebagai beberapa promo terpisah
+  /// membuat semuanya jadi syarat yang harus dipenuhi berbarengan —
+  /// pelanggan yang memilih Keju saja lalu tidak dapat apa-apa.
+  final List<DiscountTarget> targets;
 
   const DiscountItem({
     required this.productId,
     this.qty = 1,
     this.mode = QtyMode.atLeast,
-    this.levelGroup,
-    this.levelOption,
-    this.toppingName,
+    this.targets = const [],
   });
 
   /// Mengenai tambahan harga saja, bukan seluruh menunya.
-  bool get targetsAddOn => levelOption != null || toppingName != null;
+  bool get targetsAddOn => targets.isNotEmpty;
 
   /// Nama sasarannya untuk ditampilkan, atau null kalau seluruh menu.
   String? get targetLabel {
-    if (toppingName != null) return 'Topping: $toppingName';
-    if (levelOption != null) return '$levelGroup: $levelOption';
-    return null;
+    if (targets.isEmpty) return null;
+    return targets.map((t) => t.label).join(', ');
   }
 
   /// Terpenuhi oleh [ordered] buah menu ini di keranjang.
@@ -128,46 +130,159 @@ class DiscountItem {
         'product_id': productId,
         'qty': qty,
         'mode': _qtyModeDb[mode],
-        if (levelGroup != null) 'level_group': levelGroup,
-        if (levelOption != null) 'level_option': levelOption,
-        if (toppingName != null) 'topping': toppingName,
+        if (targets.isNotEmpty)
+          'targets': [for (final t in targets) t.toMap()],
+        // Sasaran pertama ditulis ulang dalam bentuk lama.
+        //
+        // Bukan untuk dibaca versi ini, melainkan versi aplikasi yang
+        // belum mengenal `targets` — dan itu termasuk HP kasir yang
+        // belum sempat memperbarui. Tanpa ini, promo yang disunting di
+        // HP baru berubah jadi promo seluruh menu di HP lama, dan
+        // potongannya melonjak tanpa ada yang mengubahnya.
+        if (targets.isNotEmpty) ...targets.first.toMap(),
       };
 
-  factory DiscountItem.fromMap(Map<String, dynamic> map) => DiscountItem(
-        productId: map['product_id'].toString(),
-        qty: (map['qty'] as num?)?.toInt() ?? 1,
-        mode: _qtyModeDb.entries
-            .firstWhere((e) => e.value == map['mode'],
-                orElse: () => _qtyModeDb.entries.first)
-            .key,
-        levelGroup: map['level_group'] as String?,
-        levelOption: map['level_option'] as String?,
-        toppingName: map['topping'] as String?,
-      );
+  factory DiscountItem.fromMap(Map<String, dynamic> map) {
+    final daftar = map['targets'];
+    return DiscountItem(
+      productId: map['product_id'].toString(),
+      qty: (map['qty'] as num?)?.toInt() ?? 1,
+      mode: _qtyModeDb.entries
+          .firstWhere((e) => e.value == map['mode'],
+              orElse: () => _qtyModeDb.entries.first)
+          .key,
+      targets: daftar is List
+          ? [
+              for (final t in daftar)
+                DiscountTarget.fromMap(Map<String, dynamic>.from(t as Map)),
+            ]
+          // Baris yang ditulis sebelum satu menu boleh punya beberapa
+          // sasaran. Bentuk lamanya dibaca apa adanya jadi satu sasaran.
+          : DiscountTarget.dariBentukLama(map),
+    );
+  }
 
   DiscountItem copyWith({
     int? qty,
     QtyMode? mode,
-    Object? levelGroup = _unset,
-    Object? levelOption = _unset,
-    Object? toppingName = _unset,
+    List<DiscountTarget>? targets,
   }) =>
       DiscountItem(
         productId: productId,
         qty: qty ?? this.qty,
         mode: mode ?? this.mode,
-        levelGroup: identical(levelGroup, _unset)
-            ? this.levelGroup
-            : levelGroup as String?,
-        levelOption: identical(levelOption, _unset)
-            ? this.levelOption
-            : levelOption as String?,
-        toppingName: identical(toppingName, _unset)
-            ? this.toppingName
-            : toppingName as String?,
+        targets: targets ?? this.targets,
+      );
+}
+
+/// Satu bagian menu yang dipotong: sebuah topping, atau sebuah pilihan
+/// level.
+class DiscountTarget {
+  final String? levelGroup;
+  final String? levelOption;
+  final String? toppingName;
+
+  /// Harga menu utamanya sendiri, tanpa tambahan apa pun.
+  ///
+  /// Berbeda dari "seluruh harga menu" — yang itu ikut memotong topping
+  /// dan tambahan ukuran yang dipilih pemesan. Bedanya nyata di menu
+  /// yang toppingnya mahal: "diskon 20%" yang dimaksud merchant hampir
+  /// selalu 20% dari harga menunya, bukan 20% dari menu berikut empat
+  /// topping yang ditambahkan pemesan sendiri.
+  final bool utama;
+
+  const DiscountTarget({
+    this.levelGroup,
+    this.levelOption,
+    this.toppingName,
+    this.utama = false,
+  });
+
+  const DiscountTarget.topping(String nama) : this(toppingName: nama);
+
+  const DiscountTarget.level(String grup, String pilihan)
+      : this(levelGroup: grup, levelOption: pilihan);
+
+  const DiscountTarget.menuUtama() : this(utama: true);
+
+  String get label {
+    if (utama) return 'Harga menu utama';
+    if (toppingName != null) return 'Topping: $toppingName';
+    return '$levelGroup: $levelOption';
+  }
+
+  /// Kunci tunggal untuk membandingkan dan menyimpan pilihan di layar.
+  String get kunci {
+    if (utama) return 'M';
+    return toppingName != null
+        ? 'T|$toppingName'
+        : 'L|$levelGroup|$levelOption';
+  }
+
+  static DiscountTarget? dariKunci(String kunci) {
+    if (kunci == 'M') return const DiscountTarget.menuUtama();
+    final bagian = kunci.split('|');
+    if (bagian.first == 'T' && bagian.length == 2) {
+      return DiscountTarget.topping(bagian[1]);
+    }
+    if (bagian.first == 'L' && bagian.length == 3) {
+      return DiscountTarget.level(bagian[1], bagian[2]);
+    }
+    return null;
+  }
+
+  /// Baris pesanan ini memang membawa sasarannya.
+  bool cocok(Map<String, String> levels, List<String> toppings) {
+    // Harga menu utama dibawa setiap baris, apa pun pilihannya.
+    if (utama) return true;
+    if (toppingName != null) return toppings.contains(toppingName);
+    if (levelOption != null) return levels[levelGroup] == levelOption;
+    return false;
+  }
+
+  /// Harga yang dibawa sasaran ini pada menunya.
+  int tambahanHarga(Product produk) {
+    if (utama) return produk.price;
+    if (toppingName != null) return produk.toppingPrice(toppingName!);
+    if (levelOption != null) {
+      return produk.priceDeltaFor(levelGroup!, levelOption!);
+    }
+    return 0;
+  }
+
+  Map<String, dynamic> toMap() => {
+        if (utama) 'base': true,
+        if (levelGroup != null) 'level_group': levelGroup,
+        if (levelOption != null) 'level_option': levelOption,
+        if (toppingName != null) 'topping': toppingName,
+      };
+
+  factory DiscountTarget.fromMap(Map<String, dynamic> map) => DiscountTarget(
+        utama: map['base'] == true,
+        levelGroup: map['level_group'] as String?,
+        levelOption: map['level_option'] as String?,
+        toppingName: map['topping'] as String?,
       );
 
-  static const _unset = Object();
+  /// Bentuk lama: sasarannya menempel langsung di barisnya, paling
+  /// banyak satu. Yang tidak menyebut sasaran apa pun berarti seluruh
+  /// menu — dan itu daftar kosong, bukan satu sasaran kosong.
+  static List<DiscountTarget> dariBentukLama(Map<String, dynamic> map) {
+    final topping = map['topping'] as String?;
+    final pilihan = map['level_option'] as String?;
+    if (topping != null) return [DiscountTarget.topping(topping)];
+    if (pilihan != null) {
+      return [DiscountTarget.level(map['level_group'] as String? ?? '', pilihan)];
+    }
+    return const [];
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      other is DiscountTarget && other.kunci == kunci;
+
+  @override
+  int get hashCode => kunci.hashCode;
 }
 
 /// Satu aturan diskon milik sebuah resto.

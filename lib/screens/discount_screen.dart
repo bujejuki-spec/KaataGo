@@ -808,11 +808,8 @@ class _MenuTerpilih extends StatelessWidget {
 /// Aturan satu menu, diringkas jadi satu kalimat pendek.
 String ringkasanAturan(DiscountItem item) {
   final jumlah = '${kQtyModeLabels[item.mode]} ${item.qty} pcs';
-  if (item.toppingName != null) return '$jumlah · topping ${item.toppingName}';
-  if (item.levelOption != null) {
-    return '$jumlah · ${item.levelGroup} ${item.levelOption}';
-  }
-  return '$jumlah · seluruh harga menu';
+  final sasaran = item.targetLabel ?? 'seluruh harga menu';
+  return '$jumlah · $sasaran';
 }
 
 /// Pemilih menu di halamannya sendiri, lengkap dengan pencarian.
@@ -928,10 +925,18 @@ class _AturanMenuSheet extends StatefulWidget {
 class _AturanMenuSheetState extends State<_AturanMenuSheet> {
   late DiscountItem _item = widget.item;
 
+  bool _punya(DiscountTarget t) => _item.targets.contains(t);
+
+  void _ubahSasaran(DiscountTarget t, bool dipilih) {
+    final daftar = [..._item.targets];
+    daftar.remove(t);
+    if (dipilih) daftar.add(t);
+    setState(() => _item = _item.copyWith(targets: daftar));
+  }
+
   @override
   Widget build(BuildContext context) {
     final muted = KaataTheme.mutedOf(context);
-    final punyaSasaran = punyaSasaranPotongan(widget.product);
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
@@ -986,38 +991,70 @@ class _AturanMenuSheetState extends State<_AturanMenuSheet> {
             ],
           ),
 
-          if (punyaSasaran) ...[
-            const SizedBox(height: 18),
-            Text('Bagian mana yang dipotong',
-                style: TextStyle(fontSize: 12, color: muted)),
-            const SizedBox(height: 8),
-            DropdownButtonFormField<String>(
-              value: kunciSasaran(_item),
-              isExpanded: true,
-              decoration: const InputDecoration(isDense: true),
-              items: [
-                const DropdownMenuItem(
-                    value: '*', child: Text('Seluruh harga menu')),
+          const SizedBox(height: 18),
+          Text('Bagian mana yang dipotong',
+              style: TextStyle(fontSize: 12, color: muted)),
+          const SizedBox(height: 2),
+          Text(
+            'Boleh lebih dari satu. Yang dicentang dijumlahkan, bukan '
+            'dipilih salah satu.',
+            style: TextStyle(fontSize: 11.5, color: muted),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            decoration: BoxDecoration(
+              border: Border.all(color: KaataTheme.borderOf(context)),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Column(
+              children: [
+                // Seluruh harga menu berdiri sendiri: mencentangnya
+                // mematikan sisanya, karena ia sudah mencakup semuanya.
+                // Membiarkan keduanya tercentang berarti tambahan harga
+                // dipotong dua kali.
+                CheckboxListTile(
+                  dense: true,
+                  value: _item.targets.isEmpty,
+                  title: const Text('Seluruh harga menu',
+                      style: TextStyle(fontSize: 13.5)),
+                  subtitle: Text('Termasuk topping dan tambahan yang dipilih '
+                      'pemesan', style: TextStyle(fontSize: 11, color: muted)),
+                  onChanged: (v) {
+                    if (v != true) return;
+                    setState(() => _item = _item.copyWith(targets: const []));
+                  },
+                ),
+                const Divider(height: 1),
+                _BarisSasaran(
+                  judul: 'Harga menu utama',
+                  keterangan: 'Hanya harga menunya, tanpa tambahan apa pun',
+                  target: const DiscountTarget.menuUtama(),
+                  dipilih: _punya(const DiscountTarget.menuUtama()),
+                  onUbah: _ubahSasaran,
+                ),
                 for (final g in widget.product.levelGroups)
                   for (final o in LevelGroupRegistry.optionsOf(g))
                     if (widget.product.priceDeltaFor(g, o) > 0)
-                      DropdownMenuItem(
-                        value: 'L|$g|$o',
-                        child: Text('Tambahan $g: $o'),
+                      _BarisSasaran(
+                        judul: '$g: $o',
+                        keterangan: 'Tambahan '
+                            '${formatRupiahInput(widget.product.priceDeltaFor(g, o))}',
+                        target: DiscountTarget.level(g, o),
+                        dipilih: _punya(DiscountTarget.level(g, o)),
+                        onUbah: _ubahSasaran,
                       ),
                 for (final t in widget.product.toppings)
                   if (t.price > 0)
-                    DropdownMenuItem(
-                      value: 'T|${t.name}',
-                      child: Text('Topping ${t.name}'),
+                    _BarisSasaran(
+                      judul: 'Topping ${t.name}',
+                      keterangan: 'Tambahan ${formatRupiahInput(t.price)}',
+                      target: DiscountTarget.topping(t.name),
+                      dipilih: _punya(DiscountTarget.topping(t.name)),
+                      onUbah: _ubahSasaran,
                     ),
               ],
-              onChanged: (v) {
-                if (v == null) return;
-                setState(() => _item = terapkanSasaran(_item, v));
-              },
             ),
-          ],
+          ),
 
           const SizedBox(height: 22),
           FilledButton(
@@ -1074,43 +1111,33 @@ class _StepperJumlah extends StatelessWidget {
   }
 }
 
-/// Menu ini punya bagian yang bisa dipotong sendiri.
-///
-/// Yang tidak punya tambahan harga sama sekali tidak diberi pilihan:
-/// dropdown berisi satu pilihan bukan pilihan, cuma kolom yang harus
-/// dilewati.
-bool punyaSasaranPotongan(Product product) {
-  for (final g in product.levelGroups) {
-    for (final o in LevelGroupRegistry.optionsOf(g)) {
-      if (product.priceDeltaFor(g, o) > 0) return true;
-    }
-  }
-  return product.toppings.any((t) => t.price > 0);
-}
+/// Satu baris centang di daftar sasaran.
+class _BarisSasaran extends StatelessWidget {
+  final String judul;
+  final String keterangan;
+  final DiscountTarget target;
+  final bool dipilih;
+  final void Function(DiscountTarget target, bool dipilih) onUbah;
 
-/// Kunci sasaran untuk dropdown. Bintang berarti seluruh menu — nilai
-/// sentinel, bukan null, karena null di DropdownButtonFormField berarti
-/// "belum dipilih" dan meninggalkan kolomnya kosong.
-String kunciSasaran(DiscountItem item) {
-  if (item.toppingName != null) return 'T|${item.toppingName}';
-  if (item.levelOption != null) {
-    return 'L|${item.levelGroup}|${item.levelOption}';
-  }
-  return '*';
-}
+  const _BarisSasaran({
+    required this.judul,
+    required this.keterangan,
+    required this.target,
+    required this.dipilih,
+    required this.onUbah,
+  });
 
-DiscountItem terapkanSasaran(DiscountItem item, String kunci) {
-  if (kunci == '*') {
-    return item.copyWith(
-        levelGroup: null, levelOption: null, toppingName: null);
+  @override
+  Widget build(BuildContext context) {
+    return CheckboxListTile(
+      dense: true,
+      value: dipilih,
+      title: Text(judul, style: const TextStyle(fontSize: 13.5)),
+      subtitle: Text(keterangan,
+          style: TextStyle(fontSize: 11, color: KaataTheme.mutedOf(context))),
+      onChanged: (v) => onUbah(target, v == true),
+    );
   }
-  final bagian = kunci.split('|');
-  if (bagian.first == 'T') {
-    return item.copyWith(
-        levelGroup: null, levelOption: null, toppingName: bagian[1]);
-  }
-  return item.copyWith(
-      levelGroup: bagian[1], levelOption: bagian[2], toppingName: null);
 }
 
 class _MinPurchaseFields extends StatelessWidget {

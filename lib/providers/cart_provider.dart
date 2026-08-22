@@ -96,21 +96,24 @@ class CartProvider extends ChangeNotifier {
     if (baris.isEmpty) return 0;
     final produk = baris.first.product;
 
-    if (item.toppingName != null) {
-      final harga = produk.toppingPrice(item.toppingName!);
-      return baris
-          .where((l) => l.selectedToppings.contains(item.toppingName))
-          .fold<int>(0, (s, l) => s + _hargaMenu(harga, l) * l.quantity);
+    // Tanpa sasaran berarti seluruh harga menunya — berikut tambahan
+    // apa pun yang dipilih pemesan.
+    if (item.targets.isEmpty) {
+      return baris.fold<int>(0, (s, l) => s + menuSubtotalOf(l));
     }
 
-    if (item.levelOption != null && item.levelGroup != null) {
-      final harga = produk.priceDeltaFor(item.levelGroup!, item.levelOption!);
-      return baris
-          .where((l) => l.selectedLevels[item.levelGroup] == item.levelOption)
-          .fold<int>(0, (s, l) => s + _hargaMenu(harga, l) * l.quantity);
+    // Beberapa sasaran dijumlahkan, bukan dipilih salah satu. Promo
+    // "topping gratis" yang menyebut tiga topping memang berarti
+    // ketiganya — yang memilih dua di antaranya mendapat potongan untuk
+    // dua-duanya sekaligus.
+    var total = 0;
+    for (final l in baris) {
+      for (final t in item.targets) {
+        if (!t.cocok(l.selectedLevels, l.selectedToppings)) continue;
+        total += _hargaMenu(t.tambahanHarga(produk), l) * l.quantity;
+      }
     }
-
-    return baris.fold<int>(0, (s, l) => s + menuSubtotalOf(l));
+    return total;
   }
 
   /// Tambahan harga dipajaki sama seperti menunya sendiri — kalau tidak,
@@ -121,18 +124,14 @@ class CartProvider extends ChangeNotifier {
 
   /// Jumlah yang cocok dengan sasarannya.
   int _jumlahDiskon(DiscountItem item) {
-    final baris = linesOf(item.productId);
-    if (item.toppingName != null) {
-      return baris
-          .where((l) => l.selectedToppings.contains(item.toppingName))
-          .fold<int>(0, (s, l) => s + l.quantity);
-    }
-    if (item.levelOption != null && item.levelGroup != null) {
-      return baris
-          .where((l) => l.selectedLevels[item.levelGroup] == item.levelOption)
-          .fold<int>(0, (s, l) => s + l.quantity);
-    }
-    return quantityOf(item.productId);
+    if (item.targets.isEmpty) return quantityOf(item.productId);
+    // Baris yang membawa salah satu sasarannya sudah dihitung — bukan
+    // yang membawa semuanya. Menuntut semuanya berarti promo tiga
+    // topping cuma berlaku bagi yang memesan ketiganya sekaligus.
+    return linesOf(item.productId)
+        .where((l) => item.targets
+            .any((t) => t.cocok(l.selectedLevels, l.selectedToppings)))
+        .fold<int>(0, (s, l) => s + l.quantity);
   }
 
   /// Yang benar-benar harus dibayar setelah potongan.

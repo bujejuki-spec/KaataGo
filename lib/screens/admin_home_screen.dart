@@ -68,6 +68,20 @@ class AdminHomeScreen extends StatelessWidget {
           Expanded(
             child: HubMenuLayout(
               tiles: [
+                // Dibuka dua kali sehari pada dua saat tersibuk: awal shift
+                // ketika antrean mulai, dan akhir shift ketika sudah ingin
+                // pulang. Menu yang harus dicari di dalam grup pada dua saat
+                // itu adalah menu yang dilewati — dan shift yang tidak pernah
+                // ditutup membuat seluruh gunanya hilang.
+                HubMenuTile(
+                  icon: Icons.point_of_sale,
+                  title: 'Shift Kasir',
+                  subtitle: 'Buka shift, tutup shift, dan hitung uang laci',
+                  color: const Color(0xFFF59E0B),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const CashierShiftScreen()),
+                  ),
+                ),
                 HubGroupTile(
                   icon: Icons.point_of_sale_outlined,
                   title: 'Penjualan',
@@ -150,16 +164,6 @@ class AdminHomeScreen extends StatelessWidget {
                           ? Future.value(0)
                           : CashDepositRepository().pendingCount(restoId),
                       destination: () => const CashDepositScreen(),
-                    ),
-                    HubMenuTile(
-                      icon: Icons.point_of_sale,
-                      title: 'Shift Kasir',
-                      subtitle: 'Buka shift, tutup shift, dan hitung uang laci',
-                      color: const Color(0xFFF59E0B),
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                            builder: (_) => const CashierShiftScreen()),
-                      ),
                     ),
                   ],
                 ),
