@@ -3,6 +3,11 @@ class ProductReview {
   final String id;
   final String restoId;
   final String productId;
+
+  /// Pesanan yang dinilai. Null pada baris yang ditulis sebelum
+  /// penilaian menempel pada pesanannya.
+  final String? orderId;
+
   final String customerEmail;
   final String customerName;
   final int rating;
@@ -13,6 +18,7 @@ class ProductReview {
     required this.id,
     required this.restoId,
     required this.productId,
+    this.orderId,
     required this.customerEmail,
     required this.customerName,
     required this.rating,
@@ -24,6 +30,7 @@ class ProductReview {
         id: map['id'].toString(),
         restoId: map['resto_id'].toString(),
         productId: map['product_id'].toString(),
+        orderId: map['order_id']?.toString(),
         customerEmail: map['customer_email']?.toString() ?? '',
         customerName: map['customer_name']?.toString() ?? 'Pelanggan',
         rating: (map['rating'] as num?)?.toInt() ?? 0,

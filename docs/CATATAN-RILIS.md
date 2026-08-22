@@ -13,6 +13,16 @@ Formatnya dibaca `scripts/release.sh`: judul `## <versi>`, lalu
 poin-poinnya. Versi yang tidak punya bagiannya di sini tetap terbit,
 hanya pengumumannya memakai kalimat umum.
 
+## 2.12.0
+
+- Menu yang dipesan lagi bisa dinilai lagi — penilaian menempel pada
+  pesanannya, bukan pada menunya
+- Ajakan menilai hilang setelah seluruh menu di pesanan itu dinilai
+- Bintang menu langsung muncul di kartu menu setelah dinilai
+- Tombol Batal di semua dialog tidak lagi memunculkan pesan galat
+- Saat menutup shift, selisihnya ditunjukkan lebih dulu dan nominalnya
+  masih bisa diperbaiki sebelum disimpan
+
 ## 2.11.0
 
 - Foto menu tidak lagi hilang setelah pesanan masuk

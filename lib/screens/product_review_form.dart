@@ -7,19 +7,28 @@ import '../providers/auth_provider.dart';
 import '../theme.dart';
 import '../widgets/app_toast.dart';
 
-/// Formulir penilaian satu menu.
+/// Formulir penilaian satu menu, untuk satu pesanan.
 ///
-/// Membuka penilaian yang sudah pernah ditulis orang ini untuk menu itu
-/// kalau ada — yang memesan nasi goreng sepuluh kali tetap punya satu
-/// suara, dan yang berubah pikiran mengubah tulisannya.
+/// Membuka penilaian yang sudah ditulis untuk pesanan ITU kalau ada.
+/// Yang memesan menu yang sama di hari lain menilai lagi dari kosong —
+/// masakan hari ini bukan masakan bulan lalu.
 class ProductReviewForm extends StatefulWidget {
   final String restoId;
+
+  /// Pesanan yang sedang dinilai.
+  ///
+  /// Penilaian menempel pada pesanannya, bukan pada menunya. Yang
+  /// memesan nasi goreng untuk kedua kalinya membuka formulir kosong,
+  /// bukan bintang dari pesanan sebelumnya.
+  final String orderId;
+
   final String productId;
   final String productName;
 
   const ProductReviewForm({
     super.key,
     required this.restoId,
+    required this.orderId,
     required this.productId,
     required this.productName,
   });
@@ -50,7 +59,8 @@ class _ProductReviewFormState extends State<ProductReviewForm> {
 
   Future<void> _muat() async {
     try {
-      final punya = await _repo.mine(widget.productId);
+      final punya = await _repo.mine(
+          orderId: widget.orderId, productId: widget.productId);
       if (!mounted) return;
       setState(() {
         if (punya != null) {
@@ -82,6 +92,7 @@ class _ProductReviewFormState extends State<ProductReviewForm> {
 
       await _repo.simpan(
         restoId: widget.restoId,
+        orderId: widget.orderId,
         productId: widget.productId,
         customerName: nama,
         rating: _bintang,

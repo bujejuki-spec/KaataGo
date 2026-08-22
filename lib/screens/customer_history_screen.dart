@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../db/guest_order_store.dart';
 import '../db/order_repository.dart';
+import '../db/product_review_repository.dart';
 import '../db/restaurant_repository.dart';
 import '../models/customer_order.dart';
 import '../providers/auth_provider.dart';
@@ -38,6 +39,55 @@ class _CustomerHistoryScreenState extends State<CustomerHistoryScreen> {
 
   // Guest mode only — recreated on pull-to-refresh to re-run the fetch.
   Future<List<CustomerOrder>>? _guestFuture;
+
+  final _reviewRepo = ProductReviewRepository();
+
+  /// Menu yang sudah dinilai, per pesanan.
+  ///
+  /// Dipakai dua hal: menyembunyikan ajakan menilai pada pesanan yang
+  /// seluruh menunya sudah dinilai, dan menandai menu yang sudah dinilai
+  /// di dalam daftarnya.
+  Map<String, Set<String>> _dinilai = const {};
+
+  /// Pesanan yang sudah pernah ditanyakan, supaya tidak ditanyakan lagi
+  /// tiap kali aliran realtime menggerakkan daftarnya.
+  final Set<String> _sudahDitanya = {};
+
+  /// Menanyakan penilaian untuk pesanan yang belum pernah ditanyakan.
+  ///
+  /// Dipanggil dari build lewat post-frame — daftar pesanannya sendiri
+  /// datang dari StreamBuilder, jadi tidak ada satu titik pun di
+  /// initState tempat idnya sudah diketahui.
+  Future<void> _muatPenilaian([List<CustomerOrder>? orders]) async {
+    final ids = orders == null
+        ? _sudahDitanya.toList()
+        : [
+            for (final o in orders)
+              if (o.paymentStatus == OrderPaymentStatus.paid) o.id,
+          ];
+    if (ids.isEmpty) return;
+    if (orders != null) {
+      final baru = ids.where((id) => !_sudahDitanya.contains(id)).toList();
+      if (baru.isEmpty) return;
+      _sudahDitanya.addAll(baru);
+    }
+    try {
+      final hasil = await _reviewRepo.sudahDinilai(_sudahDitanya.toList());
+      if (!mounted) return;
+      setState(() => _dinilai = hasil);
+    } catch (_) {
+      // Gagal menanyakan berarti ajakannya tetap muncul. Mengajak orang
+      // menilai yang sudah dinilai jauh lebih ringan daripada
+      // menyembunyikan ajakan yang seharusnya ada.
+    }
+  }
+
+  /// Seluruh menu di pesanan ini sudah dinilai.
+  bool _semuaDinilai(CustomerOrder order) {
+    final sudah = _dinilai[order.id];
+    if (sudah == null || sudah.isEmpty) return false;
+    return order.items.every((i) => sudah.contains(i.productId));
+  }
 
   Future<String> _restoName(String restoId) async {
     if (_restoNameCache.containsKey(restoId)) return _restoNameCache[restoId]!;
@@ -141,6 +191,7 @@ class _CustomerHistoryScreenState extends State<CustomerHistoryScreen> {
     for (final i in order.items) {
       unik.putIfAbsent(i.productId, () => i.productName);
     }
+    final sudah = _dinilai[order.id] ?? const <String>{};
 
     await showModalBottomSheet<void>(
       context: context,
@@ -156,20 +207,38 @@ class _CustomerHistoryScreenState extends State<CustomerHistoryScreen> {
             ),
             for (final e in unik.entries)
               ListTile(
-                leading: const Icon(Icons.restaurant_menu, size: 20),
+                leading: Icon(
+                  sudah.contains(e.key)
+                      ? Icons.star_rounded
+                      : Icons.restaurant_menu,
+                  size: 20,
+                  color: sudah.contains(e.key)
+                      ? const Color(0xFFF59E0B)
+                      : null,
+                ),
                 title: Text(e.value),
+                // Yang sudah dinilai tetap ditampilkan, dengan tanda.
+                // Menyembunyikannya membuat orang mengira menunya hilang
+                // — dan mengubah penilaian yang barusan ditulis jadi
+                // tidak mungkin.
+                subtitle: sudah.contains(e.key)
+                    ? const Text('Sudah dinilai — ketuk untuk mengubah',
+                        style: TextStyle(fontSize: 11.5))
+                    : null,
                 trailing: const Icon(Icons.chevron_right, size: 20),
-                onTap: () {
+                onTap: () async {
                   Navigator.pop(sheetContext);
-                  Navigator.of(context).push(
+                  final tersimpan = await Navigator.of(context).push<bool>(
                     MaterialPageRoute(
                       builder: (_) => ProductReviewForm(
                         restoId: order.restoId,
+                        orderId: order.id,
                         productId: e.key,
                         productName: e.value,
                       ),
                     ),
                   );
+                  if (tersimpan == true) await _muatPenilaian();
                 },
               ),
             const SizedBox(height: 10),
@@ -182,6 +251,9 @@ class _CustomerHistoryScreenState extends State<CustomerHistoryScreen> {
   Widget _orderList(List<CustomerOrder> orders, {bool guestNotice = false}) {
     final currency = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
     final dateFmt = DateFormat('dd MMM yyyy, HH:mm', 'id_ID');
+
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _muatPenilaian(orders));
 
     if (orders.isEmpty) {
       // Still a scrollable, so pull-to-refresh keeps working when empty.
@@ -292,16 +364,21 @@ class _CustomerHistoryScreenState extends State<CustomerHistoryScreen> {
               // penilaian atas menu yang tidak pernah dibeli orang itu.
               // Tombol yang muncul di tempat lain cuma akan berakhir
               // sebagai pesan galat.
+              // Hilang begitu seluruh menunya sudah dinilai. Tombol yang
+              // tetap ada setelah semuanya selesai adalah ajakan yang
+              // tidak punya isi — dan yang menekannya menemukan daftar
+              // yang seluruhnya sudah bertanda.
               if (order.paymentStatus == OrderPaymentStatus.paid &&
                   context.read<AuthProvider>().user != null &&
-                  order.items.isNotEmpty)
+                  order.items.isNotEmpty &&
+                  !_semuaDinilai(order))
                 Align(
                   alignment: Alignment.centerLeft,
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(8, 0, 12, 6),
                     child: TextButton.icon(
                       icon: const Icon(Icons.star_border, size: 18),
-                      label: const Text('Nilai Menu'),
+                      label: const Text('Boleh bantu rating pesanannya yaa'),
                       onPressed: () => _nilaiMenu(order),
                     ),
                   ),

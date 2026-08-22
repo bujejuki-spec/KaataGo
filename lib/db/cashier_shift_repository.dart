@@ -42,6 +42,22 @@ class CashierShiftRepository {
     return CashierShift.fromMap(Map<String, dynamic>.from(row as Map));
   }
 
+  /// Berapa yang seharusnya ada di laci saat ini.
+  ///
+  /// Hanya untuk ditunjukkan sebagai perkiraan sesudah kasir menuliskan
+  /// hitungannya — supaya salah ketik nominal bisa diperbaiki sebelum
+  /// shiftnya benar-benar ditutup.
+  ///
+  /// Angka ini TIDAK dipakai menyimpan apa pun. Saat ditutup, server
+  /// menghitungnya lagi dari awal di dalam `close_shift`, dan itulah
+  /// yang tersimpan — jadi perkiraan yang basi atau dipalsukan di
+  /// perjalanan tidak bisa mengubah selisih yang tercatat.
+  Future<int> perkiraan(String shiftId) async {
+    final hasil =
+        await _client.rpc('shift_expected_cash', params: {'p_shift_id': shiftId});
+    return (hasil as num?)?.toInt() ?? 0;
+  }
+
   /// Menutup shift dan mengembalikan hasilnya — termasuk selisihnya, yang
   /// baru dihitung server pada saat ini juga.
   Future<CashierShift> tutup({

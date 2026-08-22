@@ -125,11 +125,25 @@ void main() {
     // Kasir yang tahu lebih dulu "seharusnya sekian" akan menghitung
     // sampai ketemu angka itu, bukan menghitung apa adanya.
     test('angka yang seharusnya tidak bocor sebelum uangnya dihitung', () {
-      final sebelumTutup = layar.substring(
+      final tutup = layar.substring(layar.indexOf('Future<void> _tutup()'));
+      final tanya = tutup.indexOf('_tanyaRupiah(');
+      final minta = tutup.indexOf('_repo.perkiraan(');
+      expect(tanya, greaterThan(0));
+      expect(minta, greaterThan(tanya),
+          reason: 'perkiraannya diminta sebelum nominalnya ditulis');
+    });
+
+    // Salah ketik satu angka nol tercatat selamanya sebagai selisih
+    // jutaan rupiah atas nama orang yang tidak melakukan apa-apa. Menutup
+    // shift tidak bisa dibatalkan, jadi kesempatan memperbaikinya harus
+    // ada sebelum disimpan.
+    test('nominalnya masih bisa diperbaiki sebelum tersimpan', () {
+      final tutup = layar.substring(
           layar.indexOf('Future<void> _tutup()'),
           layar.indexOf('await _repo.tutup('));
-      expect(sebelumTutup, isNot(contains('expectedCash')));
-      expect(layar, contains('baru muncul '));
+      expect(tutup, contains('_konfirmasiSelisih('));
+      expect(tutup, contains('nilaiAwal: awal'));
+      expect(layar, contains("cancelLabel: 'Perbaiki Nominal'"));
     });
 
     test('hasilnya baru ditampilkan setelah tersimpan', () {
@@ -137,13 +151,19 @@ void main() {
       expect(layar.indexOf('_tampilkanHasil('), greaterThan(i));
     });
 
-    // Layar ini tidak pernah memanggil shift_expected_cash sendiri.
-    // Satu-satunya yang memanggilnya adalah close_shift.
+    // Perkiraan yang ditunjukkan sebelum menutup hanya penunjuk. Yang
+    // tersimpan tetap dihitung ulang server di dalam close_shift, jadi
+    // angka basi atau dipalsukan di perjalanan tidak bisa mengubah
+    // selisih yang tercatat.
     test('aplikasi tidak pernah menghitung sendiri', () {
       final repo =
           File('lib/db/cashier_shift_repository.dart').readAsStringSync();
-      expect(repo, isNot(contains('shift_expected_cash')));
-      expect(layar, isNot(contains('shift_expected_cash')));
+      final fungsi = repo.substring(repo.indexOf('Future<int> perkiraan('));
+      expect(fungsi, contains("_client.rpc('shift_expected_cash'"));
+      // Tidak ada aritmetika sama sekali — cuma meneruskan jawaban server.
+      final badan = fungsi.substring(0, fungsi.indexOf('/// Menutup shift'));
+      expect(badan.contains(' - '), isFalse);
+      expect(badan.contains(' + '), isFalse);
     });
   });
 

@@ -66,7 +66,18 @@ class DialogActions extends StatelessWidget {
         SizedBox(
           width: double.infinity,
           child: TextButton(
-            onPressed: busy ? null : (onCancel ?? () => Navigator.pop(context, false)),
+            // Menutup tanpa nilai, bukan dengan `false`.
+            //
+            // Dialog ini dipakai juga oleh showDialog<String>,
+            // showDialog<int>, dan sejenisnya. Menutupnya dengan `false`
+            // di sana melempar "type 'bool' is not a subtype of type
+            // 'String?'" dari dalam Navigator — dan dialognya bahkan
+            // tidak jadi tertutup, jadi yang menekan Batal terjebak di
+            // depan galat yang tidak menyebut-nyebut tombol Batal.
+            //
+            // Yang memeriksa hasilnya dengan `== true` tidak terpengaruh:
+            // null maupun false sama-sama bukan true.
+            onPressed: busy ? null : (onCancel ?? () => Navigator.pop(context)),
             child: Text(cancelLabel),
           ),
         ),

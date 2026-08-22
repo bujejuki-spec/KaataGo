@@ -105,6 +105,31 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
   /// Nama menu, untuk menyebut isi paket bundling di keterangan promo.
   Map<String, String> get _namaMenu =>
       {for (final p in _produk ?? const <Product>[]) p.id: p.name};
+
+  /// Kapan terakhir label promo dan bintangnya diambil.
+  ///
+  /// Diambil ulang tiap kali layar ini dibuka lagi, tapi tidak lebih
+  /// sering dari [_jedaMeta]. Tanpa pengambilan ulang, bintang yang
+  /// barusan diberikan lewat Riwayat Saya tidak akan pernah muncul di
+  /// kartu menunya sampai aplikasinya ditutup — datanya sudah ada di
+  /// server, yang basi cuma salinan di layar. Tanpa jedanya, tiap
+  /// gambar ulang layar berarti dua permintaan ke server.
+  DateTime? _metaTerakhir;
+  static const _jedaMeta = Duration(seconds: 30);
+
+  void _segarkanMeta(String restoId, {bool paksa = false}) {
+    final terakhir = _metaTerakhir;
+    if (!paksa &&
+        terakhir != null &&
+        DateTime.now().difference(terakhir) < _jedaMeta) {
+      return;
+    }
+    _metaTerakhir = DateTime.now();
+    muatMenuMeta(restoId).then((m) {
+      if (!mounted || _streamRestoId != restoId) return;
+      setState(() => _meta = m);
+    });
+  }
   String? _streamRestoId;
 
   StreamSubscription<List<CustomerOrder>>? _orderWatch;
@@ -701,10 +726,8 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
     // merchant sebelumnya yang masih menempel di menu merchant baru
     // adalah keterangan yang salah, bukan keterangan yang basi.
     _meta = MenuMeta.kosong;
-    muatMenuMeta(restoId).then((m) {
-      if (!mounted || _streamRestoId != restoId) return;
-      setState(() => _meta = m);
-    });
+    _metaTerakhir = null;
+    _segarkanMeta(restoId);
 
     _produkSub = _productRepo.watchAll(restoId).listen(
       (items) {
@@ -843,6 +866,10 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
     // Sesudah titik ini restonya sudah pasti terpilih, jadi streamnya
     // aman disiapkan — dan hanya dibuat ulang kalau restonya berganti.
     _siapkanStream(session.restoId!);
+    // Dipanggil dari build, jadi ikut berjalan tiap kali orangnya
+    // kembali ke layar ini — dan itu persis saat bintang yang barusan
+    // diberikannya perlu muncul.
+    _segarkanMeta(session.restoId!);
 
     // The chooser and this menu are the same route — which one shows
     // depends on hasActiveResto — so "back" here can't pop to the chooser,

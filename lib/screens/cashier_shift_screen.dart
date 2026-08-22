@@ -75,7 +75,7 @@ class _CashierShiftScreenState extends State<CashierShiftScreen> {
     final restoId = _restoId;
     if (restoId == null) return;
 
-    final modal = await _tanyaRupiah(
+    final jawab = await _tanyaRupiah(
       judul: 'Buka Shift',
       keterangan: 'Berapa uang yang sudah ada di laci sekarang? Biasanya '
           'uang kembalian yang ditinggal shift sebelumnya. Kosongkan '
@@ -84,11 +84,11 @@ class _CashierShiftScreenState extends State<CashierShiftScreen> {
       tombol: 'Buka Shift',
       bolehNol: true,
     );
-    if (modal == null || !mounted) return;
+    if (jawab == null || !mounted) return;
 
     setState(() => _sibuk = true);
     try {
-      await _repo.buka(restoId: restoId, modalAwal: modal);
+      await _repo.buka(restoId: restoId, modalAwal: jawab.jumlah);
       if (!mounted) return;
       showAppToast(context, 'Shift dibuka.');
       await _muat();
@@ -110,23 +110,58 @@ class _CashierShiftScreenState extends State<CashierShiftScreen> {
     // menghitung sampai ketemu angka itu, bukan menghitung apa adanya.
     // Selisih yang tidak pernah muncul bukan berarti tidak ada — ia cuma
     // pindah ke bulan depan, dan ke orang yang tidak melakukannya.
-    final uang = await _tanyaRupiah(
-      judul: 'Tutup Shift',
-      keterangan: 'Hitung semua uang di laci sekarang, lalu tulis '
-          'jumlahnya apa adanya. Angka yang seharusnya baru muncul '
-          'setelah ini disimpan.',
-      label: 'Uang di Laci',
-      tombol: 'Tutup Shift',
-      pakaiCatatan: true,
-    );
-    if (uang == null || !mounted) return;
+    // Ditanya, ditunjukkan selisihnya, lalu boleh diperbaiki — berulang
+    // sampai kasirnya yakin.
+    //
+    // Salah ketik satu angka nol pada nominal yang dihitung akan
+    // tercatat selamanya sebagai selisih jutaan rupiah atas nama orang
+    // yang tidak melakukan apa-apa. Menutup shift tidak bisa dibatalkan,
+    // jadi kesempatan memperbaikinya harus ada SEBELUM disimpan.
+    ({int jumlah, String? catatan})? jawab;
+    var awal = 0;
+
+    while (true) {
+      jawab = await _tanyaRupiah(
+        judul: 'Tutup Shift',
+        keterangan: 'Hitung semua uang di laci sekarang, lalu tulis '
+            'jumlahnya apa adanya. Selisihnya ditunjukkan sesudah ini, '
+            'dan masih bisa diperbaiki sebelum disimpan.',
+        label: 'Uang di Laci',
+        tombol: 'Lanjut',
+        pakaiCatatan: true,
+        nilaiAwal: awal,
+      );
+      if (jawab == null || !mounted) return;
+
+      final int perkiraan;
+      try {
+        perkiraan = await _repo.perkiraan(shift.id);
+      } catch (e) {
+        if (!mounted) return;
+        showAppToast(context, _pesan(e), isError: true);
+        return;
+      }
+      if (!mounted) return;
+
+      final lanjut = await _konfirmasiSelisih(
+        dihitung: jawab.jumlah,
+        seharusnya: perkiraan,
+      );
+      if (lanjut == null || !mounted) return;
+      if (lanjut) break;
+
+      // Diperbaiki — kolomnya dibuka lagi berisi angka tadi, bukan
+      // kosong. Yang salah ketik satu digit tidak perlu mengetik ulang
+      // seluruhnya.
+      awal = jawab.jumlah;
+    }
 
     setState(() => _sibuk = true);
     try {
       final hasil = await _repo.tutup(
         shiftId: shift.id,
-        uangDihitung: uang.$1,
-        catatan: uang.$2,
+        uangDihitung: jawab.jumlah,
+        catatan: jawab.catatan,
       );
       if (!mounted) return;
       await _muat();
@@ -138,6 +173,63 @@ class _CashierShiftScreenState extends State<CashierShiftScreen> {
     } finally {
       if (mounted) setState(() => _sibuk = false);
     }
+  }
+
+  /// Menunjukkan selisihnya sebelum disimpan, dan menawarkan perbaikan.
+  ///
+  /// Mengembalikan true untuk lanjut menutup, false untuk memperbaiki
+  /// nominalnya, dan null kalau dibatalkan sama sekali.
+  Future<bool?> _konfirmasiSelisih({
+    required int dihitung,
+    required int seharusnya,
+  }) async {
+    final selisih = dihitung - seharusnya;
+    final warna = selisih == 0
+        ? const Color(0xFF10B981)
+        : (selisih < 0 ? Colors.red : const Color(0xFFF59E0B));
+
+    return showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(selisih == 0 ? 'Uangnya pas' : 'Ada selisih'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _BarisAngka(label: 'Seharusnya', nilai: seharusnya),
+            _BarisAngka(label: 'Kamu hitung', nilai: dihitung),
+            const Divider(height: 20),
+            _BarisAngka(
+              label: selisih < 0
+                  ? 'Kurang'
+                  : (selisih > 0 ? 'Lebih' : 'Selisih'),
+              nilai: selisih.abs(),
+              tebal: true,
+              warna: warna,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              selisih == 0
+                  ? 'Setelah ditutup, shift ini tidak bisa dibuka lagi.'
+                  : 'Periksa dulu nominalnya — salah ketik satu angka nol '
+                      'akan tercatat selamanya sebagai selisih atas namamu. '
+                      'Kalau memang segitu hitungannya, lanjutkan saja.',
+              style: TextStyle(
+                  fontSize: 12, color: KaataTheme.mutedOf(dialogContext)),
+            ),
+          ],
+        ),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          DialogActions(
+            confirmLabel: 'Ya, Tutup Shift',
+            cancelLabel: 'Perbaiki Nominal',
+            destructive: selisih != 0,
+            onConfirm: () => Navigator.pop(dialogContext, true),
+            onCancel: () => Navigator.pop(dialogContext, false),
+          ),
+        ],
+      ),
+    );
   }
 
   /// Pesan galat dari Postgres datang dengan bungkusnya. Yang dibaca
@@ -206,20 +298,25 @@ class _CashierShiftScreenState extends State<CashierShiftScreen> {
 
   /// Satu kolom rupiah, dan — kalau [pakaiCatatan] — satu kolom catatan.
   ///
-  /// Mengembalikan `int` saat tanpa catatan, dan `(int, String?)` saat
-  /// dengan catatan.
-  Future<dynamic> _tanyaRupiah({
+  /// Null berarti dibatalkan. Bertipe tegas, tidak `dynamic`: tombol
+  /// Batal bawaan [DialogActions] menutup dialog dengan nilai `false`,
+  /// dan pada tipe longgar nilai itu lolos sebagai jawaban — lalu jatuh
+  /// jauh di dalam, sebagai "type 'bool' is not a subtype of type 'int'"
+  /// yang tidak menyebut-nyebut tombol Batal sama sekali.
+  Future<({int jumlah, String? catatan})?> _tanyaRupiah({
     required String judul,
     required String keterangan,
     required String label,
     required String tombol,
     bool bolehNol = false,
     bool pakaiCatatan = false,
+    int nilaiAwal = 0,
   }) async {
-    final ctrl = TextEditingController();
+    final ctrl = TextEditingController(
+        text: nilaiAwal == 0 ? '' : formatRupiahInput(nilaiAwal));
     final catatan = TextEditingController();
 
-    final hasil = await showDialog<dynamic>(
+    final hasil = await showDialog<({int jumlah, String? catatan})>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text(judul),
@@ -261,6 +358,9 @@ class _CashierShiftScreenState extends State<CashierShiftScreen> {
         actions: [
           DialogActions(
             confirmLabel: tombol,
+            // Ditulis sendiri supaya membatalkan berarti null, bukan
+            // `false` — lihat catatan di atas.
+            onCancel: () => Navigator.pop(dialogContext),
             onConfirm: () {
               final n = parseRupiah(ctrl.text) ?? (bolehNol ? 0 : -1);
               if (n < 0) {
@@ -268,8 +368,9 @@ class _CashierShiftScreenState extends State<CashierShiftScreen> {
                     isError: true);
                 return;
               }
+              final tulisan = catatan.text.trim();
               Navigator.pop(dialogContext,
-                  pakaiCatatan ? (n, catatan.text.trim()) : n);
+                  (jumlah: n, catatan: tulisan.isEmpty ? null : tulisan));
             },
           ),
         ],

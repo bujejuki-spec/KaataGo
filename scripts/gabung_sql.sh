@@ -76,6 +76,7 @@ FILES=(
   order_cancel_kitchen.sql
   product_badges_reviews.sql
   cashier_shift.sql
+  product_review_per_order.sql
 )
 
 {
