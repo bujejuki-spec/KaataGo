@@ -220,7 +220,15 @@ class _TableQrGeneratorScreenState extends State<TableQrGeneratorScreen> {
                   TextFormField(
                     key: ValueKey(_restoName),
                     initialValue: _restoName,
-                    enabled: false,
+                    // Tidak bisa diubah, tapi bukan "dinonaktifkan".
+                    // `enabled: false` mewarnai isinya dengan warna
+                    // disabled tema, dan di mode gelap itu membuat nama
+                    // merchantnya nyaris tak terbaca — padahal justru
+                    // nama itu yang dipakai memastikan QR-nya milik
+                    // merchant yang benar.
+                    readOnly: true,
+                    canRequestFocus: false,
+                    style: TextStyle(color: KaataTheme.textOf(context)),
                     decoration: InputDecoration(
                       labelText: 'Nama Merchant',
                       filled: true,

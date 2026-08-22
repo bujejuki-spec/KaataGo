@@ -11,6 +11,7 @@ import '../theme.dart';
 import '../widgets/cancel_order_button.dart';
 import '../utils/id_time.dart';
 import 'customer_receipt_screen.dart';
+import 'product_review_form.dart';
 
 /// Cross-restaurant order history, in two flavours:
 ///
@@ -128,6 +129,56 @@ class _CustomerHistoryScreenState extends State<CustomerHistoryScreen> {
     );
   }
 
+  /// Memilih menu mana dari pesanan itu yang mau dinilai.
+  ///
+  /// Satu pesanan bisa berisi lima menu, dan yang mengecewakan biasanya
+  /// cuma satu. Melompat langsung ke formulir menu pertama berarti
+  /// penilaian yang salah sasaran.
+  Future<void> _nilaiMenu(CustomerOrder order) async {
+    // Menu yang sama bisa muncul beberapa baris dengan pilihan berbeda.
+    // Yang dinilai menunya, bukan barisnya.
+    final unik = <String, String>{};
+    for (final i in order.items) {
+      unik.putIfAbsent(i.productId, () => i.productName);
+    }
+
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(20, 18, 20, 6),
+              child: Text('Menu mana yang mau dinilai?',
+                  style:
+                      TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+            ),
+            for (final e in unik.entries)
+              ListTile(
+                leading: const Icon(Icons.restaurant_menu, size: 20),
+                title: Text(e.value),
+                trailing: const Icon(Icons.chevron_right, size: 20),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => ProductReviewForm(
+                        restoId: order.restoId,
+                        productId: e.key,
+                        productName: e.value,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            const SizedBox(height: 10),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _orderList(List<CustomerOrder> orders, {bool guestNotice = false}) {
     final currency = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
     final dateFmt = DateFormat('dd MMM yyyy, HH:mm', 'id_ID');
@@ -234,6 +285,27 @@ class _CustomerHistoryScreenState extends State<CustomerHistoryScreen> {
               // Tombol yang selalu ada lalu menolak saat ditekan membuat
               // orang mengira aplikasinya rusak — padahal yang terjadi
               // cuma dapur sudah mulai memasak.
+              // Menilai menu hanya ditawarkan pada pesanan yang lunas,
+              // dan hanya kepada yang punya akun.
+              //
+              // Bukan sekadar aturan tampilan: basis data menolak
+              // penilaian atas menu yang tidak pernah dibeli orang itu.
+              // Tombol yang muncul di tempat lain cuma akan berakhir
+              // sebagai pesan galat.
+              if (order.paymentStatus == OrderPaymentStatus.paid &&
+                  context.read<AuthProvider>().user != null &&
+                  order.items.isNotEmpty)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(8, 0, 12, 6),
+                    child: TextButton.icon(
+                      icon: const Icon(Icons.star_border, size: 18),
+                      label: const Text('Nilai Menu'),
+                      onPressed: () => _nilaiMenu(order),
+                    ),
+                  ),
+                ),
               if (order.canBeCancelledByCustomer)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),

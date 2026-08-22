@@ -126,7 +126,11 @@ void main() {
 
     test('tersimpan juga di penyimpanan lokal', () {
       final db = File('lib/db/database_helper.dart').readAsStringSync();
-      expect(db, contains('version: 14,'));
+      // Yang diperiksa migrasinya, bukan nomor versinya. Versi basis
+      // data lokal naik tiap kali ada kolom baru untuk hal lain, dan
+      // tes yang memakukan angkanya cuma gagal karena fitur yang tidak
+      // ada hubungannya.
+      expect(db, contains('if (oldVersion < 14)'));
       expect(db, contains('ALTER TABLE transactions ADD COLUMN orderNo INTEGER'));
     });
 

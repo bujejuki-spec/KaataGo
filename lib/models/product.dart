@@ -87,6 +87,13 @@ class Product {
   final bool ppnExempt;
   final bool serviceExempt;
 
+  /// Label yang dinyatakan merchant: 'new', 'best_seller', 'recommended'.
+  ///
+  /// Label diskon tidak pernah ada di sini. Itu dibaca dari promo yang
+  /// sedang berlaku, bukan dicentang — label yang dicentang akan tetap
+  /// terpasang seminggu setelah promonya habis.
+  final List<String> badges;
+
   Product({
     required this.id,
     required this.name,
@@ -102,6 +109,7 @@ class Product {
     this.levelPrices = const {},
     this.ppnExempt = false,
     this.serviceExempt = false,
+    this.badges = const [],
   });
 
   /// Bisa dipesan sekarang.
@@ -147,6 +155,10 @@ class Product {
       'ppn_exempt': ppnExempt ? 1 : 0,
       'service_exempt': serviceExempt ? 1 : 0,
       'out_of_stock': outOfStock ? 1 : 0,
+      // Teks JSON di sqflite, jsonb di Postgres. Keduanya membaca teks
+      // JSON yang sama — supabase-dart mengirimnya apa adanya dan
+      // Postgres yang menguraikannya.
+      'badges': jsonEncode(badges),
     };
   }
 
@@ -178,7 +190,24 @@ class Product {
       ppnExempt: _asBool(map['ppn_exempt']),
       serviceExempt: _asBool(map['service_exempt']),
       outOfStock: _asBool(map['out_of_stock']),
+      badges: _badges(map['badges']),
     );
+  }
+
+  /// Sama seperti [_toppings]: teks JSON dari sqflite, daftar dari
+  /// Postgres. Bentuk yang tidak dikenal dibaca sebagai kosong — menu
+  /// tanpa label masih menu, tapi menu yang gagal dibaca berarti layar
+  /// kosong.
+  static List<String> _badges(Object? raw) {
+    if (raw == null) return const [];
+    try {
+      final data = raw is String
+          ? (raw.isEmpty ? const [] : jsonDecode(raw) as List<dynamic>)
+          : raw as List<dynamic>;
+      return [for (final b in data) b.toString()];
+    } catch (_) {
+      return const [];
+    }
   }
 
   /// SQLite hands these back as 0/1 ints, Postgres as real booleans.
@@ -213,6 +242,7 @@ class Product {
     Map<String, Map<String, int>>? levelPrices,
     bool? ppnExempt,
     bool? serviceExempt,
+    List<String>? badges,
   }) {
     return Product(
       id: id,
@@ -231,6 +261,7 @@ class Product {
       levelPrices: levelPrices ?? this.levelPrices,
       ppnExempt: ppnExempt ?? this.ppnExempt,
       serviceExempt: serviceExempt ?? this.serviceExempt,
+      badges: badges ?? this.badges,
     );
   }
 }

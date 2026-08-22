@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/product.dart';
+import '../models/product_review.dart';
 import '../theme.dart';
 import 'product_grid_card.dart';
 
@@ -29,6 +30,15 @@ class ProductCategoryList extends StatefulWidget {
   /// halangan.
   final Widget? header;
 
+  /// Menu yang sedang kena promo hari ini. Kosong berarti tidak ada —
+  /// atau promonya belum sempat dimuat, dan keduanya sama-sama benar
+  /// ditampilkan sebagai tanpa label.
+  final Set<String> diskonProductIds;
+
+  /// Bintang dan angka terjual per menu, dari satu panggilan untuk
+  /// seluruh katalog.
+  final Map<String, ProductStats> stats;
+
   const ProductCategoryList({
     super.key,
     required this.products,
@@ -37,6 +47,8 @@ class ProductCategoryList extends StatefulWidget {
     this.ppnPercent = 0,
     this.showStock = false,
     this.header,
+    this.diskonProductIds = const {},
+    this.stats = const {},
   });
 
   @override
@@ -241,7 +253,10 @@ class _ProductCategoryListState extends State<ProductCategoryList> {
                       crossAxisCount: columns,
                       // Portrait: photo on top, name/price beneath. Wider
                       // than this and the photo flattens into a strip.
-                      childAspectRatio: 0.78,
+                      // Sedikit lebih jangkung sejak kartunya membawa
+                      // baris bintang dan angka terjual. Tanpa itu,
+                      // baris barunya diambil dari tinggi fotonya.
+                      childAspectRatio: 0.72,
                       crossAxisSpacing: 12,
                       mainAxisSpacing: 12,
                     ),
@@ -253,6 +268,9 @@ class _ProductCategoryListState extends State<ProductCategoryList> {
                         quantityInCart: widget.quantityOf(product.id),
                         ppnPercent: widget.ppnPercent,
                         showStock: widget.showStock,
+                        sedangDiskon:
+                            widget.diskonProductIds.contains(product.id),
+                        stats: widget.stats[product.id],
                         onTap: () => widget.onTapProduct(product),
                       );
                     },

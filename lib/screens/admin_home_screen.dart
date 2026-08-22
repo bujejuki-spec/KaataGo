@@ -24,6 +24,7 @@ import 'product_list_screen.dart';
 import 'settings_menu_screen.dart';
 import 'transaction_history_screen.dart';
 import 'cash_deposit_screen.dart';
+import 'cashier_shift_screen.dart';
 import 'finance_balance_screen.dart';
 
 /// Home screen for the 'admin' role — styled the same as Finance/Super
@@ -149,6 +150,16 @@ class AdminHomeScreen extends StatelessWidget {
                           ? Future.value(0)
                           : CashDepositRepository().pendingCount(restoId),
                       destination: () => const CashDepositScreen(),
+                    ),
+                    HubMenuTile(
+                      icon: Icons.point_of_sale,
+                      title: 'Shift Kasir',
+                      subtitle: 'Buka shift, tutup shift, dan hitung uang laci',
+                      color: const Color(0xFFF59E0B),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                            builder: (_) => const CashierShiftScreen()),
+                      ),
                     ),
                   ],
                 ),

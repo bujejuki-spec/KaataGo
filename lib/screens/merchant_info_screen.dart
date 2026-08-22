@@ -4,8 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../db/firestore_product_repository.dart';
 import '../db/merchant_review_repository.dart';
+import '../db/product_review_repository.dart';
 import '../models/merchant_review.dart';
+import '../models/product_review.dart';
 import '../models/opening_hours.dart';
 import '../models/restaurant.dart';
 import '../providers/auth_provider.dart';
@@ -43,7 +46,16 @@ class MerchantInfoScreen extends StatefulWidget {
 
 class _MerchantInfoScreenState extends State<MerchantInfoScreen> {
   final _repo = MerchantReviewRepository();
+  final _repoMenu = ProductReviewRepository();
   List<MerchantReview> _ulasan = const [];
+
+  /// Penilaian per menu, berikut nama menunya.
+  ///
+  /// Namanya dibaca dari katalog, bukan disalin ke tiap ulasan: menu
+  /// yang berganti nama tetap satu menu, dan ulasannya tidak boleh
+  /// terpecah jadi dua daftar karenanya.
+  List<ProductReview> _ulasanMenu = const [];
+  Map<String, String> _namaMenu = const {};
   bool _memuat = true;
 
   @override
@@ -55,15 +67,42 @@ class _MerchantInfoScreenState extends State<MerchantInfoScreen> {
   Future<void> _muat() async {
     try {
       final r = await _repo.forResto(widget.merchant.id);
+      // Gagal memuat ulasan menu tidak boleh menghapus ulasan merchant
+      // yang sudah berhasil diambil — keduanya berdiri sendiri.
+      List<ProductReview> rm = const [];
+      Map<String, String> nama = const {};
+      try {
+        rm = await _repoMenu.forResto(widget.merchant.id);
+        if (rm.isNotEmpty) {
+          final produk =
+              await FirestoreProductRepository().getAllOnce(widget.merchant.id);
+          nama = {for (final p in produk) p.id: p.name};
+        }
+      } catch (_) {}
       if (!mounted) return;
       setState(() {
         _ulasan = r;
+        _ulasanMenu = rm;
+        _namaMenu = nama;
         _memuat = false;
       });
     } catch (_) {
       if (!mounted) return;
       setState(() => _memuat = false);
     }
+  }
+
+  /// Ulasan menu, dikelompokkan per menu dan diurutkan dari yang paling
+  /// banyak dibicarakan — bukan urut abjad. Yang membacanya sedang
+  /// mencari menu mana yang jadi bahan omongan.
+  Map<String, List<ProductReview>> get _kelompokMenu {
+    final map = <String, List<ProductReview>>{};
+    for (final u in _ulasanMenu) {
+      map.putIfAbsent(u.productId, () => []).add(u);
+    }
+    final urut = map.entries.toList()
+      ..sort((a, b) => b.value.length.compareTo(a.value.length));
+    return {for (final e in urut) e.key: e.value};
   }
 
   double get _rata => _ulasan.isEmpty
@@ -205,6 +244,21 @@ class _MerchantInfoScreenState extends State<MerchantInfoScreen> {
                   ],
                 ],
               ),
+              if (_ulasanMenu.isNotEmpty)
+                _Kartu(
+                  ikon: Icons.restaurant_menu,
+                  judul: 'Ulasan Menu',
+                  anak: [
+                    for (final e in _kelompokMenu.entries) ...[
+                      _JudulMenu(
+                        nama: _namaMenu[e.key] ?? 'Menu sudah dihapus',
+                        ulasan: e.value,
+                      ),
+                      for (final u in e.value) _BarisUlasanMenu(ulasan: u),
+                      const SizedBox(height: 8),
+                    ],
+                  ],
+                ),
             ],
           ),
         ),
@@ -319,6 +373,85 @@ class _BarisUlasan extends StatelessWidget {
               ),
             ),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Nama menu, rata-ratanya, dan berapa orang yang bicara.
+class _JudulMenu extends StatelessWidget {
+  final String nama;
+  final List<ProductReview> ulasan;
+
+  const _JudulMenu({required this.nama, required this.ulasan});
+
+  @override
+  Widget build(BuildContext context) {
+    final rata =
+        ulasan.map((u) => u.rating).reduce((a, b) => a + b) / ulasan.length;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(nama,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                    fontWeight: FontWeight.bold, fontSize: 13.5)),
+          ),
+          const Icon(Icons.star_rounded, size: 15, color: Color(0xFFF59E0B)),
+          const SizedBox(width: 3),
+          Text(rata.toStringAsFixed(1).replaceAll('.', ','),
+              style: const TextStyle(
+                  fontSize: 12.5, fontWeight: FontWeight.bold)),
+          const SizedBox(width: 4),
+          Text('(${ulasan.length})',
+              style:
+                  TextStyle(fontSize: 11.5, color: KaataTheme.mutedOf(context))),
+        ],
+      ),
+    );
+  }
+}
+
+/// Satu ulasan menu. Lebih ringkas daripada ulasan merchant — tidak ada
+/// foto, dan yang membacanya sedang menelusuri banyak menu sekaligus.
+class _BarisUlasanMenu extends StatelessWidget {
+  final ProductReview ulasan;
+
+  const _BarisUlasanMenu({required this.ulasan});
+
+  @override
+  Widget build(BuildContext context) {
+    final muted = KaataTheme.mutedOf(context);
+    return Padding(
+      padding: const EdgeInsets.only(left: 4, bottom: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              _Bintang(nilai: ulasan.rating.toDouble(), ukuran: 12),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(ulasan.customerName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 11.5, color: muted)),
+              ),
+              const SizedBox(width: 6),
+              Text(DateFormat('d MMM', 'id_ID').format(ulasan.createdAt),
+                  style: TextStyle(fontSize: 11, color: muted)),
+            ],
+          ),
+          if ((ulasan.comment ?? '').isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Text(ulasan.comment!,
+                  style: const TextStyle(fontSize: 12.5, height: 1.35)),
+            ),
         ],
       ),
     );

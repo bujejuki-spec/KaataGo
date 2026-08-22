@@ -46,6 +46,7 @@ import 'restaurant_list_screen.dart';
 import 'scan_table_screen.dart';
 import '../widgets/dialog_actions.dart';
 import '../utils/id_time.dart';
+import '../utils/menu_meta.dart';
 import '../widgets/app_toast.dart';
 
 /// Self-order browsing screen for customers. Reads the product catalog
@@ -97,6 +98,9 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
   List<Product>? _produk;
   Restaurant? _restoInfo;
   Object? _galatProduk;
+
+  /// Label promo, bintang, dan angka terjual tiap menu.
+  MenuMeta _meta = MenuMeta.kosong;
   String? _streamRestoId;
 
   StreamSubscription<List<CustomerOrder>>? _orderWatch;
@@ -452,7 +456,12 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
   ) async {
     final result = await showDialogBesideCart<QuantityDialogResult>(
       context: context,
-      builder: (_) => QuantityDialog(product: product, ppnPercent: cart.ppnPercent),
+      builder: (_) => QuantityDialog(
+        product: product,
+        ppnPercent: cart.ppnPercent,
+        stats: _meta.stats[product.id],
+        sedangDiskon: _meta.diskonProductIds.contains(product.id),
+      ),
     );
     if (result == null) return;
     cart.addLine(
@@ -479,6 +488,8 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
         initialNotes: line.notes,
         ppnPercent: cart.ppnPercent,
         editing: true,
+        stats: _meta.stats[line.product.id],
+        sedangDiskon: _meta.diskonProductIds.contains(line.product.id),
       ),
     );
     if (result == null) return;
@@ -678,6 +689,14 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
     _produk = null;
     _restoInfo = null;
     _galatProduk = null;
+    // Ikut dibuang saat restonya berganti. Bintang dan label milik
+    // merchant sebelumnya yang masih menempel di menu merchant baru
+    // adalah keterangan yang salah, bukan keterangan yang basi.
+    _meta = MenuMeta.kosong;
+    muatMenuMeta(restoId).then((m) {
+      if (!mounted || _streamRestoId != restoId) return;
+      setState(() => _meta = m);
+    });
 
     _produkSub = _productRepo.watchAll(restoId).listen(
       (items) {
@@ -927,6 +946,8 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                         quantityOf: cart.quantityOf,
                         ppnPercent: cart.ppnPercent,
                         onTapProduct: (p) => _onTapProduct(context, cart, p),
+                        diskonProductIds: _meta.diskonProductIds,
+                        stats: _meta.stats,
                         // Ikut tergulir bersama menunya, bukan diam di
                         // atasnya.
                         header: PromoBannerCarousel(restoId: session.restoId!),

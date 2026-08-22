@@ -4,8 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../models/product.dart';
+import '../models/product_badge.dart';
+import '../models/product_review.dart';
 import '../theme.dart';
 import '../utils/tax_calculator.dart';
+import 'product_badge_chips.dart';
 
 /// One product tile in the ordering grid — used by Kasir/Admin and
 /// Customer alike. The photo is the hero: it fills the whole upper half
@@ -35,6 +38,17 @@ class ProductGridCard extends StatelessWidget {
   /// dipesan atau tidak.
   final bool showStock;
 
+  /// Sedang kena promo yang berlaku hari ini.
+  ///
+  /// Datang dari luar, bukan dari produknya: label diskon adalah
+  /// kenyataan yang tersimpan di tabel promo, dan menyalinnya ke menu
+  /// berarti label yang masih terpasang seminggu setelah promonya habis.
+  final bool sedangDiskon;
+
+  /// Bintang dan angka terjual. Null berarti belum sempat dimuat — dan
+  /// itu berbeda dari nol, jadi barisnya disembunyikan, bukan diisi nol.
+  final ProductStats? stats;
+
   const ProductGridCard({
     super.key,
     required this.product,
@@ -42,6 +56,8 @@ class ProductGridCard extends StatelessWidget {
     required this.onTap,
     this.ppnPercent = 0,
     this.showStock = false,
+    this.sedangDiskon = false,
+    this.stats,
   });
 
   @override
@@ -54,6 +70,10 @@ class ProductGridCard extends StatelessWidget {
     final selected = quantityInCart > 0;
     final inStock = product.available;
     final lowStock = showStock && product.stock > 0 && product.stock <= 5;
+    final badges = [
+      ...badgeDariKodeList(product.badges),
+      if (sedangDiskon) ProductBadge.diskon,
+    ];
 
     return Container(
       decoration: BoxDecoration(
@@ -104,6 +124,17 @@ class ProductGridCard extends StatelessWidget {
                             ),
                           ),
                         ),
+                      ),
+                    // Label menempel di pojok kiri atas foto, bukan di
+                    // bawah namanya. Yang menggulir daftar menu membaca
+                    // foto lebih dulu daripada teks — label di bawah
+                    // nama baru terbaca setelah orangnya sudah memutuskan
+                    // untuk melewati menunya.
+                    if (badges.isNotEmpty && inStock)
+                      Positioned(
+                        left: 6,
+                        top: 6,
+                        child: ProductBadgeChips(badges: badges),
                       ),
                     // Tap affordance — without it the tile reads as a
                     // static picture rather than something orderable.
@@ -212,6 +243,11 @@ class ProductGridCard extends StatelessWidget {
                           ),
                       ],
                     ),
+                    if (stats != null &&
+                        (stats!.adaNilai || stats!.terjual > 0)) ...[
+                      const SizedBox(height: 3),
+                      ProductStatsLine(stats: stats),
+                    ],
                   ],
                 ),
               ),

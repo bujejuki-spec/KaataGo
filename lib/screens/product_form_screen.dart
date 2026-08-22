@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 
 import '../models/level_option.dart';
 import '../models/product.dart';
+import '../models/product_badge.dart';
 import '../providers/category_provider.dart';
 import '../widgets/edit_action_bar.dart';
 import '../providers/product_provider.dart';
@@ -56,6 +57,11 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   double _ppnPercent = 0;
 
   late bool _ppnExempt;
+
+  /// Label yang dinyatakan merchant. Kode, bukan enum, karena inilah
+  /// bentuk yang tersimpan — dan menyimpan enum berarti satu penerjemah
+  /// lagi yang bisa tidak sepakat.
+  late Set<String> _badges;
   late bool _outOfStock;
   late bool _serviceExempt;
 
@@ -96,6 +102,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     _maxToppingCtrl.text =
         (p?.maxToppings ?? 0) == 0 ? '' : '${p!.maxToppings}';
     _ppnExempt = p?.ppnExempt ?? false;
+    _badges = {...?p?.badges};
     _outOfStock = p?.outOfStock ?? false;
     _serviceExempt = p?.serviceExempt ?? false;
     _editing = widget.existing == null;
@@ -171,6 +178,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
       'category': _selectedCategory,
       'levelGroups': {..._selectedLevelGroups},
       'ppnExempt': _ppnExempt,
+      'badges': {..._badges},
       'outOfStock': _outOfStock,
       'serviceExempt': _serviceExempt,
       'existingPhoto': _existingPhotoBase64,
@@ -199,6 +207,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     _selectedCategory = _snapshot['category'] as String?;
     _selectedLevelGroups = {...(_snapshot['levelGroups'] as Set<String>? ?? const {})};
     _ppnExempt = _snapshot['ppnExempt'] as bool? ?? false;
+    _badges = {...(_snapshot['badges'] as Set<String>? ?? const {})};
     _outOfStock = _snapshot['outOfStock'] as bool? ?? false;
     _serviceExempt = _snapshot['serviceExempt'] as bool? ?? false;
     _existingPhotoBase64 = _snapshot['existingPhoto'] as String?;
@@ -272,6 +281,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
         ppnExempt: _ppnExempt,
         serviceExempt: _serviceExempt,
         outOfStock: _outOfStock,
+        badges: _badges.toList(),
       );
     } else {
       await provider.updateProduct(widget.existing!.copyWith(
@@ -288,6 +298,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
         ppnExempt: _ppnExempt,
         serviceExempt: _serviceExempt,
         outOfStock: _outOfStock,
+        badges: _badges.toList(),
       ));
     }
 
@@ -537,6 +548,55 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                 value: _outOfStock,
                 activeColor: Colors.red,
                 onChanged: _editing ? (v) => setState(() => _outOfStock = v) : null,
+              ),
+              const SizedBox(height: 16),
+              const Text('Label Menu (opsional)',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 4),
+              Text(
+                'Tampil sebagai stiker kecil di atas foto menu — di layar '
+                'kasir maupun di HP pelanggan. Label "DISKON" tidak ada di '
+                'sini: itu muncul sendiri selama promonya berjalan.',
+                style: TextStyle(
+                    fontSize: 11.5, color: KaataTheme.mutedOf(context)),
+              ),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final b in kBadgeBisaDipilih)
+                    () {
+                      final kode = kBadgeKode[b]!;
+                      final aktif = _badges.contains(kode);
+                      return FilterChip(
+                        selected: aktif,
+                        avatar: Icon(kBadgeIkon[b],
+                            size: 16,
+                            color: aktif ? Colors.white : kBadgeWarna[b]),
+                        label: Text(kBadgeKeterangan[b]!),
+                        labelStyle: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                          color: aktif
+                              ? Colors.white
+                              : KaataTheme.textOf(context),
+                        ),
+                        selectedColor: kBadgeWarna[b],
+                        checkmarkColor: Colors.white,
+                        showCheckmark: false,
+                        onSelected: _editing
+                            ? (v) => setState(() {
+                                  if (v) {
+                                    _badges.add(kode);
+                                  } else {
+                                    _badges.remove(kode);
+                                  }
+                                })
+                            : null,
+                      );
+                    }(),
+                ],
               ),
               const SizedBox(height: 16),
               const Text('Level / Varian (opsional)',

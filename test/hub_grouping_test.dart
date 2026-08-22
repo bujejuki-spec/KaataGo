@@ -11,11 +11,11 @@ import 'package:pos_app/widgets/hub_menu_tile.dart';
 /// sekali lihat — asal tidak ada yang hilang di dalam pintunya.
 void main() {
   const jumlahMenu = {
-    'kasir': 10,
-    'admin': 13,
-    'finance': 12,
+    'kasir': 11,
+    'admin': 14,
+    'finance': 13,
     'super_admin': 9,
-    'owner': 20,
+    'owner': 21,
   };
 
   String isi(String peran) =>

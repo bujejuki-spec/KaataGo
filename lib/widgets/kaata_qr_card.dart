@@ -153,7 +153,15 @@ class KaataQrCard extends StatelessWidget {
             textAlign: TextAlign.center,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: _s(15), fontWeight: FontWeight.bold),
+            // Warnanya ditulis, tidak diwarisi. Kartu ini selalu berlatar
+            // putih — juga saat dicetak — tapi gaya teks bawaannya ikut
+            // tema aplikasi, sehingga di mode gelap nama merchantnya
+            // menjadi abu-abu terang di atas putih dan praktis hilang.
+            style: TextStyle(
+              fontSize: _s(15),
+              fontWeight: FontWeight.bold,
+              color: KaataTheme.brandDark,
+            ),
           ),
           SizedBox(height: _s(3)),
           Text(

@@ -13,6 +13,7 @@ import '../providers/auth_provider.dart';
 import '../providers/cart_provider.dart';
 import '../providers/level_group_provider.dart';
 import '../providers/product_provider.dart';
+import '../utils/menu_meta.dart';
 import '../widgets/cart_bottom_bar.dart';
 import '../widgets/product_category_list.dart';
 import '../widgets/product_lines_sheet.dart';
@@ -32,6 +33,14 @@ class PosHomeScreen extends StatefulWidget {
 }
 
 class _PosHomeScreenState extends State<PosHomeScreen> {
+  /// Label promo, bintang, dan angka terjual.
+  ///
+  /// Kasir melihat yang sama persis dengan pelanggan. Itu disengaja:
+  /// yang ditanya "yang enak apa ya?" di depan meja kasir adalah kasir,
+  /// dan menjawabnya dari layar yang berbeda dengan layar pelanggan
+  /// berarti dua jawaban yang tidak sama.
+  MenuMeta _meta = MenuMeta.kosong;
+
   @override
   void initState() {
     super.initState();
@@ -41,6 +50,10 @@ class _PosHomeScreenState extends State<PosHomeScreen> {
       // Kelompok level disusun tiap resto sendiri.
       if (restoId != null) await primeLevelGroups(restoId);
       await _loadRates(restoId);
+      if (restoId != null) {
+        final meta = await muatMenuMeta(restoId);
+        if (mounted) setState(() => _meta = meta);
+      }
     });
   }
 
@@ -74,7 +87,13 @@ class _PosHomeScreenState extends State<PosHomeScreen> {
     final cart = context.read<CartProvider>();
     final result = await showDialogBesideCart<QuantityDialogResult>(
       context: context,
-      builder: (_) => QuantityDialog(product: product, ppnPercent: cart.ppnPercent, showStock: true),
+      builder: (_) => QuantityDialog(
+        product: product,
+        ppnPercent: cart.ppnPercent,
+        showStock: true,
+        stats: _meta.stats[product.id],
+        sedangDiskon: _meta.diskonProductIds.contains(product.id),
+      ),
     );
     if (result == null) return;
     cart.addLine(
@@ -99,6 +118,8 @@ class _PosHomeScreenState extends State<PosHomeScreen> {
         initialNotes: line.notes,
         ppnPercent: cart.ppnPercent,
         editing: true,
+        stats: _meta.stats[line.product.id],
+        sedangDiskon: _meta.diskonProductIds.contains(line.product.id),
       ),
     );
     if (result == null) return;
@@ -185,6 +206,8 @@ class _PosHomeScreenState extends State<PosHomeScreen> {
             products: products,
             quantityOf: cart.quantityOf,
             ppnPercent: cart.ppnPercent,
+            diskonProductIds: _meta.diskonProductIds,
+            stats: _meta.stats,
             onTapProduct: (p) => _onTapProduct(context, p),
           );
 

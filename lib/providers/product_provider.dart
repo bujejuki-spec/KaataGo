@@ -128,6 +128,7 @@ class ProductProvider extends ChangeNotifier {
     bool ppnExempt = false,
     bool serviceExempt = false,
     bool outOfStock = false,
+    List<String> badges = const [],
   }) async {
     final product = Product(
       id: _uuid.v4(),
@@ -144,6 +145,7 @@ class ProductProvider extends ChangeNotifier {
       ppnExempt: ppnExempt,
       serviceExempt: serviceExempt,
       outOfStock: outOfStock,
+      badges: badges,
     );
     await _repo.insert(product, restoId);
     _mirrorToFirestore(product);

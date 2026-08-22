@@ -18,6 +18,7 @@ import '../widgets/inbox_tile.dart';
 import '../widgets/responsive.dart';
 import '../widgets/kaata_logo.dart';
 import 'cash_deposit_screen.dart';
+import 'cashier_shift_screen.dart';
 import 'finance_balance_screen.dart';
 import 'pending_payment_screen.dart';
 import 'pos_home_screen.dart';
@@ -136,6 +137,16 @@ class KasirHomeScreen extends StatelessWidget {
                           ? Future.value(0)
                           : CashDepositRepository().pendingCount(restoId),
                       destination: () => const CashDepositScreen(),
+                    ),
+                    HubMenuTile(
+                      icon: Icons.point_of_sale,
+                      title: 'Shift Kasir',
+                      subtitle: 'Buka shift, tutup shift, dan hitung uang laci',
+                      color: const Color(0xFFF59E0B),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                            builder: (_) => const CashierShiftScreen()),
+                      ),
                     ),
                   ],
                 ),

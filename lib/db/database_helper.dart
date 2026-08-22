@@ -24,7 +24,7 @@ class DatabaseHelper {
 
     return openDatabase(
       path,
-      version: 14,
+      version: 15,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE products (
@@ -42,6 +42,7 @@ class DatabaseHelper {
             ppn_exempt INTEGER NOT NULL DEFAULT 0,
             service_exempt INTEGER NOT NULL DEFAULT 0,
             out_of_stock INTEGER NOT NULL DEFAULT 0,
+            badges TEXT,
             -- Katalog milik resto mana. Tanpa kolom ini, akun yang
             -- memegang dua cabang akan melihat produk keduanya bercampur
             -- di satu daftar — dan sinkronisasi akan mendorong produk
@@ -163,6 +164,13 @@ class DatabaseHelper {
           // dicerminkan ke server. Struk lama tetap tanpa nomor — dan
           // itu benar: nomornya memang belum ada saat struk itu dicetak.
           await db.execute('ALTER TABLE transactions ADD COLUMN orderNo INTEGER');
+        }
+
+        if (oldVersion < 15) {
+          // Label menu — BARU, TERLARIS, REKOMENDASI — sebagai teks JSON
+          // di satu kolom. Menu lama tidak berlabel, dan kolom kosong
+          // memang berarti itu.
+          await db.execute('ALTER TABLE products ADD COLUMN badges TEXT');
         }
       },
     );

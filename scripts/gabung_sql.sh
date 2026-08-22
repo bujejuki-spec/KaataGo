@@ -74,6 +74,8 @@ FILES=(
   merchant_reviews.sql
   review_prompt.sql
   order_cancel_kitchen.sql
+  product_badges_reviews.sql
+  cashier_shift.sql
 )
 
 {

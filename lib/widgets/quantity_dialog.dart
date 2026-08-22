@@ -7,8 +7,11 @@ import '../theme.dart';
 
 import '../models/level_option.dart';
 import '../models/product.dart';
+import '../models/product_badge.dart';
+import '../models/product_review.dart';
 import '../utils/tax_calculator.dart';
 import 'dialog_actions.dart';
+import 'product_badge_chips.dart';
 
 /// What [QuantityDialog] hands back once "Tambah ke Keranjang" is tapped:
 /// the quantity, one chosen option per the product's level group (e.g.
@@ -57,6 +60,12 @@ class QuantityDialog extends StatefulWidget {
   /// the quantity down to zero.
   final bool editing;
 
+  /// Bintang dan angka terjual menu ini, kalau sudah dimuat layarnya.
+  final ProductStats? stats;
+
+  /// Sedang kena promo hari ini.
+  final bool sedangDiskon;
+
   const QuantityDialog({
     super.key,
     required this.product,
@@ -67,6 +76,8 @@ class QuantityDialog extends StatefulWidget {
     this.ppnPercent = 0,
     this.editing = false,
     this.showStock = false,
+    this.stats,
+    this.sedangDiskon = false,
   });
 
   @override
@@ -205,6 +216,49 @@ class _QuantityDialogState extends State<QuantityDialog> {
               textAlign: TextAlign.center,
               style: const TextStyle(color: Colors.grey),
             ),
+            // Label dan bintang diulang di sini, tidak dianggap sudah
+            // terbaca di kartunya. Inilah layar tempat orang benar-benar
+            // memutuskan — dan yang membukanya dari keranjang tidak
+            // pernah melihat kartunya sama sekali.
+            () {
+              final badges = [
+                ...badgeDariKodeList(widget.product.badges),
+                if (widget.sedangDiskon) ProductBadge.diskon,
+              ];
+              if (badges.isEmpty && widget.stats == null) {
+                return const SizedBox.shrink();
+              }
+              return Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Wrap(
+                  alignment: WrapAlignment.center,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    for (final b in urutkanBadge(badges))
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 7, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: kBadgeWarna[b],
+                          borderRadius: BorderRadius.circular(5),
+                        ),
+                        child: Text(
+                          kBadgeLabel[b]!,
+                          style: const TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ),
+                    ProductStatsLine(stats: widget.stats, fontSize: 11.5),
+                  ],
+                ),
+              );
+            }(),
             if (widget.product.description != null && widget.product.description!.isNotEmpty) ...[
               const SizedBox(height: 8),
               Text(

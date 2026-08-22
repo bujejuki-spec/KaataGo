@@ -13,6 +13,22 @@ Formatnya dibaca `scripts/release.sh`: judul `## <versi>`, lalu
 poin-poinnya. Versi yang tidak punya bagiannya di sini tetap terbit,
 hanya pengumumannya memakai kalimat umum.
 
+## 2.10.0
+
+- Menu bisa diberi label BARU, TERLARIS, dan REKOMENDASI lewat Kelola
+  Produk — labelnya tampil di layar kasir maupun di HP pelanggan
+- Label DISKON muncul sendiri selama promonya berjalan, dan hilang
+  sendiri saat promonya habis
+- Pelanggan bisa menilai tiap menu yang pernah dipesannya, lewat tombol
+  Nilai Menu di Riwayat Saya
+- Bintang dan angka terjual tiap menu tampil di kartu menunya
+- Ulasan menu bisa dibaca di Info Merchant, dikelompokkan per menu
+- Menu baru Shift Kasir: buka shift dengan modal awal laci, tutup shift
+  dengan menghitung uangnya, dan selisihnya langsung ketahuan hari itu
+- Formulir Diskon Baru ditata ulang — daftar menu pindah ke halaman
+  sendiri yang bisa dicari
+- Nama merchant di kartu QR meja tidak lagi samar di mode gelap
+
 ## 2.9.4
 
 - Voucher, diskon langganan, dan Voucher Saya dipisah antara yang masih

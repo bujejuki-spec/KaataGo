@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -433,6 +432,44 @@ class _DiscountFormScreenState extends State<_DiscountFormScreen> {
     }
   }
 
+  /// Menyamakan daftar promo dengan menu yang baru dipilih.
+  ///
+  /// Yang sudah ada dipertahankan berikut aturannya — jumlah dan sasaran
+  /// yang sudah disetel tidak boleh hilang hanya karena pemilihnya
+  /// dibuka lagi untuk menambah satu menu.
+  void _samakanPilihan(Set<String> dipilih) {
+    setState(() {
+      _items.removeWhere((i) => !dipilih.contains(i.productId));
+      for (final id in dipilih) {
+        if (_items.every((i) => i.productId != id)) {
+          _items.add(DiscountItem(productId: id));
+        }
+      }
+    });
+  }
+
+  Future<void> _pilihMenu(List<Product> products) async {
+    final hasil = await Navigator.push<Set<String>>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => _MenuPickerScreen(
+          products: products,
+          terpilih: {for (final i in _items) i.productId},
+        ),
+      ),
+    );
+    if (hasil != null) _samakanPilihan(hasil);
+  }
+
+  Future<void> _aturMenu(Product product, int index) async {
+    final hasil = await showModalBottomSheet<DiscountItem>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => _AturanMenuSheet(product: product, item: _items[index]),
+    );
+    if (hasil != null) setState(() => _items[index] = hasil);
+  }
+
   @override
   Widget build(BuildContext context) {
     final products = context.watch<ProductProvider>().products;
@@ -445,55 +482,67 @@ class _DiscountFormScreenState extends State<_DiscountFormScreen> {
         key: _formKey,
         child: ResponsiveCenter(
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 18, 20, 32),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
             children: [
-              TextFormField(
-                controller: _nameCtrl,
-                textCapitalization: TextCapitalization.words,
-                decoration: InputDecoration(
-                  label: requiredLabel('Nama Diskon'),
-                  hintText: 'Contoh: Paket Hemat Siang, Diskon Gajian',
+              _Section(
+                icon: Icons.sell_outlined,
+                title: 'Nama Diskon',
+                child: TextFormField(
+                  controller: _nameCtrl,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: const InputDecoration(
+                    hintText: 'Contoh: Paket Hemat Siang',
+                  ),
+                  validator: (v) =>
+                      (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null,
                 ),
-                validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null,
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 12),
 
-              const Text('Berlaku Untuk',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-              const SizedBox(height: 8),
-              SegmentedButton<DiscountBasis>(
-                segments: [
-                  for (final b in DiscountBasis.values)
-                    ButtonSegment(value: b, label: Text(kDiscountBasisLabels[b]!)),
-                ],
-                selected: {_basis},
-                onSelectionChanged: (v) => setState(() => _basis = v.first),
-              ),
-              const SizedBox(height: 18),
-
-              if (_basis == DiscountBasis.products)
-                _ProductPicker(
-                  products: products,
-                  memuat: _memuatProduk,
-                  items: _items,
-                  onChanged: () => setState(() {}),
-                )
-              else
-                _MinPurchaseFields(
-                  controller: _minCtrl,
-                  compare: _compare,
-                  onCompareChanged: (v) => setState(() => _compare = v),
+              _Section(
+                icon: Icons.rule_outlined,
+                title: 'Berlaku Untuk',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SegmentedButton<DiscountBasis>(
+                      segments: [
+                        for (final b in DiscountBasis.values)
+                          ButtonSegment(
+                              value: b, label: Text(kDiscountBasisLabels[b]!)),
+                      ],
+                      selected: {_basis},
+                      showSelectedIcon: false,
+                      onSelectionChanged: (v) =>
+                          setState(() => _basis = v.first),
+                    ),
+                    const SizedBox(height: 14),
+                    if (_basis == DiscountBasis.products)
+                      _MenuTerpilih(
+                        products: products,
+                        memuat: _memuatProduk,
+                        items: _items,
+                        onPilih: () => _pilihMenu(products),
+                        onAtur: _aturMenu,
+                        onHapus: (i) => setState(() => _items.removeAt(i)),
+                      )
+                    else
+                      _MinPurchaseFields(
+                        controller: _minCtrl,
+                        compare: _compare,
+                        onCompareChanged: (v) => setState(() => _compare = v),
+                      ),
+                  ],
                 ),
-              const SizedBox(height: 18),
+              ),
+              const SizedBox(height: 12),
 
-              const Text('Potongan',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: SegmentedButton<DiscountKind>(
+              _Section(
+                icon: Icons.percent,
+                title: 'Potongan',
+                child: Column(
+                  children: [
+                    SegmentedButton<DiscountKind>(
                       segments: const [
                         ButtonSegment(
                             value: DiscountKind.percent, label: Text('Persen')),
@@ -501,62 +550,74 @@ class _DiscountFormScreenState extends State<_DiscountFormScreen> {
                             value: DiscountKind.amount, label: Text('Rupiah')),
                       ],
                       selected: {_kind},
+                      showSelectedIcon: false,
                       onSelectionChanged: (v) => setState(() {
                         _kind = v.first;
                         _valueCtrl.clear();
                       }),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              TextFormField(
-                controller: _valueCtrl,
-                keyboardType: TextInputType.number,
-                inputFormatters:
-                    _kind == DiscountKind.amount ? [ThousandsInputFormatter()] : null,
-                decoration: InputDecoration(
-                  label: requiredLabel(
-                      _kind == DiscountKind.percent ? 'Persen (1–100)' : 'Nominal'),
-                  prefixText: _kind == DiscountKind.amount ? 'Rp ' : null,
-                  suffixText: _kind == DiscountKind.percent ? '%' : null,
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _valueCtrl,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: _kind == DiscountKind.amount
+                          ? [ThousandsInputFormatter()]
+                          : null,
+                      decoration: InputDecoration(
+                        hintText:
+                            _kind == DiscountKind.percent ? '10' : '5.000',
+                        prefixText: _kind == DiscountKind.amount ? 'Rp ' : null,
+                        suffixText: _kind == DiscountKind.percent ? '%' : null,
+                      ),
+                      validator: (v) {
+                        final raw = (v ?? '').trim();
+                        if (raw.isEmpty) return 'Wajib diisi';
+                        if (_kind == DiscountKind.percent) {
+                          final n = int.tryParse(raw);
+                          if (n == null) return 'Harus angka';
+                          if (n < 1 || n > 100) return 'Antara 1 sampai 100';
+                        } else {
+                          final n = parseRupiah(raw) ?? 0;
+                          if (n <= 0) return 'Harus lebih dari 0';
+                        }
+                        return null;
+                      },
+                    ),
+                  ],
                 ),
-                validator: (v) {
-                  final raw = (v ?? '').trim();
-                  if (raw.isEmpty) return 'Wajib diisi';
-                  if (_kind == DiscountKind.percent) {
-                    final n = int.tryParse(raw);
-                    if (n == null) return 'Harus angka';
-                    if (n < 1 || n > 100) return 'Antara 1 sampai 100';
-                  } else {
-                    final n = parseRupiah(raw) ?? 0;
-                    if (n <= 0) return 'Harus lebih dari 0';
-                  }
-                  return null;
-                },
               ),
-              const SizedBox(height: 22),
+              const SizedBox(height: 12),
 
-              PromoPeriodFields(
-                startsOn: _startsOn,
-                endsOn: _endsOn,
-                onChanged: (s, e) => setState(() {
-                  _startsOn = s;
-                  _endsOn = e;
-                }),
-              ),
-              const SizedBox(height: 26),
-
-              FilledButton(
-                onPressed: _saving ? null : _save,
-                child: _saving
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Text('Simpan'),
+              _Section(
+                icon: Icons.event_outlined,
+                child: PromoPeriodFields(
+                  startsOn: _startsOn,
+                  endsOn: _endsOn,
+                  onChanged: (s, e) => setState(() {
+                    _startsOn = s;
+                    _endsOn = e;
+                  }),
+                ),
               ),
             ],
+          ),
+        ),
+      ),
+      // Tombolnya menetap di bawah, bukan ikut menggulung ke ujung
+      // daftar. Formulir ini bisa panjang sekali begitu menunya banyak,
+      // dan tombol simpan yang harus dicari dengan menggulir adalah
+      // cara paling mudah membuat orang mengira isiannya belum lengkap.
+      bottomNavigationBar: SafeArea(
+        minimum: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+        child: ResponsiveCenter(
+          child: FilledButton(
+            onPressed: _saving ? null : _save,
+            child: _saving
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2))
+                : const Text('Simpan'),
           ),
         ),
       ),
@@ -564,272 +625,493 @@ class _DiscountFormScreenState extends State<_DiscountFormScreen> {
   }
 }
 
-/// Pemilih menu — bisa lebih dari satu, dan itulah cara bundling
-/// dinyatakan.
+/// Satu blok formulir di dalam kartunya sendiri.
 ///
-/// Tiap menu yang dipilih membawa syarat jumlahnya sendiri, dan
-/// SELURUHNYA harus terpenuhi. Itu perbedaan yang paling mudah salah
-/// dibaca dari formulir ini, jadi kalimatnya ditulis apa adanya di
-/// bawah judulnya alih-alih dibiarkan disimpulkan sendiri.
-class _ProductPicker extends StatelessWidget {
+/// Formulir ini punya empat urusan yang benar-benar berbeda, dan
+/// sebelumnya keempatnya berbaris sebagai satu kolom panjang yang
+/// dipisah hanya oleh judul kecil. Kartu membuat batasnya terlihat
+/// tanpa harus dibaca.
+class _Section extends StatelessWidget {
+  final IconData icon;
+  final String? title;
+  final Widget child;
+
+  const _Section({required this.icon, this.title, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
+      decoration: BoxDecoration(
+        color: KaataTheme.surfaceOf(context),
+        border: Border.all(color: KaataTheme.borderOf(context)),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 17, color: KaataTheme.brandOf(context)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: title == null
+                    ? child
+                    : Text(title!,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 13.5)),
+              ),
+            ],
+          ),
+          if (title != null) ...[
+            const SizedBox(height: 12),
+            child,
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Ringkasan menu yang ikut promo.
+///
+/// Daftar seluruh menu resto tidak lagi tinggal di formulir ini. Yang
+/// dulu ada di sini adalah daftar bergulir di dalam halaman bergulir,
+/// dan tiap menu yang dicentang membentangkan tiga kendali sekaligus di
+/// tempatnya — sehingga memilih dua menu saja sudah membuat halamannya
+/// tidak terbaca. Sekarang yang tampil hanya yang sudah dipilih, satu
+/// baris masing-masing, dengan aturannya diringkas jadi satu kalimat.
+class _MenuTerpilih extends StatelessWidget {
   final List<Product> products;
   final bool memuat;
   final List<DiscountItem> items;
-  final VoidCallback onChanged;
+  final VoidCallback onPilih;
+  final void Function(Product product, int index) onAtur;
+  final ValueChanged<int> onHapus;
 
-  const _ProductPicker({
+  const _MenuTerpilih({
     required this.products,
     required this.memuat,
     required this.items,
-    required this.onChanged,
+    required this.onPilih,
+    required this.onAtur,
+    required this.onHapus,
   });
-
-  int _indexOf(String productId) =>
-      items.indexWhere((i) => i.productId == productId);
 
   @override
   Widget build(BuildContext context) {
     final muted = KaataTheme.mutedOf(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Text('Menu yang Didiskon',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-            const Spacer(),
-            Text('${items.length} dipilih',
-                style: TextStyle(fontSize: 11.5, color: muted)),
+
+    if (products.isEmpty) {
+      return Row(
+        children: [
+          if (memuat) ...[
+            SizedBox(
+              width: 14,
+              height: 14,
+              child: CircularProgressIndicator(strokeWidth: 2, color: muted),
+            ),
+            const SizedBox(width: 10),
           ],
-        ),
-        const SizedBox(height: 2),
-        Text(
-          items.length > 1
-              ? 'Semua menu di bawah harus ada di keranjang dengan jumlah '
-                  'yang diminta. Kalau salah satu kurang, promonya tidak '
-                  'berlaku sama sekali.'
-              : 'Pilih beberapa sekaligus untuk bundling. Tiap menu punya '
-                  'syarat jumlahnya sendiri.',
-          style: TextStyle(fontSize: 11.5, color: muted),
-        ),
-        const SizedBox(height: 10),
-        if (products.isEmpty && memuat)
-          Row(
-            children: [
-              SizedBox(
-                width: 14,
-                height: 14,
-                child: CircularProgressIndicator(strokeWidth: 2, color: muted),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text('Memuat daftar menu…',
-                    style: TextStyle(color: muted)),
-              ),
-            ],
-          )
-        else if (products.isEmpty)
-          Text('Belum ada produk di merchant ini.', style: TextStyle(color: muted))
-        else
-          Container(
-            constraints: const BoxConstraints(maxHeight: 340),
-            decoration: BoxDecoration(
-              border: Border.all(color: KaataTheme.borderOf(context)),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: ListView(
-              shrinkWrap: true,
-              children: [
-                for (final p in products)
-                  _ProductRow(
-                    product: p,
-                    index: _indexOf(p.id),
-                    items: items,
-                    onChanged: onChanged,
-                  ),
-              ],
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-/// Satu baris menu di pemilih: centang, lalu syarat jumlahnya.
-///
-/// Kolom jumlah baru muncul setelah menunya dicentang. Menampilkannya
-/// untuk seluruh menu resto berarti belasan kotak isian yang tidak
-/// satu pun perlu diisi — dan yang perlu diisi jadi tenggelam.
-class _ProductRow extends StatelessWidget {
-  final Product product;
-
-  /// Posisinya di daftar promo, atau -1 kalau belum dipilih.
-  final int index;
-  final List<DiscountItem> items;
-  final VoidCallback onChanged;
-
-  const _ProductRow({
-    required this.product,
-    required this.index,
-    required this.items,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final dipilih = index >= 0;
-    final item = dipilih ? items[index] : null;
-
-    return Column(
-      children: [
-        CheckboxListTile(
-          dense: true,
-          value: dipilih,
-          title: Text(product.name, style: const TextStyle(fontSize: 13.5)),
-          subtitle: Text(product.category,
-              style: const TextStyle(fontSize: 11)),
-          onChanged: (v) {
-            if (v == true) {
-              items.add(DiscountItem(productId: product.id));
-            } else if (dipilih) {
-              items.removeAt(index);
-            }
-            onChanged();
-          },
-        ),
-        if (item != null) ...[
-          // Sasaran yang lebih sempit dari seluruh menunya.
-          //
-          // Dipisah dari baris jumlah karena artinya berbeda: yang satu
-          // "berapa yang harus dibeli", yang satu "bagian mana yang
-          // dipotong". Menyatukannya di satu baris membuat keduanya
-          // terbaca sebagai satu syarat.
-          if (_punyaSasaran(product))
-            Padding(
-              padding: const EdgeInsets.fromLTRB(52, 0, 16, 8),
-              child: DropdownButtonFormField<String>(
-                value: _kunciSasaran(item),
-                isDense: true,
-                isExpanded: true,
-                decoration: const InputDecoration(
-                  isDense: true,
-                  labelText: 'Yang dipotong',
-                ),
-                items: [
-                  const DropdownMenuItem(
-                      value: '*', child: Text('Seluruh harga menu')),
-                  for (final g in product.levelGroups)
-                    for (final o in LevelGroupRegistry.optionsOf(g))
-                      if (product.priceDeltaFor(g, o) > 0)
-                        DropdownMenuItem(
-                          value: 'L|$g|$o',
-                          child: Text('Tambahan $g: $o'),
-                        ),
-                  for (final t in product.toppings)
-                    if (t.price > 0)
-                      DropdownMenuItem(
-                        value: 'T|${t.name}',
-                        child: Text('Topping ${t.name}'),
-                      ),
-                ],
-                onChanged: (v) {
-                  if (v == null) return;
-                  items[index] = _terapkanSasaran(item, v);
-                  onChanged();
-                },
-              ),
-            ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(52, 0, 16, 12),
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 148,
-                  child: SegmentedButton<QtyMode>(
-                    segments: [
-                      for (final m in QtyMode.values)
-                        ButtonSegment(
-                            value: m, label: Text(kQtyModeLabels[m]!)),
-                    ],
-                    selected: {item.mode},
-                    showSelectedIcon: false,
-                    onSelectionChanged: (v) {
-                      items[index] = item.copyWith(mode: v.first);
-                      onChanged();
-                    },
-                    style: ButtonStyle(
-                      visualDensity: VisualDensity.compact,
-                      textStyle: WidgetStateProperty.all(
-                          const TextStyle(fontSize: 11)),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                SizedBox(
-                  width: 78,
-                  child: TextFormField(
-                    initialValue: '${item.qty}',
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    decoration: const InputDecoration(
-                      isDense: true,
-                      suffixText: 'pcs',
-                    ),
-                    onChanged: (v) {
-                      final n = int.tryParse(v.trim()) ?? 0;
-                      if (n < 1) return;
-                      items[index] = item.copyWith(qty: n);
-                    },
-                  ),
-                ),
-              ],
+          Expanded(
+            child: Text(
+              memuat
+                  ? 'Memuat daftar menu…'
+                  : 'Belum ada produk di merchant ini.',
+              style: TextStyle(color: muted, fontSize: 12.5),
             ),
           ),
         ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (items.isEmpty)
+          Text('Belum ada menu yang dipilih.',
+              style: TextStyle(color: muted, fontSize: 12.5))
+        else ...[
+          if (items.length > 1) ...[
+            Text(
+              'Semua menu di bawah harus ada di keranjang. Kalau salah '
+              'satu kurang, promonya tidak berlaku.',
+              style: TextStyle(fontSize: 11.5, color: muted),
+            ),
+            const SizedBox(height: 10),
+          ],
+          for (var i = 0; i < items.length; i++)
+            () {
+              final item = items[i];
+              final product = products.firstWhere(
+                (p) => p.id == item.productId,
+                orElse: () => products.first,
+              );
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Material(
+                  color: KaataTheme.softFillOf(context),
+                  borderRadius: BorderRadius.circular(10),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(10),
+                    onTap: () => onAtur(product, i),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 10, 4, 10),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(product.name,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                        fontSize: 13.5,
+                                        fontWeight: FontWeight.w600)),
+                                const SizedBox(height: 2),
+                                Text(ringkasanAturan(item),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                        fontSize: 11.5, color: muted)),
+                              ],
+                            ),
+                          ),
+                          Icon(Icons.tune, size: 16, color: muted),
+                          IconButton(
+                            icon: const Icon(Icons.close, size: 17),
+                            visualDensity: VisualDensity.compact,
+                            color: muted,
+                            tooltip: 'Keluarkan dari promo',
+                            onPressed: () => onHapus(i),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }(),
+        ],
+        const SizedBox(height: 2),
+        OutlinedButton.icon(
+          onPressed: onPilih,
+          icon: const Icon(Icons.add, size: 17),
+          label: Text(items.isEmpty ? 'Pilih Menu' : 'Ubah Pilihan Menu'),
+        ),
       ],
     );
   }
+}
 
-  /// Menu ini punya bagian yang bisa dipotong sendiri.
-  ///
-  /// Yang tidak punya tambahan harga sama sekali tidak diberi pilihan:
-  /// dropdown berisi satu pilihan bukan pilihan, cuma kolom yang harus
-  /// dilewati.
-  static bool _punyaSasaran(Product product) {
-    for (final g in product.levelGroups) {
-      for (final o in LevelGroupRegistry.optionsOf(g)) {
-        if (product.priceDeltaFor(g, o) > 0) return true;
-      }
-    }
-    return product.toppings.any((t) => t.price > 0);
+/// Aturan satu menu, diringkas jadi satu kalimat pendek.
+String ringkasanAturan(DiscountItem item) {
+  final jumlah = '${kQtyModeLabels[item.mode]} ${item.qty} pcs';
+  if (item.toppingName != null) return '$jumlah · topping ${item.toppingName}';
+  if (item.levelOption != null) {
+    return '$jumlah · ${item.levelGroup} ${item.levelOption}';
   }
+  return '$jumlah · seluruh harga menu';
+}
 
-  /// Kunci sasaran untuk dropdown. Bintang berarti seluruh menu — nilai
-  /// sentinel, bukan null, karena null di DropdownButtonFormField
-  /// berarti "belum dipilih" dan meninggalkan kolomnya kosong.
-  static String _kunciSasaran(DiscountItem item) {
-    if (item.toppingName != null) return 'T|${item.toppingName}';
-    if (item.levelOption != null) {
-      return 'L|${item.levelGroup}|${item.levelOption}';
-    }
-    return '*';
-  }
+/// Pemilih menu di halamannya sendiri, lengkap dengan pencarian.
+///
+/// Berdiri sendiri karena daftar menu sebuah merchant bisa puluhan
+/// baris, dan daftar sepanjang itu tidak punya tempat di tengah
+/// formulir tanpa menjadi kotak bergulir — yang berarti dua gulungan
+/// bersarang, dan tidak ada cara memberitahu jari mana yang sedang
+/// menggulung yang mana.
+class _MenuPickerScreen extends StatefulWidget {
+  final List<Product> products;
+  final Set<String> terpilih;
 
-  static DiscountItem _terapkanSasaran(DiscountItem item, String kunci) {
-    if (kunci == '*') {
-      return item.copyWith(
-          levelGroup: null, levelOption: null, toppingName: null);
-    }
-    final bagian = kunci.split('|');
-    if (bagian.first == 'T') {
-      return item.copyWith(
-          levelGroup: null, levelOption: null, toppingName: bagian[1]);
-    }
-    return item.copyWith(
-        levelGroup: bagian[1], levelOption: bagian[2], toppingName: null);
+  const _MenuPickerScreen({required this.products, required this.terpilih});
+
+  @override
+  State<_MenuPickerScreen> createState() => _MenuPickerScreenState();
+}
+
+class _MenuPickerScreenState extends State<_MenuPickerScreen> {
+  late final Set<String> _terpilih = {...widget.terpilih};
+  String _cari = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final muted = KaataTheme.mutedOf(context);
+    final kunci = _cari.trim().toLowerCase();
+    final tampil = kunci.isEmpty
+        ? widget.products
+        : [
+            for (final p in widget.products)
+              if (p.name.toLowerCase().contains(kunci) ||
+                  p.category.toLowerCase().contains(kunci))
+                p,
+          ];
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Pilih Menu'),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(58),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+            child: TextField(
+              autofocus: false,
+              onChanged: (v) => setState(() => _cari = v),
+              decoration: const InputDecoration(
+                isDense: true,
+                prefixIcon: Icon(Icons.search, size: 19),
+                hintText: 'Cari menu…',
+              ),
+            ),
+          ),
+        ),
+      ),
+      body: ResponsiveCenter(
+        child: tampil.isEmpty
+            ? Center(
+                child: Text('Menu tidak ditemukan.',
+                    style: TextStyle(color: muted)))
+            : ListView.builder(
+                padding: const EdgeInsets.only(bottom: 12),
+                itemCount: tampil.length,
+                itemBuilder: (_, i) {
+                  final p = tampil[i];
+                  return CheckboxListTile(
+                    value: _terpilih.contains(p.id),
+                    title: Text(p.name, style: const TextStyle(fontSize: 14)),
+                    subtitle: Text(p.category,
+                        style: TextStyle(fontSize: 11.5, color: muted)),
+                    onChanged: (v) => setState(() {
+                      if (v == true) {
+                        _terpilih.add(p.id);
+                      } else {
+                        _terpilih.remove(p.id);
+                      }
+                    }),
+                  );
+                },
+              ),
+      ),
+      bottomNavigationBar: SafeArea(
+        minimum: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+        child: ResponsiveCenter(
+          child: FilledButton(
+            onPressed: () => Navigator.pop(context, _terpilih),
+            child: Text(_terpilih.isEmpty
+                ? 'Selesai'
+                : 'Pakai ${_terpilih.length} Menu'),
+          ),
+        ),
+      ),
+    );
   }
 }
 
+/// Aturan satu menu, disetel di lembar yang terbuka dari bawah.
+///
+/// Dipisahkan dari daftar supaya tiga kendali yang berbeda artinya —
+/// berapa yang harus dibeli, dibandingkan bagaimana, dan bagian mana
+/// yang dipotong — punya ruang untuk diberi judul masing-masing alih
+/// alih berdesakan dalam satu baris selebar 200 piksel.
+class _AturanMenuSheet extends StatefulWidget {
+  final Product product;
+  final DiscountItem item;
+
+  const _AturanMenuSheet({required this.product, required this.item});
+
+  @override
+  State<_AturanMenuSheet> createState() => _AturanMenuSheetState();
+}
+
+class _AturanMenuSheetState extends State<_AturanMenuSheet> {
+  late DiscountItem _item = widget.item;
+
+  @override
+  Widget build(BuildContext context) {
+    final muted = KaataTheme.mutedOf(context);
+    final punyaSasaran = punyaSasaranPotongan(widget.product);
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+          20, 16, 20, MediaQuery.of(context).viewInsets.bottom + 20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 38,
+              height: 4,
+              decoration: BoxDecoration(
+                color: KaataTheme.borderOf(context),
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(widget.product.name,
+              style:
+                  const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 18),
+
+          Text('Berapa yang harus dibeli',
+              style: TextStyle(fontSize: 12, color: muted)),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: SegmentedButton<QtyMode>(
+                  segments: [
+                    for (final m in QtyMode.values)
+                      ButtonSegment(value: m, label: Text(kQtyModeLabels[m]!)),
+                  ],
+                  selected: {_item.mode},
+                  showSelectedIcon: false,
+                  onSelectionChanged: (v) =>
+                      setState(() => _item = _item.copyWith(mode: v.first)),
+                  style: ButtonStyle(
+                    visualDensity: VisualDensity.compact,
+                    textStyle:
+                        WidgetStateProperty.all(const TextStyle(fontSize: 12)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              _StepperJumlah(
+                qty: _item.qty,
+                onChanged: (n) => setState(() => _item = _item.copyWith(qty: n)),
+              ),
+            ],
+          ),
+
+          if (punyaSasaran) ...[
+            const SizedBox(height: 18),
+            Text('Bagian mana yang dipotong',
+                style: TextStyle(fontSize: 12, color: muted)),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              value: kunciSasaran(_item),
+              isExpanded: true,
+              decoration: const InputDecoration(isDense: true),
+              items: [
+                const DropdownMenuItem(
+                    value: '*', child: Text('Seluruh harga menu')),
+                for (final g in widget.product.levelGroups)
+                  for (final o in LevelGroupRegistry.optionsOf(g))
+                    if (widget.product.priceDeltaFor(g, o) > 0)
+                      DropdownMenuItem(
+                        value: 'L|$g|$o',
+                        child: Text('Tambahan $g: $o'),
+                      ),
+                for (final t in widget.product.toppings)
+                  if (t.price > 0)
+                    DropdownMenuItem(
+                      value: 'T|${t.name}',
+                      child: Text('Topping ${t.name}'),
+                    ),
+              ],
+              onChanged: (v) {
+                if (v == null) return;
+                setState(() => _item = terapkanSasaran(_item, v));
+              },
+            ),
+          ],
+
+          const SizedBox(height: 22),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, _item),
+            child: const Text('Simpan Aturan'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Kurang, angka, tambah — tanpa papan ketik.
+///
+/// Jumlah dalam promo hampir selalu satu digit, dan memunculkan papan
+/// ketik angka untuk mengubah 1 jadi 2 berarti menutupi separuh lembar
+/// yang sedang diisi.
+class _StepperJumlah extends StatelessWidget {
+  final int qty;
+  final ValueChanged<int> onChanged;
+
+  const _StepperJumlah({required this.qty, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: KaataTheme.borderOf(context)),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.remove, size: 17),
+            visualDensity: VisualDensity.compact,
+            onPressed: qty > 1 ? () => onChanged(qty - 1) : null,
+          ),
+          SizedBox(
+            width: 26,
+            child: Text('$qty',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                    fontSize: 14.5, fontWeight: FontWeight.bold)),
+          ),
+          IconButton(
+            icon: const Icon(Icons.add, size: 17),
+            visualDensity: VisualDensity.compact,
+            onPressed: qty < 99 ? () => onChanged(qty + 1) : null,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Menu ini punya bagian yang bisa dipotong sendiri.
+///
+/// Yang tidak punya tambahan harga sama sekali tidak diberi pilihan:
+/// dropdown berisi satu pilihan bukan pilihan, cuma kolom yang harus
+/// dilewati.
+bool punyaSasaranPotongan(Product product) {
+  for (final g in product.levelGroups) {
+    for (final o in LevelGroupRegistry.optionsOf(g)) {
+      if (product.priceDeltaFor(g, o) > 0) return true;
+    }
+  }
+  return product.toppings.any((t) => t.price > 0);
+}
+
+/// Kunci sasaran untuk dropdown. Bintang berarti seluruh menu — nilai
+/// sentinel, bukan null, karena null di DropdownButtonFormField berarti
+/// "belum dipilih" dan meninggalkan kolomnya kosong.
+String kunciSasaran(DiscountItem item) {
+  if (item.toppingName != null) return 'T|${item.toppingName}';
+  if (item.levelOption != null) {
+    return 'L|${item.levelGroup}|${item.levelOption}';
+  }
+  return '*';
+}
+
+DiscountItem terapkanSasaran(DiscountItem item, String kunci) {
+  if (kunci == '*') {
+    return item.copyWith(
+        levelGroup: null, levelOption: null, toppingName: null);
+  }
+  final bagian = kunci.split('|');
+  if (bagian.first == 'T') {
+    return item.copyWith(
+        levelGroup: null, levelOption: null, toppingName: bagian[1]);
+  }
+  return item.copyWith(
+      levelGroup: bagian[1], levelOption: bagian[2], toppingName: null);
+}
 
 class _MinPurchaseFields extends StatelessWidget {
   final TextEditingController controller;
@@ -844,12 +1126,10 @@ class _MinPurchaseFields extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final muted = KaataTheme.mutedOf(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Minimum Belanja',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-        const SizedBox(height: 8),
         TextFormField(
           controller: controller,
           keyboardType: TextInputType.number,
@@ -863,20 +1143,20 @@ class _MinPurchaseFields extends StatelessWidget {
             return n <= 0 ? 'Harus lebih dari 0' : null;
           },
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 14),
         // Pembandingnya opsional dalam arti bawaan sudah dipilihkan (≥),
         // tapi tetap ditampilkan: transaksi yang nilainya pas di batas
         // adalah yang paling sering jadi perselisihan di meja kasir, dan
         // menebaknya diam-diam berarti kasir yang menanggung jawabannya.
-        Text('Cara membandingkan',
-            style: TextStyle(fontSize: 11.5, color: KaataTheme.mutedOf(context))),
-        const SizedBox(height: 6),
+        Text('Cara membandingkan', style: TextStyle(fontSize: 12, color: muted)),
+        const SizedBox(height: 8),
         SegmentedButton<MinCompare>(
           segments: [
             for (final c in MinCompare.values)
               ButtonSegment(value: c, label: Text(kMinCompareLabels[c]!)),
           ],
           selected: {compare},
+          showSelectedIcon: false,
           onSelectionChanged: (v) => onCompareChanged(v.first),
           style: ButtonStyle(
             visualDensity: VisualDensity.compact,
