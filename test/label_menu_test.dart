@@ -164,8 +164,35 @@ void main() {
       expect(terjual, contains("o.payment_status = 'paid'"));
     });
 
-    test('satu orang satu penilaian per menu', () {
-      expect(sql, contains('unique (product_id, customer_email)'));
+    test('satu orang satu penilaian per menu, per pesanan', () {
+      final per = File('supabase/product_review_per_order.sql')
+          .readAsStringSync();
+      // Harus indeks atas kolomnya langsung. `on conflict (order_id,
+      // product_id, customer_email)` menolak indeks berbentuk ekspresi
+      // dengan galat 42P10 — dan galatnya baru muncul saat orangnya
+      // menekan Simpan.
+      expect(
+          per,
+          contains('create unique index if not exists '
+              'product_reviews_order_menu_orang\n'
+              '  on product_reviews (order_id, product_id, customer_email);'));
+      // Diperiksa pada SQL-nya saja — baris komentar di berkas itu
+      // memang menyebut bentuk lamanya, justru untuk menerangkan kenapa
+      // ia tidak boleh dipakai.
+      final perintah = per
+          .split('\n')
+          .where((b) => !b.trimLeft().startsWith('--'))
+          .join('\n');
+      expect(perintah, isNot(contains('coalesce(order_id')));
+    });
+
+    // Di dalam indeks unik, dua NULL dianggap berbeda. Tanpa penjaga
+    // terpisah, baris yang ditulis sebelum penilaian menempel pada
+    // pesanan bisa berlipat ganda tanpa ketahuan.
+    test('baris lama tanpa pesanan tetap dibatasi satu per menu', () {
+      final per = File('supabase/product_review_per_order.sql')
+          .readAsStringSync();
+      expect(per, contains('where order_id is null'));
     });
 
     // Angkanya harus terbaca tamu yang belum masuk juga.

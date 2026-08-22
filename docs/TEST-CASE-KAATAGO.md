@@ -1,8 +1,8 @@
 # KaataGo — Test Case
 
-**Versi Aplikasi:** 2.9.4 (build 115)
-**Versi Dokumen:** 1.7
-**Tanggal Terbit:** 17 Agustus 2026
+**Versi Aplikasi:** 2.12.0 (build 118)
+**Versi Dokumen:** 1.8
+**Tanggal Terbit:** 22 Agustus 2026
 **Status:** Rilis
 **Jenis Dokumen:** Test Case — pengujian manual
 
@@ -60,6 +60,13 @@ Kolom **P** adalah prioritas:
 19b. Langganan & Tagihan Resto
 19c. Finance KaataGo (Super Admin)
 19d. Voucher Pelanggan
+19e. Analisa Pasar
+19f. Nomor Pesanan Harian
+19g. Layar Pelanggan
+19h. Fasilitas & Jam Buka
+19i. Penilaian Merchant
+19j. Label & Penilaian Menu
+19k. Shift Kasir
 20. Uji Ujung-ke-Ujung
 21. Uji Teknis (lingkup TSD)
 22. Regresi — bug yang pernah terjadi
@@ -109,7 +116,7 @@ tidak ada hubungannya dengan yang sedang diuji.
 
 ## 3. Yang sudah dijaga tes otomatis
 
-200 tes berjalan tiap kali kode diubah. Menguji ulang hal-hal ini secara
+924 tes berjalan tiap kali kode diubah. Menguji ulang hal-hal ini secara
 manual bukan salah, tapi waktunya lebih berguna di tempat lain.
 
 | Sudah dijaga tes | Berkas |
@@ -121,6 +128,11 @@ manual bukan salah, tapi waktunya lebih berguna di tempat lain.
 | Daftar nilai batasan di berkas SQL | `default_gl_test` |
 | Pesan galat unduhan | `download_error_test` |
 | Aturan isian dan ketersediaan produk | `field_rules_test`, `out_of_stock_test` |
+| Label menu, ringkasan angka terjual | `label_menu_test` |
+| Keterangan promo di dialog pesan | `deskripsi_diskon_test` |
+| Aturan shift kasir dan letak menunya | `shift_kasir_test`, `hub_grouping_test` |
+| Foto menu bertahan dari pembaruan stok | `foto_menu_bertahan_test` |
+| Nilai kembalian tombol Batal di dialog | `dialog_batal_test` |
 
 **Yang tidak bisa dijaga tes otomatis, dan karena itu jadi isi dokumen
 ini:** apa pun yang melibatkan Supabase sungguhan, perangkat sungguhan,
@@ -779,6 +791,124 @@ sudah membayar berhenti berjualan.
 
 ---
 
+## 19f. Nomor Pesanan Harian
+
+| ID | P | Skenario | Hasil yang diharapkan | Rujukan |
+|---|---|---|---|---|
+| TC-NO-01 | P1 | Buat pesanan pertama hari itu | Bernomor **1** | F-NO-01, F-NO-02 |
+| TC-NO-02 | P1 | Buat pesanan berikutnya | Nomornya berurutan, tanpa lompat | F-NO-01 |
+| TC-NO-03 | P1 | Buat pesanan QRIS, jangan dibayar | Sudah bernomor walau masih menunggu bayar | F-NO-03 |
+| TC-NO-04 | P1 | Bandingkan dua merchant pada hari yang sama | Deret nomornya berdiri sendiri-sendiri | F-NO-04 |
+| TC-NO-05 | P1 | Lewati tengah malam WIB, buat pesanan | Kembali ke **1** | F-NO-02 |
+| TC-NO-06 | P2 | Cetak struk | Nomornya tercetak | F-NO-05 |
+| TC-NO-07 | P2 | Buka Riwayat Saya pelanggan | Nomornya tampil | F-NO-05 |
+| TC-NO-08 | P2 | Buka pesanan lama sebelum fitur ini | Tanpa nomor, bukan nomor karangan | F-NO-06 |
+| TC-NO-09 | P1 | Dua pesanan masuk hampir bersamaan | Nomornya berbeda | F-NO-01, TSD §7.7 |
+
+---
+
+## 19g. Layar Pelanggan
+
+| ID | P | Skenario | Hasil yang diharapkan | Rujukan |
+|---|---|---|---|---|
+| TC-LP-01 | P2 | Buka Layar Pelanggan di perangkat kedua | Nama merchant, logonya, dan keadaan menunggu | F-LP-01, F-LP-05 |
+| TC-LP-02 | P1 | Kasir menekan Bayar QRIS | QR dan nominalnya muncul di perangkat kedua tanpa disegarkan | F-LP-02 |
+| TC-LP-03 | P1 | Bandingkan nominal di kedua layar | Sama persis | F-LP-01 |
+| TC-LP-04 | P2 | Merchant tanpa logo | Memakai logo KaataGo, bukan kotak kosong | F-LP-03 |
+| TC-LP-05 | P3 | Periksa bagian bawah layar | Ada tulisan powered by KaataGo | F-LP-04 |
+| TC-LP-06 | P2 | Pembayaran selesai | Kembali ke keadaan menunggu | F-LP-05 |
+| TC-LP-07 | P2 | Tutup lalu buka lagi Layar Pelanggan saat transaksi berjalan | Keadaannya termuat, bukan layar kosong | F-LP-02 |
+
+---
+
+## 19h. Fasilitas & Jam Buka
+
+| ID | P | Skenario | Hasil yang diharapkan | Rujukan |
+|---|---|---|---|---|
+| TC-IM-01 | P2 | Isi fasilitas merchant, buka daftar pilih merchant | Fasilitasnya tampil di kartunya | F-IM-01, F-IM-02 |
+| TC-IM-02 | P2 | Merchant dengan sembilan fasilitas | Yang muat ditampilkan, sisanya jadi "+N" | F-IM-02 |
+| TC-IM-03 | P3 | Perkecil lebar layar | Tidak ada teks yang meluber keluar kartu | F-IM-02 |
+| TC-IM-04 | P2 | Isi jam buka hanya Senin–Jumat | Sabtu dan Minggu terbaca **tutup** | F-IM-03 |
+| TC-IM-05 | P1 | Buka daftar merchant di luar jam bukanya | Ditandai tutup, berada di bawah, tidak bisa dipilih | F-IM-04 |
+| TC-IM-06 | P1 | Coba pilih merchant yang tutup | Muncul ajakan memilih merchant lain | F-IM-04 |
+| TC-IM-07 | P2 | Periksa saran lokasi terdekat | Merchant yang tutup tidak muncul di sana | F-IM-05 |
+| TC-IM-08 | P2 | Buka Info Merchant | Alamat, peta, kontak, fasilitas, jam buka, penilaian termuat | F-IM-06 |
+
+---
+
+## 19i. Penilaian Merchant
+
+| ID | P | Skenario | Hasil yang diharapkan | Rujukan |
+|---|---|---|---|---|
+| TC-PM-01 | P1 | Pelanggan berakun menilai merchant: bintang, komentar, tiga foto | Tersimpan dan tampil | F-PM-01 |
+| TC-PM-02 | P2 | Periksa nama penilai di daftar ulasan | Namanya tampil | F-PM-02 |
+| TC-PM-03 | P1 | Nilai merchant yang sama untuk kedua kalinya | Formulirnya berisi penilaian sebelumnya, dan menimpanya | F-PM-03 |
+| TC-PM-04 | P2 | Buka daftar pilih merchant | Rata-rata bintang dan jumlah penilainya tampil | F-PM-04 |
+| TC-PM-05 | P2 | Ketuk foto di ulasan | Terbuka selayar penuh | F-PM-05 |
+| TC-PM-06 | P2 | Masuk sebagai Kasir → Penilaian Pelanggan | Ulasannya terbaca | F-PM-06 |
+| TC-PM-07 | P2 | Masuk sebagai KaataGo Admin | Menu Penilaian Pelanggan tidak ada | F-PM-06 |
+| TC-PM-08 | P2 | Pegawai membuka Info Merchant tempatnya sendiri | Tombol Beri Penilaian tidak muncul | F-PM-07 |
+| TC-PM-09 | P2 | Tunggu 1–3 jam setelah membayar | Notifikasi ajakan menilai masuk | F-PM-08 |
+| TC-PM-10 | P2 | Ketuk notifikasi itu | Langsung membuka formulir merchant tersebut | F-PM-09 |
+| TC-PM-11 | P2 | Tamu tanpa akun membuka Info Merchant | Ulasannya terbaca, tombol menilai tidak ada | F-PM-01 |
+
+---
+
+## 19j. Label & Penilaian Menu
+
+| ID | P | Skenario | Hasil yang diharapkan | Rujukan |
+|---|---|---|---|---|
+| TC-LM-01 | P2 | Kelola Produk → centang BARU dan TERLARIS → simpan | Kedua label tampil di kartu menunya | F-LM-01, F-LM-03 |
+| TC-LM-02 | P2 | Periksa formulir menu | Tidak ada centangan untuk label DISKON | F-LM-02 |
+| TC-LM-03 | P1 | Buat promo yang mengenai sebuah menu | Label DISKON muncul sendiri di kartunya | F-LM-02 |
+| TC-LM-04 | P1 | Lewati tanggal berakhir promonya | Label DISKON hilang sendiri | F-LM-02 |
+| TC-LM-05 | P2 | Bandingkan kartu menu di HP pelanggan, tamu, kasir, admin, owner | Labelnya sama di semuanya | F-LM-03 |
+| TC-LM-06 | P3 | Menu dengan empat label sekaligus | Paling banyak dua yang tampil, diskon paling depan | F-LM-04 |
+| TC-LM-07 | P1 | Pesan menu, bayar, buka Riwayat Saya | Ada ajakan "Boleh bantu rating pesanannya yaa" | F-LM-05 |
+| TC-LM-08 | P1 | Nilai satu menu, lalu pesan menu yang sama di pesanan lain | Formulirnya **kosong**, bukan berisi bintang sebelumnya | F-LM-06 |
+| TC-LM-09 | P1 | Nilai menu yang sama pada pesanan yang sama dua kali | Menimpa, bukan menambah baris kedua | F-LM-07 |
+| TC-LM-10 | P1 | Nilai seluruh menu di sebuah pesanan | Ajakannya hilang dari kartu pesanan itu | F-LM-08 |
+| TC-LM-11 | P2 | Buka daftar menu untuk dinilai | Yang sudah dinilai bertanda bintang dan masih bisa diketuk | F-LM-09 |
+| TC-LM-12 | P1 | Setelah menilai, kembali ke daftar menu | Bintangnya muncul tanpa menutup aplikasi | F-LM-10 |
+| TC-LM-13 | P1 | Bandingkan angka terjual dengan `product_stats` | Cocok | F-LM-10 |
+| TC-LM-14 | P1 | Batalkan sebuah pesanan besar, muat ulang | Angka terjualnya tidak bertambah | F-LM-11 |
+| TC-LM-15 | P2 | Menu yang belum pernah dinilai maupun terjual | Barisnya tidak muncul sama sekali — bukan "★ 0,0" | F-LM-12 |
+| TC-LM-16 | P2 | Buka Info Merchant → Ulasan Menu | Dikelompokkan per menu, yang paling banyak dibicarakan di atas | F-LM-13 |
+| TC-LM-17 | P1 | Kirim penilaian lewat HTTP untuk menu yang tidak pernah dipesan | Ditolak basis data | F-LM-14, TSD §7.9 |
+| TC-LM-18 | P1 | Kirim penilaian atas nama pesanan orang lain | Ditolak basis data | F-LM-14, TSD §7.9 |
+| TC-LM-19 | P2 | Pelanggan tanpa akun membuka riwayat | Tidak ada ajakan menilai | F-LM-05 |
+| TC-LM-20 | P2 | Pesanan yang belum lunas | Tidak ada ajakan menilai | F-LM-05 |
+| TC-LM-21 | P2 | Pesanan yang diinput kasir atas nama pelanggan | Tidak bisa dinilai — bukan atas nama akunnya | FSD §10 |
+
+---
+
+## 19k. Shift Kasir
+
+| ID | P | Skenario | Hasil yang diharapkan | Rujukan |
+|---|---|---|---|---|
+| TC-SH-01 | P2 | Buka beranda Kasir | Menu Shift Kasir ada di halaman utama, bukan di dalam grup | F-SH-12 |
+| TC-SH-02 | P1 | Buka shift dengan modal awal Rp 500.000 | Kartunya berubah jadi "Shift sedang berjalan" | F-SH-01 |
+| TC-SH-03 | P1 | Coba buka shift kedua di merchant yang sama | Ditolak, dengan pesan yang bisa dibaca | F-SH-02 |
+| TC-SH-04 | P1 | Tekan Tutup Shift | Kolom hitungan muncul **tanpa** menyebut angka yang seharusnya | F-SH-04 |
+| TC-SH-05 | P1 | Tulis nominalnya, tekan Lanjut | Selisihnya ditunjukkan, dengan pilihan Perbaiki Nominal | F-SH-05 |
+| TC-SH-06 | P1 | Tekan Perbaiki Nominal | Kolomnya terbuka lagi berisi angka tadi, bukan kosong | F-SH-05 |
+| TC-SH-07 | P1 | Jual tunai Rp 200.000 selama shift, tutup dengan hitungan yang pas | Selisih **nol** | F-SH-06 |
+| TC-SH-08 | P1 | Setor tunai Rp 100.000 selama shift, lalu tutup | Yang seharusnya berkurang Rp 100.000 | F-SH-06 |
+| TC-SH-09 | P1 | Setoran itu ditolak Finance, lalu tutup shift | Tidak dikurangkan — uangnya kembali ke laci | F-SH-07 |
+| TC-SH-10 | P1 | Tarik petty cash dari laci selama shift | Yang seharusnya berkurang sebesar itu | F-SH-06 |
+| TC-SH-11 | P1 | Jual QRIS Rp 300.000 selama shift | Tidak mempengaruhi angka laci sama sekali | F-SH-06 |
+| TC-SH-12 | P1 | Tutup dengan hitungan kurang Rp 50.000 | Tercatat **Kurang Rp 50.000**, berikut anjuran melapor | F-SH-08 |
+| TC-SH-13 | P2 | Isi catatan saat menutup | Tersimpan dan tampil di riwayat | F-SH-08 |
+| TC-SH-14 | P1 | Kasir lain mencoba menutup shift rekannya | Ditolak | F-SH-09 |
+| TC-SH-15 | P1 | Owner menutup shift kasir yang sudah pulang | Berhasil | F-SH-09 |
+| TC-SH-16 | P1 | Tutup shift yang sudah ditutup | Ditolak | F-SH-10 |
+| TC-SH-17 | P2 | Buka Shift Kasir sebagai Finance | Riwayat dan selisih tiap shift terbaca | F-SH-11 |
+| TC-SH-18 | P1 | Ubah `expected_cash` lewat HTTP langsung | Ditolak — tidak ada kebijakan update | TSD §7.10 |
+| TC-SH-19 | P2 | Bandingkan yang seharusnya dengan Saldo Cash di Saldo & Pengeluaran | Aturannya sejalan | F-SH-06, TSD §11.1b |
+| TC-SH-20 | P2 | Batalkan dialog Buka Shift dan Tutup Shift | Menutup diam-diam, tanpa pesan galat | TSD §15.1 |
+
+---
+
 ## 20. Uji Ujung-ke-Ujung
 
 Mengikuti alur di FSD §3 dan diagram TSD §1.1. Dijalankan utuh, tanpa
@@ -927,6 +1057,13 @@ berminggu-minggu kemudian.
 | TC-RG-12 | P2 | Owner hanya bisa melihat Info Pembayaran | Owner bisa mengubahnya | F-SD-02 |
 | TC-RG-13 | P1 | Migrasi gagal: daftar nilai batasan menyempit saat berkas lama dijalankan ulang | Menjalankan ulang berkas mana pun tidak pernah menolak data yang sudah ada | TSD §11.1 |
 | TC-RG-14 | P2 | QR meja borongan bernomor `07`, berbeda dengan mode satu meja | Keduanya menulis `7` | F-QR-07 |
+| TC-RG-15 | P1 | Foto menu yang barusan dipesan mendadak hilang dari daftar | Fotonya tetap ada sesudah pesanan masuk | TSD §7.11 |
+| TC-RG-16 | P1 | Tombol Batal memunculkan galat dan dialognya tidak jadi tertutup | Batal menutup diam-diam di seluruh dialog | TSD §15.1 |
+| TC-RG-17 | P1 | Menyimpan penilaian gagal dengan galat 42P10 | Tersimpan tanpa galat | TSD §7.9 |
+| TC-RG-18 | P1 | Menu yang dipesan lagi sudah terisi bintang pesanan sebelumnya | Formulirnya kosong | F-LM-06 |
+| TC-RG-19 | P2 | Bintang menu tidak muncul di kartu sesudah dinilai | Muncul tanpa menutup aplikasi | F-LM-10, TSD §15.2 |
+| TC-RG-20 | P2 | Nama merchant tidak terbaca di kartu QR meja pada mode gelap | Terbaca di kedua mode | F-QR-01 |
+| TC-RG-21 | P2 | Shift Kasir tidak ditemukan karena tersembunyi di dalam grup Keuangan | Ada di halaman utama | F-SH-12 |
 
 ---
 
@@ -967,16 +1104,22 @@ lima kelompok hilang sama sekali dari daftar.
 | Voucher (VC) | 81 | TC-VC-01…81 |
 | Analisa Pasar (MR) | 13 | TC-MR-01…13 |
 | Pengaturan & Sesi (TS) | 19 | TC-TS-01…19 |
-| Peran & Akses (RG) | 14 | TC-RG-01…14 |
-| **Total** | **514** | **514 kasus + 9 alur ujung-ke-ujung** |
+| Nomor Pesanan (NO) | 9 | TC-NO-01…09 |
+| Layar Pelanggan (LP) | 7 | TC-LP-01…07 |
+| Fasilitas & Jam Buka (IM) | 8 | TC-IM-01…08 |
+| Penilaian Merchant (PM) | 11 | TC-PM-01…11 |
+| Label & Penilaian Menu (LM) | 21 | TC-LM-01…21 |
+| Shift Kasir (SH) | 20 | TC-SH-01…20 |
+| Peran & Akses (RG) | 21 | TC-RG-01…21 |
+| **Total** | **597** | **597 kasus + 9 alur ujung-ke-ujung** |
 
 Kriteria penerimaan A-01…A-20 di FSD §9 seluruhnya terpetakan lewat
 kolom Rujukan di atas. Bab TSD yang diuji: §1.2, §4, §5, §6, §7, §8,
-§10, §11.
+§10, §11, §15.
 
 ---
 
-*Dokumen ini disusun dari aplikasi versi 2.1.0 berikut `FSD-KAATAGO`
+*Dokumen ini disusun dari aplikasi versi 2.12.0 berikut `FSD-KAATAGO`
 dan `TSD-KAATAGO` pada tanggal yang sama. Kasus uji yang tidak lagi
 cocok dengan aplikasinya adalah temuan — entah pada aplikasinya, entah
 pada dokumennya.*

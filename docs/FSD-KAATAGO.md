@@ -1,8 +1,8 @@
 # KaataGo — Functional Specification Document
 
-**Versi Aplikasi:** 2.9.4 (build 115)
-**Versi Dokumen:** 2.9
-**Tanggal Terbit:** 17 Agustus 2026
+**Versi Aplikasi:** 2.12.0 (build 118)
+**Versi Dokumen:** 3.0
+**Tanggal Terbit:** 22 Agustus 2026
 **Status:** Rilis
 **Jenis Dokumen:** FSD — sisi fungsional
 
@@ -348,9 +348,15 @@ membacanya.
 | F-DS-10 | Tiap menu dalam promo membawa **syarat jumlahnya sendiri**, bukan satu angka untuk seluruh promo |
 | F-DS-11 | Syarat jumlah berbentuk **Minimal** (lebih banyak tetap dapat) atau **Tepat** (kurang maupun lebih tidak dapat) |
 | F-DS-12 | Pada bundling, **seluruh** menu yang disebut harus terpenuhi — kurang satu berarti promonya tidak berlaku sama sekali |
-| F-DS-14 | Diskon dapat menyasar **satu level/varian** atau **satu topping**, bukan seluruh harga menu |
+| F-DS-14 | Diskon dapat menyasar bagian menu yang lebih sempit: level/varian, topping, atau harga menu utamanya saja |
 | F-DS-15 | Sasaran sempit memotong **tambahan harganya saja** — "gratis ukuran besar" tetap membayar harga menunya |
 | F-DS-16 | Promo bersasaran sempit hanya berlaku kalau pilihan itu **benar-benar dipesan** |
+| F-DS-17 | Satu menu boleh menyasar **beberapa bagian sekaligus**, dipilih lewat daftar centang berisi seluruh topping dan level berharga |
+| F-DS-18 | Sasaran yang dicentang **dijumlahkan**, bukan dipilih salah satu |
+| F-DS-19 | **"Harga menu utama"** dibedakan dari **"Seluruh harga menu"**: yang pertama tidak ikut memotong topping dan tambahan yang dipilih pemesan |
+| F-DS-20 | Mencentang "Seluruh harga menu" mengosongkan sasaran lainnya |
+| F-DS-21 | Menu yang sedang kena promo diberi label **DISKON** di kartunya, tanpa dicentang siapa pun |
+| F-DS-22 | Menu berlabel DISKON, saat diketuk, menjelaskan promonya: nama, besar potongan, syarat jumlah, sasaran, isi paket, dan tanggal berakhir |
 | F-DS-03 | Potongan berbentuk **persen** (1–100) atau **rupiah** |
 | F-DS-04 | Masa berlaku: mulai tidak boleh mundur ke belakang, berakhir minimal besok |
 | F-DS-05 | Lencana status: **Berjalan**, **Terjadwal**, **Sudah lewat**, **Nonaktif** |
@@ -370,6 +376,8 @@ membacanya.
 | Bundling menuntut **seluruh** menunya terpenuhi | Sebagian-cukup berarti paket yang dijanjikan tidak pernah benar-benar dibeli, tapi restonya tetap membayar potongannya |
 | Menu di luar promo tidak ikut dipotong sekalipun ada di keranjang | Potongannya dihitung dari menu yang memang ikut promo |
 | Sasaran sempit memotong tambahan harganya saja | "Gratis ukuran besar" berarti selisih ukurannya yang hilang, bukan harga menunya — kalau seluruhnya dipotong, promonya jadi jauh lebih mahal daripada yang dijanjikan |
+| Beberapa sasaran dijumlahkan, bukan dipilih salah satu | Promo "topping gratis" nyaris tidak pernah berarti satu topping tertentu. Menyatakannya sebagai beberapa promo terpisah membuat semuanya jadi syarat yang harus dipenuhi berbarengan — dan yang memilih satu dari tiga topping tidak dapat apa-apa |
+| Label DISKON tidak pernah dicentang merchant | Ia dibaca dari promo yang sedang berjalan. Label yang dicentang akan tetap terpasang seminggu setelah promonya habis, dan yang menanggung selisihnya kasir di depan pelanggan |
 | Potongan tidak pernah melebihi tagihannya | Kalau tidak, totalnya negatif — resto berutang kepada orang yang belum membayar apa pun |
 | Diskon dihitung dari **total setelah service dan PPN** | Itulah angka yang dilihat dan dijanjikan ke pelanggan |
 
@@ -856,6 +864,169 @@ per satu resto. Dua di antaranya sengaja tentang yang **belum** terjadi.
 
 ---
 
+### 4.21 Nomor Pesanan Harian
+
+| ID | Kebutuhan |
+|---|---|
+| F-NO-01 | Tiap pesanan menerima **nomor urut harian** milik merchantnya sendiri |
+| F-NO-02 | Nomornya dimulai dari **1 tiap hari**, mengikuti tanggal WIB |
+| F-NO-03 | Nomor diberikan **saat pesanan dibuat**, apa pun status bayarnya — termasuk yang masih menunggu QRIS |
+| F-NO-04 | Dua merchant berbeda punya deretan nomornya masing-masing |
+| F-NO-05 | Nomornya tercetak di struk dan tampil di dapur, kasir, dan riwayat pelanggan |
+| F-NO-06 | Pesanan yang terbit sebelum penomoran ini dipasang tetap tanpa nomor |
+
+> **Kenapa nomornya diberikan sebelum dibayar.** Yang berdiri di depan
+> kasir sambil menunggu QRIS-nya lunas tetap perlu dipanggil kalau
+> pesanannya keburu jadi. Menunggu pembayaran berarti pesanan yang sudah
+> masuk dapur tidak punya nama untuk dipanggil ke ruangan.
+
+> **Kenapa bukan UUID pesanannya.** UUID cukup untuk mesin, tidak untuk
+> orang: kasir tidak bisa memanggil "pesanan 8f3a1c2e", dan pelanggan
+> tidak bisa mengingatnya sampai makanannya datang.
+
+---
+
+### 4.22 Layar Pelanggan
+
+Perangkat kedua yang menghadap pelanggan di meja kasir.
+
+| ID | Kebutuhan |
+|---|---|
+| F-LP-01 | Perangkat kedua menampilkan nama merchant, logonya, QR pembayaran, dan nominal yang harus dibayar |
+| F-LP-02 | Isinya berubah **seketika** mengikuti apa yang sedang dikerjakan kasir |
+| F-LP-03 | Merchant tanpa logo memakai logo KaataGo |
+| F-LP-04 | Ada tulisan **powered by KaataGo** di bawahnya |
+| F-LP-05 | Saat tidak ada transaksi, layarnya kembali ke keadaan menunggu |
+
+> **Kenapa yang dikirim bukan penunjuk ke pesanannya.** Baris pesanan
+> kasir baru dibuat setelah pembayarannya lunas. Layar yang menunggu
+> nomor pesanan tidak akan pernah menampilkan QR yang justru dibutuhkan
+> untuk membayarnya.
+
+---
+
+### 4.23 Info Merchant: Fasilitas & Jam Buka
+
+| ID | Kebutuhan |
+|---|---|
+| F-IM-01 | Merchant mencantumkan **fasilitasnya** (AC, Smoking Area, Live Music, dan lainnya) |
+| F-IM-02 | Fasilitas tampil di daftar pilih merchant, memenuhi lebar kartunya, sisanya diringkas jadi **"+N"** |
+| F-IM-03 | Merchant mencantumkan **jam buka per hari**; hari yang tidak diisi berarti tutup |
+| F-IM-04 | Merchant yang sedang tutup **ditandai**, diurutkan ke bawah, dan **tidak bisa dipilih** |
+| F-IM-05 | Merchant yang tutup tidak muncul di saran lokasi terdekat |
+| F-IM-06 | Halaman Info Merchant memuat alamat, tautan peta, kontak, fasilitas, jam buka, dan penilaian |
+
+> **Kenapa hari tanpa jam berarti tutup, bukan buka 24 jam.**
+> Menyimpan "00:00–00:00" untuk hari libur adalah kalimat yang bisa
+> dibaca dua arah, dan yang membacanya salah akan datang ke tempat yang
+> tutup.
+
+---
+
+### 4.24 Penilaian Merchant
+
+| ID | Kebutuhan |
+|---|---|
+| F-PM-01 | Pelanggan **yang punya akun** dapat menilai merchant: bintang, komentar, dan sampai tiga foto |
+| F-PM-02 | Nama penilainya ditampilkan, disalin saat menilai |
+| F-PM-03 | Satu orang satu penilaian per merchant; yang berubah pikiran **mengubah** tulisannya |
+| F-PM-04 | Rata-rata bintang dan jumlah penilai tampil di daftar pilih merchant |
+| F-PM-05 | Foto ulasan dapat dibuka selayar penuh |
+| F-PM-06 | Seluruh peran pegawai merchant dapat membacanya, kecuali KaataGo Admin |
+| F-PM-07 | Yang menilai tempatnya sendiri tidak ditawari tombol menilai |
+| F-PM-08 | 1–3 jam setelah pembayaran, pelanggan menerima ajakan menilai lewat notifikasi |
+| F-PM-09 | Ajakan itu, saat diketuk, langsung membuka formulir penilaian merchant tersebut |
+
+> **Kenapa satu orang satu suara di sini, tapi tidak di penilaian menu.**
+> Yang dinilai di sini tempatnya — dan tempat tidak berubah tiap
+> kunjungan. Masakan berubah.
+
+> **Kenapa KaataGo Admin tidak diberi akses.** Tempatnya bukan miliknya,
+> dan daftar keluhan yang tidak bisa dia tindaklanjuti cuma menumpuk.
+
+---
+
+### 4.25 Label & Penilaian Menu
+
+| ID | Kebutuhan |
+|---|---|
+| F-LM-01 | Merchant memberi label pada menunya lewat Kelola Produk: **BARU**, **TERLARIS**, **REKOMENDASI** |
+| F-LM-02 | Label **DISKON** muncul sendiri selama promonya berjalan dan hilang sendiri saat habis — tidak dicentang siapa pun |
+| F-LM-03 | Label tampil di kartu menu pada seluruh layar pesan: pelanggan berakun, tamu, kasir, admin, dan owner |
+| F-LM-04 | Paling banyak dua label tampil di satu kartu, diurutkan menurut kepentingannya |
+| F-LM-05 | Pelanggan berakun menilai **tiap menu yang pernah dipesannya** lewat riwayat pesanannya |
+| F-LM-06 | Penilaian menempel pada **pesanannya**, bukan pada menunya — menu yang dipesan lagi dinilai lagi dari kosong |
+| F-LM-07 | Satu pesanan satu penilaian per menu; yang berubah pikiran mengubah penilaian pesanan itu |
+| F-LM-08 | Ajakan menilai **hilang** setelah seluruh menu di pesanan itu dinilai |
+| F-LM-09 | Menu yang sudah dinilai tetap tampil di daftarnya dengan tanda, dan masih bisa diubah |
+| F-LM-10 | Rata-rata bintang dan **angka terjual** tampil di kartu menu, di seluruh layar pesan |
+| F-LM-11 | Angka terjual dihitung dari pesanan **lunas** saja |
+| F-LM-12 | Menu yang belum pernah dinilai tidak menampilkan "0,0"; yang belum pernah terjual tidak menampilkan "0 terjual" |
+| F-LM-13 | Ulasan menu dapat dibaca di Info Merchant, dikelompokkan per menu, diurutkan dari yang paling banyak dibicarakan |
+| F-LM-14 | Hanya yang benar-benar memesan menu itu, pada pesanan lunas miliknya, yang boleh menilainya |
+
+> **Kenapa penilaian menempel pada pesanan.** Semula satu orang hanya
+> boleh menilai sebuah menu satu kali. Terdengar benar — sampai orang
+> yang sama memesan nasi goreng untuk kedua kalinya dan menemukan
+> bintang lima dari bulan lalu sudah terisi. Yang mau bilang "kali ini
+> keasinan" tidak punya tempat mengatakannya.
+
+> **Akibatnya, dan itu disengaja.** Rata-rata bintang sebuah menu tidak
+> lagi "satu orang satu suara". Yang memesan sepuluh kali menyumbang
+> sepuluh penilaian — masing-masing menilai masakan hari itu.
+
+> **Kenapa angka nol disembunyikan.** "★ 0,0" terbaca sebagai penilaian
+> terburuk, padahal artinya belum ada yang menilai. "0 terjual" adalah
+> kalimat yang merugikan menu baru tanpa memberi tahu apa pun.
+
+> **Kenapa hanya pesanan lunas yang dihitung terjual.** Kalau tidak,
+> angka yang dipajang ke pelanggan bisa dinaikkan dengan memesan lalu
+> tidak membayar.
+
+---
+
+### 4.26 Shift Kasir
+
+| ID | Kebutuhan |
+|---|---|
+| F-SH-01 | Kasir **membuka shift** dengan mencatat modal awal laci |
+| F-SH-02 | Satu merchant hanya boleh punya **satu shift terbuka** pada satu waktu |
+| F-SH-03 | Menutup shift dilakukan dengan **menghitung uang di laci** dan menuliskan jumlahnya |
+| F-SH-04 | Angka yang seharusnya ada **tidak ditampilkan sebelum** jumlah hitungannya ditulis |
+| F-SH-05 | Sesudah ditulis, selisihnya ditunjukkan lebih dulu, dan nominalnya **masih bisa diperbaiki** sebelum disimpan |
+| F-SH-06 | Yang seharusnya ada = modal awal + penjualan tunai lunas − setoran keluar laci − penarikan petty cash tunai, sepanjang rentang shiftnya |
+| F-SH-07 | Setoran dan petty cash yang **ditolak** tidak dikurangkan — uangnya kembali ke laci |
+| F-SH-08 | Selisih tersimpan pada shiftnya, berikut catatan opsional |
+| F-SH-09 | Yang membuka shift boleh menutupnya sendiri; menutup shift orang lain hanya untuk Owner, Finance, dan Admin |
+| F-SH-10 | Shift yang sudah ditutup tidak bisa ditutup dua kali |
+| F-SH-11 | Riwayat shift dapat dibaca seluruh pegawai merchant, berikut selisih tiap shift |
+| F-SH-12 | Menunya ada di halaman utama Kasir, Admin, Owner, dan Finance |
+
+> **Kenapa angkanya tidak ditampilkan sebelum dihitung.** Kasir yang
+> tahu lebih dulu "seharusnya Rp 1.240.000" akan menghitung sampai ketemu
+> angka itu, bukan menghitung apa adanya. Selisih yang tidak pernah
+> muncul bukan berarti tidak ada — ia cuma pindah ke bulan depan, dan ke
+> orang yang tidak melakukannya.
+
+> **Kenapa tetap boleh diperbaiki sesudahnya.** Salah ketik satu angka
+> nol akan tercatat selamanya sebagai selisih jutaan rupiah atas nama
+> orang yang tidak melakukan apa-apa. Menutup shift tidak bisa
+> dibatalkan, jadi kesempatan memperbaikinya harus ada sebelum
+> disimpan — dan pada titik itu hitungannya sudah terlanjur ditulis,
+> jadi tidak ada lagi yang bisa dianggarkan.
+
+> **Kenapa satu shift terbuka per merchant, bukan per kasir.** Yang
+> dihitung isi laci, dan lacinya cuma ada satu. Dua shift terbuka
+> bersamaan akan menghitung penjualan tunai yang sama dua kali, lalu
+> keduanya sama-sama terlihat kelebihan uang.
+
+> **Yang belum dilakukan.** Selisihnya belum masuk jurnal. Ia tercatat
+> pada shiftnya dan tampil di riwayat, tapi tidak memotong GL mana pun —
+> selama itu, Saldo Cash tetap sedikit lebih besar daripada uang yang
+> sebenarnya ada. Lihat §10.
+
+---
+
 ## 5. Aturan Bisnis
 
 ### 5.1 Perhitungan tagihan
@@ -1118,6 +1289,10 @@ dilaporkan sebagai temuan.
 | **Maksimal 100 QR sekali buat** | Batas yang disengaja |
 | **Struk & QR butuh internet saat dibuat** | Dalam keadaan benar-benar luring, hurufnya jatuh ke font bawaan; bentuknya tetap benar |
 | **Titik lokasi memakai layanan gratis** | Pengambilan lokasi beruntun dalam waktu singkat bisa ditolak sementara |
+| **Selisih shift belum masuk jurnal** | Tercatat pada shiftnya dan tampil di riwayat, tapi tidak memotong GL mana pun. Selama itu, Saldo Cash tetap sedikit lebih besar daripada uang yang sebenarnya ada |
+| **Rata-rata bintang menu bukan satu-orang-satu-suara** | Penilaian menempel pada pesanan, jadi yang memesan sepuluh kali menyumbang sepuluh penilaian. Disengaja: tiap kunjungan adalah masakan yang berbeda |
+| **Pesanan kasir tidak bisa dinilai pelanggannya** | Barisnya tersimpan atas nama kasir, bukan email pelanggan, jadi tidak ada kaitan ke akun siapa pun. Hanya pesanan dari HP dengan akun yang bisa dinilai |
+| **Penilaian menu tidak berfoto** | Berbeda dari penilaian merchant. Satu pesanan bisa berisi lima menu, dan lima ulasan berfoto untuk satu kunjungan membuat barisnya jauh lebih berat daripada seluruh katalognya |
 
 ---
 
@@ -1545,6 +1720,6 @@ tampilannya dari peran lain.
 !!ss[Kelompok KEUANGAN dalam mode gelap](gambar/capture/Darkmode/Owner/Screenshot_20260816-215208.jpg)
 !!ss[Kelompok PENGELOLAAN dalam mode gelap](gambar/capture/Darkmode/Owner/Screenshot_20260816-215213.jpg)
 
-*Dokumen ini disusun dari aplikasi versi 2.1.0. Sisi teknisnya —
+*Dokumen ini disusun dari aplikasi versi 2.12.0. Sisi teknisnya —
 arsitektur, tabel, keamanan baris, prasyarat basis data — ada di
 `SPESIFIKASI-KAATAGO`.*

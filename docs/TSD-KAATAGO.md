@@ -1,8 +1,8 @@
 # KaataGo — Technical Specification Document
 
-**Versi Aplikasi:** 2.9.4 (build 115)
-**Versi Dokumen:** 1.7
-**Tanggal Terbit:** 17 Agustus 2026
+**Versi Aplikasi:** 2.12.0 (build 118)
+**Versi Dokumen:** 1.8
+**Tanggal Terbit:** 22 Agustus 2026
 **Status:** Rilis
 **Jenis Dokumen:** TSD — sisi teknis
 
@@ -1015,6 +1015,194 @@ paling perlu ditengok.
 
 ---
 
+### 7.7 Nomor pesanan harian
+
+`supabase/order_number.sql` — tabel `order_counters` berkunci
+`(resto_id, order_date)`, dan pemicu `assign_order_no()` **BEFORE
+INSERT** pada `orders`.
+
+Penomorannya atomik lewat satu pernyataan:
+
+```sql
+insert into order_counters (resto_id, order_date, last_no)
+values (…, 1)
+on conflict (resto_id, order_date)
+do update set last_no = order_counters.last_no + 1
+returning last_no
+```
+
+Membaca lalu menulis dalam dua langkah akan memberi nomor yang sama
+kepada dua pesanan yang masuk bersamaan — dan dua orang dipanggil dengan
+nomor yang sama adalah kegagalan yang baru ketahuan di depan ruangan.
+Indeks unik `(resto_id, order_date, order_no)` menjadi penjaga terakhir.
+
+Tanggalnya WIB, bukan UTC: pesanan pukul 08:00 WIB jatuh pada 01:00 UTC,
+dan penomoran berbasis UTC akan mengulang dari 1 di tengah hari kerja.
+
+---
+
+### 7.8 Layar pelanggan
+
+`supabase/customer_display.sql` — tabel `customer_displays` berkunci
+`resto_id`, disiarkan lewat Realtime.
+
+Yang disimpan **keadaan tampilannya**: `status`, `amount`, `qr_string`,
+`label` — bukan penunjuk ke baris `orders`. Baris pesanan kasir baru
+dibuat setelah pembayarannya lunas, jadi layar yang menunggu id pesanan
+tidak akan pernah menampilkan QR yang justru dibutuhkan untuk
+membayarnya.
+
+Pendaftaran tabelnya ke publikasi Realtime dibungkus penangkap galat:
+
+```sql
+do $$ begin
+  alter publication supabase_realtime add table customer_displays;
+exception when duplicate_object then null;
+end $$;
+```
+
+Tanpa itu, menjalankan ulang berkasnya berhenti di galat 42710 dan
+**sisa bagiannya ikut batal** — lihat §11.1.
+
+---
+
+### 7.9 Penilaian merchant dan penilaian menu
+
+Dua tabel yang mirip bentuknya tapi berbeda aturannya, dan perbedaannya
+disengaja.
+
+| | `merchant_reviews` | `product_reviews` |
+|---|---|---|
+| Yang dinilai | tempatnya | masakannya |
+| Kunci unik | `(resto_id, customer_email)` | `(order_id, product_id, customer_email)` |
+| Foto | sampai tiga, base64 | tidak ada |
+| Boleh berapa kali | satu per orang | satu per pesanan |
+
+**Kenapa kuncinya berbeda.** Tempat tidak berubah tiap kunjungan;
+masakan berubah. Semula penilaian menu juga berkunci
+`(product_id, customer_email)`, dan akibatnya orang yang memesan nasi
+goreng untuk kedua kalinya menemukan bintang lima dari bulan lalu sudah
+terisi di formulirnya — sementara basis data diam-diam **menolak**
+penilaian keduanya.
+
+**Indeksnya harus atas kolom, bukan ekspresi.** Penggantinya sempat
+ditulis sebagai `unique (coalesce(order_id::text,''), product_id,
+customer_email)` supaya baris lama yang `order_id`-nya NULL tetap
+terbatasi. Itu keliru: `on conflict (order_id, product_id,
+customer_email)` — yang dipakai aplikasi untuk menimpa penilaiannya
+sendiri — hanya mau memakai indeks yang kolomnya persis sama, dan
+menolak indeks ekspresi dengan galat **42P10**. Galatnya baru muncul
+saat orangnya menekan Simpan. Bentuk yang benar: satu indeks unik biasa
+atas ketiga kolomnya, ditambah satu indeks unik **parsial**
+`where order_id is null` untuk menjaga baris lama.
+
+**RLS menegakkan "pernah memesannya".**
+
+```sql
+with check (
+  customer_email = auth.jwt() ->> 'email'
+  and exists (
+    select 1 from orders o
+    where o.customer_label = auth.jwt() ->> 'email'
+      and o.payment_status = 'paid'
+      and o.items @> jsonb_build_array(
+            jsonb_build_object('productId', product_reviews.product_id))
+      and (product_reviews.order_id is null
+           or o.id = product_reviews.order_id)))
+```
+
+Aplikasi memang hanya menawarkan tombol menilai pada menu di riwayat
+pesanannya sendiri, tapi aturan yang hanya ada di aplikasi bukan aturan
+— ia cuma tampilan. Satu permintaan HTTP polos sudah cukup untuk memberi
+bintang lima pada menu yang tidak pernah dibeli.
+
+**`product_stats(p_resto_id)`** mengembalikan `product_id, rata, jumlah,
+terjual` untuk seluruh katalog dalam satu panggilan — layar menu
+menampilkan puluhan kartu, dan satu panggilan per kartu berarti puluhan
+permintaan tiap kali kategori dibuka. `security definer` karena angkanya
+harus terbaca tamu yang belum masuk, sedangkan `orders` tertutup bagi
+mereka dan memang seharusnya tertutup; yang keluar hanya angka
+ringkasan. Terjual dihitung dari `payment_status = 'paid'` saja — kalau
+tidak, angka yang dipajang bisa dinaikkan dengan memesan lalu tidak
+membayar.
+
+**Label menu** disimpan sebagai `products.badges jsonb` berisi daftar
+kode (`new`, `best_seller`, `recommended`). Label diskon **tidak** ikut
+disimpan: ia dibaca dari tabel `discounts` yang sedang berlaku, karena
+label yang dicentang akan tetap terpasang seminggu setelah promonya
+habis.
+
+---
+
+### 7.10 Shift kasir
+
+`supabase/cashier_shift.sql` — tabel `cashier_shifts`, tanpa satu pun
+kebijakan `insert`/`update`/`delete`. Membuka dan menutup hanya lewat
+`open_shift()` dan `close_shift()`, keduanya `security definer`.
+
+**Kenapa tabelnya tidak boleh disunting langsung.** `expected_cash`
+adalah angka yang menilai seseorang. Kalau barisnya bisa ditulis dari
+aplikasi, angka itu bisa dikarang oleh orang yang sedang diukur, dan
+seluruh gunanya hilang.
+
+**Satu shift terbuka per merchant**, ditegakkan indeks unik parsial:
+
+```sql
+create unique index cashier_shifts_satu_terbuka
+  on cashier_shifts (resto_id) where closed_at is null;
+```
+
+Bukan satu shift per kasir: yang dihitung isi laci, dan lacinya cuma
+ada satu. Dua shift terbuka bersamaan menghitung penjualan tunai yang
+sama dua kali. `open_shift()` tetap memeriksanya lebih dulu supaya
+pesannya bisa dibaca orang — galat indeks unik benar, tapi tidak
+memberi tahu apa pun kepada kasir yang sedang berdiri di depan antrean.
+
+**`shift_expected_cash(p_shift_id, p_until)`** memakai aturan yang sama
+persis dengan `cashOnHand()` di `lib/utils/cash_balance.dart`: modal
+awal + penjualan tunai lunas − setoran keluar laci − penarikan petty
+cash tunai, dibatasi rentang shiftnya. Setoran dan petty cash berstatus
+`rejected` **tidak** dikurangkan — uangnya kembali ke laci. Lihat
+§11.1b: dua tempat yang menyebut "tunai di laci" tidak boleh berbeda
+aturan.
+
+Waktu yang dipakai `orders.created_at`, bukan waktu lunasnya. Untuk
+tunai keduanya satu momen: kasir memasukkan pesanannya justru pada saat
+menerima uangnya.
+
+**Perkiraan sebelum menutup hanya penunjuk.** Layarnya memanggil
+`shift_expected_cash` sesudah kasir menuliskan hitungannya, untuk
+menunjukkan selisihnya dan menawarkan perbaikan nominal. Yang tersimpan
+tetap dihitung ulang di dalam `close_shift`, jadi perkiraan yang basi —
+misalnya ada pesanan tunai masuk di sela-sela kasir membetulkan
+angkanya — tidak bisa mengubah selisih yang tercatat.
+
+---
+
+### 7.11 Foto menu hilang lewat Realtime
+
+Baris `products` yang datang lewat Realtime tidak selalu membawa
+`photo_base64` yang utuh. Yang memicunya paling sering: sebuah pesanan
+masuk, `decrement_stock` mengurangi stok menu yang dipesan, dan barisnya
+terkirim ulang lewat jalur itu. Yang terlihat pemesan — foto menu yang
+**barusan dia pesan** mendadak hilang, sementara menu yang tidak dipesan
+tetap berfoto.
+
+Datanya tidak hilang; yang basi cuma salinan di layar, sampai
+aplikasinya dimuat ulang. Tapi yang melihatnya tidak tahu itu, dan menu
+tanpa foto adalah menu yang tidak jadi dipesan.
+
+`FirestoreProductRepository.watchAll` karena itu tidak langsung
+mempercayai foto yang mendadak hilang: foto lama dipasang seketika
+supaya tidak berkedip, sambil barisnya ditanyakan ulang lewat REST yang
+selalu utuh. Kalau REST sendiri menjawab kosong, barulah fotonya
+dilepas — merchant berhak menghapus foto menunya, dan menolak mengakui
+penghapusan itu sama salahnya dengan menghilangkan fotonya sendiri.
+Aturannya berdiri sendiri di `lib/utils/foto_menu_bertahan.dart` supaya
+bisa diuji tanpa jaringan.
+
+---
+
 ## 8. Notifikasi Push
 
 FCM HTTP v1 dengan OAuth dari service account.
@@ -1285,9 +1473,52 @@ diganti.
 | iOS | Tidak dibangun | Hanya Android |
 | Jurnal lintas resto dibatasi 1.000 baris | Tidak ada penanda saat terpotong | Angka bisa kurang tanpa terlihat kalau data melewati batas itu |
 | Unduhan besar | Bisa terhenti | Kalau sistem kehabisan memori saat aplikasi di latar |
+| Selisih shift tidak dijurnal | Tersimpan di `cashier_shifts` saja | Saldo Cash tetap lebih besar daripada uang yang sebenarnya ada sampai ada yang menjurnalnya; akun GL-nya belum diputuskan |
+| Baris `product_reviews` lama tanpa `order_id` | Dibiarkan apa adanya | Ikut menghitung rata-rata, tapi tidak tertaut pesanan mana pun — jadi tidak muncul sebagai "sudah dinilai" di riwayat |
+| `for-user-id` hanya dikenal Xendit | Terikat satu penyedia | Pindah penyedia berarti menulis ulang `create-qris`, webhook, dan pemetaan statusnya |
 
 ---
 
-*Dokumen ini disusun dari kode aplikasi versi 2.1.0. Sisi
+## 15. Pola yang Pernah Menjebak
+
+Bukan utang teknis — melainkan bentuk yang terlihat benar sampai
+dipakai di tempat kedua.
+
+### 15.1 Nilai kembalian tombol Batal
+
+`DialogActions` semula menutup dialog dengan `Navigator.pop(context,
+false)`. Pada `showDialog<bool>` itu tidak terlihat salah. Pada
+`showDialog<String>`, `showDialog<int>`, dan dialog yang mengembalikan
+record, Navigator melempar `type 'bool' is not a subtype of type
+'String?'` **dan dialognya tidak jadi tertutup** — yang menekan Batal
+terjebak di depan galat yang tidak menyebut tombol Batal sama sekali.
+
+Saat ditemukan, empat layar lain sudah membawa cacat yang sama tanpa
+pernah ketahuan: Info Merchant, Kelola Kategori, Kelola Level, dan Buat
+Merchant. Sekarang Batal menutup **tanpa nilai**. Yang memeriksa
+hasilnya dengan `== true` tidak terpengaruh — null maupun false
+sama-sama bukan true, dan tidak ada satu pun pemanggil yang membedakan
+keduanya.
+
+Pelajarannya: nilai kembalian dialog yang bertipe longgar akan lolos ke
+tempat yang salah, dan jatuh jauh dari tempat asalnya.
+
+### 15.2 Muatan yang hanya diambil sekali
+
+Statistik menu — bintang dan angka terjual — semula diambil sekali saat
+layar menunya disiapkan. Di layar kasir itu tidak terlihat salah, karena
+layarnya dibuat ulang tiap kali dibuka. Di HP pelanggan layarnya tidak
+pernah dibuat ulang, jadi bintang yang barusan diberikan lewat Riwayat
+Saya tidak pernah muncul sampai aplikasinya ditutup.
+
+Sekarang diambil ulang tiap kali layarnya dibuka lagi, dijeda paling
+sering 30 detik. Jedanya perlu karena pemanggilnya ada di `build`, dan
+tanpa jeda tiap gambar ulang layar berarti dua permintaan ke server.
+
+---
+
+---
+
+*Dokumen ini disusun dari kode aplikasi versi 2.12.0. Sisi
 fungsionalnya — peran, proses bisnis, aturan, dan tangkapan layar tiap
 peran — ada di `FSD-KAATAGO`.*
