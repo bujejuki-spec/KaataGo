@@ -150,9 +150,22 @@ class _AboutScreenState extends State<AboutScreen> {
             ),
           ),
           const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => bukaEmailKaataGo(context),
+              icon: const Icon(Icons.mail_outline, size: 18),
+              label: const Text(kEmailKaataGo),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(48),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
           Center(
             child: Text(
-              'Butuh bantuan? Hubungi KaataGo Admin.',
+              'Butuh bantuan? Hubungi KaataGo Admin lewat WhatsApp atau '
+              'surel.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 12, color: KaataTheme.mutedOf(context)),
             ),

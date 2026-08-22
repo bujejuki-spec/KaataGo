@@ -17,10 +17,12 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../db/expense_gl_account_repository.dart';
 import '../db/cash_deposit_repository.dart';
+import '../db/cashier_shift_repository.dart';
 import '../db/expense_repository.dart';
 import '../db/order_repository.dart';
 import '../db/petty_cash_repository.dart';
 import '../models/cash_deposit.dart';
+import '../models/cash_variance.dart';
 import '../models/customer_order.dart';
 import '../models/expense.dart';
 import '../models/expense_gl_account.dart';
@@ -84,6 +86,7 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
   bool _expensesOpen = true;
 
   int _cashIncome = 0;
+  List<CashVariance> _selisih = const [];
   int _nonCashIncome = 0;
   List<CashDeposit> _deposits = [];
   List<Expense> _expenses = [];
@@ -207,6 +210,10 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
         Supabase.instance.client.from('settings').select().eq('resto_id', restoId).limit(1),
         _depositRepo.getForResto(restoId),
         _topupRepo.getForResto(restoId),
+        // Selisih kasir yang belum dilunasi. Uangnya tidak ada di laci,
+        // jadi Saldo Cash tidak boleh menghitungnya sebagai ada.
+        CashierShiftRepository().selisih(restoId).catchError(
+            (_) => <CashVariance>[]),
       ]);
       if (!mounted) return;
       final orders = (results[0] as List<CustomerOrder>)
@@ -226,6 +233,7 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
             .fold(0, (sum, o) => sum + o.total);
         _deposits = results[5] as List<CashDeposit>;
         _topups = results[6] as List<BalanceTopup>;
+        _selisih = results[7] as List<CashVariance>;
         _expenses = results[1] as List<Expense>;
         _expenseGlAccounts = results[2] as List<ExpenseGlAccount>;
         _pettyCashEntries = results[3] as List<PettyCashEntry>;
@@ -270,6 +278,7 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
         cashIncome: _cashIncome,
         deposits: _deposits,
         pettyCash: _pettyCashEntries,
+        selisih: _selisih,
       );
 
   /// Setoran modal ikut di sini: uangnya mendarat di rekening, bukan di

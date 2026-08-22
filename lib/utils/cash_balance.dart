@@ -1,4 +1,5 @@
 import '../models/cash_deposit.dart';
+import '../models/cash_variance.dart';
 import '../models/petty_cash_entry.dart';
 
 /// Uang tunai yang seharusnya masih ada di laci kasir.
@@ -18,9 +19,26 @@ int cashOnHand({
   required int cashIncome,
   required List<CashDeposit> deposits,
   required List<PettyCashEntry> pettyCash,
+  List<CashVariance> selisih = const [],
 }) {
-  return cashIncome - depositedFromDrawer(deposits) - pettyCashFromDrawer(pettyCash);
+  return cashIncome -
+      depositedFromDrawer(deposits) -
+      pettyCashFromDrawer(pettyCash) -
+      selisihBelumDibayar(selisih);
 }
+
+/// Selisih kurang yang belum dilunasi kasirnya.
+///
+/// Dikurangkan karena uangnya memang tidak ada di laci. Selama ini
+/// angka Saldo Cash menyebut jumlah yang lebih besar daripada yang
+/// benar-benar bisa dihitung tangan, dan selisihnya menumpuk diam-diam
+/// tanpa satu pun layar yang menyebutkannya.
+///
+/// Yang sudah dilunasi tidak dikurangkan lagi: uangnya sudah kembali ke
+/// laci, dan mengurangkannya dua kali berarti menghukum kasir yang
+/// justru sudah membayar.
+int selisihBelumDibayar(List<CashVariance> selisih) =>
+    selisih.where((s) => !s.lunas).fold(0, (sum, s) => sum + s.amount);
 
 /// Setoran yang sudah keluar dari laci.
 ///

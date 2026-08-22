@@ -77,6 +77,8 @@ FILES=(
   product_badges_reviews.sql
   cashier_shift.sql
   product_review_per_order.sql
+  cash_variance.sql
+  merchant_report.sql
 )
 
 {

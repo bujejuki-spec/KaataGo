@@ -32,6 +32,7 @@ import 'pos_home_screen.dart';
 import 'publish_announcement_screen.dart';
 import 'product_list_screen.dart';
 import 'settings_menu_screen.dart';
+import 'merchant_report_screen.dart';
 import 'transaction_history_screen.dart';
 
 /// Layar utama peran Owner: seluruh menu Kasir, Admin, Chef, dan Finance
@@ -150,6 +151,13 @@ class OwnerHomeScreen extends StatelessWidget {
                       subtitle: 'Transaksi yang diinput kasir — rekap per hari',
                       color: const Color(0xFF6366F1),
                       onTap: () => _open(context, const TransactionHistoryScreen()),
+                    ),
+                    HubMenuTile(
+                      icon: Icons.insights_outlined,
+                      title: 'Laporan Penjualan',
+                      subtitle: 'Menu terlaris, menu tidak laku, dan jam ramai',
+                      color: const Color(0xFF8B5CF6),
+                      onTap: () => _open(context, const MerchantReportScreen()),
                     ),
                     ],
                   ),

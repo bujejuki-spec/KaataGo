@@ -24,7 +24,7 @@ alter table gl_accounts add constraint gl_accounts_payment_method_check
     ('cash', 'qris', 'transfer', 'petty_cash', 'income_aggregate', 'total_balance',
      'ppn', 'service', 'suspense', 'suspense_petty', 'gateway_fee', 'discount',
      'subscription', 'subscription_discount', 'voucher', 'voucher_redeem',
-     'capital'));
+     'capital', 'cash_variance'));
 
 -- Untuk KaataGo — sederet dengan akun platform lainnya.
 insert into gl_accounts (resto_id, payment_method, gl_code, gl_name)
@@ -46,7 +46,7 @@ alter table gl_journal_entries add constraint gl_journal_entries_reference_type_
   check (
     reference_type in
     ('order', 'order_discount', 'expense', 'petty_cash', 'cash_deposit',
-     'billing', 'billing_discount', 'voucher', 'capital'));
+     'billing', 'billing_discount', 'voucher', 'capital', 'cash_variance'));
 
 create table if not exists balance_topups (
   id uuid primary key default gen_random_uuid(),

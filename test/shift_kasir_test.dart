@@ -167,6 +167,69 @@ void main() {
     });
   });
 
+  group('selisih kasir', () {
+    final sql = File('supabase/cash_variance.sql').readAsStringSync();
+
+    test('ikut terangkut ke JALANKAN-INI', () {
+      expect(File('scripts/gabung_sql.sh').readAsStringSync(),
+          contains('cash_variance.sql'));
+    });
+
+    test('punya akun GL sendiri, di rentang titipan', () {
+      expect(sql, contains("'cash_variance', '2100003', 'GL Selisih Kasir'"));
+      // Resto baru harus ikut dapat, bukan cuma yang sudah ada.
+      expect(sql, contains('create or replace function _default_gl_accounts'));
+    });
+
+    // credit = uang masuk, debit = uang keluar. Kurang berarti uangnya
+    // memang tidak ada di laci.
+    test('kurang dijurnal debit, lebih dijurnal credit', () {
+      expect(sql,
+          contains("case when v_selisih < 0 then 'debit' else 'credit' end"));
+    });
+
+    // Tidak ada yang bisa ditagih dari uang yang justru berlebih.
+    test('hanya yang kurang jadi tagihan', () {
+      final pemicu = sql.substring(sql.indexOf('function journal_cash_variance'));
+      final tagih = pemicu.substring(pemicu.indexOf('if v_selisih < 0 then'));
+      expect(tagih, contains('insert into cash_variances'));
+    });
+
+    test('satu shift paling banyak satu tagihan', () {
+      expect(sql, contains('shift_id uuid not null unique'));
+      expect(sql, contains('on conflict (shift_id) do nothing'));
+    });
+
+    // Kalau kasir boleh menutup tagihan atas namanya sendiri, angka yang
+    // menilai seseorang bisa dihapus oleh orang itu juga.
+    test('kasir boleh melihat, tidak boleh melunasi', () {
+      expect(sql, contains("array['owner', 'finance', 'admin', 'kasir']"));
+      final fungsi = sql.substring(sql.indexOf('function settle_cash_variance'));
+      expect(fungsi, contains("array['owner', 'finance', 'admin']"));
+      expect(fungsi, isNot(contains("'kasir'")));
+    });
+
+    test('tidak ada jalan menyunting tagihannya langsung', () {
+      final bagian = sql.substring(sql.indexOf('on cash_variances'));
+      expect(bagian, isNot(contains('for insert')));
+      expect(bagian, isNot(contains('for update')));
+      expect(bagian, isNot(contains('for all')));
+    });
+
+    test('yang sudah lunas tidak bisa dilunasi dua kali', () {
+      expect(sql, contains('Selisih ini sudah dilunasi.'));
+    });
+
+    // Menahan penutupan shift karena pemetaan GL berarti kasir tidak
+    // bisa pulang gara-gara urusan pembukuan.
+    test('GL yang belum dipetakan tidak menahan penutupan shift', () {
+      final pemicu = sql.substring(sql.indexOf('function journal_cash_variance'));
+      expect(pemicu, contains('if v_gl.gl_code is null'));
+      expect(pemicu.substring(pemicu.indexOf('if v_gl.gl_code is null')),
+          contains('return new;'));
+    });
+  });
+
   group('pintunya', () {
     // Kasir yang memegang laci, tapi atasannya yang menutup shift saat
     // kasirnya sudah pulang — keempatnya butuh pintu ini.

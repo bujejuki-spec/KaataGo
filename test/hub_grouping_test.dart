@@ -12,10 +12,10 @@ import 'package:pos_app/widgets/hub_menu_tile.dart';
 void main() {
   const jumlahMenu = {
     'kasir': 11,
-    'admin': 14,
+    'admin': 15,
     'finance': 13,
     'super_admin': 9,
-    'owner': 21,
+    'owner': 22,
   };
 
   String isi(String peran) =>

@@ -43,7 +43,7 @@ alter table gl_accounts add constraint gl_accounts_payment_method_check
     ('cash', 'qris', 'transfer', 'petty_cash', 'income_aggregate', 'total_balance',
      'ppn', 'service', 'suspense', 'suspense_petty', 'gateway_fee', 'discount',
      'subscription', 'subscription_discount', 'voucher', 'voucher_redeem',
-     'capital'));
+     'capital', 'cash_variance'));
 
 -- ---------------------------------------------------------------------
 -- 2. expenses.gl_code → expense_gl_accounts FK

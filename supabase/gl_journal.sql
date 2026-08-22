@@ -17,7 +17,7 @@ create table if not exists gl_journal_entries (
   gl_code text not null,
   reference_type text not null check (reference_type in
     ('order', 'order_discount', 'expense', 'petty_cash', 'cash_deposit',
-     'billing', 'billing_discount', 'voucher', 'capital'));
+     'billing', 'billing_discount', 'voucher', 'capital', 'cash_variance'));
 create index if not exists idx_gl_journal_entries_resto on gl_journal_entries(resto_id);
 create index if not exists idx_gl_journal_entries_ref on gl_journal_entries(reference_type, reference_id);
 

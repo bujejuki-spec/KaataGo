@@ -13,6 +13,18 @@ Formatnya dibaca `scripts/release.sh`: judul `## <versi>`, lalu
 poin-poinnya. Versi yang tidak punya bagiannya di sini tetap terbit,
 hanya pengumumannya memakai kalimat umum.
 
+## 2.13.0
+
+- Laporan Penjualan untuk Owner dan Admin: menu terlaris, menu yang
+  tidak laku sama sekali, jam ramai, dan ringkasan omzetnya
+- Selisih shift kasir sekarang masuk pembukuan lewat GL Selisih Kasir,
+  dan jadi tagihan terbuka sampai dilunasi
+- Menu Bayar Selisih untuk Owner, Finance, dan Admin — kasir bisa
+  melihat tagihannya sendiri, tapi tidak menutupnya
+- Saldo Cash ikut dikurangi selisih yang belum dibayar, supaya angkanya
+  sama dengan uang yang benar-benar bisa dihitung tangan
+- Alamat surel KaataGo ada di Tentang KaataGo dan di landing page
+
 ## 2.12.0
 
 - Menu yang dipesan lagi bisa dinilai lagi — penilaian menempel pada

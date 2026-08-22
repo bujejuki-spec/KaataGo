@@ -22,6 +22,7 @@ import 'pos_home_screen.dart';
 import 'publish_announcement_screen.dart';
 import 'product_list_screen.dart';
 import 'settings_menu_screen.dart';
+import 'merchant_report_screen.dart';
 import 'transaction_history_screen.dart';
 import 'cash_deposit_screen.dart';
 import 'cashier_shift_screen.dart';
@@ -134,6 +135,16 @@ class AdminHomeScreen extends StatelessWidget {
                       color: const Color(0xFF0EA5E9),
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(builder: (_) => const TransactionHistoryScreen()),
+                      ),
+                    ),
+                    HubMenuTile(
+                      icon: Icons.insights_outlined,
+                      title: 'Laporan Penjualan',
+                      subtitle: 'Menu terlaris, menu tidak laku, dan jam ramai',
+                      color: const Color(0xFF8B5CF6),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                            builder: (_) => const MerchantReportScreen()),
                       ),
                     ),
                   ],

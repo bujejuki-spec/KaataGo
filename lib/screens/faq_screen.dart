@@ -12,6 +12,28 @@ import '../widgets/app_toast.dart';
 /// sudah tidak dipakai.
 const kWhatsAppKaataGo = '6281316090867';
 
+/// Alamat surel KaataGo.
+///
+/// Ditulis sekali di sini karena alasan yang sama dengan nomor WhatsApp
+/// di atas — dan karena sebagian orang memang lebih memilih menulis
+/// surel: yang mengurus langganan atau menagih bukti pembayaran butuh
+/// jejak yang bisa dibuka lagi bulan depan, bukan gulungan obrolan.
+const kEmailKaataGo = 'kaatago.app@gmail.com';
+
+/// Membuka aplikasi surel dengan alamat KaataGo terisi.
+Future<void> bukaEmailKaataGo(BuildContext context, {String? subjek}) async {
+  final url = Uri(
+    scheme: 'mailto',
+    path: kEmailKaataGo,
+    query: 'subject=${Uri.encodeComponent(subjek ?? 'Pertanyaan soal KaataGo')}',
+  );
+  final ok = await launchUrl(url, mode: LaunchMode.externalApplication);
+  if (!ok && context.mounted) {
+    AppToast.show(context, 'Tidak ada aplikasi surel yang terpasang.',
+        isError: true);
+  }
+}
+
 /// Membuka percakapan WhatsApp dengan KaataGo Admin.
 Future<void> bukaWhatsAppKaataGo(BuildContext context, {String? pesan}) async {
   final teks = Uri.encodeComponent(

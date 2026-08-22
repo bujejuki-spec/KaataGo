@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../models/cash_variance.dart';
 import '../models/cashier_shift.dart';
 
 class CashierShiftRepository {
@@ -40,6 +41,33 @@ class CashierShiftRepository {
       'p_opening_cash': modalAwal,
     });
     return CashierShift.fromMap(Map<String, dynamic>.from(row as Map));
+  }
+
+  /// Tagihan selisih kasir di merchant ini, yang terbuka lebih dulu.
+  Future<List<CashVariance>> selisih(String restoId, {int batas = 60}) async {
+    final rows = await _client
+        .from('cash_variances')
+        .select()
+        .eq('resto_id', restoId)
+        .order('status')
+        .order('created_at', ascending: false)
+        .limit(batas);
+    return rows.map((r) => CashVariance.fromMap(r)).toList();
+  }
+
+  /// Mencatat kasir sudah menyerahkan uang tunai sebesar kekurangannya.
+  ///
+  /// Siapa yang boleh ditegakkan server: kasir melihat tagihannya, tapi
+  /// tidak menutup tagihan atas namanya sendiri.
+  Future<CashVariance> bayarSelisih({
+    required String id,
+    String? catatan,
+  }) async {
+    final row = await _client.rpc('settle_cash_variance', params: {
+      'p_id': id,
+      'p_note': catatan,
+    });
+    return CashVariance.fromMap(Map<String, dynamic>.from(row as Map));
   }
 
   /// Berapa yang seharusnya ada di laci saat ini.

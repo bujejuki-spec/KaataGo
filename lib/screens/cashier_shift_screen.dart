@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../db/cashier_shift_repository.dart';
+import '../models/cash_variance.dart';
 import '../models/cashier_shift.dart';
 import '../providers/auth_provider.dart';
 import '../theme.dart';
@@ -32,6 +33,7 @@ class _CashierShiftScreenState extends State<CashierShiftScreen> {
 
   CashierShift? _terbuka;
   List<CashierShift> _riwayat = const [];
+  List<CashVariance> _selisih = const [];
   bool _memuat = true;
   bool _sibuk = false;
 
@@ -57,17 +59,69 @@ class _CashierShiftScreenState extends State<CashierShiftScreen> {
       final hasil = await Future.wait([
         _repo.terbuka(restoId),
         _repo.riwayat(restoId),
+        _repo.selisih(restoId),
       ]);
       if (!mounted) return;
       setState(() {
         _terbuka = hasil[0] as CashierShift?;
         _riwayat = hasil[1] as List<CashierShift>;
+        _selisih = hasil[2] as List<CashVariance>;
         _memuat = false;
       });
     } catch (e) {
       if (!mounted) return;
       setState(() => _memuat = false);
       showAppToast(context, 'Gagal memuat shift: $e', isError: true);
+    }
+  }
+
+  /// Tagihan yang masih terbuka, terbaru lebih dulu.
+  List<CashVariance> get _belumLunas =>
+      [for (final v in _selisih) if (!v.lunas) v];
+
+  /// Kasir hanya melihat. Kalau ia boleh menutup tagihan atas namanya
+  /// sendiri, angka yang menilai seseorang bisa dihapus oleh orang itu
+  /// juga — dan seluruh gunanya hilang.
+  ///
+  /// Ditegakkan server juga; ini cuma supaya tombol yang pasti ditolak
+  /// tidak dipajang di depan orang yang tidak berhak menekannya.
+  bool get _bolehBayar {
+    final auth = context.read<AuthProvider>();
+    return auth.isOwner || auth.isFinance || auth.isAdmin;
+  }
+
+  Future<void> _bayarSelisih(CashVariance v) async {
+    final rp = _rp.format(v.amount);
+    final setuju = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Bayar Selisih'),
+        content: Text(
+          '${v.namaTampil} menyerahkan $rp tunai, dan uangnya masuk '
+          'kembali ke laci. Catat sekarang?',
+        ),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          DialogActions(
+            confirmLabel: 'Sudah Dibayar',
+            onConfirm: () => Navigator.pop(dialogContext, true),
+          ),
+        ],
+      ),
+    );
+    if (setuju != true || !mounted) return;
+
+    setState(() => _sibuk = true);
+    try {
+      await _repo.bayarSelisih(id: v.id);
+      if (!mounted) return;
+      showAppToast(context, 'Selisih $rp dilunasi.');
+      await _muat();
+    } catch (e) {
+      if (!mounted) return;
+      showAppToast(context, _pesan(e), isError: true);
+    } finally {
+      if (mounted) setState(() => _sibuk = false);
     }
   }
 
@@ -397,6 +451,19 @@ class _CashierShiftScreenState extends State<CashierShiftScreen> {
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
                   children: [
                     _kartuShift(),
+                    if (_belumLunas.isNotEmpty) ...[
+                      const SizedBox(height: 20),
+                      const Text('Selisih Belum Dibayar',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 14)),
+                      const SizedBox(height: 8),
+                      for (final v in _belumLunas)
+                        _KartuSelisih(
+                          selisih: v,
+                          bolehBayar: _bolehBayar,
+                          onBayar: () => _bayarSelisih(v),
+                        ),
+                    ],
                     const SizedBox(height: 20),
                     const Text('Riwayat Shift',
                         style: TextStyle(
@@ -615,6 +682,90 @@ class _BarisRiwayat extends StatelessWidget {
             Text(shift.note!,
                 style: const TextStyle(fontSize: 12, height: 1.3)),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Satu tagihan selisih yang belum dilunasi.
+///
+/// Tampil untuk semua peran, termasuk kasir. Kasir berhak melihat
+/// tagihan atas namanya sendiri — tagihan yang hanya bisa dilihat
+/// atasannya adalah tuduhan yang tidak bisa dijawab. Yang membedakan
+/// cuma tombolnya.
+class _KartuSelisih extends StatelessWidget {
+  final CashVariance selisih;
+  final bool bolehBayar;
+  final VoidCallback onBayar;
+
+  const _KartuSelisih({
+    required this.selisih,
+    required this.bolehBayar,
+    required this.onBayar,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final muted = KaataTheme.mutedOf(context);
+    final rp =
+        NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+    final tgl = DateFormat('d MMM yyyy, HH:mm', 'id_ID');
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+      decoration: BoxDecoration(
+        color: KaataTheme.surfaceOf(context),
+        border: Border.all(color: Colors.red.withOpacity(0.45)),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.warning_amber_rounded,
+                  size: 17, color: Colors.red),
+              const SizedBox(width: 7),
+              Expanded(
+                child: Text(selisih.namaTampil,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 13.5)),
+              ),
+              Text(rp.format(selisih.amount),
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14.5,
+                      color: Colors.red.shade700)),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text('Shift ${tgl.format(selisih.createdAt.toWib())}',
+              style: TextStyle(fontSize: 11.5, color: muted)),
+          if ((selisih.note ?? '').isNotEmpty) ...[
+            const SizedBox(height: 3),
+            Text(selisih.note!,
+                style: const TextStyle(fontSize: 12, height: 1.3)),
+          ],
+          const SizedBox(height: 10),
+          if (bolehBayar)
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: onBayar,
+                icon: const Icon(Icons.payments_outlined, size: 17),
+                label: const Text('Bayar Selisih'),
+              ),
+            )
+          else
+            Text(
+              'Menunggu dilunasi. Yang mencatat pembayarannya Owner, '
+              'Finance, atau Admin.',
+              style: TextStyle(fontSize: 11.5, color: muted),
+            ),
         ],
       ),
     );

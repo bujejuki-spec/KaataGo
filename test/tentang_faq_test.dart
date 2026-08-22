@@ -8,6 +8,39 @@ void main() {
   final tentang = File('lib/screens/about_screen.dart').readAsStringSync();
   final web = File('../KaataGo Web/index.html').readAsStringSync();
 
+  group('alamat surel', () {
+    // Alasannya sama dengan nomor WhatsApp: dua alamat terpisah akan
+    // berpisah suatu saat, dan yang menemukannya adalah orang yang
+    // menulis ke alamat yang sudah tidak dibaca.
+    test('sama dengan yang di landing page', () {
+      expect(kEmailKaataGo, 'kaatago.app@gmail.com');
+      expect(web, contains('mailto:$kEmailKaataGo'));
+    });
+
+    test('membuka mailto berikut subjeknya', () {
+      expect(faq, contains("scheme: 'mailto'"));
+      expect(faq, contains('subject='));
+    });
+
+    test('kegagalannya dikatakan, bukan didiamkan', () {
+      final fungsi = faq.substring(faq.indexOf('bukaEmailKaataGo'));
+      expect(fungsi, contains('Tidak ada aplikasi surel yang terpasang.'));
+    });
+
+    test('tampil di layar Tentang KaataGo', () {
+      expect(tentang, contains('bukaEmailKaataGo(context)'));
+      expect(tentang, contains('kEmailKaataGo'));
+    });
+
+    // Yang membaca FAQ lalu tidak menemukan jawabannya justru orang yang
+    // paling perlu tahu ke mana harus bertanya.
+    test('tampil di FAQ landing page, bukan cuma di footer', () {
+      final faqWeb = web.substring(web.indexOf('id="faq"'));
+      expect(faqWeb.substring(0, faqWeb.indexOf('<footer>')),
+          contains(kEmailKaataGo));
+    });
+  });
+
   group('nomor WhatsApp', () {
     test('sama dengan yang di landing page', () {
       // Dua nomor terpisah akan berpisah suatu saat, dan yang
