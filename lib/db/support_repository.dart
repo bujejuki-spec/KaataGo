@@ -53,7 +53,14 @@ class SupportRepository {
         .stream(primaryKey: ['id'])
         .order('last_message_at', ascending: false)
         .map((rows) {
-          final list = rows.map((r) => SupportTicket.fromMap(r)).toList();
+          // Alasannya sama dengan _tanpaKembar: baris yang lahir tepat
+          // saat langganannya dibuka bisa datang dua kali.
+          final unik = <String, SupportTicket>{};
+          for (final r in rows) {
+            final t = SupportTicket.fromMap(r);
+            unik[t.id] = t;
+          }
+          final list = unik.values.toList();
           list.sort((a, b) {
             if (a.terbuka != b.terbuka) return a.terbuka ? -1 : 1;
             final wa = a.lastMessageAt ?? a.createdAt;
@@ -76,7 +83,32 @@ class SupportRepository {
         // `.order('created_at')` saja membuat pesan terbaru berada di
         // paling atas, dan percakapannya terbaca terbalik.
         .order('created_at', ascending: true)
-        .map((rows) => rows.map((r) => SupportMessage.fromMap(r)).toList());
+        .map(_tanpaKembar);
+  }
+
+  /// Membuang baris berulang, lalu mengurutkannya sendiri.
+  ///
+  /// Aliran Supabase berlangganan lebih dulu, baru mengambil isi
+  /// awalnya. Baris yang lahir tepat di antara keduanya datang dua
+  /// kali — sekali sebagai kejadian realtime, sekali lagi di dalam isi
+  /// awal — dan daftarnya menampilkan keduanya.
+  ///
+  /// Itu persis keadaan saat pengaduan baru dibuat: pesannya tersimpan
+  /// sepersekian detik sebelum layar percakapannya berlangganan. Yang
+  /// terlihat: pesan pertama dan sapaannya muncul dobel, lalu normal
+  /// sendiri begitu layarnya dibuka ulang — karena pada pembukaan kedua
+  /// tidak ada lagi baris yang lahir di sela itu.
+  ///
+  /// Disaring di sini, bukan di layar: dua layar memakai aliran yang
+  /// sama, dan yang kedua akan tertinggal saat yang pertama diperbaiki.
+  static List<SupportMessage> _tanpaKembar(List<Map<String, dynamic>> rows) {
+    final unik = <String, SupportMessage>{};
+    for (final r in rows) {
+      final m = SupportMessage.fromMap(r);
+      unik[m.id] = m;
+    }
+    return unik.values.toList()
+      ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
   }
 
   /// Satu tiket, sekali ambil — dipakai layar percakapan untuk mengetahui

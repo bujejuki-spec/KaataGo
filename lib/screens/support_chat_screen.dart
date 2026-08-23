@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 
 import '../db/restaurant_repository.dart';
 import '../db/support_repository.dart';
+import '../services/push_service.dart';
 import '../models/support_ticket.dart';
 import '../theme.dart';
 import '../utils/gambar_base64.dart';
@@ -63,6 +64,9 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
   @override
   void initState() {
     super.initState();
+    // Selama layar ini terbuka, notifikasi untuk percakapan yang sama
+    // tidak ditampilkan — pesannya sudah muncul di sini detik itu juga.
+    PushService.tiketSupportTerbuka = widget.ticketId;
     _pesanSub = _repo.pesan(widget.ticketId).listen((p) {
       if (!mounted) return;
       setState(() => _pesan = p);
@@ -82,6 +86,9 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
 
   @override
   void dispose() {
+    if (PushService.tiketSupportTerbuka == widget.ticketId) {
+      PushService.tiketSupportTerbuka = null;
+    }
     _pesanSub?.cancel();
     _tiketSub?.cancel();
     _teks.dispose();

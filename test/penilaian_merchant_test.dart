@@ -244,7 +244,11 @@ void main() {
 
     test('tampil juga saat aplikasinya sedang dibuka', () {
       final push = File('lib/services/push_service.dart').readAsStringSync();
-      expect(push, contains("{'announcement', 'review_prompt'}"));
+      // Daftarnya bertambah seiring waktu — yang dijaga di sini cuma
+      // bahwa ajakan menilai ada di dalamnya, bukan isi persisnya.
+      final daftar = push.substring(push.indexOf('_foregroundEvents = {'));
+      expect(daftar.substring(0, daftar.indexOf('};')),
+          contains("'review_prompt'"));
     });
   });
 

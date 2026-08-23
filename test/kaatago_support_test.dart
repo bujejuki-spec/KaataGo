@@ -352,6 +352,146 @@ void main() {
     });
   });
 
+  group('pesan kembar', () {
+    final sql = File('supabase/support_pesan_kembar.sql').readAsStringSync();
+
+    test('ikut terangkut ke JALANKAN-INI', () {
+      expect(File('scripts/gabung_sql.sh').readAsStringSync(),
+          contains('support_pesan_kembar.sql'));
+    });
+
+    // Bukan lagi bergantung pada urutan pemeriksaan di aplikasi maupun
+    // di fungsi. Basis data yang menolak barisnya, dan penolakan itu
+    // berlaku untuk semua jalan masuk sekaligus.
+    test('ditolak indeks unik, bukan cuma diperiksa fungsi', () {
+      expect(sql, contains('create unique index if not exists '
+          'support_messages_tanpa_kembar'));
+      expect(sql, contains('md5(body)'));
+    });
+
+    // Postgres menolak mengindeks date_trunc atas timestamptz apa
+    // adanya, karena hasilnya bergantung zona waktu sesi.
+    test('ekspresi waktunya immutable', () {
+      expect(sql, contains("timezone('UTC', created_at)"));
+    });
+
+    test('sapaan paling banyak satu per percakapan', () {
+      expect(sql, contains('support_messages_satu_sapaan'));
+      expect(sql, contains("where sender_email = 'system:greeting'"));
+    });
+
+    // Orang yang mengirim "iya" dua kali berjarak beberapa detik memang
+    // mengirimnya dua kali. Menghapus yang kedua berarti menghapus
+    // ucapan yang benar-benar diucapkan.
+    test('batas kembarnya satu detik, bukan lebih', () {
+      expect(sql, contains("date_trunc('second'"));
+      expect(sql, isNot(contains("date_trunc('minute'")));
+    });
+  });
+
+  group('notifikasi saat aplikasi terbuka', () {
+    final push = File('lib/services/push_service.dart').readAsStringSync();
+
+    // Android tidak pernah menampilkan sendiri notifikasi yang tiba saat
+    // aplikasinya di depan. Pesanan tidak apa-apa — aliran realtimenya
+    // sudah membunyikan. Percakapan support tidak punya itu: alirannya
+    // hanya hidup selama layar percakapan ITU terbuka.
+    test('pesan support ikut ditampilkan sendiri', () {
+      final daftar = push.substring(push.indexOf('_foregroundEvents = {'));
+      expect(daftar.substring(0, daftar.indexOf('};')),
+          contains("'support_message'"));
+    });
+
+    // Membunyikannya lagi cuma mengagetkan orang yang sedang membacanya.
+    test('kecuali untuk percakapan yang sedang dibuka', () {
+      expect(push, contains('tiketSupportTerbuka'));
+      expect(push,
+          contains("message.data['ticket_id'] == tiketSupportTerbuka"));
+    });
+
+    test('penandanya dilepas saat layarnya ditutup', () {
+      final layar =
+          File('lib/screens/support_chat_screen.dart').readAsStringSync();
+      expect(layar,
+          contains('PushService.tiketSupportTerbuka = widget.ticketId;'));
+      final buang = layar.substring(layar.indexOf('void dispose()'));
+      expect(buang.substring(0, buang.indexOf('super.dispose')),
+          contains('tiketSupportTerbuka = null'));
+    });
+  });
+
+  group('baris kembar di aliran', () {
+    final repo = File('lib/db/support_repository.dart').readAsStringSync();
+
+    // Aliran Supabase berlangganan lebih dulu, baru mengambil isi
+    // awalnya. Baris yang lahir tepat di antara keduanya datang dua
+    // kali — sekali sebagai kejadian realtime, sekali lagi di dalam isi
+    // awal. Itu persis keadaan saat pengaduan baru dibuat, dan itulah
+    // sebabnya dobelnya hilang sendiri begitu layarnya dibuka ulang.
+    test('pesan disaring berdasarkan idnya', () {
+      expect(repo, contains('static List<SupportMessage> _tanpaKembar('));
+      expect(repo, contains('unik[m.id] = m;'));
+      expect(repo, contains('.map(_tanpaKembar)'));
+    });
+
+    test('daftar tiket disaring dengan alasan yang sama', () {
+      final fn = repo.substring(repo.indexOf('Stream<List<SupportTicket>> semua()'));
+      expect(fn.substring(0, fn.indexOf('Stream<List<SupportMessage>>')),
+          contains('unik[t.id] = t;'));
+    });
+
+    // Disaring di repositori, bukan di layar: dua layar memakai aliran
+    // yang sama, dan yang kedua akan tertinggal saat yang pertama
+    // diperbaiki.
+    test('disaring di satu tempat, bukan di tiap layar', () {
+      final chat =
+          File('lib/screens/support_chat_screen.dart').readAsStringSync();
+      expect(chat, isNot(contains('unik[')));
+    });
+  });
+
+  group('penanda per jenis', () {
+    final fab = File('lib/widgets/support_fab.dart').readAsStringSync();
+
+    // Satu angka di tombol mengambang cuma memberi tahu "ada sesuatu" —
+    // yang membukanya masih harus menebak yang mana.
+    test('chat dan pengaduan punya penandanya masing-masing', () {
+      expect(fab, contains('belumDibacaChat'));
+      expect(fab, contains('belumDibacaPengaduan'));
+      expect('_Penanda(jumlah:'.allMatches(fab).length, greaterThanOrEqualTo(2));
+    });
+
+    test('penanda kosong tidak digambar', () {
+      final w = fab.substring(fab.indexOf('class _Penanda'));
+      expect(w, contains('if (jumlah <= 0) return const SizedBox.shrink();'));
+    });
+  });
+
+  group('judul notifikasi', () {
+    final sql = File('supabase/support_push_wording.sql').readAsStringSync();
+
+    test('ikut terangkut ke JALANKAN-INI', () {
+      expect(File('scripts/gabung_sql.sh').readAsStringSync(),
+          contains('support_push_wording.sql'));
+    });
+
+    // Yang membacanya di layar kunci tidak punya cara tahu itu
+    // sebenarnya pertanyaan biasa — dan yang mengirimnya merasa dituduh
+    // mengadu padahal cuma bertanya.
+    test('chat tidak pernah disebut pengaduan', () {
+      expect(sql, contains("when v_chat then 'Chat dari ' || v_nama"));
+      expect(sql, contains("when v_chat then 'Balasan KaataGo Admin'"));
+    });
+
+    test('pengaduan tetap disebut pengaduan', () {
+      expect(sql, contains("else 'Pengaduan dari ' || v_nama"));
+    });
+
+    test('sapaannya tetap tidak dikabarkan', () {
+      expect(sql, contains("if new.sender_email = 'system:greeting' then"));
+    });
+  });
+
   group('SQL-nya', () {
     final sql = File('supabase/support_tickets.sql').readAsStringSync();
 

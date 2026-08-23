@@ -73,9 +73,12 @@ class _SupportFabState extends State<SupportFab> {
     // Chat bebas tidak ikut dihitung di sini: ia bukan pengaduan, tidak
     // punya status, dan pintunya sudah ada sendiri di atas.
     final pengaduan = [for (final t in _tiket) if (!t.chatBebas) t];
+    final chat = [for (final t in _tiket) if (t.chatBebas) t];
     final adaRiwayat = pengaduan.isNotEmpty;
     final belumDibacaPengaduan =
         SupportRepository.belumDibaca(pengaduan, sebagaiAdmin: false);
+    final belumDibacaChat =
+        SupportRepository.belumDibaca(chat, sebagaiAdmin: false);
 
     final pilihan = await showModalBottomSheet<String>(
       context: context,
@@ -112,8 +115,18 @@ class _SupportFabState extends State<SupportFab> {
               leading: const Icon(Icons.chat_bubble_outline,
                   color: KaataTheme.brand),
               title: const Text('Chat KaataGo Admin'),
-              subtitle: const Text('Sekadar bertanya, bukan pengaduan',
-                  style: TextStyle(fontSize: 11.5)),
+              subtitle: Text(
+                belumDibacaChat > 0
+                    ? 'Ada balasan baru'
+                    : 'Sekadar bertanya, bukan pengaduan',
+                style: const TextStyle(fontSize: 11.5),
+              ),
+              // Penandanya menempel pada barisnya masing-masing.
+              //
+              // Satu angka di tombol mengambang cuma memberi tahu "ada
+              // sesuatu" — dan yang membukanya masih harus menebak yang
+              // mana, lalu membuka keduanya untuk memastikan.
+              trailing: _Penanda(jumlah: belumDibacaChat),
               onTap: () => Navigator.pop(sheetContext, 'chat'),
             ),
             ListTile(
@@ -125,10 +138,10 @@ class _SupportFabState extends State<SupportFab> {
               subtitle: Text(
                 adaRiwayat
                     ? '${pengaduan.length} pengaduan'
-                        '${belumDibacaPengaduan > 0 ? ' • $belumDibacaPengaduan belum dibaca' : ''}'
                     : 'Belum ada pengaduan',
                 style: const TextStyle(fontSize: 11.5),
               ),
+              trailing: _Penanda(jumlah: belumDibacaPengaduan),
               onTap: adaRiwayat
                   ? () => Navigator.pop(sheetContext, 'daftar')
                   : null,
@@ -249,6 +262,33 @@ class _SupportFabState extends State<SupportFab> {
             ),
           ),
       ],
+    );
+  }
+}
+
+/// Titik merah berangka. Kosong berarti tidak digambar sama sekali —
+/// penanda yang selalu ada berhenti berarti apa-apa.
+class _Penanda extends StatelessWidget {
+  final int jumlah;
+
+  const _Penanda({required this.jumlah});
+
+  @override
+  Widget build(BuildContext context) {
+    if (jumlah <= 0) return const SizedBox.shrink();
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      constraints: const BoxConstraints(minWidth: 22),
+      decoration: BoxDecoration(
+        color: Colors.red,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        '$jumlah',
+        textAlign: TextAlign.center,
+        style: const TextStyle(
+            color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+      ),
     );
   }
 }

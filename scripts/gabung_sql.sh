@@ -84,6 +84,8 @@ FILES=(
   support_push.sql
   support_auto_reply.sql
   support_chat_rules.sql
+  support_pesan_kembar.sql
+  support_push_wording.sql
 )
 
 {

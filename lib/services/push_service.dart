@@ -114,7 +114,27 @@ class PushService {
   /// Ajakan menilai ikut di sini dengan alasan yang sama: ia tidak
   /// punya aliran realtime yang menampilkannya, dan yang tiba selagi
   /// orangnya memandangi layar akan hilang tanpa pernah terlihat.
-  static const _foregroundEvents = {'announcement', 'review_prompt'};
+  /// Pesan KaataGo Support ikut, dan alasannya sama sekali lain dari
+  /// pesanan.
+  ///
+  /// Pesanan punya aliran realtime yang menampilkannya di layar mana pun
+  /// pegawainya berada. Percakapan support tidak: alirannya hanya hidup
+  /// selama layar percakapan ITU terbuka. KaataGo Admin yang sedang
+  /// membuka daftar, membuka percakapan lain, atau membuka menu lain
+  /// sama sekali tidak akan pernah tahu ada pesan masuk — persis
+  /// keadaan yang paling sering terjadi.
+  static const _foregroundEvents = {
+    'announcement',
+    'review_prompt',
+    'support_message',
+  };
+
+  /// Percakapan support yang sedang dibuka orangnya.
+  ///
+  /// Notifikasi untuk percakapan yang sedang dipandangi tidak
+  /// ditampilkan — pesannya sudah muncul di layar detik itu juga, dan
+  /// membunyikannya lagi cuma mengagetkan orang yang sedang membacanya.
+  static String? tiketSupportTerbuka;
 
   /// Membuka halaman yang dimaksud notifikasinya.
   ///
@@ -137,6 +157,11 @@ class PushService {
 
     final notification = message.notification;
     if (notification == null) return;
+
+    if (event == 'support_message' &&
+        message.data['ticket_id'] == tiketSupportTerbuka) {
+      return;
+    }
 
     NotificationService.instance.showAnnouncement(
       event: event,

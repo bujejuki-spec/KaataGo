@@ -37,6 +37,15 @@ Formatnya dibaca `scripts/release.sh`: judul `## <versi>`, lalu
 poin-poinnya. Versi yang tidak punya bagiannya di sini tetap terbit,
 hanya pengumumannya memakai kalimat umum.
 
+## 2.19.0
+
+- Notifikasi KaataGo Support kini muncul juga saat aplikasinya sedang
+  dibuka — kecuali untuk percakapan yang sedang kamu baca
+- Penanda pesan baru dipisah: chat punya angkanya sendiri, pengaduan
+  punya angkanya sendiri
+- Notifikasi chat tidak lagi berjudul "pengaduan"
+- Perbaikan bug dan penyempurnaan tampilan
+
 ## 2.18.0
 
 - Chat KaataGo Admin dipisah tegas dari pengaduan — tanpa status, tanpa
