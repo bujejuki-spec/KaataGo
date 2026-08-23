@@ -11,6 +11,8 @@ SupportTicket tiket({
   DateTime? dibacaPelapor,
   DateTime? dibacaAdmin,
   String? nama,
+  DateTime? pelaporBicara,
+  DateTime? adminBicara,
 }) =>
     SupportTicket.fromMap({
       'id': 't1',
@@ -23,6 +25,14 @@ SupportTicket tiket({
       'last_message_from_admin': dariAdmin,
       'reporter_read_at': dibacaPelapor?.toIso8601String(),
       'admin_read_at': dibacaAdmin?.toIso8601String(),
+      // Kalau tidak disebut sendiri, ikut arah pesan terakhirnya —
+      // supaya kasus-kasus lama tetap terbaca apa adanya.
+      'last_reporter_at': (pelaporBicara ??
+              (dariAdmin ? null : pesanTerakhir))
+          ?.toIso8601String(),
+      'last_admin_at':
+          (adminBicara ?? (dariAdmin ? pesanTerakhir : null))
+              ?.toIso8601String(),
     });
 
 void main() {
@@ -78,6 +88,41 @@ void main() {
 
     test('tiket tanpa pesan sama sekali tidak bertanda', () {
       expect(tiket().belumDibaca(sebagaiAdmin: false), isFalse);
+    });
+
+    // Sapaan otomatis adalah pesan dari admin. Kalau penandanya
+    // disimpulkan dari "siapa yang bicara terakhir", pengaduan yang baru
+    // disapa mesin langsung terlihat beres — padahal belum dibaca siapa
+    // pun.
+    test('sapaan otomatis tidak menghapus tanda belum dibaca admin', () {
+      final t = tiket(
+        pesanTerakhir: jam10,
+        dariAdmin: true,
+        pelaporBicara: jam9,
+        adminBicara: jam10,
+      );
+      expect(t.belumDibaca(sebagaiAdmin: true), isTrue);
+    });
+
+    test('tapi pelapor tetap melihatnya sebagai kabar baru', () {
+      final t = tiket(
+        pesanTerakhir: jam10,
+        dariAdmin: true,
+        pelaporBicara: jam9,
+        adminBicara: jam10,
+      );
+      expect(t.belumDibaca(sebagaiAdmin: false), isTrue);
+    });
+
+    test('admin yang sudah membacanya berhenti bertanda', () {
+      final t = tiket(
+        pesanTerakhir: jam10,
+        dariAdmin: true,
+        pelaporBicara: jam9,
+        adminBicara: jam10,
+        dibacaAdmin: jam10,
+      );
+      expect(t.belumDibaca(sebagaiAdmin: true), isFalse);
     });
 
     test('jumlahnya dihitung dari daftar tiketnya sendiri', () {
@@ -173,6 +218,63 @@ void main() {
     test('daftar KaataGo Admin tetap yang terbaru di atas', () {
       final repo = File('lib/db/support_repository.dart').readAsStringSync();
       expect(repo, contains('return wb.compareTo(wa);'));
+    });
+  });
+
+  group('sapaan otomatis', () {
+    final sql = File('supabase/support_auto_reply.sql').readAsStringSync();
+
+    test('ikut terangkut ke JALANKAN-INI', () {
+      expect(File('scripts/gabung_sql.sh').readAsStringSync(),
+          contains('support_auto_reply.sql'));
+    });
+
+    test('disapa begitu tiketnya dibuka', () {
+      final fn = sql.substring(sql.indexOf('function open_support_ticket'));
+      expect(fn, contains('mohon bersabar KaataGo Admin akan meresponse'));
+      expect(fn, contains('terimakasih sudah berkenan menunggu'));
+    });
+
+    test('menyebut namanya, dan jatuh ke bagian depan email kalau kosong', () {
+      expect(sql, contains("split_part(v_email, '@', 1)"));
+      expect(sql, contains("'Halo ' || v_nama"));
+    });
+
+    test('chat disebut chat, pengaduan disebut pengaduan', () {
+      expect(sql, contains("then 'chat'"));
+      expect(sql, contains("else 'pengaduan'"));
+    });
+
+    // Judulnya harus sama persis dengan yang dipakai aplikasi. Kalau
+    // berpisah, chat bebas akan disapa sebagai "pengaduan".
+    test('judul chat bebasnya sama dengan yang dikenal aplikasi', () {
+      final repo = File('lib/db/support_repository.dart').readAsStringSync();
+      final kode = RegExp(r"kSubjekChatUmum = '([^']+)'").firstMatch(repo);
+      expect(kode, isNotNull);
+      expect(sql, contains("= '${kode!.group(1)}'"));
+    });
+
+    // Orang yang baru menekan kirim sedang menatap layarnya; membunyikan
+    // HP-nya detik itu juga bukan kabar, cuma kebisingan.
+    test('sapaannya tidak ikut dikabarkan', () {
+      final fn = sql.substring(sql.indexOf('function queue_push_support'));
+      expect(fn, contains("if new.sender_email = 'system:greeting' then"));
+      expect(fn.substring(fn.indexOf("'system:greeting'")),
+          contains('return new;'));
+    });
+
+    // Dua pertanyaan yang berbeda tidak bisa dijawab satu kolom.
+    test('kapan tiap pihak bicara dicatat terpisah', () {
+      expect(sql, contains('add column if not exists last_reporter_at'));
+      expect(sql, contains('add column if not exists last_admin_at'));
+      final trg = sql.substring(sql.indexOf('function touch_support_ticket'));
+      expect(trg, contains('last_reporter_at = case'));
+      expect(trg, contains('last_admin_at = case'));
+    });
+
+    test('baris lama diisi dari percakapannya sendiri', () {
+      expect(sql, contains('update support_tickets t'));
+      expect(sql, contains('select max(m.created_at) from support_messages m'));
     });
   });
 

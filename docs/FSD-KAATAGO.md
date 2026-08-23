@@ -1,8 +1,8 @@
 # KaataGo — Functional Specification Document
 
-**Versi Aplikasi:** 2.12.0 (build 118)
-**Versi Dokumen:** 3.0
-**Tanggal Terbit:** 22 Agustus 2026
+**Versi Aplikasi:** 2.16.0 (build 122)
+**Versi Dokumen:** 3.1
+**Tanggal Terbit:** 24 Agustus 2026
 **Status:** Rilis
 **Jenis Dokumen:** FSD — sisi fungsional
 
@@ -1001,6 +1001,10 @@ Perangkat kedua yang menghadap pelanggan di meja kasir.
 | F-SH-10 | Shift yang sudah ditutup tidak bisa ditutup dua kali |
 | F-SH-11 | Riwayat shift dapat dibaca seluruh pegawai merchant, berikut selisih tiap shift |
 | F-SH-12 | Menunya ada di halaman utama Kasir, Admin, Owner, dan Finance |
+| F-SH-13 | Modal awal yang ditulis saat membuka shift dibandingkan dengan yang ditinggalkan penutupan terakhir |
+| F-SH-14 | Kalau tidak cocok, selisihnya ditunjukkan dan nominalnya masih bisa diperbaiki sebelum shift dibuka |
+| F-SH-15 | Merchant yang belum pernah menutup shift tidak punya pembanding — modal awal apa pun diterima |
+| F-SH-16 | Gagal mengambil pembandingnya tidak menahan shift dibuka |
 
 > **Kenapa angkanya tidak ditampilkan sebelum dihitung.** Kasir yang
 > tahu lebih dulu "seharusnya Rp 1.240.000" akan menghitung sampai ketemu
@@ -1020,10 +1024,124 @@ Perangkat kedua yang menghadap pelanggan di meja kasir.
 > bersamaan akan menghitung penjualan tunai yang sama dua kali, lalu
 > keduanya sama-sama terlihat kelebihan uang.
 
-> **Yang belum dilakukan.** Selisihnya belum masuk jurnal. Ia tercatat
-> pada shiftnya dan tampil di riwayat, tapi tidak memotong GL mana pun —
-> selama itu, Saldo Cash tetap sedikit lebih besar daripada uang yang
-> sebenarnya ada. Lihat §10.
+> **Kenapa pembandingnya uang yang DIHITUNG, bukan yang seharusnya.**
+> Kalau shift kemarin kurang Rp 10.000, yang betul-betul tertinggal di
+> laci memang jumlah yang kurang itu — dan kekurangannya sudah punya
+> tagihannya sendiri atas nama kasir kemarin. Memakai angka "seharusnya"
+> berarti menagihkan kekurangan yang sama dua kali, kepada dua orang
+> yang berbeda.
+
+---
+
+### 4.27 Selisih Kasir
+
+| ID | Kebutuhan |
+|---|---|
+| F-SK-01 | Selisih saat shift ditutup masuk pembukuan lewat **GL Selisih Kasir** |
+| F-SK-02 | Selisih **kurang** dijurnal debit; selisih **lebih** dijurnal credit |
+| F-SK-03 | Selisih kurang jadi **tagihan terbuka** atas nama kasir yang memegang laci |
+| F-SK-04 | Selisih lebih **tidak** jadi tagihan |
+| F-SK-05 | Tagihan dilunasi lewat **Bayar Selisih** — kasir menyerahkan tunai, uangnya kembali ke laci |
+| F-SK-06 | Yang boleh mencatat pelunasan hanya **Owner, Finance, dan Admin** |
+| F-SK-07 | Kasir **melihat** tagihan atas namanya sendiri, tanpa tombol |
+| F-SK-08 | Pelunasan dijurnal credit, sehingga akunnya kembali nol untuk tagihan itu |
+| F-SK-09 | **Saldo Cash dikurangi** selisih yang belum dilunasi |
+| F-SK-10 | Yang sudah dilunasi tidak dikurangkan lagi |
+| F-SK-11 | Shift yang selisihnya lunas berlencana **Pas**, berikut rincian nominal, selisih, dan siapa yang membayar |
+| F-SK-12 | GL Selisih Kasir bisa dipetakan sendiri di Mapping GL Account |
+| F-SK-13 | Satu shift paling banyak melahirkan satu tagihan |
+| F-SK-14 | Tagihan yang sudah lunas tidak bisa dilunasi dua kali |
+
+> **Kenapa selisih lebih tidak ditagih.** Tidak ada yang bisa ditagih
+> dari uang yang justru berlebih. Yang perlu dilakukan menelusuri
+> penjualan yang belum diinput, dan itu pekerjaan Finance — bukan utang
+> kasir.
+
+> **Kenapa Saldo Cash ikut dikurangi.** Tanpa itu, layar Saldo &
+> Pengeluaran tetap menyebut angka yang lebih besar daripada uang yang
+> bisa dihitung tangan — persis penyakit yang mau disembuhkan fitur ini.
+
+> **Kenapa kasir tidak boleh melunasi sendiri.** Angka yang menilai
+> seseorang tidak boleh bisa dihapus oleh orang itu juga. Tapi ia tetap
+> melihatnya: tagihan yang hanya bisa dilihat atasannya adalah tuduhan
+> yang tidak bisa dijawab.
+
+> **Kenapa angkanya tidak ikut dihapus saat lunas.** Riwayat yang
+> menyembunyikan bahwa pernah ada selisih tidak bisa dipakai menelusuri
+> apa pun nanti — dan yang paling butuh menelusurinya justru orang yang
+> belum ada di sana waktu kejadiannya.
+
+---
+
+### 4.28 Laporan Penjualan Merchant
+
+Hanya **Owner dan Admin**. Kasir dan Chef tidak: yang mereka butuhkan
+pesanan yang sedang berjalan, dan omzet merchant bukan angka yang perlu
+beredar di antara semua orang yang memegang HP.
+
+| ID | Kebutuhan |
+|---|---|
+| F-RP-01 | Rentang tanggal bisa dipilih; bawaannya 30 hari terakhir |
+| F-RP-02 | **Ringkasan**: omzet, jumlah pesanan, rata-rata transaksi, porsi terjual |
+| F-RP-03 | **Menu terlaris** berikut porsi dan omzetnya |
+| F-RP-04 | **Menu tidak laku** — nol porsi sepanjang rentang itu |
+| F-RP-05 | **Jam ramai** per jam WIB, berikut jam tersibuknya |
+| F-RP-06 | Hanya pesanan **lunas** yang dihitung |
+| F-RP-07 | Seluruhnya dihitung server; yang tidak berhak menerima daftar kosong, bukan pesan galat |
+| F-RP-08 | Nama menu diambil dari baris pesanannya, sehingga menu yang sudah dihapus tetap terhitung |
+
+> **Kenapa "menu tidak laku" yang paling berguna.** Peringkat teratas
+> menyenangkan dilihat tapi tidak menyuruh melakukan apa pun. Menu yang
+> diam sebulan adalah bahan yang dibeli, tempat di daftar, dan waktu
+> pelanggan yang terpakai untuk melewatinya.
+
+> **Kenapa bawaannya 30 hari, bukan bulan berjalan.** Tanggal 2 bulan
+> depan, "bulan ini" berisi dua hari — dan laporan yang isinya dua hari
+> tidak memberi tahu apa pun tentang menu mana yang laku.
+
+---
+
+### 4.29 KaataGo Support
+
+| ID | Kebutuhan |
+|---|---|
+| F-SP-01 | Tombol mengambang **KaataGo Support** di beranda pelanggan dan pegawai merchant |
+| F-SP-02 | Tiga pilihan: **Buat Pengaduan Baru**, **Chat KaataGo Admin**, **Lihat Status Pengaduan** |
+| F-SP-03 | Pengaduan berisi judul, cerita, dan satu foto opsional |
+| F-SP-04 | Chat bebas tidak meminta judul, dan memakai percakapan yang masih terbuka kalau ada |
+| F-SP-05 | Status tiket: **Open**, **On Progress**, **Confirm Customer**, **Close** |
+| F-SP-06 | Hanya KaataGo Admin yang mengubah status; pelapor hanya boleh **menutup** |
+| F-SP-07 | Tiap perubahan status ikut jadi pesan di percakapannya |
+| F-SP-08 | Tiket **Confirm Customer** yang didiamkan 24 jam ditutup sendiri |
+| F-SP-09 | Penutupan otomatis hanya berlaku kalau pesan terakhirnya dari admin |
+| F-SP-10 | Balasan pelapor mengembalikan status ke **On Progress** |
+| F-SP-11 | Tiket tertutup tidak bisa dibalas, tapi percakapannya tetap terbaca |
+| F-SP-12 | Menu **Customer Service** untuk KaataGo Admin, berbentuk daftar percakapan |
+| F-SP-13 | Daftarnya bisa dicari, dan menyembunyikan yang sudah ditutup secara bawaan |
+| F-SP-14 | Penanda belum dibaca di tombol mengambang dan di beranda KaataGo Admin |
+| F-SP-15 | Notifikasi saat pengaduan masuk, dibalas, atau statusnya bergerak |
+| F-SP-16 | Notifikasi diketuk membuka percakapannya, bukan sekadar aplikasinya |
+| F-SP-17 | Balasan admin menyebut **nama penjawabnya** — "KaataGo Admin - Gamal" |
+| F-SP-18 | KaataGo Admin melihat pelapor ini **pelanggan** atau **merchant mana** |
+| F-SP-19 | Pelapor hanya melihat tiketnya sendiri, bukan tiket rekan sekantornya |
+| F-SP-20 | Tidak ditawarkan kepada yang belum masuk |
+
+> **Kenapa tiket, bukan WhatsApp.** Gulungan obrolan tidak bisa menjawab
+> tiga hal: keluhan ini sudah selesai atau belum, siapa yang sedang
+> menunggu siapa, dan sudah berapa lama.
+
+> **Kenapa penutupan otomatis memeriksa siapa yang bicara terakhir.**
+> Tiket yang pesan terakhirnya dari pelapor berarti bolanya ada di
+> KaataGo. Menutupnya karena "tidak ada jawaban" akan menghukum orang
+> yang justru sudah menjawab.
+
+> **Kenapa pelapor tidak melihat tiket rekannya.** Keluhan sering
+> berisi hal yang tidak ingin dibaca seruangan — termasuk keluhan
+> tentang orang di ruangan itu.
+
+> **Kenapa nama penjawabnya disebut.** Yang mengadu berhak tahu sedang
+> bicara dengan siapa, dan yang menjawab jadi ikut bertanggung jawab
+> atas kalimatnya.
 
 ---
 
@@ -1289,7 +1407,9 @@ dilaporkan sebagai temuan.
 | **Maksimal 100 QR sekali buat** | Batas yang disengaja |
 | **Struk & QR butuh internet saat dibuat** | Dalam keadaan benar-benar luring, hurufnya jatuh ke font bawaan; bentuknya tetap benar |
 | **Titik lokasi memakai layanan gratis** | Pengambilan lokasi beruntun dalam waktu singkat bisa ditolak sementara |
-| **Selisih shift belum masuk jurnal** | Tercatat pada shiftnya dan tampil di riwayat, tapi tidak memotong GL mana pun. Selama itu, Saldo Cash tetap sedikit lebih besar daripada uang yang sebenarnya ada |
+| **Selisih lebih tidak ditagihkan** | Dijurnal, tapi berhenti di situ. Yang perlu dilakukan menelusuri penjualan yang belum diinput — bukan menagih kasir |
+| **Chat bebas dibedakan lewat judulnya** | Bukan lewat kolom tersendiri. Percakapan bebas yang judulnya diubah manual di basis data akan berhenti dikenali sebagai chat bebas |
+| **Notifikasi support tidak mengikuti peran perangkat** | Disasar lewat email KaataGo Admin. HP yang sama dipakai sebagai pelanggan tetap menerima kabar pengaduan — orangnya memang sama |
 | **Rata-rata bintang menu bukan satu-orang-satu-suara** | Penilaian menempel pada pesanan, jadi yang memesan sepuluh kali menyumbang sepuluh penilaian. Disengaja: tiap kunjungan adalah masakan yang berbeda |
 | **Pesanan kasir tidak bisa dinilai pelanggannya** | Barisnya tersimpan atas nama kasir, bukan email pelanggan, jadi tidak ada kaitan ke akun siapa pun. Hanya pesanan dari HP dengan akun yang bisa dinilai |
 | **Penilaian menu tidak berfoto** | Berbeda dari penilaian merchant. Satu pesanan bisa berisi lima menu, dan lima ulasan berfoto untuk satu kunjungan membuat barisnya jauh lebih berat daripada seluruh katalognya |

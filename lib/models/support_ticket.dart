@@ -51,6 +51,15 @@ class SupportTicket {
   final DateTime? reporterReadAt;
   final DateTime? adminReadAt;
 
+  /// Kapan masing-masing pihak terakhir bicara.
+  ///
+  /// Dua kolom, bukan satu penanda "siapa yang terakhir". Sapaan
+  /// otomatis membuat pesan terakhir jadi "dari admin" pada tiket yang
+  /// belum dibaca siapa pun — dan penanda tunggal langsung menyatakan
+  /// tiket itu beres.
+  final DateTime? lastReporterAt;
+  final DateTime? lastAdminAt;
+
   /// Ditutup penjadwal karena didiamkan, bukan oleh orang. Tiket yang
   /// mati karena tidak ditanggapi bukan tiket yang selesai.
   final bool autoClosed;
@@ -69,6 +78,8 @@ class SupportTicket {
     this.lastMessageFromAdmin = false,
     this.reporterReadAt,
     this.adminReadAt,
+    this.lastReporterAt,
+    this.lastAdminAt,
     this.autoClosed = false,
   });
 
@@ -99,12 +110,14 @@ class SupportTicket {
   /// sendiri, dan pesan yang terlewat tandanya tidak akan pernah
   /// ketahuan.
   bool belumDibaca({required bool sebagaiAdmin}) {
-    final pesan = lastMessageAt;
-    if (pesan == null) return false;
-    // Pesan dari pihak sendiri tidak pernah jadi kabar baru.
-    if (sebagaiAdmin == lastMessageFromAdmin) return false;
+    // Yang dibandingkan kapan LAWAN BICARA terakhir bicara — bukan
+    // siapa yang paling terakhir bicara di tiket ini. Sapaan otomatis
+    // adalah pesan dari admin, dan pengaduan yang baru disapa mesin
+    // tetap pengaduan yang belum dibaca manusia.
+    final lawan = sebagaiAdmin ? lastReporterAt : lastAdminAt;
+    if (lawan == null) return false;
     final dibaca = sebagaiAdmin ? adminReadAt : reporterReadAt;
-    return dibaca == null || pesan.isAfter(dibaca);
+    return dibaca == null || lawan.isAfter(dibaca);
   }
 
   factory SupportTicket.fromMap(Map<String, dynamic> map) => SupportTicket(
@@ -124,6 +137,10 @@ class SupportTicket {
         reporterReadAt:
             DateTime.tryParse(map['reporter_read_at']?.toString() ?? ''),
         adminReadAt: DateTime.tryParse(map['admin_read_at']?.toString() ?? ''),
+        lastReporterAt:
+            DateTime.tryParse(map['last_reporter_at']?.toString() ?? ''),
+        lastAdminAt:
+            DateTime.tryParse(map['last_admin_at']?.toString() ?? ''),
         autoClosed: map['auto_closed'] == true,
       );
 }

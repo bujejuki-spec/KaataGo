@@ -80,7 +80,13 @@ class SupportRepository {
         .from('support_messages')
         .stream(primaryKey: ['id'])
         .eq('ticket_id', ticketId)
-        .order('created_at')
+        // `ascending` WAJIB disebut.
+        //
+        // Pada aliran realtime, `order()` bawaannya MENURUN — kebalikan
+        // dari `select().order()` yang bawaannya menaik. Menulis
+        // `.order('created_at')` saja membuat pesan terbaru berada di
+        // paling atas, dan percakapannya terbaca terbalik.
+        .order('created_at', ascending: true)
         .map((rows) => rows.map((r) => SupportMessage.fromMap(r)).toList());
   }
 
@@ -164,6 +170,7 @@ class SupportRepository {
     final rows = await _client
         .from('support_tickets')
         .select('last_message_at, last_message_from_admin, admin_read_at, '
+            'last_reporter_at, last_admin_at, '
             'status, reporter_email, subject, id, created_at')
         .neq('status', 'closed');
     final tiket = rows.map((r) => SupportTicket.fromMap(r)).toList();

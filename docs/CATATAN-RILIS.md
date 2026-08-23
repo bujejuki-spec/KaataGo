@@ -37,6 +37,14 @@ Formatnya dibaca `scripts/release.sh`: judul `## <versi>`, lalu
 poin-poinnya. Versi yang tidak punya bagiannya di sini tetap terbit,
 hanya pengumumannya memakai kalimat umum.
 
+## 2.17.0
+
+- Pengaduan dan chat baru langsung dibalas sapaan, supaya jelas
+  pesannya sampai dan sedang menunggu giliran
+- Percakapan KaataGo Support urut seperti aplikasi chat pada umumnya —
+  yang terbaru di paling bawah
+- Perbaikan bug dan penyempurnaan tampilan
+
 ## 2.16.0
 
 - Chat KaataGo Admin: pilihan baru di KaataGo Support untuk sekadar

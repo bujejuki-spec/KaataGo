@@ -51,7 +51,9 @@ class FirestoreProductRepository {
         .from('products')
         .stream(primaryKey: ['id'])
         .eq('resto_id', restoId)
-        .order('name')
+        // Menaik, dan disebut tegas — aliran realtime bawaannya
+        // menurun, jadi tanpa ini menunya berurut dari Z ke A.
+        .order('name', ascending: true)
         .asyncMap((rows) async {
           var items = rows.map((r) => Product.fromMap(r)).toList();
 

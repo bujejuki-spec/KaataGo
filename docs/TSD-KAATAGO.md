@@ -1,8 +1,8 @@
 # KaataGo — Technical Specification Document
 
-**Versi Aplikasi:** 2.12.0 (build 118)
-**Versi Dokumen:** 1.8
-**Tanggal Terbit:** 22 Agustus 2026
+**Versi Aplikasi:** 2.16.0 (build 122)
+**Versi Dokumen:** 1.9
+**Tanggal Terbit:** 24 Agustus 2026
 **Status:** Rilis
 **Jenis Dokumen:** TSD — sisi teknis
 
@@ -1203,6 +1203,105 @@ bisa diuji tanpa jaringan.
 
 ---
 
+### 7.12 GL Selisih Kasir
+
+`supabase/cash_variance.sql` — akun **2100003**, di rentang 21xxxxx
+bersama Suspense dan bukan 195xxxx bersama pemasukan. Selisih kurang
+bukan penjualan dan bukan biaya: ia uang yang sedang ditagihkan, dan
+tempatnya di sisi titipan sampai jelas jadi apa.
+
+Jurnalnya ditulis **pemicu** pada `cashier_shifts`, bukan oleh
+`close_shift`. Seluruh jurnal di KaataGo lahir dari pemicu supaya tidak
+pernah ada jalan menutup shift tanpa jurnalnya ikut tertulis.
+
+Arahnya mengikuti kesepakatan buku ini — credit = uang masuk:
+
+| Kejadian | Arah | Alasan |
+|---|---|---|
+| Selisih kurang | debit | Uangnya memang tidak ada di laci |
+| Selisih lebih | credit | Uangnya ada, sumbernya yang belum jelas |
+| Pelunasan | credit | Tunai kasir masuk kembali ke laci |
+
+Yang **kurang** melahirkan baris `cash_variances` berstatus `open`.
+Yang **lebih** tidak: tidak ada yang bisa ditagih dari uang yang justru
+berlebih.
+
+`cash_variances` tidak punya policy tulis sama sekali. Pelunasan lewat
+`settle_cash_variance()`, yang memeriksa peran Owner/Finance/Admin di
+dalam fungsinya — kasir tidak boleh menutup tagihan atas namanya
+sendiri.
+
+**`cashOnHand()` ikut berubah.** Ia sekarang menerima daftar
+`CashVariance` dan mengurangkan yang belum lunas. Tanpa itu, Saldo Cash
+menyebut angka yang lebih besar daripada uang yang bisa dihitung tangan
+— dan dua layar yang menyebut "tunai di laci" akan berbeda pendapat
+lagi, persis yang dilarang §11.1b.
+
+GL-nya belum dipetakan tidak menahan penutupan shift: pemicunya
+mengembalikan `new` apa adanya. Kasir tidak boleh gagal pulang gara-gara
+urusan pemetaan akun.
+
+---
+
+### 7.13 Laporan penjualan merchant
+
+`supabase/merchant_report.sql` — empat fungsi `security definer` dengan
+`is_resto_employee(p_resto_id, array['owner','admin'])` sebagai **syarat
+WHERE**, bukan `raise`. Polanya sama dengan §7.6: yang tidak berhak
+menerima daftar kosong, karena pesan galat mengonfirmasi datanya ada.
+
+Semuanya menguraikan `orders.items` dengan `jsonb_array_elements` dan
+menyaring `payment_status = 'paid'`. Tanggal dan jamnya
+`at time zone 'Asia/Jakarta'` — jam ramai yang bergeser tujuh jam adalah
+jadwal shift yang salah.
+
+`report_idle_menus` membaca dari `products` dengan LEFT JOIN, bukan dari
+`orders`: menu yang tidak pernah terjual memang tidak punya baris di
+sana sama sekali.
+
+Nama menu diambil dari `item ->> 'productName'`, bukan dari katalog.
+Menu yang sudah dihapus tetap punya sejarah penjualan, dan laporan yang
+menghilangkannya menyebut omzet lebih kecil daripada yang diterima.
+
+---
+
+### 7.14 KaataGo Support
+
+`supabase/support_tickets.sql` dan `supabase/support_push.sql`.
+
+Dua tabel: `support_tickets` dan `support_messages`, keduanya disiarkan
+Realtime lewat DO block penangkap galat (§11.1).
+
+**Penanda belum dibaca dihitung dari dua stempel waktu** —
+`reporter_read_at` dan `admin_read_at` — bukan dari bendera per pesan.
+Satu stempel waktu tidak bisa berbeda pendapat dengan dirinya sendiri,
+dan pesan yang terlewat tandanya tidak akan pernah ketahuan.
+
+**Ringkasan tiket ditulis pemicu** `touch_support_ticket()`, yang juga
+mengembalikan status `confirm_customer` ke `on_progress` begitu pelapor
+membalas. Tanpa itu, tiket yang baru saja dijawab tetap berstatus
+menunggu — lalu ditutup penjadwal tepat setelah orangnya membalas.
+
+**Penutupan otomatis** `close_idle_support_tickets()` berjalan tiap jam
+lewat pg_cron, dan hanya menyentuh tiket yang `last_message_from_admin`
+bernilai true. Yang ditutupnya ditandai `auto_closed` — tiket yang mati
+karena didiamkan bukan tiket yang selesai.
+
+**RLS** memberi pelapor tiketnya sendiri saja, bukan tiket rekan
+sekantornya; menulis hanya ke tiket yang belum ditutup; dan status hanya
+berubah lewat `set_support_status()`, yang mengizinkan pelapor menutup
+tapi tidak memindahkan ke status lain.
+
+**Chat bebas** dibedakan lewat judulnya (`kSubjekChatUmum`), bukan lewat
+kolom tersendiri: satu kolom lagi berarti satu migrasi lagi, dan yang
+dibedakannya cuma kalimat di kepala percakapan. Yang masih terbuka
+dipakai lagi — chat yang melahirkan tiket baru tiap dibuka akan mengubur
+pengaduan sungguhan.
+
+**Notifikasinya disasar lewat email, bukan peran.** Lihat §15.4.
+
+---
+
 ## 8. Notifikasi Push
 
 FCM HTTP v1 dengan OAuth dari service account.
@@ -1476,6 +1575,8 @@ diganti.
 | Selisih shift tidak dijurnal | Tersimpan di `cashier_shifts` saja | Saldo Cash tetap lebih besar daripada uang yang sebenarnya ada sampai ada yang menjurnalnya; akun GL-nya belum diputuskan |
 | Baris `product_reviews` lama tanpa `order_id` | Dibiarkan apa adanya | Ikut menghitung rata-rata, tapi tidak tertaut pesanan mana pun — jadi tidak muncul sebagai "sudah dinilai" di riwayat |
 | `for-user-id` hanya dikenal Xendit | Terikat satu penyedia | Pindah penyedia berarti menulis ulang `create-qris`, webhook, dan pemetaan statusnya |
+| Chat bebas dikenali lewat judulnya | Tanpa kolom penanda | Judul yang diubah manual membuat percakapannya berhenti dikenali sebagai chat bebas |
+| Penanda support diperiksa berkala | Timer satu menit di tombolnya | Bukan realtime — langganan yang hidup di seluruh layar terlalu mahal untuk sebuah angka di tombol |
 
 ---
 
@@ -1502,6 +1603,59 @@ keduanya.
 
 Pelajarannya: nilai kembalian dialog yang bertipe longgar akan lolos ke
 tempat yang salah, dan jatuh jauh dari tempat asalnya.
+
+### 15.3 Tombol yang dimatikan lewat setState
+
+`onPressed: _menyimpan ? null : _kirim` baru berlaku setelah layarnya
+digambar ulang. Dua ketukan cepat sama-sama masuk lebih dulu.
+
+Di formulir pengaduan KaataGo Support akibatnya terlihat langsung: dua
+tiket terkirim, masing-masing membawa salinan fotonya sendiri.
+Penjaganya harus **di dalam fungsinya** — `if (_menyimpan) return;` —
+yang dibaca seketika, bukan diserahkan ke tombolnya.
+
+### 15.4 Penyasaran push lewat peran perangkat
+
+`device_tokens` berkunci pada token, satu baris per perangkat, dan
+kolom `role` ditimpa tiap pendaftaran ulang. HP yang juga dipakai di
+sisi pelanggan berakhir bertanda `customer`.
+
+Notifikasi pengaduan sempat disasar dengan `audience: 'role'` dan peran
+`super_admin`, dan gagal dengan **"tidak ada perangkat terdaftar"** —
+walau barisnya ada, walau emailnya benar.
+
+Sekarang disasar lewat email tiap KaataGo Admin yang dibaca dari tabel
+`employees`. Emailnya ditulis di **setiap** pendaftaran token, apa pun
+peran yang sedang dipegang saat itu. Konsekuensinya satu baris outbox
+per admin, bukan satu untuk semuanya — dan itu harga yang murah.
+
+Aturannya: sasar lewat sesuatu yang tidak berubah saat orang yang sama
+memakai aplikasinya dengan cara berbeda.
+
+### 15.5 `order()` pada aliran realtime bawaannya menurun
+
+`SupabaseStreamBuilder.order(String column, {bool ascending = false})` —
+**menurun**, kebalikan dari `select().order()` yang bawaannya menaik.
+
+`.order('created_at')` pada aliran pesan membuat percakapan KaataGo
+Support terbaca terbalik: yang terbaru di paling atas. Aliran menu juga
+kena, dan itu bertahan jauh lebih lama tanpa ketahuan — menunya cuma
+berurut dari Z ke A, dan tidak ada yang menyadarinya karena
+`ProductCategoryList` mengurutkan kategorinya sendiri.
+
+Aturannya sekarang dijaga tes: setiap `.order()` di dalam rantai yang
+berawal dari `.stream(` wajib menyebut `ascending`. Yang lupa
+menyebutnya tidak menemukan galat apa pun — cuma daftar yang terbalik.
+
+### 15.6 Muatan push yang hanya membawa nama kejadian
+
+`send-push` semula mengirim `data: { event }` saja. `notification_router`
+sudah lama membaca `resto_id` untuk ajakan menilai merchant — dan tidak
+pernah menemukannya, jadi notifikasi itu cuma membuka aplikasi, tidak
+pernah membuka formulirnya.
+
+Penunjuk tujuan sekarang ikut dikirim (`resto_id`, `ticket_id`), dan
+FCM hanya menerima teks sehingga semuanya ditegaskan jadi string.
 
 ### 15.2 Muatan yang hanya diambil sekali
 

@@ -82,6 +82,7 @@ FILES=(
   shift_opening_check.sql
   support_tickets.sql
   support_push.sql
+  support_auto_reply.sql
 )
 
 {
