@@ -1,3 +1,8 @@
+-- KaataGo — perbaikan bagian 59: pengaduan baru disasar lewat email
+-- KaataGo Admin, bukan perannya.
+--
+-- Jalankan lagi walau bagian 59 sudah pernah dijalankan. Aman diulang.
+
 -- KaataGo — notifikasi untuk KaataGo Support.
 --
 -- Jalankan SETELAH support_tickets.sql dan push_notifications.sql.

@@ -23,6 +23,7 @@
 # Pakai:
 #   scripts/release.sh              rilis versi yang tertulis di pubspec
 #   scripts/release.sh --dry-run    jalankan semuanya kecuali unggah & push
+#   scripts/release.sh --ulang      timpa rilis yang versinya sudah terbit
 
 set -euo pipefail
 
@@ -63,6 +64,31 @@ TAG="v$VERSION"
 
 log "Merilis KaataGo $VERSION (build $BUILD)"
 $DRY_RUN && echo "  (dry run — tidak ada yang diunggah atau di-push)"
+
+# ── 0. Versi ini sudah pernah terbit? ────────────────────────────────
+#
+# Menjalankan ulang rilis untuk versi yang sama bukan sekadar mubazir.
+# Rilisnya dihapus lalu dibuat ulang — dan yang ikut hilang bersamanya
+# angka unduhan yang belum sempat dipanen. Pengumumannya juga terkirim
+# dua kali ke seluruh kotak masuk, dan yang menerimanya tidak punya cara
+# tahu itu kabar yang sama.
+#
+# Kalau memang disengaja — build gagal separuh jalan, misalnya — lewati
+# dengan --ulang.
+if ! $DRY_RUN && [[ "${1:-}" != "--ulang" ]]; then
+  SUDAH="$(curl -sS -o /dev/null -w '%{http_code}' \
+    -H "Authorization: Bearer $TOKEN" \
+    -H "Accept: application/vnd.github+json" \
+    "https://api.github.com/repos/$REPO/releases/tags/$TAG" || echo 000)"
+  if [[ "$SUDAH" == "200" ]]; then
+    fail "Rilis $TAG sudah ada di GitHub.
+
+Naikkan versinya di pubspec.yaml, atau — kalau memang mau menimpa yang
+sudah ada — jalankan:
+
+  scripts/release.sh --ulang"
+  fi
+fi
 
 # ── 1. Build ─────────────────────────────────────────────────────────
 log "Build APK release"

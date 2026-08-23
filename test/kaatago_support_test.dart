@@ -98,6 +98,84 @@ void main() {
     });
   });
 
+  group('siapa bicara dengan siapa', () {
+    // Yang mengadu berhak tahu sedang bicara dengan siapa — dan yang
+    // menjawab jadi ikut bertanggung jawab atas kalimatnya.
+    test('balasan admin menyebut nama penjawabnya', () {
+      final layar =
+          File('lib/screens/support_chat_screen.dart').readAsStringSync();
+      expect(layar, contains("'KaataGo Admin - \$n'"));
+      expect(layar, contains('_labelAdmin(m)'));
+    });
+
+    // Keluhan pelanggan dan keluhan merchant menuntut jawaban yang
+    // berbeda, dan menyebut nama merchantnya membuat yang menjawab tidak
+    // perlu bertanya "ini merchant mana?" sebagai balasan pertama.
+    test('pelapor pelanggan dan merchant dibedakan di sisi admin', () {
+      expect(tiket().asalTampil(null), 'Customer');
+      final m = SupportTicket.fromMap({
+        'id': 't2',
+        'reporter_email': 'owner@resto.com',
+        'subject': 'x',
+        'status': 'open',
+        'created_at': '2026-08-22T01:00:00Z',
+        'reporter_kind': 'merchant',
+        'resto_id': 'r1',
+      });
+      expect(m.asalTampil('Kaata Resto'), 'Merchant · Kaata Resto');
+      // Namanya gagal dimuat bukan alasan menyembunyikan asalnya.
+      expect(m.asalTampil(null), 'Merchant');
+    });
+
+    test('asalnya tampil di daftar maupun di percakapannya', () {
+      final daftar =
+          File('lib/screens/support_admin_screen.dart').readAsStringSync();
+      expect(daftar, contains('asalTampil('));
+      final chat =
+          File('lib/screens/support_chat_screen.dart').readAsStringSync();
+      expect(chat, contains('t.asalTampil(_namaMerchant)'));
+    });
+  });
+
+  group('kirim sekali, bukan dua kali', () {
+    // `onPressed: _menyimpan ? null : _kirim` baru berlaku setelah
+    // layarnya digambar ulang. Dua ketukan cepat sama-sama masuk lebih
+    // dulu, dan yang terkirim dua pengaduan — masing-masing membawa
+    // salinan fotonya sendiri. Persis yang terjadi.
+    test('formulir pengaduan menjaganya sendiri, bukan lewat tombolnya', () {
+      final isi =
+          File('lib/screens/support_new_ticket_screen.dart').readAsStringSync();
+      final fungsi = isi.substring(isi.indexOf('Future<void> _kirim()'));
+      expect(fungsi.substring(0, fungsi.indexOf('setState(()')),
+          contains('if (_menyimpan) return;'));
+    });
+
+    test('kolom balasan juga', () {
+      final isi =
+          File('lib/screens/support_chat_screen.dart').readAsStringSync();
+      final fungsi = isi.substring(isi.indexOf('Future<void> _kirim()'));
+      expect(fungsi.substring(0, fungsi.indexOf('setState(()')),
+          contains('if (_mengirim) return;'));
+    });
+  });
+
+  group('urutan daftar', () {
+    // Daftar milik sendiri isinya beberapa baris, dan yang membukanya
+    // biasanya mencari yang barusan dia kirim. Daftar KaataGo Admin
+    // kebalikannya: yang dicari memang yang paling baru menuntut jawaban.
+    test('pengaduan sendiri urut menaik, yang terbaru di bawah', () {
+      final repo = File('lib/db/support_repository.dart').readAsStringSync();
+      final fungsi = repo.substring(repo.indexOf('milikSaya()'));
+      expect(fungsi.substring(0, fungsi.indexOf('}')),
+          contains("order('created_at', ascending: true)"));
+    });
+
+    test('daftar KaataGo Admin tetap yang terbaru di atas', () {
+      final repo = File('lib/db/support_repository.dart').readAsStringSync();
+      expect(repo, contains('return wb.compareTo(wa);'));
+    });
+  });
+
   group('SQL-nya', () {
     final sql = File('supabase/support_tickets.sql').readAsStringSync();
 
@@ -196,12 +274,27 @@ void main() {
       expect(cabang, contains('t.reporter_email'));
     });
 
-    // KaataGo Admin tidak terikat merchant mana pun. Menyaring peran
-    // berdasarkan resto akan membuat kabarnya tidak sampai ke siapa pun.
-    test('pengaduan baru dikabarkan ke KaataGo Admin tanpa saringan resto', () {
+    // Baris token hanya punya peran kalau perangkatnya mendaftar setelah
+    // orangnya masuk sebagai KaataGo Admin. Menyasar lewat peran gagal
+    // dengan "tidak ada perangkat terdaftar" — persis yang terjadi.
+    // Emailnya jauh lebih tahan: ia ditulis di setiap pendaftaran token.
+    test('pengaduan baru disasar lewat email admin, bukan perannya', () {
       final cabang = sql.substring(sql.indexOf('  else'));
-      expect(cabang, contains("jsonb_build_array('super_admin')"));
-      expect(cabang, contains('insert into push_outbox (resto_id, event, payload) values (\n      null,'));
+      expect(cabang, contains("where e.role = 'super_admin'"));
+      expect(cabang, contains("'audience', 'email'"));
+      expect(cabang, isNot(contains("'audience', 'role'")));
+    });
+
+    // KaataGo Admin tidak terikat merchant mana pun; menyertakan
+    // resto_id akan membuat kabarnya tersaring habis.
+    test('kabarnya tidak dibatasi merchant', () {
+      final cabang = sql.substring(sql.indexOf('  else'));
+      expect(cabang,
+          contains('insert into push_outbox (resto_id, event, payload) values (\n        null,'));
+    });
+
+    test('yang sudah tidak aktif tidak ikut dikabari', () {
+      expect(sql, contains('coalesce(e.active, true) = true'));
     });
 
     // Perubahan status ditulis sebagai pesan sistem, jadi ia ikut lewat
@@ -255,6 +348,46 @@ void main() {
       // Penanda merahnya ikut naik ke beranda — tanpa itu, satu-satunya
       // cara tahu ada yang menunggu adalah membuka layarnya.
       expect(isi, contains('milikSemuaBelumDibaca()'));
+    });
+
+    // Yang berlabel selebar setengah layar, dan di beranda yang penuh ia
+    // duduk tepat di atas tombol menu terakhir.
+    test('tombolnya bulat kecil, bukan berlabel', () {
+      final isi = File('lib/widgets/support_fab.dart').readAsStringSync();
+      expect(isi, isNot(contains('FloatingActionButton.extended')));
+      expect(isi, contains('mini: true'));
+      expect(isi, contains("tooltip: 'KaataGo Support'"));
+    });
+
+    // Tanpa ruang di bawah, tombolnya menutupi menu terakhir — dan yang
+    // tertutup justru menu yang paling jarang digulir sampai ke sana.
+    test('daftar menunya menyisakan ruang untuk tombolnya', () {
+      final layout = File('lib/widgets/responsive.dart').readAsStringSync();
+      expect(layout, contains('EdgeInsets.fromLTRB(20, 20, 20, kFabSafeBottom)'));
+      final owner =
+          File('lib/screens/owner_home_screen.dart').readAsStringSync();
+      expect(owner, contains('kFabSafeBottom'));
+    });
+
+    // Chat yang melahirkan tiket baru tiap dibuka akan mengubur
+    // pengaduan sungguhan di bawah puluhan percakapan berisi satu
+    // sapaan.
+    test('chat bebas memakai percakapan yang masih terbuka', () {
+      final isi = File('lib/widgets/support_fab.dart').readAsStringSync();
+      expect(isi, contains("if (pilihan == 'chat')"));
+      expect(isi, contains('chatUmumTerbuka()'));
+      final repo = File('lib/db/support_repository.dart').readAsStringSync();
+      expect(repo, contains("const kSubjekChatUmum = 'Chat dengan KaataGo Admin';"));
+      expect(repo, contains("neq('status', 'closed')"));
+    });
+
+    // Percakapan bebas bukan pengaduan atas satu hal tertentu, jadi
+    // memintanya diberi judul cuma menahan orang di depan kolom kosong.
+    test('chat bebas tidak meminta judul', () {
+      final isi =
+          File('lib/screens/support_new_ticket_screen.dart').readAsStringSync();
+      expect(isi, contains('if (widget.subjekTetap == null)'));
+      expect(isi, contains('subject: widget.subjekTetap ?? _judul.text'));
     });
 
     // Pengaduan tanpa akun tidak punya tempat untuk dibalas, dan

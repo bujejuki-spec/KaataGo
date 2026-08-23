@@ -104,6 +104,14 @@ class _SupportFabState extends State<SupportFab> {
               onTap: () => Navigator.pop(sheetContext, 'baru'),
             ),
             ListTile(
+              leading: const Icon(Icons.chat_bubble_outline,
+                  color: KaataTheme.brand),
+              title: const Text('Chat KaataGo Admin'),
+              subtitle: const Text('Sekadar bertanya, bukan pengaduan',
+                  style: TextStyle(fontSize: 11.5)),
+              onTap: () => Navigator.pop(sheetContext, 'chat'),
+            ),
+            ListTile(
               leading: Icon(Icons.receipt_long_outlined,
                   color: adaRiwayat
                       ? KaataTheme.brand
@@ -126,6 +134,39 @@ class _SupportFabState extends State<SupportFab> {
       ),
     );
     if (pilihan == null || !mounted) return;
+
+    // Percakapan bebas yang masih terbuka dipakai lagi, bukan dibuat
+    // baru tiap kali. Chat yang melahirkan tiket baru tiap dibuka akan
+    // mengubur pengaduan sungguhan di bawah puluhan percakapan berisi
+    // satu sapaan.
+    if (pilihan == 'chat') {
+      final adaChat = await _repo.chatUmumTerbuka();
+      if (!mounted) return;
+      if (adaChat != null) {
+        await Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => SupportChatScreen(ticketId: adaChat.id),
+        ));
+        await _muat();
+        return;
+      }
+      final dibuat = await Navigator.of(context).push<String>(
+        MaterialPageRoute(
+          builder: (_) => SupportNewTicketScreen(
+            dariMerchant: auth.isEmployee,
+            restoId: auth.restoId,
+            subjekTetap: kSubjekChatUmum,
+          ),
+        ),
+      );
+      await _muat();
+      if (dibuat != null && mounted) {
+        await Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => SupportChatScreen(ticketId: dibuat),
+        ));
+        await _muat();
+      }
+      return;
+    }
 
     if (pilihan == 'baru') {
       final dibuat = await Navigator.of(context).push<String>(
@@ -165,11 +206,18 @@ class _SupportFabState extends State<SupportFab> {
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        FloatingActionButton.extended(
+        // Bulat kecil, bukan tombol berlabel.
+        //
+        // Yang berlabel selebar setengah layar, dan di beranda yang
+        // penuh ia duduk tepat di atas tombol menu terakhir. Ikon
+        // pusat bantuan sudah dikenali tanpa perlu dibaca — dan
+        // namanya tetap muncul begitu diketuk.
+        FloatingActionButton(
           heroTag: 'kaatago-support',
           onPressed: _buka,
-          icon: const Icon(Icons.support_agent),
-          label: const Text('KaataGo Support'),
+          tooltip: 'KaataGo Support',
+          mini: true,
+          child: const Icon(Icons.support_agent),
         ),
         if (_belumDibaca > 0)
           Positioned(

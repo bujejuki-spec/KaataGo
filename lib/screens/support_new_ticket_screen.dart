@@ -19,10 +19,16 @@ class SupportNewTicketScreen extends StatefulWidget {
   final bool dariMerchant;
   final String? restoId;
 
+  /// Judul yang sudah ditentukan — dipakai percakapan bebas, yang tidak
+  /// perlu diberi judul karena memang bukan pengaduan atas satu hal
+  /// tertentu. Kolom judulnya ikut disembunyikan.
+  final String? subjekTetap;
+
   const SupportNewTicketScreen({
     super.key,
     this.dariMerchant = false,
     this.restoId,
+    this.subjekTetap,
   });
 
   @override
@@ -54,6 +60,13 @@ class _SupportNewTicketScreenState extends State<SupportNewTicketScreen> {
   }
 
   Future<void> _kirim() async {
+    // Diperiksa di sini, bukan diserahkan ke tombolnya.
+    //
+    // `onPressed: _menyimpan ? null : _kirim` baru berlaku setelah
+    // layarnya digambar ulang. Dua ketukan cepat sama-sama masuk lebih
+    // dulu, dan yang terkirim dua pengaduan — masing-masing membawa
+    // salinan fotonya sendiri.
+    if (_menyimpan) return;
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _menyimpan = true);
@@ -75,7 +88,7 @@ class _SupportNewTicketScreenState extends State<SupportNewTicketScreen> {
       }
 
       final tiket = await _repo.buat(
-        subject: _judul.text,
+        subject: widget.subjekTetap ?? _judul.text,
         body: _isi.text,
         dariMerchant: widget.dariMerchant,
         restoId: widget.restoId,
@@ -97,7 +110,10 @@ class _SupportNewTicketScreenState extends State<SupportNewTicketScreen> {
 
     return Scaffold(
       backgroundColor: KaataTheme.backgroundOf(context),
-      appBar: AppBar(title: const Text('Pengaduan Baru')),
+      appBar: AppBar(
+          title: Text(widget.subjekTetap == null
+              ? 'Pengaduan Baru'
+              : 'Chat KaataGo Admin')),
       body: Form(
         key: _formKey,
         child: ResponsiveCenter(
@@ -105,12 +121,16 @@ class _SupportNewTicketScreenState extends State<SupportNewTicketScreen> {
             padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
             children: [
               Text(
-                'Ceritakan kendalanya sejelas mungkin. Makin jelas, makin '
-                'cepat bisa dibantu.',
+                widget.subjekTetap == null
+                    ? 'Ceritakan kendalanya sejelas mungkin. Makin jelas, '
+                        'makin cepat bisa dibantu.'
+                    : 'Tulis pertanyaanmu. Balasannya masuk ke sini juga, '
+                        'dan HP-mu berbunyi kalau sudah dijawab.',
                 style: TextStyle(fontSize: 12.5, color: muted),
               ),
               const SizedBox(height: 18),
-              TextFormField(
+              if (widget.subjekTetap == null)
+                TextFormField(
                 controller: _judul,
                 textCapitalization: TextCapitalization.sentences,
                 maxLength: 80,
@@ -128,7 +148,9 @@ class _SupportNewTicketScreenState extends State<SupportNewTicketScreen> {
                 maxLength: 1000,
                 textCapitalization: TextCapitalization.sentences,
                 decoration: InputDecoration(
-                  label: requiredLabel('Ceritakan keluhannya'),
+                  label: requiredLabel(widget.subjekTetap == null
+                      ? 'Ceritakan keluhannya'
+                      : 'Pesanmu'),
                   alignLabelWithHint: true,
                   border: const OutlineInputBorder(),
                 ),
@@ -172,7 +194,9 @@ class _SupportNewTicketScreenState extends State<SupportNewTicketScreen> {
                           width: 20,
                           height: 20,
                           child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Text('Kirim Pengaduan'),
+                      : Text(widget.subjekTetap == null
+                          ? 'Kirim Pengaduan'
+                          : 'Kirim Pesan'),
                 ),
               ),
             ],

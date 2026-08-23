@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../db/restaurant_repository.dart';
 import '../db/support_repository.dart';
 import '../models/support_ticket.dart';
 import '../theme.dart';
@@ -52,6 +53,7 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
 
   List<SupportMessage> _pesan = const [];
   SupportTicket? _tiket;
+  String? _namaMerchant;
   bool _mengirim = false;
   String? _foto;
 
@@ -74,6 +76,7 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
     _tiketSub = _repo.pantau(widget.ticketId).listen((t) {
       if (!mounted || t == null) return;
       setState(() => _tiket = t);
+      _muatMerchant(t);
     });
   }
 
@@ -86,6 +89,25 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
     super.dispose();
   }
 
+  /// Nama merchant pelapor, hanya untuk sisi KaataGo Admin.
+  ///
+  /// Diambil sekali. Pelapornya tidak berpindah merchant di tengah
+  /// percakapan, dan mengambilnya tiap kali tiketnya bergerak berarti
+  /// satu permintaan tiap pesan masuk.
+  Future<void> _muatMerchant(SupportTicket t) async {
+    if (!widget.sebagaiAdmin || t.restoId == null || _namaMerchant != null) {
+      return;
+    }
+    try {
+      final m = await RestaurantRepository().getOnce(t.restoId!);
+      if (!mounted || m == null) return;
+      setState(() => _namaMerchant = m.name);
+    } catch (_) {
+      // Tanpa namanya, yang tampil tetap "Merchant" — cukup untuk tahu
+      // ini bukan keluhan pelanggan.
+    }
+  }
+
   void _keBawah() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_gulir.hasClients) return;
@@ -94,6 +116,9 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
   }
 
   Future<void> _kirim() async {
+    // Penjaga yang sama seperti di formulir pengaduan: tombol yang
+    // dimatikan lewat setState belum mati pada ketukan kedua yang cepat.
+    if (_mengirim) return;
     final isi = _teks.text.trim();
     if (isi.isEmpty && _foto == null) return;
     setState(() => _mengirim = true);
@@ -185,7 +210,8 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
             if (t != null)
               Text(
                 widget.sebagaiAdmin
-                    ? '${t.namaTampil} • ${kSupportStatusLabel[t.status]}'
+                    ? '${t.namaTampil} • ${t.asalTampil(_namaMerchant)} • '
+                        '${kSupportStatusLabel[t.status]}'
                     : kSupportStatusLabel[t.status]!,
                 style: const TextStyle(fontSize: 11, color: Colors.white70),
                 maxLines: 1,
@@ -253,6 +279,16 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
                             pesan: m,
                             milikSaya: m.fromAdmin == widget.sebagaiAdmin,
                             jam: _jam.format(m.createdAt.toWib()),
+                            // Nama penjawabnya disebut, bukan cuma
+                            // "KaataGo". Yang mengadu berhak tahu
+                            // sedang bicara dengan siapa — dan yang
+                            // menjawab jadi ikut bertanggung jawab atas
+                            // kalimatnya.
+                            pengirim: m.fromAdmin
+                                ? _labelAdmin(m)
+                                : (widget.sebagaiAdmin
+                                    ? (_tiket?.namaTampil ?? '')
+                                    : null),
                           ),
                         ],
                       );
@@ -273,6 +309,11 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
         ],
       ),
     );
+  }
+
+  static String _labelAdmin(SupportMessage m) {
+    final n = (m.senderName ?? '').trim();
+    return n.isEmpty ? 'KaataGo Admin' : 'KaataGo Admin - $n';
   }
 
   static bool _hariSama(DateTime a, DateTime b) {
@@ -326,10 +367,14 @@ class _Gelembung extends StatelessWidget {
   final bool milikSaya;
   final String jam;
 
+  /// Nama pengirimnya, kalau perlu disebut. Null berarti tidak.
+  final String? pengirim;
+
   const _Gelembung({
     required this.pesan,
     required this.milikSaya,
     required this.jam,
+    this.pengirim,
   });
 
   @override
@@ -385,6 +430,14 @@ class _Gelembung extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (!milikSaya && (pengirim ?? '').isNotEmpty) ...[
+                Text(pengirim!,
+                    style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: KaataTheme.brandOf(context))),
+                const SizedBox(height: 3),
+              ],
               if (pesan.photoBase64 != null) ...[
                 GestureDetector(
                   onTap: () => lihatFoto(context, [pesan.photoBase64!]),

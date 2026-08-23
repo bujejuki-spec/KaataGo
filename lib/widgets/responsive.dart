@@ -88,7 +88,13 @@ class HubMenuLayout extends StatelessWidget {
     super.key,
     required this.tiles,
     this.header = const [],
-    this.padding = const EdgeInsets.all(20),
+    // Ruang di bawah untuk tombol mengambang.
+    //
+    // Tanpa itu tombol KaataGo Support duduk tepat di atas tombol menu
+    // terakhir — dan yang tertutup justru menu yang paling jarang
+    // digulir sampai ke sana, jadi tidak ada yang menyadarinya sampai
+    // ada yang mencarinya.
+    this.padding = const EdgeInsets.fromLTRB(20, 20, 20, kFabSafeBottom),
   });
 
   @override

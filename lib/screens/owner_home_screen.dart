@@ -87,7 +87,10 @@ class OwnerHomeScreen extends StatelessWidget {
             child: ResponsiveCenter(
               maxWidth: 900,
               child: ListView(
-                padding: const EdgeInsets.all(20),
+                // Ruang di bawah untuk tombol mengambang KaataGo
+                // Support — beranda ini memakai ListView polos, bukan
+                // HubMenuLayout yang sudah menyediakannya sendiri.
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, kFabSafeBottom),
                 children: [
                   // Dibuka dua kali sehari pada dua saat tersibuk: awal shift
                   // ketika antrean mulai, dan akhir shift ketika sudah ingin

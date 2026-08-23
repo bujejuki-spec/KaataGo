@@ -2,12 +2,30 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/support_ticket.dart';
 
+/// Judul percakapan bebas dengan KaataGo Admin.
+///
+/// Bukan pengaduan — sekadar bertanya. Dibedakan lewat judulnya, bukan
+/// lewat kolom baru: satu kolom lagi berarti satu migrasi lagi, dan yang
+/// dibedakannya cuma kalimat di kepala percakapan.
+///
+/// Yang sudah terbuka dipakai lagi, bukan dibuat baru tiap kali. Chat
+/// yang melahirkan tiket baru tiap kali dibuka akan mengubur pengaduan
+/// sungguhan di bawah puluhan percakapan berisi satu sapaan.
+const kSubjekChatUmum = 'Chat dengan KaataGo Admin';
+
 class SupportRepository {
   final _client = Supabase.instance.client;
 
   String? get _email => _client.auth.currentUser?.email;
 
-  /// Tiket milik orang yang sedang masuk, terbaru lebih dulu.
+  /// Tiket milik orang yang sedang masuk, yang paling lama di atas.
+  ///
+  /// Urutannya menaik, seperti percakapan: pengaduan terbaru ada di
+  /// bawah. Daftar milik sendiri isinya beberapa baris saja, dan yang
+  /// membukanya biasanya mencari yang barusan dia kirim — bukan
+  /// menelusuri arsip. Daftar KaataGo Admin urutannya kebalikannya,
+  /// karena di sana yang dicari memang yang paling baru menuntut
+  /// jawaban.
   Future<List<SupportTicket>> milikSaya() async {
     final email = _email;
     if (email == null) return const [];
@@ -15,9 +33,24 @@ class SupportRepository {
         .from('support_tickets')
         .select()
         .eq('reporter_email', email)
-        .order('last_message_at', ascending: false, nullsFirst: false)
+        .order('created_at', ascending: true)
         .limit(50);
     return rows.map((r) => SupportTicket.fromMap(r)).toList();
+  }
+
+  /// Percakapan bebas yang masih terbuka, kalau ada.
+  Future<SupportTicket?> chatUmumTerbuka() async {
+    final email = _email;
+    if (email == null) return null;
+    final rows = await _client
+        .from('support_tickets')
+        .select()
+        .eq('reporter_email', email)
+        .eq('subject', kSubjekChatUmum)
+        .neq('status', 'closed')
+        .order('created_at', ascending: false)
+        .limit(1);
+    return rows.isEmpty ? null : SupportTicket.fromMap(rows.first);
   }
 
   /// Seluruh tiket — hanya terbaca KaataGo Admin, ditegakkan RLS.

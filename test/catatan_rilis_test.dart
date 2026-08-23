@@ -77,6 +77,40 @@ void main() {
     });
   });
 
+  /// Rilis untuk versi yang sudah terbit tidak boleh berjalan diam-diam.
+  ///
+  /// Menjalankannya ulang bukan sekadar mubazir: rilis lamanya dihapus
+  /// lalu dibuat ulang, dan pengumumannya terkirim dua kali ke seluruh
+  /// kotak masuk — yang menerimanya tidak punya cara tahu itu kabar yang
+  /// sama. Pernah terjadi pada 2.15.0.
+  group('penjaga rilis ulang', () {
+    final skrip = File('scripts/release.sh').readAsStringSync();
+
+    test('memeriksa tag yang sudah ada di GitHub', () {
+      expect(skrip, contains(r'releases/tags/$TAG'));
+      expect(skrip, contains('sudah ada di GitHub'));
+    });
+
+    // Delapan menit build yang berakhir dengan penolakan adalah delapan
+    // menit yang tidak perlu dihabiskan.
+    test('diperiksa sebelum build, bukan sesudahnya', () {
+      expect(skrip.indexOf('sudah ada di GitHub'),
+          lessThan(skrip.indexOf('flutter build apk')));
+    });
+
+    test('punya jalan keluar untuk yang memang disengaja', () {
+      expect(skrip, contains('--ulang'));
+      expect(skrip, contains('!= "--ulang"'));
+    });
+
+    test('dry run tidak ikut terhalang', () {
+      final blok = skrip.substring(
+          skrip.indexOf('# ── 0. Versi ini sudah pernah terbit?'),
+          skrip.indexOf('# ── 1. Build'));
+      expect(blok, contains(r'if ! $DRY_RUN'));
+    });
+  });
+
   group('catatan rilis', () {
     test('versi yang punya catatannya membawa poin-poinnya', () {
       final j = jalankan('2.8.0');

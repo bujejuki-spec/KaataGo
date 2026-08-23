@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../db/restaurant_repository.dart';
 import '../db/support_repository.dart';
 import '../models/support_ticket.dart';
 import '../providers/auth_provider.dart';
@@ -31,6 +32,14 @@ class _SupportAdminScreenState extends State<SupportAdminScreen> {
   StreamSubscription<List<SupportTicket>>? _sub;
 
   List<SupportTicket> _semua = const [];
+
+  /// Nama merchant per id, untuk menyebut pengaduan ini dari mana.
+  ///
+  /// Diambil sekali di awal, bukan per baris. Daftar ini bisa berisi
+  /// puluhan percakapan, dan satu permintaan per baris berarti puluhan
+  /// permintaan tiap kali layarnya dibuka.
+  Map<String, String> _namaMerchant = const {};
+
   bool _memuat = true;
   Object? _galat;
 
@@ -46,6 +55,7 @@ class _SupportAdminScreenState extends State<SupportAdminScreen> {
   @override
   void initState() {
     super.initState();
+    _muatMerchant();
     _sub = _repo.semua().listen(
       (t) {
         if (!mounted) return;
@@ -63,6 +73,17 @@ class _SupportAdminScreenState extends State<SupportAdminScreen> {
         });
       },
     );
+  }
+
+  Future<void> _muatMerchant() async {
+    try {
+      final semua = await RestaurantRepository().getAll(includeDeleted: true);
+      if (!mounted) return;
+      setState(() => _namaMerchant = {for (final m in semua) m.id: m.name});
+    } catch (_) {
+      // Tanpa namanya, yang tampil tetap "Merchant" — cukup untuk tahu
+      // ini bukan keluhan pelanggan.
+    }
   }
 
   @override
@@ -168,6 +189,8 @@ class _SupportAdminScreenState extends State<SupportAdminScreen> {
                                     color: KaataTheme.borderOf(context)),
                                 itemBuilder: (context, i) => _BarisChat(
                                   tiket: _tampil[i],
+                                  asal: _tampil[i].asalTampil(
+                                      _namaMerchant[_tampil[i].restoId]),
                                   onTap: () =>
                                       Navigator.of(context).push(
                                     MaterialPageRoute(
@@ -190,9 +213,17 @@ class _SupportAdminScreenState extends State<SupportAdminScreen> {
 
 class _BarisChat extends StatelessWidget {
   final SupportTicket tiket;
+
+  /// "Customer" atau "Merchant · Kaata Resto".
+  final String asal;
+
   final VoidCallback onTap;
 
-  const _BarisChat({required this.tiket, required this.onTap});
+  const _BarisChat({
+    required this.tiket,
+    required this.asal,
+    required this.onTap,
+  });
 
   /// Waktu ala aplikasi pesan: jam untuk hari ini, tanggal untuk yang
   /// lebih lama. Tanggal penuh pada percakapan yang barusan masuk
@@ -249,10 +280,38 @@ class _BarisChat extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 2),
-          Text(tiket.subject,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 12, color: muted)),
+          Row(
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                decoration: BoxDecoration(
+                  color: (tiket.dariMerchant
+                          ? const Color(0xFF8B5CF6)
+                          : const Color(0xFF0EA5E9))
+                      .withOpacity(0.14),
+                  borderRadius: BorderRadius.circular(5),
+                ),
+                child: Text(
+                  asal,
+                  style: TextStyle(
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.bold,
+                    color: tiket.dariMerchant
+                        ? const Color(0xFF7C3AED)
+                        : const Color(0xFF0284C7),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(tiket.subject,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 12, color: muted)),
+              ),
+            ],
+          ),
           const SizedBox(height: 3),
           Row(
             children: [

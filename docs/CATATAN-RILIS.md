@@ -37,6 +37,16 @@ Formatnya dibaca `scripts/release.sh`: judul `## <versi>`, lalu
 poin-poinnya. Versi yang tidak punya bagiannya di sini tetap terbit,
 hanya pengumumannya memakai kalimat umum.
 
+## 2.16.0
+
+- Chat KaataGo Admin: pilihan baru di KaataGo Support untuk sekadar
+  bertanya, tanpa harus membuat pengaduan
+- Balasan KaataGo Admin menyebut nama penjawabnya
+- KaataGo Admin bisa melihat pengaduan ini datang dari pelanggan atau
+  dari merchant mana
+- Tombol KaataGo Support jadi lebih kecil dan tidak lagi menutupi menu
+- Perbaikan bug dan penyempurnaan tampilan
+
 ## 2.15.0
 
 - KaataGo Support: tombol mengambang untuk mengadu langsung ke KaataGo,

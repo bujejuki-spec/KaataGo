@@ -8849,6 +8849,7 @@ declare
   t support_tickets;
   v_nama text;
   v_cuplikan text;
+  v_admin record;
 begin
   select * into t from support_tickets where id = new.ticket_id;
   if t is null then return new; end if;
@@ -8874,19 +8875,39 @@ begin
     v_nama := coalesce(nullif(btrim(coalesce(t.reporter_name, '')), ''),
                        split_part(t.reporter_email, '@', 1));
 
-    -- Ke KaataGo Admin. `resto_id` sengaja null: KaataGo Admin tidak
-    -- terikat merchant mana pun, dan menyaring peran berdasarkan resto
-    -- akan membuat kabarnya tidak sampai ke siapa pun.
-    insert into push_outbox (resto_id, event, payload) values (
-      null, 'support_message',
-      jsonb_build_object(
-        'audience', 'role',
-        'roles', jsonb_build_array('super_admin'),
-        'ticket_id', t.id::text,
-        'title', 'Pengaduan dari ' || v_nama,
-        'body', v_cuplikan
-      )
-    );
+    -- Ke KaataGo Admin, satu baris per orang, disasar lewat emailnya.
+    --
+    -- Sempat memakai audiens 'role' dengan peran super_admin, dan itu
+    -- gagal dengan "tidak ada perangkat terdaftar": baris token hanya
+    -- punya peran kalau perangkatnya mendaftar setelah orangnya masuk
+    -- sebagai KaataGo Admin. Satu perangkat yang pernah dipakai masuk
+    -- sebagai peran lain, atau yang barisnya ditulis versi lama, tidak
+    -- akan pernah terjaring.
+    --
+    -- Emailnya jauh lebih tahan: ia ditulis di setiap pendaftaran token,
+    -- apa pun peran yang sedang dipegang saat itu.
+    --
+    -- Konsekuensinya satu baris outbox per admin, bukan satu untuk
+    -- semuanya. Jumlah KaataGo Admin dihitung jari, dan kabar yang
+    -- sampai lebih berharga daripada satu baris yang rapi.
+    for v_admin in
+      select distinct e.email
+      from employees e
+      where e.role = 'super_admin'
+        and coalesce(e.active, true) = true
+        and e.email is not null
+    loop
+      insert into push_outbox (resto_id, event, payload) values (
+        null, 'support_message',
+        jsonb_build_object(
+          'audience', 'email',
+          'email', v_admin.email,
+          'ticket_id', t.id::text,
+          'title', 'Pengaduan dari ' || v_nama,
+          'body', v_cuplikan
+        )
+      );
+    end loop;
   end if;
 
   return new;

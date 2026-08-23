@@ -74,6 +74,18 @@ class SupportTicket {
 
   bool get terbuka => status != SupportStatus.closed;
 
+  /// Dari siapa pengaduan ini, dari sudut pandang KaataGo Admin.
+  ///
+  /// Yang menjawab perlu tahu ini sebelum membaca kalimat pertamanya:
+  /// keluhan pelanggan dan keluhan merchant menuntut jawaban yang
+  /// berbeda, dan menyebut nama merchantnya membuat yang menjawab tidak
+  /// perlu bertanya "ini merchant mana?" sebagai balasan pertama.
+  String asalTampil(String? namaMerchant) {
+    if (!dariMerchant) return 'Customer';
+    final n = (namaMerchant ?? '').trim();
+    return n.isEmpty ? 'Merchant' : 'Merchant · $n';
+  }
+
   String get namaTampil {
     final n = reporterName?.trim() ?? '';
     if (n.isNotEmpty) return n;
