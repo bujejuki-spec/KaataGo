@@ -48,6 +48,7 @@ import '../widgets/dialog_actions.dart';
 import '../utils/id_time.dart';
 import '../utils/menu_meta.dart';
 import '../widgets/app_toast.dart';
+import '../widgets/support_fab.dart';
 
 /// Self-order browsing screen for customers. Reads the product catalog
 /// live from Firestore (mirrored by the employee app), so stock/prices
@@ -598,6 +599,10 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
       },
       child: Scaffold(
         backgroundColor: KaataTheme.backgroundOf(context),
+        // Mengambang di beranda, bukan jadi satu tombol lagi di daftar.
+        // Yang mencarinya sedang kesulitan, dan orang yang sedang
+        // kesulitan tidak menggulir daftar menu mencari jalan mengadu.
+        floatingActionButton: const SupportFab(),
         // Header stays put; only the menu scrolls — matching the
         // employee hubs.
         body: Column(

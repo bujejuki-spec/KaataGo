@@ -8,6 +8,7 @@ import '../db/petty_cash_repository.dart';
 import '../providers/auth_provider.dart';
 import '../theme.dart';
 import '../utils/logout_confirm.dart';
+import '../widgets/support_fab.dart';
 import '../widgets/badged_hub_tile.dart';
 import '../widgets/hub_group_tile.dart';
 import '../widgets/hub_menu_tile.dart';
@@ -67,6 +68,11 @@ class OwnerHomeScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: KaataTheme.backgroundOf(context),
+      // Mengambang di beranda, bukan jadi satu tombol lagi di daftar.
+      //
+      // Yang mencarinya sedang kesulitan — dan orang yang sedang
+      // kesulitan tidak menggulir daftar menu mencari jalan mengadu.
+      floatingActionButton: const SupportFab(),
       body: Column(
         children: [
           HubHeader(

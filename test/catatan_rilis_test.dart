@@ -15,6 +15,68 @@ void main() {
     return jsonDecode(hasil.stdout.toString()) as Map<String, dynamic>;
   }
 
+  /// Rincian bug tidak diumumkan.
+  ///
+  /// Merinci bug berarti mengumumkan ke semua orang — termasuk yang
+  /// tidak berkepentingan baik — apa saja yang pernah bisa ditembus,
+  /// dilewati, atau dibuat berhenti bekerja. Rinciannya tetap ada di
+  /// pesan commit dan di TSD; yang dibatasi pengumumannya.
+  group('pengumuman tidak merinci bug', () {
+    const rangkuman = 'Perbaikan bug dan penyempurnaan tampilan';
+
+    /// Kosakata perbaikan yang tidak punya tempat di pengumuman.
+    ///
+    /// Sengaja pendek dan tegas. Daftar yang panjang akan menjegal
+    /// kalimat fitur yang kebetulan memakai kata biasa, lalu ditambahi
+    /// pengecualian satu per satu sampai tidak menjaga apa pun lagi.
+    const bocor = ['bug', 'galat', 'error', 'crash', 'gagal'];
+
+    /// Aturannya mulai berlaku dari versi ini. Yang lebih lama sudah
+    /// terlanjur diumumkan — menulis ulangnya sekarang tidak menarik
+    /// kembali apa pun, dan cuma membuat catatannya berbeda dari yang
+    /// benar-benar dikirim ke kotak masuk.
+    bool berlaku(String versi) {
+      final b = versi.split('.').map(int.parse).toList();
+      return b[0] > 2 || (b[0] == 2 && b[1] >= 15);
+    }
+
+    final isi = File('docs/CATATAN-RILIS.md').readAsStringSync();
+
+    test('aturannya tertulis di dokumennya sendiri', () {
+      expect(isi, contains(rangkuman));
+      expect(isi, contains('Perbaikan bug dirangkum jadi satu baris'));
+    });
+
+    test('tidak ada rincian bug di versi mana pun sejak 2.15.0', () {
+      final bagian = RegExp(r'^## (\d+\.\d+\.\d+)$', multiLine: true)
+          .allMatches(isi)
+          .toList();
+      final temuan = <String>[];
+
+      for (var i = 0; i < bagian.length; i++) {
+        final versi = bagian[i].group(1)!;
+        if (!berlaku(versi)) continue;
+        final akhir =
+            i + 1 < bagian.length ? bagian[i + 1].start : isi.length;
+        for (final baris in isi.substring(bagian[i].end, akhir).split('\n')) {
+          final b = baris.trim();
+          if (!b.startsWith('- ')) continue;
+          if (b.contains(rangkuman)) continue;
+          for (final kata in bocor) {
+            if (b.toLowerCase().contains(kata)) {
+              temuan.add('$versi: $b');
+              break;
+            }
+          }
+        }
+      }
+
+      expect(temuan, isEmpty,
+          reason: 'rangkum jadi "$rangkuman" — rincian bugnya di commit '
+              'dan TSD saja');
+    });
+  });
+
   group('catatan rilis', () {
     test('versi yang punya catatannya membawa poin-poinnya', () {
       final j = jalankan('2.8.0');

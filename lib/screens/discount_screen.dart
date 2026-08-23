@@ -564,10 +564,19 @@ class _DiscountFormScreenState extends State<_DiscountFormScreen> {
                           ? [ThousandsInputFormatter()]
                           : null,
                       decoration: InputDecoration(
+                        label: requiredLabel(
+                            _kind == DiscountKind.percent ? 'Persen' : 'Nominal'),
                         hintText:
                             _kind == DiscountKind.percent ? '10' : '5.000',
                         prefixText: _kind == DiscountKind.amount ? 'Rp ' : null,
                         suffixText: _kind == DiscountKind.percent ? '%' : null,
+                        // Tanpa ini, "Rp" dan "%" hanya muncul setelah
+                        // ada isinya. Flutter menyembunyikan prefix dan
+                        // suffix selama labelnya belum mengambang — jadi
+                        // kolom kosong berisi petunjuk "5.000" terbaca
+                        // seperti kolom yang sudah berisi lima ribu,
+                        // tanpa satu pun tanda bahwa itu rupiah.
+                        floatingLabelBehavior: FloatingLabelBehavior.always,
                       ),
                       validator: (v) {
                         final raw = (v ?? '').trim();

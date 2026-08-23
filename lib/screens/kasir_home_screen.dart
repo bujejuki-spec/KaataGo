@@ -1,3 +1,4 @@
+import '../widgets/support_fab.dart';
 import '../widgets/penilaian_tile.dart';
 import 'customer_display_screen.dart';
 import 'package:flutter/material.dart';
@@ -49,6 +50,11 @@ class KasirHomeScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: KaataTheme.backgroundOf(context),
+      // Mengambang di beranda, bukan jadi satu tombol lagi di daftar.
+      //
+      // Yang mencarinya sedang kesulitan — dan orang yang sedang
+      // kesulitan tidak menggulir daftar menu mencari jalan mengadu.
+      floatingActionButton: const SupportFab(),
       // Fixed header + scrolling menu, rather than a SliverAppBar: with
       // enough entries to scroll, a collapsing app bar took the logo,
       // name and email away with it. Only the menu should move.

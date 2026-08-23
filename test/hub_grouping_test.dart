@@ -14,7 +14,7 @@ void main() {
     'kasir': 11,
     'admin': 15,
     'finance': 13,
-    'super_admin': 9,
+    'super_admin': 10,
     'owner': 22,
   };
 

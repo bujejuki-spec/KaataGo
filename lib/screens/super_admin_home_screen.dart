@@ -2,6 +2,7 @@
 import '../providers/auth_provider.dart';
 import '../theme.dart';
 import '../utils/logout_confirm.dart';
+import '../widgets/badged_hub_tile.dart';
 import '../widgets/hub_group_tile.dart';
 import '../widgets/hub_menu_tile.dart';
 import '../widgets/inbox_tile.dart';
@@ -9,7 +10,9 @@ import '../widgets/kaata_logo.dart';
 import '../widgets/language_theme_toggle.dart';
 import '../widgets/responsive.dart';
 import 'employee_management_screen.dart';
+import '../db/support_repository.dart';
 import 'market_report_screen.dart';
+import 'support_admin_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'publish_announcement_screen.dart';
@@ -107,6 +110,18 @@ class SuperAdminHomeScreen extends StatelessWidget {
                       ),
                     ),
                   ],
+                ),
+                // Paling atas di antara menu yang berdiri sendiri.
+                // Pengaduan yang menunggu jawaban adalah satu-satunya
+                // isi beranda ini yang punya orang di ujung sana, sedang
+                // menunggu.
+                BadgedHubTile(
+                  icon: Icons.support_agent,
+                  title: 'Customer Service',
+                  subtitle: 'Pengaduan dari pelanggan dan merchant',
+                  color: const Color(0xFF0EA5E9),
+                  loadCount: () => SupportRepository().milikSemuaBelumDibaca(),
+                  destination: () => const SupportAdminScreen(),
                 ),
                 HubMenuTile(
                   icon: Icons.insights_outlined,

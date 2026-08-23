@@ -50,6 +50,13 @@ interface OutboxRow {
     roles?: string[];
     email?: string;
     session_id?: string;
+
+    /// Penunjuk tujuan yang ikut dikirim ke aplikasi lewat `data`.
+    /// Tanpa ini notifikasi hanya bisa membuka aplikasinya, bukan
+    /// halaman yang dimaksudnya.
+    resto_id?: string;
+    ticket_id?: string;
+
     title: string;
     body: string;
   };
@@ -293,10 +300,36 @@ async function send(token: string, row: OutboxRow, bearer: string) {
               // Kecuali pengumuman: dua pengumuman berbeda adalah dua
               // kabar berbeda, dan yang kedua tidak boleh menghapus yang
               // pertama sebelum sempat dibaca.
-              tag: row.event === "announcement" ? row.id : row.event,
+              // Tiket support ditandai per tiketnya, bukan per
+              // kejadiannya. Dua pengaduan berbeda adalah dua
+              // percakapan berbeda — yang kedua tidak boleh menghapus
+              // balasan pengaduan pertama sebelum sempat dibaca.
+              tag: row.event === "announcement"
+                ? row.id
+                : row.payload.ticket_id
+                  ? `${row.event}:${row.payload.ticket_id}`
+                  : row.event,
             },
           },
-          data: { event: row.event },
+          // Ikut membawa penunjuk tujuannya, bukan cuma nama
+          // kejadiannya.
+          //
+          // Sebelumnya hanya `event` yang dikirim — dan itu membuat
+          // notifikasi yang butuh tujuan tertentu tidak pernah bisa
+          // membukanya. Ajakan menilai merchant sudah lama membaca
+          // `resto_id` dari sini, dan sudah lama tidak menemukannya.
+          //
+          // FCM hanya menerima teks di `data`, jadi semuanya
+          // ditegaskan jadi string.
+          data: {
+            event: row.event,
+            ...(row.payload.resto_id
+              ? { resto_id: String(row.payload.resto_id) }
+              : {}),
+            ...(row.payload.ticket_id
+              ? { ticket_id: String(row.payload.ticket_id) }
+              : {}),
+          },
         },
       }),
     },

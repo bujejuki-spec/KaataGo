@@ -80,6 +80,8 @@ FILES=(
   cash_variance.sql
   merchant_report.sql
   shift_opening_check.sql
+  support_tickets.sql
+  support_push.sql
 )
 
 {

@@ -1,4 +1,5 @@
 import '../screens/merchant_review_form.dart';
+import '../screens/support_chat_screen.dart';
 import '../db/restaurant_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -55,6 +56,22 @@ class NotificationRouter {
       if (m == null) return;
       nav.push(MaterialPageRoute(
         builder: (_) => MerchantReviewForm(merchant: m),
+      ));
+      return;
+    }
+
+    // Percakapan support butuh id tiketnya, dan sisi mana yang membuka
+    // menentukan apa yang boleh ditekan di sana — jadi ia juga
+    // ditangani terpisah dari tabel tujuan yang serba langsung.
+    if (event == 'support_message') {
+      final ticketId = data?['ticket_id'] as String?;
+      if (ticketId == null) return;
+      nav.push(MaterialPageRoute(
+        builder: (_) => SupportChatScreen(
+          ticketId: ticketId,
+          sebagaiAdmin: auth.isSuperAdmin,
+          namaSaya: auth.employeeName,
+        ),
       ));
       return;
     }

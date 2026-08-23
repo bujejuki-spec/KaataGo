@@ -1,0 +1,268 @@
+import 'dart:io';
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:pos_app/db/support_repository.dart';
+import 'package:pos_app/models/support_ticket.dart';
+
+SupportTicket tiket({
+  String status = 'open',
+  DateTime? pesanTerakhir,
+  bool dariAdmin = false,
+  DateTime? dibacaPelapor,
+  DateTime? dibacaAdmin,
+  String? nama,
+}) =>
+    SupportTicket.fromMap({
+      'id': 't1',
+      'reporter_email': 'budi@toko.com',
+      'reporter_name': nama,
+      'subject': 'QRIS tidak muncul',
+      'status': status,
+      'created_at': '2026-08-22T01:00:00Z',
+      'last_message_at': pesanTerakhir?.toIso8601String(),
+      'last_message_from_admin': dariAdmin,
+      'reporter_read_at': dibacaPelapor?.toIso8601String(),
+      'admin_read_at': dibacaAdmin?.toIso8601String(),
+    });
+
+void main() {
+  final jam9 = DateTime.utc(2026, 8, 22, 9);
+  final jam10 = DateTime.utc(2026, 8, 22, 10);
+
+  group('status tiket', () {
+    test('keempatnya punya kode, tulisan, dan warnanya', () {
+      for (final s in SupportStatus.values) {
+        expect(kSupportStatusDb[s], isNotNull, reason: '$s tanpa kode');
+        expect(kSupportStatusLabel[s], isNotNull, reason: '$s tanpa tulisan');
+        expect(kSupportStatusWarna[s], isNotNull, reason: '$s tanpa warna');
+      }
+    });
+
+    test('kode yang tidak dikenal dibaca sebagai open', () {
+      // Baris yang ditulis versi yang lebih baru tidak boleh membuat
+      // daftar pengaduan gagal tampil sama sekali.
+      expect(supportStatusDari('entah'), SupportStatus.open);
+      expect(supportStatusDari(null), SupportStatus.open);
+    });
+
+    test('hanya closed yang dianggap selesai', () {
+      expect(tiket(status: 'closed').terbuka, isFalse);
+      for (final s in ['open', 'on_progress', 'confirm_customer']) {
+        expect(tiket(status: s).terbuka, isTrue, reason: s);
+      }
+    });
+  });
+
+  group('penanda belum dibaca', () {
+    test('pesan dari pihak sendiri tidak pernah jadi kabar baru', () {
+      final t = tiket(pesanTerakhir: jam10, dariAdmin: true);
+      expect(t.belumDibaca(sebagaiAdmin: true), isFalse);
+    });
+
+    test('pesan admin jadi kabar baru bagi pelapor', () {
+      final t = tiket(pesanTerakhir: jam10, dariAdmin: true);
+      expect(t.belumDibaca(sebagaiAdmin: false), isTrue);
+    });
+
+    test('yang sudah dibuka sesudah pesannya tidak lagi bertanda', () {
+      final t = tiket(
+          pesanTerakhir: jam9, dariAdmin: true, dibacaPelapor: jam10);
+      expect(t.belumDibaca(sebagaiAdmin: false), isFalse);
+    });
+
+    test('dibuka sebelum pesannya datang tetap bertanda', () {
+      final t = tiket(
+          pesanTerakhir: jam10, dariAdmin: true, dibacaPelapor: jam9);
+      expect(t.belumDibaca(sebagaiAdmin: false), isTrue);
+    });
+
+    test('tiket tanpa pesan sama sekali tidak bertanda', () {
+      expect(tiket().belumDibaca(sebagaiAdmin: false), isFalse);
+    });
+
+    test('jumlahnya dihitung dari daftar tiketnya sendiri', () {
+      final daftar = [
+        tiket(pesanTerakhir: jam10, dariAdmin: true),
+        tiket(pesanTerakhir: jam10, dariAdmin: false),
+        tiket(pesanTerakhir: jam9, dariAdmin: true, dibacaPelapor: jam10),
+      ];
+      expect(SupportRepository.belumDibaca(daftar, sebagaiAdmin: false), 1);
+      expect(SupportRepository.belumDibaca(daftar, sebagaiAdmin: true), 1);
+    });
+  });
+
+  group('nama pelapor', () {
+    test('tanpa nama, bagian depan emailnya yang dipakai', () {
+      expect(tiket().namaTampil, 'budi');
+      expect(tiket(nama: 'Budi Santoso').namaTampil, 'Budi Santoso');
+    });
+  });
+
+  group('SQL-nya', () {
+    final sql = File('supabase/support_tickets.sql').readAsStringSync();
+
+    test('ikut terangkut ke JALANKAN-INI', () {
+      expect(File('scripts/gabung_sql.sh').readAsStringSync(),
+          contains('support_tickets.sql'));
+    });
+
+    test('empat status, sama dengan yang dikenal aplikasi', () {
+      for (final s in SupportStatus.values) {
+        expect(sql, contains("'${kSupportStatusDb[s]}'"), reason: '$s');
+      }
+    });
+
+    // Keluhan sering berisi hal yang tidak ingin dibaca seruangan —
+    // termasuk keluhan tentang orang di ruangan itu.
+    test('pelapor melihat tiketnya sendiri, bukan tiket rekannya', () {
+      expect(sql, contains("is_super_admin() or reporter_email = auth.jwt() ->> 'email'"));
+      expect(sql, isNot(contains('is_resto_employee')));
+    });
+
+    // Tiket tertutup yang masih bisa ditulisi adalah tiket yang tidak
+    // pernah benar-benar selesai.
+    test('tiket tertutup tidak bisa dibalas', () {
+      final policy = sql.substring(sql.indexOf('"support_messages: write"'));
+      expect(policy.substring(0, policy.indexOf(');')),
+          contains("t.status <> 'closed'"));
+    });
+
+    test('status hanya bisa diubah lewat fungsinya', () {
+      expect(sql, isNot(contains('for update')));
+      expect(sql, contains('create or replace function set_support_status'));
+    });
+
+    // Yang paling tahu keluhannya sudah selesai adalah orang yang
+    // mengeluh — tapi hanya sampai di situ haknya.
+    test('pelapor hanya boleh menutup, tidak mengubah status lain', () {
+      expect(sql, contains("if not v_admin and p_status <> 'closed' then"));
+    });
+
+    group('penutupan otomatis', () {
+      final fn =
+          sql.substring(sql.indexOf('function close_idle_support_tickets'));
+
+      test('hanya yang sedang menunggu jawaban pelapor', () {
+        expect(fn, contains("status = 'confirm_customer'"));
+      });
+
+      // Tiket yang pesan terakhirnya dari pelapor berarti bolanya ada di
+      // KaataGo. Menutupnya karena "tidak ada jawaban" akan menghukum
+      // orang yang justru sudah menjawab.
+      test('hanya kalau pesan terakhirnya dari admin', () {
+        expect(fn, contains('last_message_from_admin = true'));
+      });
+
+      test('menunggu 24 jam, dan ditandai ditutup sendiri', () {
+        expect(fn, contains("interval '24 hours'"));
+        expect(fn, contains('auto_closed = true'));
+      });
+
+      test('dijadwalkan berjalan sendiri', () {
+        expect(sql, contains("cron.schedule('close-idle-support'"));
+      });
+    });
+
+    // Tanpa ini, tiket yang baru saja dijawab pelapor tetap berstatus
+    // menunggu — lalu ditutup penjadwal tepat setelah orangnya membalas.
+    test('balasan pelapor membangunkan tiket yang sedang menunggu', () {
+      final trg = sql.substring(sql.indexOf('function touch_support_ticket'));
+      expect(trg, contains("when status = 'confirm_customer' and new.from_admin = false"));
+      expect(trg, contains("then 'on_progress'"));
+    });
+
+    test('percakapannya disiarkan realtime, dengan penangkap galat', () {
+      expect(sql, contains('add table support_messages'));
+      expect(sql, contains('exception when duplicate_object then null;'));
+    });
+  });
+
+  group('notifikasi', () {
+    final sql = File('supabase/support_push.sql').readAsStringSync();
+    final fungsi =
+        File('supabase/functions/send-push/index.ts').readAsStringSync();
+    final router =
+        File('lib/services/notification_router.dart').readAsStringSync();
+
+    test('ikut terangkut ke JALANKAN-INI', () {
+      expect(File('scripts/gabung_sql.sh').readAsStringSync(),
+          contains('support_push.sql'));
+    });
+
+    test('balasan admin dikabarkan ke pelapornya saja', () {
+      final cabang = sql.substring(sql.indexOf('if new.from_admin then'),
+          sql.indexOf('  else'));
+      expect(cabang, contains("'audience', 'email'"));
+      expect(cabang, contains('t.reporter_email'));
+    });
+
+    // KaataGo Admin tidak terikat merchant mana pun. Menyaring peran
+    // berdasarkan resto akan membuat kabarnya tidak sampai ke siapa pun.
+    test('pengaduan baru dikabarkan ke KaataGo Admin tanpa saringan resto', () {
+      final cabang = sql.substring(sql.indexOf('  else'));
+      expect(cabang, contains("jsonb_build_array('super_admin')"));
+      expect(cabang, contains('insert into push_outbox (resto_id, event, payload) values (\n      null,'));
+    });
+
+    // Perubahan status ditulis sebagai pesan sistem, jadi ia ikut lewat
+    // pemicu yang sama. Pemicu terpisah di tabel tiket berarti dua
+    // tempat yang harus sepakat soal siapa yang dikabari.
+    test('satu pemicu untuk pesan maupun perubahan status', () {
+      expect(sql, contains('after insert on support_messages'));
+      expect(sql, isNot(contains('on support_tickets')));
+    });
+
+    // Sebelumnya hanya `event` yang dikirim — dan itu membuat notifikasi
+    // yang butuh tujuan tertentu tidak pernah bisa membukanya.
+    test('muatannya membawa penunjuk tujuan, bukan cuma nama kejadian', () {
+      expect(fungsi, contains('resto_id: String(row.payload.resto_id)'));
+      expect(fungsi, contains('ticket_id: String(row.payload.ticket_id)'));
+    });
+
+    // Dua pengaduan berbeda adalah dua percakapan berbeda; yang kedua
+    // tidak boleh menghapus balasan yang pertama sebelum sempat dibaca.
+    test('notifikasi tiap tiket tidak saling menimpa', () {
+      expect(fungsi, contains(r'`${row.event}:${row.payload.ticket_id}`'));
+    });
+
+    test('diketuk membuka percakapannya, bukan sekadar aplikasinya', () {
+      expect(router, contains("if (event == 'support_message')"));
+      expect(router, contains("data?['ticket_id']"));
+      // Sisi mana yang membuka menentukan apa yang boleh ditekan.
+      expect(router, contains('sebagaiAdmin: auth.isSuperAdmin'));
+    });
+  });
+
+  group('pintunya', () {
+    test('tombol mengambang ada di beranda pelanggan dan pegawai', () {
+      for (final f in [
+        'customer_home_screen',
+        'kasir_home_screen',
+        'admin_home_screen',
+        'owner_home_screen',
+        'finance_home_screen',
+      ]) {
+        final isi = File('lib/screens/$f.dart').readAsStringSync();
+        expect(isi, contains('SupportFab()'), reason: f);
+      }
+    });
+
+    test('KaataGo Admin punya menu Customer Service', () {
+      final isi =
+          File('lib/screens/super_admin_home_screen.dart').readAsStringSync();
+      expect(isi, contains("title: 'Customer Service'"));
+      expect(isi, contains('SupportAdminScreen()'));
+      // Penanda merahnya ikut naik ke beranda — tanpa itu, satu-satunya
+      // cara tahu ada yang menunggu adalah membuka layarnya.
+      expect(isi, contains('milikSemuaBelumDibaca()'));
+    });
+
+    // Pengaduan tanpa akun tidak punya tempat untuk dibalas, dan
+    // pengadu yang tidak pernah menerima jawabannya akan mengira
+    // KaataGo mendiamkannya.
+    test('tidak ditawarkan kepada yang belum masuk', () {
+      final isi = File('lib/widgets/support_fab.dart').readAsStringSync();
+      expect(isi, contains('if (!context.watch<AuthProvider>().isLoggedIn)'));
+    });
+  });
+}
