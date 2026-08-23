@@ -79,6 +79,7 @@ FILES=(
   product_review_per_order.sql
   cash_variance.sql
   merchant_report.sql
+  shift_opening_check.sql
 )
 
 {

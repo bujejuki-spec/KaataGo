@@ -97,6 +97,13 @@ class OwnerHomeScreen extends StatelessWidget {
                       MaterialPageRoute(builder: (_) => const CashierShiftScreen()),
                     ),
                   ),
+                  // Beranda Owner memberi jarak antar tombolnya sendiri,
+                  // tidak seperti beranda peran lain yang menyerahkannya
+                  // ke HubMenuLayout. Tanpa baris ini, tombol yang baru
+                  // ditambahkan menempel pada tetangganya sementara yang
+                  // lain berjarak — dan yang menempel terbaca seperti
+                  // bagian dari tombol di bawahnya.
+                  const SizedBox(height: 12),
                   HubGroupTile(
                     icon: Icons.point_of_sale_outlined,
                     title: 'Penjualan',

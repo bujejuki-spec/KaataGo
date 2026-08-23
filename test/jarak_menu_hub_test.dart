@@ -26,4 +26,24 @@ void main() {
     expect(temuan, isEmpty,
         reason: 'celah dobel bikin satu tombol terlihat terpisah sendiri');
   });
+
+  /// Kebalikannya, dan sama-sama terlihat: tombol tanpa jarak sama
+  /// sekali di antara tetangga yang berjarak.
+  ///
+  /// Beranda Owner memberi jaraknya sendiri lewat SizedBox, tidak
+  /// seperti beranda peran lain yang menyerahkannya ke HubMenuLayout.
+  /// Tombol baru yang ditambahkan tanpa SizedBox akan menempel pada
+  /// tetangganya, dan terbaca seperti bagian dari tombol di bawahnya.
+  test('di beranda Owner, tiap tombol dipisahkan jaraknya', () {
+    final isi = File('lib/screens/owner_home_screen.dart').readAsStringSync();
+    // Hanya berlaku untuk yang berada di daftar teratas — yang di dalam
+    // `tiles: () => [` memang menempel satu sama lain dengan sengaja.
+    //
+    // Beranda ini memakai ListView polos, bukan HubMenuLayout seperti
+    // peran lain. Itu justru alasan jaraknya harus ditulis tangan.
+    final atas = isi.substring(
+        isi.indexOf('ListView('), isi.indexOf('HubGroupTile('));
+    expect(atas, contains('const SizedBox(height: 12)'),
+        reason: 'tombol pertama tidak dipisahkan dari kelompok di bawahnya');
+  });
 }

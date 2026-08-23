@@ -13,6 +13,17 @@ Formatnya dibaca `scripts/release.sh`: judul `## <versi>`, lalu
 poin-poinnya. Versi yang tidak punya bagiannya di sini tetap terbit,
 hanya pengumumannya memakai kalimat umum.
 
+## 2.14.0
+
+- Modal awal saat buka shift ikut diperiksa — kalau tidak cocok dengan
+  yang ditinggalkan shift sebelumnya, nominalnya masih bisa diperbaiki
+- Shift yang selisihnya sudah dibayar berbunyi "Pas", lengkap dengan
+  rincian nominal, selisih, dan siapa yang membayarnya
+- GL Selisih Kasir bisa dipetakan sendiri di Mapping GL Account
+- Tombol simpan banner promo tidak lagi berputar selamanya saat
+  tanggalnya ditolak
+- Jarak tombol Shift Kasir di beranda Owner disamakan dengan lainnya
+
 ## 2.13.0
 
 - Laporan Penjualan untuk Owner dan Admin: menu terlaris, menu yang

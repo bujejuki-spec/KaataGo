@@ -70,6 +70,21 @@ class CashierShiftRepository {
     return CashVariance.fromMap(Map<String, dynamic>.from(row as Map));
   }
 
+  /// Berapa yang seharusnya ada di laci sebelum shift dibuka.
+  ///
+  /// `null` berarti belum ada pembandingnya — merchant ini belum pernah
+  /// menutup shift sekali pun, jadi tidak ada yang bisa dibandingkan dan
+  /// modal awal apa pun sama benarnya.
+  Future<int?> perkiraanModalAwal(String restoId) async {
+    final rows = await _client
+        .rpc('expected_opening_cash', params: {'p_resto_id': restoId});
+    final list = rows as List? ?? const [];
+    if (list.isEmpty) return null;
+    final m = Map<String, dynamic>.from(list.first as Map);
+    if (m['ada'] != true) return null;
+    return (m['jumlah'] as num?)?.toInt() ?? 0;
+  }
+
   /// Berapa yang seharusnya ada di laci saat ini.
   ///
   /// Hanya untuk ditunjukkan sebagai perkiraan sesudah kasir menuliskan

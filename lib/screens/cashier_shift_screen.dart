@@ -75,6 +75,18 @@ class _CashierShiftScreenState extends State<CashierShiftScreen> {
     }
   }
 
+  /// Selisih shift ini sudah dilunasi kasirnya.
+  ///
+  /// Shift tanpa tagihan sama sekali — yang uangnya memang pas, atau
+  /// yang justru lebih — tidak dianggap lunas: tidak ada yang perlu
+  /// dilunasi di sana.
+  CashVariance? _tagihanShift(String shiftId) {
+    for (final v in _selisih) {
+      if (v.shiftId == shiftId) return v;
+    }
+    return null;
+  }
+
   /// Tagihan yang masih terbuka, terbaru lebih dulu.
   List<CashVariance> get _belumLunas =>
       [for (final v in _selisih) if (!v.lunas) v];
@@ -129,16 +141,60 @@ class _CashierShiftScreenState extends State<CashierShiftScreen> {
     final restoId = _restoId;
     if (restoId == null) return;
 
-    final jawab = await _tanyaRupiah(
-      judul: 'Buka Shift',
-      keterangan: 'Berapa uang yang sudah ada di laci sekarang? Biasanya '
-          'uang kembalian yang ditinggal shift sebelumnya. Kosongkan '
-          'kalau lacinya benar-benar kosong.',
-      label: 'Modal Awal Laci',
-      tombol: 'Buka Shift',
-      bolehNol: true,
-    );
-    if (jawab == null || !mounted) return;
+    // Sama seperti menutup: dihitung dulu, baru dibandingkan.
+    //
+    // Tanpa pembanding, selisih bisa lahir sebelum jualan dimulai. Kasir
+    // yang salah ketik modal awal — atau menerima laci yang isinya sudah
+    // tidak sesuai sejak semalam — baru mengetahuinya delapan jam
+    // kemudian, saat selisihnya sudah jadi tanggung jawabnya sendiri.
+    ({int jumlah, String? catatan})? jawab;
+    var awal = 0;
+
+    while (true) {
+      jawab = await _tanyaRupiah(
+        judul: 'Buka Shift',
+        keterangan: 'Hitung uang yang sudah ada di laci sekarang, lalu '
+            'tulis jumlahnya. Biasanya uang kembalian yang ditinggal '
+            'shift sebelumnya. Kosongkan kalau lacinya benar-benar '
+            'kosong.',
+        label: 'Modal Awal Laci',
+        tombol: 'Lanjut',
+        bolehNol: true,
+        nilaiAwal: awal,
+      );
+      if (jawab == null || !mounted) return;
+
+      int? perkiraan;
+      try {
+        perkiraan = await _repo.perkiraanModalAwal(restoId);
+      } catch (_) {
+        // Gagal mengambil pembandingnya bukan alasan menahan kasir
+        // membuka shift. Tanpa pembanding, modal awalnya diterima apa
+        // adanya — persis seperti sebelum pemeriksaan ini ada.
+        perkiraan = null;
+      }
+      if (!mounted) return;
+
+      // Belum pernah ada shift yang ditutup, atau angkanya memang sudah
+      // cocok. Tidak ada yang perlu dikonfirmasi.
+      if (perkiraan == null || perkiraan == jawab.jumlah) break;
+
+      final lanjut = await _konfirmasiSelisih(
+        dihitung: jawab.jumlah,
+        seharusnya: perkiraan,
+        judul: 'Modal Awal Tidak Cocok',
+        labelDihitung: 'Kamu hitung',
+        tombolLanjut: 'Ya, Buka Shift',
+        catatan: 'Laci berisi jumlah yang berbeda dari yang ditinggalkan '
+            'shift sebelumnya. Periksa dulu hitungannya — kalau memang '
+            'segitu isinya, lanjutkan saja dan selisih ini tercatat '
+            'sebagai modal awal.',
+      );
+      if (lanjut == null || !mounted) return;
+      if (lanjut) break;
+
+      awal = jawab.jumlah;
+    }
 
     setState(() => _sibuk = true);
     try {
@@ -236,6 +292,10 @@ class _CashierShiftScreenState extends State<CashierShiftScreen> {
   Future<bool?> _konfirmasiSelisih({
     required int dihitung,
     required int seharusnya,
+    String judul = 'Ada selisih',
+    String labelDihitung = 'Kamu hitung',
+    String tombolLanjut = 'Ya, Tutup Shift',
+    String? catatan,
   }) async {
     final selisih = dihitung - seharusnya;
     final warna = selisih == 0
@@ -245,12 +305,12 @@ class _CashierShiftScreenState extends State<CashierShiftScreen> {
     return showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text(selisih == 0 ? 'Uangnya pas' : 'Ada selisih'),
+        title: Text(selisih == 0 ? 'Uangnya pas' : judul),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             _BarisAngka(label: 'Seharusnya', nilai: seharusnya),
-            _BarisAngka(label: 'Kamu hitung', nilai: dihitung),
+            _BarisAngka(label: labelDihitung, nilai: dihitung),
             const Divider(height: 20),
             _BarisAngka(
               label: selisih < 0
@@ -262,11 +322,13 @@ class _CashierShiftScreenState extends State<CashierShiftScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              selisih == 0
-                  ? 'Setelah ditutup, shift ini tidak bisa dibuka lagi.'
-                  : 'Periksa dulu nominalnya — salah ketik satu angka nol '
-                      'akan tercatat selamanya sebagai selisih atas namamu. '
-                      'Kalau memang segitu hitungannya, lanjutkan saja.',
+              catatan ??
+                  (selisih == 0
+                      ? 'Setelah ditutup, shift ini tidak bisa dibuka lagi.'
+                      : 'Periksa dulu nominalnya — salah ketik satu angka '
+                          'nol akan tercatat selamanya sebagai selisih atas '
+                          'namamu. Kalau memang segitu hitungannya, '
+                          'lanjutkan saja.'),
               style: TextStyle(
                   fontSize: 12, color: KaataTheme.mutedOf(dialogContext)),
             ),
@@ -275,7 +337,7 @@ class _CashierShiftScreenState extends State<CashierShiftScreen> {
         actionsAlignment: MainAxisAlignment.center,
         actions: [
           DialogActions(
-            confirmLabel: 'Ya, Tutup Shift',
+            confirmLabel: tombolLanjut,
             cancelLabel: 'Perbaiki Nominal',
             destructive: selisih != 0,
             onConfirm: () => Navigator.pop(dialogContext, true),
@@ -479,7 +541,9 @@ class _CashierShiftScreenState extends State<CashierShiftScreen> {
                         ),
                       )
                     else
-                      for (final s in _riwayat) _BarisRiwayat(shift: s),
+                      for (final s in _riwayat)
+                        _BarisRiwayat(
+                            shift: s, tagihan: _tagihanShift(s.id)),
                   ],
                 ),
               ),
@@ -605,7 +669,11 @@ class _BarisAngka extends StatelessWidget {
 class _BarisRiwayat extends StatelessWidget {
   final CashierShift shift;
 
-  const _BarisRiwayat({required this.shift});
+  /// Tagihan selisih shift ini, kalau ada. Null berarti tidak pernah
+  /// lahir tagihan — uangnya pas, atau justru lebih.
+  final CashVariance? tagihan;
+
+  const _BarisRiwayat({required this.shift, this.tagihan});
 
   @override
   Widget build(BuildContext context) {
@@ -614,6 +682,16 @@ class _BarisRiwayat extends StatelessWidget {
         NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
     final tgl = DateFormat('d MMM, HH:mm', 'id_ID');
     final selisih = shift.difference ?? 0;
+    final lunas = tagihan?.lunas ?? false;
+    // Yang sudah dilunasi dianggap beres: lacinya sudah cocok lagi, dan
+    // tanda merah yang menetap selamanya membuat shift yang sudah
+    // dibereskan terus terlihat seperti masalah yang belum selesai.
+    //
+    // Angkanya tidak ikut dihapus. Riwayat yang menyembunyikan bahwa
+    // pernah ada selisih adalah riwayat yang tidak bisa dipakai
+    // menelusuri apa pun — jadi barisnya tetap menyebut berapa yang
+    // kurang dan bahwa itu sudah dibayar.
+    final beres = selisih == 0 || lunas;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -639,7 +717,7 @@ class _BarisRiwayat extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: (selisih == 0
+                  color: (beres
                           ? const Color(0xFF10B981)
                           : (selisih < 0
                               ? Colors.red
@@ -648,14 +726,14 @@ class _BarisRiwayat extends StatelessWidget {
                   borderRadius: BorderRadius.circular(7),
                 ),
                 child: Text(
-                  selisih == 0
+                  beres
                       ? 'Pas'
                       : '${selisih < 0 ? 'Kurang' : 'Lebih'} '
                           '${rp.format(selisih.abs())}',
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
-                    color: selisih == 0
+                    color: beres
                         ? const Color(0xFF047857)
                         : (selisih < 0
                             ? Colors.red.shade700
@@ -677,6 +755,10 @@ class _BarisRiwayat extends StatelessWidget {
             'Dihitung ${rp.format(shift.countedCash ?? 0)}',
             style: TextStyle(fontSize: 11.5, color: muted),
           ),
+          if (lunas && selisih != 0) ...[
+            const SizedBox(height: 8),
+            _RincianPelunasan(shift: shift, tagihan: tagihan!),
+          ],
           if ((shift.note ?? '').isNotEmpty) ...[
             const SizedBox(height: 4),
             Text(shift.note!,
@@ -766,6 +848,106 @@ class _KartuSelisih extends StatelessWidget {
               'Finance, atau Admin.',
               style: TextStyle(fontSize: 11.5, color: muted),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Rincian shift yang selisihnya sudah dilunasi.
+///
+/// Lencananya sudah berbunyi "Pas", dan itu yang dicari sekilas. Tapi
+/// yang membuka riwayat berbulan-bulan kemudian mencari hal lain: berapa
+/// yang dihitung waktu itu, berapa kurangnya, siapa yang menanggungnya,
+/// dan siapa yang mencatat pelunasannya. Empat pertanyaan itu tidak bisa
+/// dijawab lencana.
+class _RincianPelunasan extends StatelessWidget {
+  final CashierShift shift;
+  final CashVariance tagihan;
+
+  const _RincianPelunasan({required this.shift, required this.tagihan});
+
+  @override
+  Widget build(BuildContext context) {
+    const hijau = Color(0xFF047857);
+    final rp =
+        NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+    final tgl = DateFormat('d MMM yyyy, HH:mm', 'id_ID');
+    final muted = KaataTheme.mutedOf(context);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(10, 9, 10, 10),
+      decoration: BoxDecoration(
+        color: hijau.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(9),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.verified_outlined, size: 15, color: hijau),
+              SizedBox(width: 6),
+              Text('Selisih sudah dibayar',
+                  style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: hijau)),
+            ],
+          ),
+          const SizedBox(height: 7),
+          _Rincian(
+              label: 'Modal awal laci', nilai: rp.format(shift.openingCash)),
+          _Rincian(
+              label: 'Diinput kasir',
+              nilai: rp.format(shift.countedCash ?? 0)),
+          _Rincian(
+              label: 'Seharusnya', nilai: rp.format(shift.expectedCash ?? 0)),
+          _Rincian(
+            label: 'Selisih kurang',
+            nilai: rp.format(tagihan.amount),
+            tebal: true,
+          ),
+          const SizedBox(height: 5),
+          Text(
+            'Dibayar tunai oleh ${tagihan.namaTampil}'
+            '${tagihan.settledAt == null ? '' : ' pada '
+                '${tgl.format(tagihan.settledAt!.toWib())}'}.',
+            style: TextStyle(fontSize: 11.5, color: muted, height: 1.35),
+          ),
+          if ((tagihan.settledBy ?? '').isNotEmpty)
+            Text(
+              'Dicatat oleh ${tagihan.settledBy}.',
+              style: TextStyle(fontSize: 11.5, color: muted, height: 1.35),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Rincian extends StatelessWidget {
+  final String label;
+  final String nilai;
+  final bool tebal;
+
+  const _Rincian({required this.label, required this.nilai, this.tebal = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 1.5),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label,
+              style: TextStyle(
+                  fontSize: 11.5, color: KaataTheme.mutedOf(context))),
+          Text(nilai,
+              style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: tebal ? FontWeight.bold : FontWeight.w600)),
         ],
       ),
     );

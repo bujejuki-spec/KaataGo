@@ -415,13 +415,21 @@ class _BannerFormDialogState extends State<_BannerFormDialog> {
       return;
     }
 
-    final email = context.read<AuthProvider>().user?.email;
-    setState(() => _saving = true);
+    // Diperiksa SEBELUM tombolnya berubah jadi lingkaran memuat.
+    //
+    // Sebelumnya urutannya terbalik: tombolnya berputar, lalu
+    // pemeriksaan tanggal menolak dan keluar begitu saja — meninggalkan
+    // tombol yang berputar selamanya untuk sesuatu yang tidak pernah
+    // dikirim. Yang melihatnya menunggu simpanan yang tidak akan pernah
+    // selesai.
     final periodError = validatePeriod(startsOn: _startsOn, endsOn: _endsOn);
     if (periodError != null) {
       showAppToast(context, periodError, isError: true);
       return;
     }
+
+    final email = context.read<AuthProvider>().user?.email;
+    setState(() => _saving = true);
 
     try {
       final image =

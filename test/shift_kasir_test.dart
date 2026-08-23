@@ -230,6 +230,115 @@ void main() {
     });
   });
 
+  group('riwayat sesudah dilunasi', () {
+    final layar =
+        File('lib/screens/cashier_shift_screen.dart').readAsStringSync();
+
+    // Tanda merah yang menetap selamanya membuat shift yang sudah
+    // dibereskan terus terlihat seperti masalah yang belum selesai.
+    test('shift yang selisihnya dibayar ditandai beres', () {
+      expect(layar, contains('final beres = selisih == 0 || lunas;'));
+      expect(layar, contains("beres\n                      ? 'Pas'"));
+    });
+
+    // Riwayat yang menyembunyikan bahwa pernah ada selisih adalah
+    // riwayat yang tidak bisa dipakai menelusuri apa pun.
+    test('rinciannya tetap tercatat, bukan cuma lencananya', () {
+      expect(layar, contains('if (lunas && selisih != 0)'));
+      expect(layar, contains('_RincianPelunasan('));
+    });
+
+    // Empat pertanyaan yang tidak bisa dijawab lencana: berapa yang
+    // dihitung waktu itu, berapa kurangnya, siapa yang menanggungnya,
+    // dan siapa yang mencatat pelunasannya.
+    test('rinciannya menyebut nominal, selisih, dan siapa yang membayar', () {
+      final kartu = layar.substring(layar.indexOf('class _RincianPelunasan'));
+      expect(kartu, contains("label: 'Modal awal laci'"));
+      expect(kartu, contains("label: 'Diinput kasir'"));
+      expect(kartu, contains("label: 'Seharusnya'"));
+      expect(kartu, contains("label: 'Selisih kurang'"));
+      expect(kartu, contains('Dibayar tunai oleh '));
+      expect(kartu, contains('Dicatat oleh '));
+    });
+
+    // Shift tanpa tagihan sama sekali — yang uangnya memang pas, atau
+    // yang justru lebih — tidak boleh terbaca sebagai "sudah dilunasi".
+    // Tidak ada yang perlu dilunasi di sana.
+    test('shift tanpa tagihan tidak disebut lunas', () {
+      final fungsi = layar.substring(layar.indexOf('CashVariance? _tagihanShift('));
+      expect(fungsi.substring(0, fungsi.indexOf('}\n\n')),
+          contains('return null;'));
+      expect(layar, contains('final lunas = tagihan?.lunas ?? false;'));
+    });
+  });
+
+  group('pemeriksaan modal awal', () {
+    final sql = File('supabase/shift_opening_check.sql').readAsStringSync();
+    final layar =
+        File('lib/screens/cashier_shift_screen.dart').readAsStringSync();
+
+    test('ikut terangkut ke JALANKAN-INI', () {
+      expect(File('scripts/gabung_sql.sh').readAsStringSync(),
+          contains('shift_opening_check.sql'));
+    });
+
+    // Kalau shift kemarin kurang Rp 10.000, yang betul-betul tertinggal
+    // di laci memang jumlah yang kurang itu — dan kekurangannya sudah
+    // punya tagihannya sendiri. Memakai angka "seharusnya" berarti
+    // menagihkan kekurangan yang sama dua kali, kepada dua orang.
+    test('titik awalnya uang yang dihitung, bukan yang seharusnya', () {
+      expect(sql, contains('t.counted_cash'));
+      expect(sql, isNot(contains('t.expected_cash')));
+    });
+
+    test('yang terjadi sesudah penutupan ikut dihitung', () {
+      expect(sql, contains("o.payment_method = 'cash'"));
+      expect(sql, contains('from cash_deposits d'));
+      expect(sql, contains("p.source = 'cash_withdrawal'"));
+    });
+
+    // Daftar kosong akan terbaca aplikasi sebagai "gagal", padahal
+    // artinya "belum ada pembandingnya".
+    test('merchant tanpa shift tertutup tetap dapat satu baris', () {
+      expect(sql, contains('right join (select 1) satu on true'));
+      expect(sql, contains('returns table (ada boolean, jumlah bigint)'));
+    });
+
+    test('dihitung sesudah nominalnya ditulis, bukan sebelum', () {
+      final buka = layar.substring(layar.indexOf('Future<void> _buka()'));
+      final tanya = buka.indexOf('_tanyaRupiah(');
+      final minta = buka.indexOf('_repo.perkiraanModalAwal(');
+      expect(minta, greaterThan(tanya));
+    });
+
+    // Gagal mengambil pembandingnya bukan alasan menahan kasir membuka
+    // shift di depan antrean.
+    test('tanpa pembanding, modal awalnya diterima apa adanya', () {
+      final buka = layar.substring(layar.indexOf('Future<void> _buka()'));
+      expect(buka, contains('if (perkiraan == null || perkiraan == jawab.jumlah) break;'));
+    });
+
+    test('nominalnya masih bisa diperbaiki sebelum shift dibuka', () {
+      final buka = layar.substring(
+          layar.indexOf('Future<void> _buka()'),
+          layar.indexOf('await _repo.buka('));
+      expect(buka, contains('_konfirmasiSelisih('));
+      expect(buka, contains("tombolLanjut: 'Ya, Buka Shift'"));
+    });
+  });
+
+  group('mapping GL-nya', () {
+    test('GL Selisih Kasir bisa dipetakan Finance', () {
+      final layar =
+          File('lib/screens/finance_gl_mapping_screen.dart').readAsStringSync();
+      expect(layar, contains("const _cashVarianceMethod = 'cash_variance';"));
+      // Ikut daftar utamanya — kalau tidak, kolomnya tampil tapi tidak
+      // pernah ikut tersimpan.
+      expect(layar, contains('  _cashVarianceMethod,\n];'));
+      expect(layar, contains("title: 'GL Selisih Kasir'"));
+    });
+  });
+
   group('pintunya', () {
     // Kasir yang memegang laci, tapi atasannya yang menutup shift saat
     // kasirnya sudah pulang — keempatnya butuh pintu ini.

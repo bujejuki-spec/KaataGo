@@ -97,6 +97,14 @@ const _voucherRedeemMethod = 'voucher_redeem';
 // modal, dan keduanya perlu membedakannya dari pendapatan.
 const _capitalMethod = 'capital';
 
+// Selisih uang laci saat shift kasir ditutup. Titipan, bukan pendapatan
+// dan bukan biaya: yang kurang sedang ditagihkan kepada kasirnya, dan
+// yang lebih belum jelas berasal dari penjualan mana. Tanpa akunnya
+// sendiri, selisih itu tidak punya tempat di pembukuan sama sekali — dan
+// Saldo Cash menyebut angka yang lebih besar daripada uang yang benar
+// benar bisa dihitung tangan.
+const _cashVarianceMethod = 'cash_variance';
+
 // PPN and service charge collected are money owed onward, not revenue,
 // so they're journaled to their own accounts instead of being folded
 // into the payment-method income mapping.
@@ -123,6 +131,7 @@ const _allMethods = [
   _voucherMethod,
   _voucherRedeemMethod,
   _capitalMethod,
+  _cashVarianceMethod,
 ];
 
 /// Akun yang hanya ada di pembukuan KaataGo sendiri.
@@ -642,6 +651,25 @@ class _FinanceGlMappingScreenState extends State<FinanceGlMappingScreen> {
                             color: const Color(0xFF14B8A6),
                             codeCtrl: _codeCtrls[_capitalMethod]!,
                             nameCtrl: _nameCtrls[_capitalMethod]!,
+                            editing: _editing,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      _GlSectionCard(
+                        icon: Icons.point_of_sale,
+                        color: const Color(0xFFF59E0B),
+                        title: 'GL Selisih Kasir',
+                        subtitle: 'Selisih uang laci saat shift ditutup',
+                        children: [
+                          _GlAccountRow(
+                            icon: Icons.point_of_sale,
+                            label: 'GL Selisih Kasir',
+                            hint: 'Kurang jadi tagihan kasir, lebih dicatat '
+                                'sampai penjualannya ketemu',
+                            color: const Color(0xFFF59E0B),
+                            codeCtrl: _codeCtrls[_cashVarianceMethod]!,
+                            nameCtrl: _nameCtrls[_cashVarianceMethod]!,
                             editing: _editing,
                           ),
                         ],
