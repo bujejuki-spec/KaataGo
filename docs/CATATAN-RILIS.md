@@ -37,6 +37,16 @@ Formatnya dibaca `scripts/release.sh`: judul `## <versi>`, lalu
 poin-poinnya. Versi yang tidak punya bagiannya di sini tetap terbit,
 hanya pengumumannya memakai kalimat umum.
 
+## 2.18.0
+
+- Chat KaataGo Admin dipisah tegas dari pengaduan — tanpa status, tanpa
+  penutupan otomatis, dan punya tabnya sendiri di sisi KaataGo Admin
+- Penanda unduhan pembaruan bisa diketuk lagi, dan popupnya punya Jeda,
+  Batalkan, dan Tutup
+- Unduhan yang dijeda dilanjutkan dari titik terakhir, bukan diulang
+  dari nol
+- Perbaikan bug dan penyempurnaan tampilan
+
 ## 2.17.0
 
 - Pengaduan dan chat baru langsung dibalas sapaan, supaya jelas

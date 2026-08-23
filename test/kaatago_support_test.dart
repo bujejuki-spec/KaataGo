@@ -248,8 +248,9 @@ void main() {
     // Judulnya harus sama persis dengan yang dipakai aplikasi. Kalau
     // berpisah, chat bebas akan disapa sebagai "pengaduan".
     test('judul chat bebasnya sama dengan yang dikenal aplikasi', () {
-      final repo = File('lib/db/support_repository.dart').readAsStringSync();
-      final kode = RegExp(r"kSubjekChatUmum = '([^']+)'").firstMatch(repo);
+      final model =
+          File('lib/models/support_ticket.dart').readAsStringSync();
+      final kode = RegExp(r"kSubjekChatUmum = '([^']+)'").firstMatch(model);
       expect(kode, isNotNull);
       expect(sql, contains("= '${kode!.group(1)}'"));
     });
@@ -275,6 +276,79 @@ void main() {
     test('baris lama diisi dari percakapannya sendiri', () {
       expect(sql, contains('update support_tickets t'));
       expect(sql, contains('select max(m.created_at) from support_messages m'));
+    });
+  });
+
+  group('chat bukan pengaduan', () {
+    final sql = File('supabase/support_chat_rules.sql').readAsStringSync();
+
+    test('ikut terangkut ke JALANKAN-INI', () {
+      expect(File('scripts/gabung_sql.sh').readAsStringSync(),
+          contains('support_chat_rules.sql'));
+    });
+
+    test('dikenali dari judulnya, sama dengan yang dipakai aplikasi', () {
+      final t = SupportTicket.fromMap({
+        'id': 'c1',
+        'reporter_email': 'budi@toko.com',
+        'subject': kSubjekChatUmum,
+        'status': 'open',
+        'created_at': '2026-08-24T01:00:00Z',
+      });
+      expect(t.chatBebas, isTrue);
+      expect(tiket().chatBebas, isFalse);
+      expect(sql, contains("subject <> '$kSubjekChatUmum'"));
+    });
+
+    // Menutup obrolan yang memang sudah selesai dengan sendirinya cuma
+    // memaksa orangnya membuka percakapan baru untuk bertanya lagi.
+    test('tidak pernah ditutup sendiri', () {
+      final fn = sql.substring(sql.indexOf('function close_idle_support_tickets'));
+      expect(fn, contains("subject <> 'Chat dengan KaataGo Admin'"));
+    });
+
+    test('tanpa tahapan di layar percakapannya', () {
+      final layar =
+          File('lib/screens/support_chat_screen.dart').readAsStringSync();
+      expect(layar, contains('widget.sebagaiAdmin && !t.chatBebas'));
+      expect(layar, contains('if (t != null && !t.chatBebas) _KepalaStatus'));
+      expect(layar, contains('terbuka && !t.chatBebas'));
+    });
+
+    test('dipisah jadi tab sendiri di Customer Service', () {
+      final layar =
+          File('lib/screens/support_admin_screen.dart').readAsStringSync();
+      expect(layar, contains("Tab(text: 'Pengaduan"));
+      expect(layar, contains("Tab(text: 'Chat"));
+      expect(layar, contains('_daftar(chat: chat)'));
+    });
+
+    test('tidak masuk daftar Pengaduan Saya', () {
+      final fab = File('lib/widgets/support_fab.dart').readAsStringSync();
+      expect(fab, contains('for (final x in t) if (!x.chatBebas) x'));
+      expect(fab, contains('for (final t in _tiket) if (!t.chatBebas) t'));
+    });
+  });
+
+  group('tiket kembar', () {
+    final sql = File('supabase/support_chat_rules.sql').readAsStringSync();
+
+    // Penjaga yang hanya ada di aplikasi bukan penjaga: HP yang belum
+    // diperbarui, permintaan yang diulang jaringan, atau proses yang
+    // mati lalu dicoba lagi semuanya lolos begitu saja.
+    test('dijaga basis data, bukan cuma tombolnya', () {
+      final fn = sql.substring(sql.indexOf('function open_support_ticket'));
+      expect(fn, contains("now() - interval '10 seconds'"));
+      expect(fn, contains('return v_row;'));
+    });
+
+    // Menghapus percakapan yang sudah dijawab jauh lebih merugikan
+    // daripada menyisakan satu baris kembar.
+    test('pembersihannya tidak menyentuh yang sudah dibalas manusia', () {
+      final bersih = sql.substring(sql.indexOf('with kembar as'));
+      expect(bersih, contains("m.sender_email <> 'system:greeting'"));
+      expect(bersih, contains('m.from_admin = true'));
+      expect(bersih, contains('urutan > 1'));
     });
   });
 
@@ -478,8 +552,11 @@ void main() {
       final isi = File('lib/widgets/support_fab.dart').readAsStringSync();
       expect(isi, contains("if (pilihan == 'chat')"));
       expect(isi, contains('chatUmumTerbuka()'));
+      final model =
+          File('lib/models/support_ticket.dart').readAsStringSync();
+      expect(model,
+          contains("const kSubjekChatUmum = 'Chat dengan KaataGo Admin';"));
       final repo = File('lib/db/support_repository.dart').readAsStringSync();
-      expect(repo, contains("const kSubjekChatUmum = 'Chat dengan KaataGo Admin';"));
       expect(repo, contains("neq('status', 'closed')"));
     });
 

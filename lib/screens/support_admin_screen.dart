@@ -27,7 +27,15 @@ class SupportAdminScreen extends StatefulWidget {
   State<SupportAdminScreen> createState() => _SupportAdminScreenState();
 }
 
-class _SupportAdminScreenState extends State<SupportAdminScreen> {
+class _SupportAdminScreenState extends State<SupportAdminScreen>
+    with SingleTickerProviderStateMixin {
+  /// Dua urusan yang berbeda, dan dipisah karena memang berbeda.
+  ///
+  /// Pengaduan punya tahapan, menuntut keputusan, dan bisa selesai. Chat
+  /// cuma percakapan. Menaruhnya di satu daftar membuat yang menuntut
+  /// jawaban tenggelam di bawah yang sekadar bertanya.
+  late final TabController _tab = TabController(length: 2, vsync: this);
+
   final _repo = SupportRepository();
   StreamSubscription<List<SupportTicket>>? _sub;
 
@@ -88,16 +96,20 @@ class _SupportAdminScreenState extends State<SupportAdminScreen> {
 
   @override
   void dispose() {
+    _tab.dispose();
     _sub?.cancel();
     _cari.dispose();
     super.dispose();
   }
 
-  List<SupportTicket> get _tampil {
+  List<SupportTicket> _daftar({required bool chat}) {
     final q = _cari.text.trim().toLowerCase();
     return [
       for (final t in _semua)
-        if ((!_sembunyikanTutup || t.terbuka) &&
+        if (t.chatBebas == chat &&
+            // Chat tidak pernah ditutup, jadi saringannya tidak berlaku
+            // di sana.
+            (chat || !_sembunyikanTutup || t.terbuka) &&
             (q.isEmpty ||
                 t.subject.toLowerCase().contains(q) ||
                 t.namaTampil.toLowerCase().contains(q) ||
@@ -106,12 +118,61 @@ class _SupportAdminScreenState extends State<SupportAdminScreen> {
     ];
   }
 
+  int _belumDibacaDi({required bool chat}) => SupportRepository.belumDibaca(
+        [for (final t in _semua) if (t.chatBebas == chat) t],
+        sebagaiAdmin: true,
+      );
+
   int get _belumDibaca =>
       SupportRepository.belumDibaca(_semua, sebagaiAdmin: true);
 
+  /// Angka di judul tab. Kosong kalau tidak ada yang menunggu — tab yang
+  /// selalu berangka membuat angkanya berhenti berarti apa-apa.
+  String _penanda({required bool chat}) {
+    final n = _belumDibacaDi(chat: chat);
+    return n == 0 ? '' : ' ($n)';
+  }
+
+  Widget _daftarTiket({required bool chat, String? nama}) {
+    final muted = KaataTheme.mutedOf(context);
+    final daftar = _daftar(chat: chat);
+
+    if (daftar.isEmpty) {
+      return Center(
+        child: Text(
+          _cari.text.trim().isNotEmpty
+              ? 'Tidak ada yang cocok.'
+              : chat
+                  ? 'Belum ada chat masuk.'
+                  : 'Belum ada pengaduan masuk.',
+          style: TextStyle(color: muted),
+        ),
+      );
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.only(bottom: 16),
+      itemCount: daftar.length,
+      separatorBuilder: (_, __) => Divider(
+          height: 1, indent: 74, color: KaataTheme.borderOf(context)),
+      itemBuilder: (context, i) => _BarisChat(
+        tiket: daftar[i],
+        asal: daftar[i].asalTampil(_namaMerchant[daftar[i].restoId]),
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => SupportChatScreen(
+              ticketId: daftar[i].id,
+              sebagaiAdmin: true,
+              namaSaya: nama,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final muted = KaataTheme.mutedOf(context);
     final nama = context.read<AuthProvider>().employeeName;
 
     return Scaffold(
@@ -170,39 +231,21 @@ class _SupportAdminScreenState extends State<SupportAdminScreen> {
                           ),
                         ),
                       ),
+                      TabBar(
+                        controller: _tab,
+                        tabs: [
+                          Tab(text: 'Pengaduan${_penanda(chat: false)}'),
+                          Tab(text: 'Chat${_penanda(chat: true)}'),
+                        ],
+                      ),
                       Expanded(
-                        child: _tampil.isEmpty
-                            ? Center(
-                                child: Text(
-                                  _semua.isEmpty
-                                      ? 'Belum ada pengaduan masuk.'
-                                      : 'Tidak ada yang cocok.',
-                                  style: TextStyle(color: muted),
-                                ),
-                              )
-                            : ListView.separated(
-                                padding: const EdgeInsets.only(bottom: 16),
-                                itemCount: _tampil.length,
-                                separatorBuilder: (_, __) => Divider(
-                                    height: 1,
-                                    indent: 74,
-                                    color: KaataTheme.borderOf(context)),
-                                itemBuilder: (context, i) => _BarisChat(
-                                  tiket: _tampil[i],
-                                  asal: _tampil[i].asalTampil(
-                                      _namaMerchant[_tampil[i].restoId]),
-                                  onTap: () =>
-                                      Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (_) => SupportChatScreen(
-                                        ticketId: _tampil[i].id,
-                                        sebagaiAdmin: true,
-                                        namaSaya: nama,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
+                        child: TabBarView(
+                          controller: _tab,
+                          children: [
+                            _daftarTiket(chat: false, nama: nama),
+                            _daftarTiket(chat: true, nama: nama),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -242,7 +285,9 @@ class _BarisChat extends StatelessWidget {
   Widget build(BuildContext context) {
     final muted = KaataTheme.mutedOf(context);
     final baru = tiket.belumDibaca(sebagaiAdmin: true);
-    final warna = kSupportStatusWarna[tiket.status]!;
+    final warna = tiket.chatBebas
+        ? KaataTheme.brandOf(context)
+        : kSupportStatusWarna[tiket.status]!;
     final waktu = tiket.lastMessageAt ?? tiket.createdAt;
 
     return ListTile(
@@ -333,21 +378,24 @@ class _BarisChat extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 6),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                decoration: BoxDecoration(
-                  color: warna.withOpacity(0.13),
-                  borderRadius: BorderRadius.circular(6),
+              // Chat tidak punya tahapan — lencana statusnya dilepas,
+              // bukan diisi "Open" selamanya.
+              if (!tiket.chatBebas)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: warna.withOpacity(0.13),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    kSupportStatusLabel[tiket.status]!,
+                    style: TextStyle(
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.bold,
+                        color: warna),
+                  ),
                 ),
-                child: Text(
-                  kSupportStatusLabel[tiket.status]!,
-                  style: TextStyle(
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.bold,
-                      color: warna),
-                ),
-              ),
               if (baru)
                 Container(
                   width: 9,

@@ -210,9 +210,11 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
             if (t != null)
               Text(
                 widget.sebagaiAdmin
-                    ? '${t.namaTampil} • ${t.asalTampil(_namaMerchant)} • '
-                        '${kSupportStatusLabel[t.status]}'
-                    : kSupportStatusLabel[t.status]!,
+                    ? (t.chatBebas
+                        ? '${t.namaTampil} • ${t.asalTampil(_namaMerchant)}'
+                        : '${t.namaTampil} • ${t.asalTampil(_namaMerchant)} • '
+                            '${kSupportStatusLabel[t.status]}')
+                    : (t.chatBebas ? 'Chat' : kSupportStatusLabel[t.status]!),
                 style: const TextStyle(fontSize: 11, color: Colors.white70),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -220,7 +222,10 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
           ],
         ),
         actions: [
-          if (t != null && widget.sebagaiAdmin)
+          // Chat bebas tidak punya tahapan dan tidak pernah "selesai".
+          // Memberinya tombol status dan tombol tutup membuat orang yang
+          // cuma bertanya merasa sedang mengurus perkara.
+          if (t != null && widget.sebagaiAdmin && !t.chatBebas)
             PopupMenuButton<SupportStatus>(
               icon: const Icon(Icons.flag_outlined),
               tooltip: 'Ubah status',
@@ -240,7 +245,7 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
                   ),
               ],
             ),
-          if (t != null && terbuka)
+          if (t != null && terbuka && !t.chatBebas)
             IconButton(
               icon: const Icon(Icons.check_circle_outline),
               tooltip: 'Tutup pengaduan',
@@ -250,7 +255,7 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
       ),
       body: Column(
         children: [
-          if (t != null) _KepalaStatus(tiket: t),
+          if (t != null && !t.chatBebas) _KepalaStatus(tiket: t),
           Expanded(
             child: _pesan.isEmpty
                 ? const Center(child: CircularProgressIndicator())
@@ -304,7 +309,7 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
               onHapusFoto: () => setState(() => _foto = null),
               onKirim: _kirim,
             )
-          else
+          else if (t != null && !t.chatBebas)
             _Ditutup(tiket: t),
         ],
       ),

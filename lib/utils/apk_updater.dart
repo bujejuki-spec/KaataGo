@@ -37,9 +37,30 @@ class ApkUpdater {
   /// untuk sesuatu yang justru diminta orangnya.
   bool _cancelled = false;
 
+  /// Dijeda orangnya, bukan dibatalkan.
+  ///
+  /// Bedanya cuma satu, dan itu yang penting: berkas separuhnya
+  /// dipertahankan. Menjeda 80 MB di angka 70% lalu memulainya lagi dari
+  /// nol bukan jeda — itu pembatalan yang memakai kata yang salah.
+  bool _paused = false;
+
+  /// Berapa byte yang sudah turun dan tersimpan.
+  int _received = 0;
+
+  /// Ada berkas separuh yang bisa dilanjutkan.
+  bool get bisaDilanjutkan => _received > 0;
+
   /// Membatalkan unduhan yang sedang berjalan.
   void cancel() {
     _cancelled = true;
+    _received = 0;
+    _client?.close();
+    _client = null;
+  }
+
+  /// Menjeda unduhan, menyisakan berkas separuhnya.
+  void pause() {
+    _paused = true;
     _client?.close();
     _client = null;
   }
@@ -69,12 +90,14 @@ class ApkUpdater {
       file = await _download(url);
     } on _Cancelled {
       return null;
+    } on _Paused {
+      return null;
     } catch (e) {
       // Pembatalan menang atas galat apa pun. Yang muncul saat koneksi
       // ditutup di tengah jalan memang galat jaringan yang sah, tapi
       // menyampaikannya ke orang yang baru saja menekan Batalkan cuma
       // membuat tindakannya sendiri terlihat seperti kerusakan.
-      if (_cancelled) return null;
+      if (_cancelled || _paused) return null;
       return downloadErrorMessage(e);
     }
 
@@ -99,39 +122,71 @@ class ApkUpdater {
     final client = http.Client();
     _client = client;
     _cancelled = false;
+    _paused = false;
     try {
-      final response = await client.send(http.Request('GET', Uri.parse(url)));
-      if (response.statusCode != 200) {
-        throw _BadStatus(response.statusCode);
-      }
-
       // Disimpan di folder milik aplikasi sendiri, bukan folder Unduhan
       // bersama: berkas 80 MB yang tertinggal di Unduhan akan
       // membingungkan orangnya berbulan-bulan kemudian, sementara yang
       // di sini ikut terhapus saat aplikasinya dicopot.
       final dir = await getApplicationSupportDirectory();
       final file = File('${dir.path}/KaataGo-update.apk');
-      // Sisa unduhan yang gagal sebelumnya harus dibuang dulu —
-      // menambahkan byte baru ke belakangnya menghasilkan berkas rusak
-      // yang gagal dipasang tanpa sebab yang jelas.
-      if (await file.exists()) await file.delete();
 
-      final sink = file.openWrite();
-      final total = response.contentLength;
-      var received = 0;
+      // Berkas separuh dari jeda sebelumnya dilanjutkan, bukan diulang.
+      //
+      // Panjangnya diperiksa, bukan dipercaya dari ingatan: aplikasi
+      // bisa mati di antara jeda dan lanjut, dan menambahkan byte baru
+      // ke berkas yang panjangnya tidak sesuai catatan menghasilkan APK
+      // rusak yang gagal dipasang tanpa sebab yang jelas.
+      var lanjut = _received > 0 &&
+          await file.exists() &&
+          await file.length() == _received;
+      if (!lanjut) {
+        if (await file.exists()) await file.delete();
+        _received = 0;
+      }
+
+      final request = http.Request('GET', Uri.parse(url));
+      if (lanjut) request.headers['Range'] = 'bytes=$_received-';
+      var response = await client.send(request);
+
+      // Server yang menolak melanjutkan menjawab 200 berisi seluruh
+      // berkas, bukan 206 berisi sisanya. Menambahkannya ke belakang
+      // berkas separuh akan menghasilkan berkas dobel.
+      if (lanjut && response.statusCode == 200) {
+        lanjut = false;
+        _received = 0;
+        if (await file.exists()) await file.delete();
+      } else if (response.statusCode != 200 && response.statusCode != 206) {
+        throw _BadStatus(response.statusCode);
+      }
+
+      final sisa = response.contentLength;
+      final total = sisa == null ? null : _received + sisa;
+
+      final sink =
+          file.openWrite(mode: lanjut ? FileMode.append : FileMode.write);
 
       await for (final chunk in response.stream) {
         if (_cancelled) {
           await sink.close();
           await file.delete();
+          _received = 0;
           throw const _Cancelled();
         }
+        if (_paused) {
+          // Berkasnya sengaja TIDAK dihapus. Itu seluruh gunanya jeda.
+          await sink.flush();
+          await sink.close();
+          throw const _Paused();
+        }
         sink.add(chunk);
-        received += chunk.length;
-        onProgress?.call(total == null || total == 0 ? null : received / total);
+        _received += chunk.length;
+        onProgress?.call(
+            total == null || total == 0 ? null : _received / total);
       }
       await sink.flush();
       await sink.close();
+      _received = 0;
       return file;
     } finally {
       _client?.close();
@@ -176,6 +231,11 @@ String downloadErrorMessage(Object e) {
   return 'Unduhan gagal. Coba lagi sebentar lagi.';
 }
 
+
+/// Dijeda orangnya. Berkas separuhnya dipertahankan.
+class _Paused implements Exception {
+  const _Paused();
+}
 
 class _Cancelled implements Exception {
   const _Cancelled();

@@ -2,17 +2,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/support_ticket.dart';
 
-/// Judul percakapan bebas dengan KaataGo Admin.
-///
-/// Bukan pengaduan — sekadar bertanya. Dibedakan lewat judulnya, bukan
-/// lewat kolom baru: satu kolom lagi berarti satu migrasi lagi, dan yang
-/// dibedakannya cuma kalimat di kepala percakapan.
-///
-/// Yang sudah terbuka dipakai lagi, bukan dibuat baru tiap kali. Chat
-/// yang melahirkan tiket baru tiap kali dibuka akan mengubur pengaduan
-/// sungguhan di bawah puluhan percakapan berisi satu sapaan.
-const kSubjekChatUmum = 'Chat dengan KaataGo Admin';
-
 class SupportRepository {
   final _client = Supabase.instance.client;
 

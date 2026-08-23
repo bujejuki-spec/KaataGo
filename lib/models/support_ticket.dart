@@ -1,5 +1,15 @@
 import 'package:flutter/material.dart';
 
+/// Judul percakapan bebas dengan KaataGo Admin.
+///
+/// Bukan pengaduan — sekadar bertanya. Dibedakan lewat judulnya, bukan
+/// lewat kolom baru: satu kolom lagi berarti satu migrasi lagi, dan yang
+/// dibedakannya cuma kalimat di kepala percakapan.
+///
+/// Ditaruh di berkas model supaya lapisan mana pun bisa membacanya
+/// tanpa memanggil repositori.
+const kSubjekChatUmum = 'Chat dengan KaataGo Admin';
+
 /// Tahap sebuah pengaduan.
 ///
 /// [confirmCustomer] bukan sekadar "menunggu" — ia satu-satunya status
@@ -84,6 +94,13 @@ class SupportTicket {
   });
 
   bool get terbuka => status != SupportStatus.closed;
+
+  /// Percakapan bebas, bukan pengaduan.
+  ///
+  /// Tidak punya tahapan dan tidak pernah "selesai" — ia obrolan biasa.
+  /// Memberinya status Open dan Confirm Customer membuat orang yang
+  /// cuma bertanya merasa sedang mengurus perkara.
+  bool get chatBebas => subject == kSubjekChatUmum;
 
   /// Dari siapa pengaduan ini, dari sudut pandang KaataGo Admin.
   ///

@@ -29,11 +29,21 @@ class AppUpdater extends ChangeNotifier {
 
   bool downloading = false;
 
+  /// Dijeda, dan berkas separuhnya menunggu dilanjutkan.
+  bool paused = false;
+
   /// Keterangan galat terakhir, atau null kalau tidak ada.
   String? error;
 
   /// Persen bulat untuk ditampilkan, atau null kalau belum diketahui.
   int? get percent => progress == null ? null : (progress! * 100).round();
+
+  /// Persen terakhir yang sudah dikirim ke notifikasi Android.
+  ///
+  /// Tiap potongan data memanggil onProgress — ribuan kali untuk 83 MB —
+  /// dan mengirim semuanya ke Android berarti membanjiri antrean
+  /// notifikasi demi angka yang sama.
+  int? _lastPercent;
 
   Future<void> start(String url) async {
     if (downloading) return;
@@ -42,27 +52,35 @@ class AppUpdater extends ChangeNotifier {
     error = null;
     _noticeTimer?.cancel();
     notice = null;
+    paused = false;
     progress = 0;
-    downloading = true;
-    notifyListeners();
-
-    // Notifikasi diperbarui hanya saat angka persennya benar-benar
-    // berubah. Tiap potongan data memanggil onProgress — ribuan kali
-    // untuk 83 MB — dan mengirim semuanya ke Android berarti membanjiri
-    // antrean notifikasi demi angka yang sama.
-    int? lastPercent;
-    NotificationService.instance.showDownloadProgress(0);
 
     final updater = ApkUpdater(onProgress: (p) {
       progress = p;
       final now = p == null ? null : (p * 100).round();
-      if (now != lastPercent) {
-        lastPercent = now;
+      if (now != _lastPercent) {
+        _lastPercent = now;
         NotificationService.instance.showDownloadProgress(now);
       }
       notifyListeners();
     });
     _updater = updater;
+
+    await _jalankan(url, updater);
+  }
+
+  /// Menjalankan unduhannya, entah dari nol atau melanjutkan yang dijeda.
+  ///
+  /// Dipisah dari [start] supaya melanjutkan memakai ApkUpdater yang
+  /// sama — di situlah tersimpan berapa byte yang sudah turun, dan
+  /// membuat yang baru berarti mengulang dari nol dengan nama "lanjut".
+  Future<void> _jalankan(String url, ApkUpdater updater) async {
+    downloading = true;
+    error = null;
+    notifyListeners();
+
+    _lastPercent = percent;
+    NotificationService.instance.showDownloadProgress(_lastPercent ?? 0);
 
     final failure = await updater.downloadAndInstall(
       url,
@@ -77,11 +95,17 @@ class AppUpdater extends ChangeNotifier {
           NotificationService.instance.showDownloadReady(path),
     );
 
-    _updater = null;
+    final dijeda = paused;
     downloading = false;
-    progress = null;
+    // Kemajuannya dipertahankan saat dijeda — angka yang kembali ke nol
+    // membuat orang mengira unduhannya hangus, dan itu justru kebalikan
+    // dari yang dijanjikan tombol Jeda.
+    if (!dijeda) {
+      _updater = null;
+      progress = null;
+    }
     error = failure;
-    if (failure != null) {
+    if (failure != null || dijeda) {
       NotificationService.instance.cancelDownloadNotification();
     }
     notifyListeners();
@@ -92,6 +116,70 @@ class AppUpdater extends ChangeNotifier {
     final url = _url;
     if (url == null) return;
     await start(url);
+  }
+
+  /// Menjeda unduhan. Berkas separuhnya tetap tersimpan.
+  void pause() {
+    if (!downloading) return;
+    paused = true;
+    _updater?.pause();
+    notifyListeners();
+  }
+
+  /// Melanjutkan dari byte terakhir yang sudah turun.
+  ///
+  /// Kalau servernya menolak melanjutkan, unduhannya dimulai dari nol —
+  /// dan itu ditangani di lapisan bawah, bukan di sini.
+  Future<void> resume() async {
+    final url = _url;
+    if (url == null || downloading) return;
+    final updater = _updater;
+    paused = false;
+    if (updater == null) {
+      await start(url);
+      return;
+    }
+    await _jalankan(url, updater);
+  }
+
+  @visibleForTesting
+  void setUjiGagal(String pesan) {
+    downloading = false;
+    paused = false;
+    progress = null;
+    error = pesan;
+    notice = null;
+    notifyListeners();
+  }
+
+  @visibleForTesting
+  void setUjiBerjalan(double kemajuan) {
+    downloading = true;
+    paused = false;
+    error = null;
+    notice = null;
+    progress = kemajuan;
+    notifyListeners();
+  }
+
+  @visibleForTesting
+  void setUjiDijeda(double kemajuan) {
+    downloading = false;
+    paused = true;
+    error = null;
+    notice = null;
+    progress = kemajuan;
+    notifyListeners();
+  }
+
+  @visibleForTesting
+  void resetUji() {
+    downloading = false;
+    paused = false;
+    error = null;
+    notice = null;
+    progress = null;
+    notifyListeners();
   }
 
   /// Kabar singkat yang hilang sendiri — bukan galat.
@@ -106,6 +194,7 @@ class AppUpdater extends ChangeNotifier {
 
   void cancel() {
     NotificationService.instance.cancelDownloadNotification();
+    paused = false;
     _updater?.cancel();
     _updater = null;
     downloading = false;

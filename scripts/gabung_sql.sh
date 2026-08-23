@@ -83,6 +83,7 @@ FILES=(
   support_tickets.sql
   support_push.sql
   support_auto_reply.sql
+  support_chat_rules.sql
 )
 
 {

@@ -70,7 +70,12 @@ class _SupportFabState extends State<SupportFab> {
 
   Future<void> _buka() async {
     final auth = context.read<AuthProvider>();
-    final adaRiwayat = _tiket.isNotEmpty;
+    // Chat bebas tidak ikut dihitung di sini: ia bukan pengaduan, tidak
+    // punya status, dan pintunya sudah ada sendiri di atas.
+    final pengaduan = [for (final t in _tiket) if (!t.chatBebas) t];
+    final adaRiwayat = pengaduan.isNotEmpty;
+    final belumDibacaPengaduan =
+        SupportRepository.belumDibaca(pengaduan, sebagaiAdmin: false);
 
     final pilihan = await showModalBottomSheet<String>(
       context: context,
@@ -119,8 +124,8 @@ class _SupportFabState extends State<SupportFab> {
               title: const Text('Lihat Status Pengaduan'),
               subtitle: Text(
                 adaRiwayat
-                    ? '${_tiket.length} pengaduan'
-                        '${_belumDibaca > 0 ? ' • $_belumDibaca belum dibaca' : ''}'
+                    ? '${pengaduan.length} pengaduan'
+                        '${belumDibacaPengaduan > 0 ? ' • $belumDibacaPengaduan belum dibaca' : ''}'
                     : 'Belum ada pengaduan',
                 style: const TextStyle(fontSize: 11.5),
               ),
@@ -273,7 +278,11 @@ class _SupportTicketListScreenState extends State<SupportTicketListScreen> {
       final t = await _repo.milikSaya();
       if (!mounted) return;
       setState(() {
-        _tiket = t;
+        // Chat bebas tidak ditampilkan di sini. Ia percakapan biasa
+        // tanpa tahapan — menaruhnya di daftar berlencana "Open" membuat
+        // orang yang cuma bertanya merasa punya perkara yang belum
+        // selesai.
+        _tiket = [for (final x in t) if (!x.chatBebas) x];
         _memuat = false;
       });
     } catch (_) {

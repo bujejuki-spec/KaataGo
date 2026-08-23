@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../services/app_updater.dart';
+import '../services/notification_router.dart';
 import '../theme.dart';
 
 /// Penanda mengambang untuk unduhan pembaruan yang sedang berjalan.
@@ -32,6 +33,7 @@ class UpdateDownloadBanner extends StatelessWidget {
               builder: (context, _) {
                 final updater = AppUpdater.instance;
                 if (!updater.downloading &&
+                    !updater.paused &&
                     updater.error == null &&
                     updater.notice == null) {
                   return const SizedBox.shrink();
@@ -54,7 +56,8 @@ class _Pill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final failed = !updater.downloading && updater.error != null;
-    final notice = !updater.downloading && updater.error == null
+    final paused = !updater.downloading && updater.paused;
+    final notice = !updater.downloading && !paused && updater.error == null
         ? updater.notice
         : null;
     final percent = updater.percent;
@@ -75,6 +78,9 @@ class _Pill extends StatelessWidget {
           // rincian yang perlu dibaca — yang terjadi sudah tertulis
           // seluruhnya di kalimat itu sendiri.
           onTap: notice != null ? null : () => showUpdateDownloadDialog(context),
+          // Sasaran ketuknya diperbesar sedikit ke bawah. Pil ini duduk
+          // persis di atas bilah gestur Android, dan tepi yang mepet
+          // membuat sebagian ketukan diambil sistem.
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             child: Row(
@@ -82,6 +88,9 @@ class _Pill extends StatelessWidget {
               children: [
                 if (failed)
                   const Icon(Icons.error_outline, color: Colors.white, size: 18)
+                else if (paused)
+                  const Icon(Icons.pause_circle_outline,
+                      color: Colors.white, size: 18)
                 else if (notice != null)
                   const Icon(Icons.cancel_outlined, color: Colors.white, size: 18)
                 else
@@ -101,10 +110,13 @@ class _Pill extends StatelessWidget {
                 Text(
                   failed
                       ? 'Unduhan gagal — ketuk untuk lihat'
-                      : notice ??
-                          (percent == null
-                              ? 'Mengunduh pembaruan…'
-                              : 'Mengunduh pembaruan $percent%'),
+                      : paused
+                          ? 'Unduhan dijeda${percent == null ? '' : ' $percent%'}'
+                              ' — ketuk untuk lanjut'
+                          : notice ??
+                              (percent == null
+                                  ? 'Mengunduh pembaruan…'
+                                  : 'Mengunduh pembaruan $percent%'),
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
@@ -125,8 +137,18 @@ class _Pill extends StatelessWidget {
 /// Dipakai dua tempat — penanda mengambang dan tombol di dalam
 /// pengumumannya — supaya keduanya menampilkan hal yang sama persis.
 Future<void> showUpdateDownloadDialog(BuildContext context) {
+  // Konteks Navigator diambil dari kunci global, bukan dari yang
+  // dioper.
+  //
+  // Penanda mengambangnya hidup di `builder` MaterialApp — DI ATAS
+  // Navigator, supaya ia tetap terlihat di rute mana pun. Akibatnya
+  // konteksnya sendiri tidak punya Navigator di atasnya, dan showDialog
+  // dari sana melempar "Navigator operation requested with a context
+  // that does not include a Navigator". Di rilis, galat itu tidak
+  // menampilkan apa pun — pilnya cuma terlihat tidak bisa diketuk.
+  final nav = navigatorKey.currentContext ?? context;
   return showDialog<void>(
-    context: context,
+    context: nav,
     builder: (dialogContext) => AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       title: const Text('Unduh Pembaruan', style: TextStyle(fontSize: 17)),
@@ -146,7 +168,7 @@ Future<void> showUpdateDownloadDialog(BuildContext context) {
             );
           }
 
-          if (!updater.downloading) {
+          if (!updater.downloading && !updater.paused) {
             return const Text(
               'Unduhan sudah selesai. Layar pemasang akan terbuka sendiri; '
               'kalau tidak, buka berkasnya dari notifikasi unduhan.',
@@ -159,7 +181,10 @@ Future<void> showUpdateDownloadDialog(BuildContext context) {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                percent == null ? 'Mengunduh…' : 'Mengunduh $percent%',
+                percent == null
+                    ? (updater.paused ? 'Dijeda' : 'Mengunduh…')
+                    : '${updater.paused ? 'Dijeda pada' : 'Mengunduh'} '
+                        '$percent%',
                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
               ),
               const SizedBox(height: 12),
@@ -169,8 +194,12 @@ Future<void> showUpdateDownloadDialog(BuildContext context) {
               ),
               const SizedBox(height: 12),
               Text(
-                'Berkasnya sekitar 80 MB. Unduhan tetap berjalan walau '
-                'layar ini ditutup.',
+                updater.paused
+                    ? 'Yang sudah turun tetap tersimpan. Melanjutkan '
+                        'meneruskan dari titik ini, bukan mengulang dari '
+                        'nol.'
+                    : 'Berkasnya sekitar 80 MB. Unduhan tetap berjalan '
+                        'walau layar ini ditutup.',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 11.5, color: KaataTheme.mutedOf(context)),
               ),
@@ -184,10 +213,26 @@ Future<void> showUpdateDownloadDialog(BuildContext context) {
           animation: AppUpdater.instance,
           builder: (context, _) {
             final updater = AppUpdater.instance;
-            return Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            final berjalan = updater.downloading;
+            final dijeda = updater.paused && !berjalan;
+
+            return Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 4,
               children: [
-                if (updater.downloading)
+                if (berjalan)
+                  TextButton.icon(
+                    onPressed: updater.pause,
+                    icon: const Icon(Icons.pause, size: 17),
+                    label: const Text('Jeda'),
+                  ),
+                if (dijeda)
+                  TextButton.icon(
+                    onPressed: updater.resume,
+                    icon: const Icon(Icons.play_arrow, size: 17),
+                    label: const Text('Lanjutkan'),
+                  ),
+                if (berjalan || dijeda)
                   TextButton(
                     onPressed: () {
                       updater.cancel();
@@ -204,19 +249,17 @@ Future<void> showUpdateDownloadDialog(BuildContext context) {
                     },
                     child: const Text('Coba Lagi'),
                   ),
-                // "Lanjutkan", bukan "Tutup", selagi unduhannya jalan.
-                //
-                // Yang membuka dialog ini hampir selalu sedang menimbang
-                // satu hal: batal atau teruskan. "Tutup" tidak menjawab
-                // itu — ia cuma menyebut apa yang terjadi pada
-                // kotaknya, dan menyisakan keraguan apakah unduhannya
-                // ikut berhenti.
+                // Selalu "Tutup" — ia menyebut apa yang terjadi pada
+                // kotaknya, dan tidak lagi rancu sejak Jeda ada. Dulu
+                // tombolnya berbunyi "Lanjutkan" selagi unduhan jalan,
+                // dan sekarang kata itu sudah punya arti lain: benar
+                // benar melanjutkan yang dijeda.
                 TextButton(
                   onPressed: () {
-                    if (!updater.downloading) updater.clearError();
+                    if (!berjalan && !dijeda) updater.clearError();
                     Navigator.pop(dialogContext);
                   },
-                  child: Text(updater.downloading ? 'Lanjutkan' : 'Tutup'),
+                  child: const Text('Tutup'),
                 ),
               ],
             );
