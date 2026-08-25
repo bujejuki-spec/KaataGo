@@ -132,8 +132,11 @@ class _ProductTabState extends State<_ProductTab> {
           if (products.isEmpty) {
             return const Center(child: Text('Belum ada produk. Tambah dulu yuk.'));
           }
-          return ListView.builder(
-            padding: const EdgeInsets.only(bottom: kFabSafeBottom),
+          // Kartu, sama seperti Level. Lihat catatan di
+          // category_management_screen.dart.
+          return ResponsiveCenter(
+            child: ListView.builder(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, kFabSafeBottom),
             itemCount: products.length,
             itemBuilder: (context, index) {
               final p = products[index];
@@ -143,7 +146,9 @@ class _ProductTabState extends State<_ProductTab> {
                 if (_meta.diskonProductIds.contains(p.id))
                   ProductBadge.diskon,
               ];
-              return ListTile(
+              return Card(
+                margin: const EdgeInsets.only(bottom: 10),
+                child: ListTile(
                 isThreeLine: badges.isNotEmpty || stats != null,
                 title: Row(
                   children: [
@@ -250,8 +255,10 @@ class _ProductTabState extends State<_ProductTab> {
                     await provider.deleteProduct(p.id);
                   }
                 },
+              ),
               );
             },
+          ),
           );
         },
       ),

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
+import 'billing_screen.dart';
 import 'cash_deposit_screen.dart';
 import 'cashier_shift_screen.dart';
 import 'category_management_screen.dart';
@@ -20,6 +22,7 @@ import 'market_report_screen.dart';
 import 'merchant_report_screen.dart';
 import 'pending_payment_screen.dart';
 import 'product_list_screen.dart';
+import 'payment_info_screen.dart';
 import 'promo_banner_screen.dart';
 import 'publish_announcement_screen.dart';
 import 'restaurant_info_screen.dart';
@@ -49,6 +52,17 @@ class MenuWeb {
     this.kelompok,
   });
 }
+
+/// Tagihan langganan butuh tahu cabang mana yang sedang dibuka.
+Widget _tagihan() => Builder(builder: (context) {
+      final restoId = context.watch<AuthProvider>().restoId;
+      if (restoId == null) {
+        return const Scaffold(
+          body: Center(child: Text('Pilih merchant dulu.')),
+        );
+      }
+      return BillingScreen(restoId: restoId);
+    });
 
 /// Kategori dan Level berdiri sendiri di sidebar, tanpa induk Kelola
 /// Produk yang biasanya memuatkan datanya lebih dulu.
@@ -186,6 +200,16 @@ const _owner = <MenuWeb>[
     layar: FinanceReportScreen.new,
   ),
   MenuWeb(
+    ikon: Icons.sync_alt,
+    judul: 'Pencairan Gateway',
+    layar: FinanceGatewaySettlementScreen.new,
+  ),
+  MenuWeb(
+    ikon: Icons.receipt_long_outlined,
+    judul: 'Tagihan Langganan',
+    layar: _tagihan,
+  ),
+  MenuWeb(
     kelompok: 'Pengelolaan',
     ikon: Icons.inventory_2_outlined,
     judul: 'Kelola Produk',
@@ -226,6 +250,11 @@ const _owner = <MenuWeb>[
     ikon: Icons.qr_code_2,
     judul: 'QR Meja',
     layar: TableQrGeneratorScreen.new,
+  ),
+  MenuWeb(
+    ikon: Icons.campaign_outlined,
+    judul: 'Kirim Pengumuman',
+    layar: PublishAnnouncementScreen.new,
   ),
   MenuWeb(
     ikon: Icons.inbox_outlined,
@@ -315,6 +344,11 @@ const _admin = <MenuWeb>[
     layar: SettingsScreen.new,
   ),
   MenuWeb(
+    ikon: Icons.campaign_outlined,
+    judul: 'Kirim Pengumuman',
+    layar: PublishAnnouncementScreen.new,
+  ),
+  MenuWeb(
     ikon: Icons.inbox_outlined,
     judul: 'Kotak Masuk',
     layar: InboxScreen.new,
@@ -363,6 +397,17 @@ const _finance = <MenuWeb>[
     ikon: Icons.sync_alt,
     judul: 'Pencairan Gateway',
     layar: FinanceGatewaySettlementScreen.new,
+  ),
+  MenuWeb(
+    kelompok: 'Langganan & Pengaturan',
+    ikon: Icons.receipt_long_outlined,
+    judul: 'Tagihan Langganan',
+    layar: _tagihan,
+  ),
+  MenuWeb(
+    ikon: Icons.payments_outlined,
+    judul: 'Pengaturan Pembayaran',
+    layar: PaymentInfoScreen.new,
   ),
   MenuWeb(
     ikon: Icons.inbox_outlined,

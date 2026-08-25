@@ -7,6 +7,7 @@ import '../utils/logout_confirm.dart';
 import '../widgets/kaata_logo.dart';
 import '../widgets/language_theme_toggle.dart';
 import '../widgets/resto_switcher.dart';
+import '../widgets/support_fab.dart';
 import 'web_menu.dart';
 
 /// Kerangka versi web: menu di sidebar, isinya di sebelah kanan.
@@ -71,6 +72,13 @@ class _WebShellScreenState extends State<WebShellScreen> {
 
         if (!lebar) {
           return Scaffold(
+            // KaataGo Support menempel di beranda tiap peran di versi
+            // HP — beranda yang tidak dipakai sama sekali di web. Tanpa
+            // dipasang di sini, pegawai merchant yang bekerja dari
+            // konsol web tidak punya satu pun jalan untuk mengadu atau
+            // bertanya, dan tidak ada apa pun di layar yang memberi
+            // tahu bahwa jalan itu ada di aplikasi HP-nya.
+            floatingActionButton: const SupportFab(),
             appBar: AppBar(title: Text(menu[terpilih].judul)),
             drawer: Drawer(
               child: _Sidebar(
@@ -87,6 +95,7 @@ class _WebShellScreenState extends State<WebShellScreen> {
         }
 
         return Scaffold(
+          floatingActionButton: const SupportFab(),
           body: Row(
             children: [
               SizedBox(

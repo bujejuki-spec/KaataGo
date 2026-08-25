@@ -55,13 +55,24 @@ class CategoryManagementScreen extends StatelessWidget {
                   textAlign: TextAlign.center),
             );
           }
-          return ListView.builder(
-            padding: const EdgeInsets.only(bottom: kFabSafeBottom),
+          // Kartu, sama seperti tab Level di sebelahnya.
+          //
+          // Ketiganya — Produk, Kategori, Level — adalah daftar yang
+          // isinya dikelola dengan cara yang sama, dan sampai sekarang
+          // hanya Level yang terlihat begitu. Di layar lebar bedanya
+          // makin kentara: baris polos membentang dari tepi ke tepi
+          // tanpa apa pun yang menandai di mana satu item berakhir.
+          return ResponsiveCenter(
+            child: ListView.builder(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, kFabSafeBottom),
             itemCount: categories.length,
             itemBuilder: (context, index) {
               final c = categories[index];
-              return ListTile(
-                title: Text(c.name),
+              return Card(
+                margin: const EdgeInsets.only(bottom: 10),
+                child: ListTile(
+                title: Text(c.name,
+                    style: const TextStyle(fontWeight: FontWeight.w600)),
                 trailing: IconButton(
                   icon: const Icon(Icons.delete_outline),
                   onPressed: () async {
@@ -86,8 +97,10 @@ class CategoryManagementScreen extends StatelessWidget {
                     }
                   },
                 ),
+              ),
               );
             },
+          ),
           );
         },
       ),

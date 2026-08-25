@@ -244,6 +244,68 @@ void main() {
     });
   });
 
+  group('yang tidak boleh hilang di web', () {
+    final shell = File('lib/screens/web_shell_screen.dart').readAsStringSync();
+
+    // Tombolnya menempel di beranda tiap peran di versi HP — beranda
+    // yang tidak dipakai sama sekali di web. Tanpa dipasang di
+    // kerangkanya, pegawai merchant yang bekerja dari konsol tidak
+    // punya satu pun jalan untuk mengadu atau bertanya.
+    test('KaataGo Support ada di kedua bentuk kerangka', () {
+      expect('floatingActionButton: const SupportFab(),'.allMatches(shell).length, 2);
+    });
+
+    // Menu yang ada di beranda HP tapi tidak di sidebar berarti hilang
+    // sama sekali bagi yang bekerja dari web — tidak ada jalan lain
+    // menuju layarnya.
+    test('menu keuangan dan langganan tidak tertinggal', () {
+      final blokOwner = menu.substring(menu.indexOf('const _owner'));
+      final owner = blokOwner.substring(0, blokOwner.indexOf('\n];'));
+      for (final m in [
+        'Laporan Penjualan',
+        'Laporan Transaksi',
+        'Pencairan Gateway',
+        'Tagihan Langganan',
+        'Kirim Pengumuman',
+      ]) {
+        expect(owner, contains("judul: '$m'"), reason: 'Owner kehilangan $m');
+      }
+
+      final blokFinance = menu.substring(menu.indexOf('const _finance'));
+      final finance = blokFinance.substring(0, blokFinance.indexOf('\n];'));
+      for (final m in ['Tagihan Langganan', 'Pengaturan Pembayaran']) {
+        expect(finance, contains("judul: '$m'"), reason: 'Finance kehilangan $m');
+      }
+
+      final blokAdmin = menu.substring(menu.indexOf('const _admin'));
+      final admin = blokAdmin.substring(0, blokAdmin.indexOf('\n];'));
+      expect(admin, contains("judul: 'Laporan Penjualan'"));
+      expect(admin, contains("judul: 'Kirim Pengumuman'"));
+    });
+
+    // Tagihan langganan butuh tahu cabang mana yang sedang dibuka.
+    test('tagihan langganan tidak dibuka tanpa merchant', () {
+      expect(menu, contains("if (restoId == null)"));
+      expect(menu, contains('BillingScreen(restoId: restoId)'));
+    });
+  });
+
+  // Produk, Kategori, dan Level adalah daftar yang dikelola dengan cara
+  // yang sama, dan sampai sekarang hanya Level yang terlihat begitu.
+  group('daftar katalog seragam', () {
+    for (final f in [
+      'product_list_screen',
+      'category_management_screen',
+      'level_management_screen',
+    ]) {
+      test('$f: kartu, dan lebarnya dibatasi', () {
+        final isi = File('lib/screens/$f.dart').readAsStringSync();
+        expect(isi, contains('ResponsiveCenter('), reason: f);
+        expect(isi, contains('Card('), reason: f);
+      });
+    }
+  });
+
   group('yang dimatikan di web', () {
     test('notifikasi dorong dan notifikasi sistem', () {
       for (final f in ['push_service', 'notification_service']) {
