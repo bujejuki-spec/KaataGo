@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/widgets.dart';
 import 'notification_router.dart';
 import 'dart:io';
@@ -56,6 +57,15 @@ class PushService {
 
   Future<void> init() async {
     if (_ready) return;
+    // Notifikasi dorong tidak ada di web.
+    //
+    // Bukan sekadar tidak didukung: konsol web dibuka di depan layar
+    // yang sedang ditatap orangnya, dan yang dikabarkan notifikasi
+    // justru hal yang terjadi saat aplikasinya TIDAK dibuka.
+    if (kIsWeb) {
+      _ready = true;
+      return;
+    }
     try {
       await Firebase.initializeApp();
       _token = await FirebaseMessaging.instance.getToken();

@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import '../db/promo_banner_repository.dart';
 import '../models/promo_banner.dart';
 import '../theme.dart';
+import '../utils/lebar_web.dart';
 
 /// Banner promo resto di bagian atas halaman menu.
 ///
@@ -107,7 +108,7 @@ class _PromoBannerCarouselState extends State<PromoBannerCarousel> {
     showDialog<void>(
       context: context,
       builder: (dialogContext) => Dialog(
-        insetPadding: const EdgeInsets.all(16),
+        insetPadding: insetDialogWeb(context, minimal: 16, vertikal: 16),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         clipBehavior: Clip.antiAlias,
         child: Column(

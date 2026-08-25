@@ -22,6 +22,7 @@ import '../providers/auth_provider.dart';
 import '../utils/field_rules.dart';
 import '../widgets/app_toast.dart';
 import '../widgets/required_label.dart';
+import '../utils/lebar_web.dart';
 
 class ProductFormScreen extends StatefulWidget {
   final Product? existing;
@@ -345,7 +346,12 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
             ),
         ],
       ),
-      body: Padding(
+      // Kotak fotonya setinggi 160 piksel dan selebar isi. Tanpa batas
+      // lebar, di jendela 1600 piksel ia jadi pita 1600x160 dan
+      // gambarnya — yang dipasang dengan BoxFit.cover — terpotong jadi
+      // segaris tipis di tengah.
+      body: IsiWebTerpusat(
+        child: Padding(
         padding: const EdgeInsets.all(16),
         child: Form(
           key: _formKey,
@@ -819,6 +825,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                 ),
             ],
           ),
+        ),
         ),
       ),
     );

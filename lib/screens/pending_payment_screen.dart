@@ -15,6 +15,7 @@ import '../widgets/cash_payment_dialog.dart';
 import '../widgets/responsive.dart';
 import 'payment_qris_screen.dart';
 import 'payment_transfer_screen.dart';
+import '../utils/lebar_web.dart';
 
 /// Antrean pesanan yang dipesan sendiri dari HP pelanggan, dipilih bayar
 /// tunai, dan menunggu dilunasi di meja kasir.
@@ -511,7 +512,7 @@ class _OrderDetailDialog extends StatelessWidget {
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+      insetPadding: insetDialogWeb(context, vertikal: 40),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
         child: Column(

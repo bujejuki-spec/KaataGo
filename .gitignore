@@ -60,3 +60,8 @@ app.*.map.json
 
 # Berkas kunci sementara yang dibuat Word saat dokumennya dibuka.
 ~$*
+
+# Pekerja sqflite untuk web dibangkitkan `dart run sqflite_common_ffi_web:setup`,
+# bukan ditulis tangan — ikut versi paketnya, jadi tidak perlu masuk git.
+web/sqflite_sw.js
+web/sqlite3.wasm

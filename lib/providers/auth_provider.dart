@@ -137,12 +137,41 @@ class AuthProvider extends ChangeNotifier {
   /// screen instead of seeing the Customer/Karyawan choice again.
   Future<void> _bootstrap() async {
     final current = _supabase.auth.currentUser;
+
+    // Sesi yang baru saja lahir dari pengalihan login web belum pernah
+    // diperiksa terhadap pintu masuknya — pemeriksaannya tertinggal di
+    // halaman yang sudah ditinggalkan. Niatnya dititipkan sebelum
+    // berangkat, dan di sinilah ditagih.
+    final niat = await _ambilNiatTertunda();
+    if (current != null && niat != null) {
+      await _terimaSesi(current, niat);
+      isInitializing = false;
+      notifyListeners();
+      return;
+    }
+
     if (current != null) {
       user = current;
       await _checkEmployeeRole();
     }
     isInitializing = false;
     notifyListeners();
+  }
+
+  /// Membaca niat login yang dititipkan, sekaligus menghapusnya.
+  ///
+  /// Dihapus apa pun hasilnya. Niat yang tertinggal akan menagih
+  /// pemeriksaan pintu lagi pada pembukaan berikutnya, padahal
+  /// pemeriksaannya sudah lewat — dan sesi yang sah bisa ikut dibuang.
+  Future<LoginIntent?> _ambilNiatTertunda() async {
+    final prefs = await SharedPreferences.getInstance();
+    final tersimpan = prefs.getString(_kunciNiatTertunda);
+    if (tersimpan == null) return null;
+    await prefs.remove(_kunciNiatTertunda);
+    for (final n in LoginIntent.values) {
+      if (n.name == tersimpan) return n;
+    }
+    return null;
   }
 
   /// Signs in and then checks the account against [intent], refusing the
@@ -158,6 +187,11 @@ class AuthProvider extends ChangeNotifier {
   Future<void> signInWithGoogle({required LoginIntent intent}) async {
     lastError = null;
     try {
+      if (kIsWeb) {
+        await _mulaiLoginWeb(intent);
+        return;
+      }
+
       final googleUser = await _googleSignIn.signIn();
       if (googleUser == null) return; // user cancelled
 
@@ -175,41 +209,7 @@ class AuthProvider extends ChangeNotifier {
         accessToken: googleAuth.accessToken,
       );
       final signedIn = response.user;
-      final email = signedIn?.email;
-      if (signedIn == null || email == null) {
-        lastError = 'Gagal login: akun tidak punya alamat email.';
-        await _discardSession();
-        return;
-      }
-
-      final found = await _lookupEmployee(email);
-
-      if (found.blockedReason != null) {
-        lastError = found.blockedReason;
-        await _discardSession();
-        return;
-      }
-
-      if (intent == LoginIntent.employee && !found.isEmployee) {
-        lastError = 'Akun $email belum terdaftar sebagai karyawan merchant.\n'
-            'Minta admin untuk menambahkan email ini ke daftar karyawan.';
-        await _discardSession();
-        return;
-      }
-
-      if (intent == LoginIntent.customer && found.isEmployee) {
-        final label = _roleDisplayLabels[found.role] ?? 'karyawan';
-        lastError = 'Akun $email terdaftar sebagai $label merchant.\n'
-            'Masuk lewat pilihan "Merchant", bukan "Customer".';
-        await _discardSession();
-        return;
-      }
-
-      user = signedIn;
-      role = found.role;
-      restoIds = found.restoIds;
-      restoId = await _restoreSelectedResto(found.restoIds);
-      employeeName = found.name;
+      if (!await _terimaSesi(signedIn, intent)) return;
       notifyListeners();
     } catch (e) {
       lastError = 'Gagal login: $e';
@@ -217,11 +217,95 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  /// Kunci niat login yang dititipkan melewati pengalihan halaman.
+  static const _kunciNiatTertunda = 'niat_login_tertunda';
+
+  /// Login web: pengalihan halaman milik Supabase, bukan plugin Google.
+  ///
+  /// Di web, `google_sign_in` hanya mengembalikan access token — ID token
+  /// tidak pernah ada, dan `signInWithIdToken` justru itu yang
+  /// dibutuhkannya. Bukan salah pengaturan yang bisa diperbaiki di
+  /// konsol: jalur ID token di web memang hanya lewat tombol GIS, yang
+  /// bentuknya tidak bisa disamakan dengan tombol login aplikasi ini.
+  ///
+  /// Maka di web yang dipakai alur pengalihan Supabase sendiri.
+  /// Konsekuensinya halamannya benar-benar ditinggalkan lalu dimuat
+  /// ulang, jadi pilihan pintu masuknya — Customer atau Merchant — harus
+  /// dititipkan dulu; kalau tidak, sekembalinya tidak ada lagi yang tahu
+  /// tombol mana yang tadi ditekan, dan pemeriksaan pintunya jadi
+  /// terlewat sama sekali.
+  Future<void> _mulaiLoginWeb(LoginIntent intent) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_kunciNiatTertunda, intent.name);
+    await _supabase.auth.signInWithOAuth(
+      OAuthProvider.google,
+      redirectTo: _alamatKembali(),
+    );
+  }
+
+  /// Alamat halaman ini, lengkap dengan jalurnya.
+  ///
+  /// Bukan `Uri.base.origin` saja. Di GitHub Pages aplikasinya tinggal
+  /// di `.../KaataGo/`, dan origin-nya saja menunjuk ke akar domain —
+  /// tempat aplikasi ini tidak ada. Sesudah login orangnya akan mendarat
+  /// di halaman 404 dengan sesinya menempel di alamat yang salah.
+  ///
+  /// Query dan fragmen dibuang: yang ini akan dipakai Supabase sebagai
+  /// dasar untuk menempelkan token, dan sisa fragmen dari percobaan
+  /// sebelumnya akan ikut terbawa.
+  static String _alamatKembali() {
+    return Uri.base.replace(query: '', fragment: '').toString();
+  }
+
+  /// Memeriksa akun yang baru masuk terhadap pintu yang dipakainya, lalu
+  /// memasangnya ke provider ini. Mengembalikan false kalau ditolak —
+  /// sesinya sudah dibuang dan [lastError] sudah diisi alasannya.
+  Future<bool> _terimaSesi(User? signedIn, LoginIntent intent) async {
+    final email = signedIn?.email;
+    if (signedIn == null || email == null) {
+      lastError = 'Gagal login: akun tidak punya alamat email.';
+      await _discardSession();
+      return false;
+    }
+
+    final found = await _lookupEmployee(email);
+
+    if (found.blockedReason != null) {
+      lastError = found.blockedReason;
+      await _discardSession();
+      return false;
+    }
+
+    if (intent == LoginIntent.employee && !found.isEmployee) {
+      lastError = 'Akun $email belum terdaftar sebagai karyawan merchant.\n'
+          'Minta admin untuk menambahkan email ini ke daftar karyawan.';
+      await _discardSession();
+      return false;
+    }
+
+    if (intent == LoginIntent.customer && found.isEmployee) {
+      final label = _roleDisplayLabels[found.role] ?? 'karyawan';
+      lastError = 'Akun $email terdaftar sebagai $label merchant.\n'
+          'Masuk lewat pilihan "Merchant", bukan "Customer".';
+      await _discardSession();
+      return false;
+    }
+
+    user = signedIn;
+    role = found.role;
+    restoIds = found.restoIds;
+    restoId = await _restoreSelectedResto(found.restoIds);
+    employeeName = found.name;
+    return true;
+  }
+
   /// Drops a session that was established but then refused, so a rejected
   /// attempt doesn't leave the app half-authenticated. Deliberately does
   /// not clear [lastError] — that message is the whole point.
   Future<void> _discardSession() async {
-    await _googleSignIn.signOut();
+    // Plugin Google tidak dipakai di web, dan memanggil signOut-nya di
+    // sana melempar karena tidak pernah diinisialisasi.
+    if (!kIsWeb) await _googleSignIn.signOut();
     await _supabase.auth.signOut();
     user = null;
     role = null;
@@ -375,7 +459,9 @@ class AuthProvider extends ChangeNotifier {
     // yang tertinggal paling jauh berarti satu notifikasi nyasar, jauh
     // lebih ringan daripada orang yang tidak bisa keluar dari akunnya.
     await PushService.instance.unregister();
-    await _googleSignIn.signOut();
+    // Plugin Google tidak dipakai di web, dan memanggil signOut-nya di
+    // sana melempar karena tidak pernah diinisialisasi.
+    if (!kIsWeb) await _googleSignIn.signOut();
     await _supabase.auth.signOut();
     user = null;
     role = null;

@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../utils/rupiah_input.dart';
 import 'dialog_actions.dart';
 import 'required_label.dart';
+import '../utils/lebar_web.dart';
 
 /// Menerima uang tunai dari pelanggan: total tagihannya, nominal yang
 /// diserahkan, dan kembaliannya.
@@ -63,7 +64,7 @@ class _CashPaymentDialogState extends State<CashPaymentDialog> {
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      insetPadding: insetDialogWeb(context),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
         child: SingleChildScrollView(

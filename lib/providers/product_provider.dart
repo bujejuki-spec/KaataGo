@@ -20,7 +20,27 @@ class ProductProvider extends ChangeNotifier {
   List<Product> _products = [];
   List<Product> get products => _products;
 
+  /// Di web tidak ada salinan lokal — Supabase langsung sumbernya.
+  ///
+  /// Salinan lokal di web akan tersimpan di IndexedDB satu peramban di
+  /// satu perangkat, terpisah dari basis data di HP. Artinya produk yang
+  /// dibuat lewat aplikasi tidak akan pernah muncul di web, dan
+  /// sebaliknya — dua katalog berbeda yang mengaku katalog yang sama.
+  ///
+  /// Yang hilang dengan ini cuma kemampuan bekerja offline, dan itu
+  /// memang bukan alasan orang membuka konsol web.
+  bool get _tanpaSalinanLokal => kIsWeb;
+
   Future<void> load() async {
+    if (_tanpaSalinanLokal) {
+      if (restoId == null) {
+        _products = [];
+      } else {
+        _products = await _firestoreRepo.getAllOnce(restoId!);
+      }
+      notifyListeners();
+      return;
+    }
     _products = await _repo.getAll(restoId);
     notifyListeners();
   }
@@ -37,6 +57,12 @@ class ProductProvider extends ChangeNotifier {
   /// there never reach the server, so nobody else ever sees them.
   Future<void> syncWithResto(String? restoId) async {
     this.restoId = restoId;
+    // Di web tidak ada apa pun untuk disamakan: yang dibaca dan yang
+    // ditulis sama-sama Supabase, jadi memuatnya sekali sudah cukup.
+    if (_tanpaSalinanLokal) {
+      await load();
+      return;
+    }
     // Produk warisan (dibuat sebelum aplikasi mengenal banyak resto)
     // diakui sebagai milik resto ini sekali saja, supaya resto kedua
     // tidak ikut menariknya ke dalam katalognya sendiri.
@@ -147,6 +173,16 @@ class ProductProvider extends ChangeNotifier {
       outOfStock: outOfStock,
       badges: badges,
     );
+    if (_tanpaSalinanLokal) {
+      if (restoId == null) return;
+      // Ditunggu, tidak dikirim lalu dilupakan seperti di HP. Di sana
+      // penulisan lokalnya sudah berhasil lebih dulu, jadi kiriman yang
+      // gagal cuma tertunda. Di web tidak ada yang berhasil lebih dulu —
+      // kiriman yang gagal berarti produknya tidak pernah ada.
+      await _firestoreRepo.upsert(product, restoId!);
+      await load();
+      return;
+    }
     await _repo.insert(product, restoId);
     _mirrorToFirestore(product);
     await load();
@@ -164,12 +200,23 @@ class ProductProvider extends ChangeNotifier {
   }
 
   Future<void> updateProduct(Product product) async {
+    if (_tanpaSalinanLokal) {
+      if (restoId == null) return;
+      await _firestoreRepo.upsert(product, restoId!);
+      await load();
+      return;
+    }
     await _repo.update(product, restoId);
     _mirrorToFirestore(product);
     await load();
   }
 
   Future<void> deleteProduct(String id) async {
+    if (_tanpaSalinanLokal) {
+      await _firestoreRepo.delete(id);
+      await load();
+      return;
+    }
     await _repo.delete(id);
     _firestoreRepo.delete(id).catchError((_) {});
     await load();

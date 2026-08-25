@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -89,9 +90,27 @@ class ThemeToggle extends StatelessWidget {
     (ThemeMode.system, Icons.brightness_auto_outlined, 'Ikuti HP'),
   ];
 
+  /// Di web hanya Terang dan Gelap.
+  ///
+  /// "Ikuti HP" masuk akal di ponsel, tempat orang sudah menentukan
+  /// pilihannya sekali di tingkat sistem dan sering menjadwalkannya
+  /// berganti sendiri saat malam. Di peramban yang dibuka di antara
+  /// jendela kerja lain, yang diikuti bukan lagi keputusan yang pernah
+  /// diambil orangnya — dan konsol yang berganti warna sendiri di
+  /// tengah jam kerja lebih mengganggu daripada membantu.
+  static List<(ThemeMode, IconData, String)> get _pilihanDipakai =>
+      kIsWeb ? _pilihan.sublist(0, 2) : _pilihan;
+
   @override
   Widget build(BuildContext context) {
     final prefs = context.watch<AppPrefsProvider>();
+    // Setelan lama bisa saja masih "Ikuti HP" — dibaca sebagai tema yang
+    // sedang benar-benar tampil, supaya tidak ada tombol yang menyala.
+    final terpilih = kIsWeb && prefs.themeMode == ThemeMode.system
+        ? (MediaQuery.platformBrightnessOf(context) == Brightness.dark
+            ? ThemeMode.dark
+            : ThemeMode.light)
+        : prefs.themeMode;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -107,7 +126,7 @@ class ThemeToggle extends StatelessWidget {
         return SegmentedButton<ThemeMode>(
           showSelectedIcon: false,
           segments: [
-            for (final (mode, ikon, nama) in _pilihan)
+            for (final (mode, ikon, nama) in _pilihanDipakai)
               ButtonSegment(
                 value: mode,
                 icon: Icon(ikon, size: sempit ? 19 : 17),
@@ -117,7 +136,7 @@ class ThemeToggle extends StatelessWidget {
                 tooltip: context.tr(nama),
               ),
           ],
-          selected: {prefs.themeMode},
+          selected: {terpilih},
           onSelectionChanged: (v) {
             prefs.setThemeMode(v.first);
             onChanged?.call();

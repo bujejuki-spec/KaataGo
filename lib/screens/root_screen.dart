@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -12,6 +13,8 @@ import 'owner_home_screen.dart';
 import '../widgets/billing_gate.dart';
 import 'role_choice_screen.dart';
 import 'super_admin_home_screen.dart';
+import 'web_menu.dart';
+import 'web_shell_screen.dart';
 
 /// Decides which experience to show:
 /// - Admin/Kasir/Chef still signed in (Firebase Auth persists across app
@@ -51,6 +54,23 @@ class _RootScreenState extends State<RootScreen> {
     if (auth.isInitializing) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
+    // Di web, empat peran meja kerja memakai kerangka sidebar.
+    //
+    // Kasir dan Chef tidak: keduanya bekerja sambil berdiri, di depan
+    // antrean, dengan satu tangan memegang perangkat — dan tidak ada
+    // satu pun bagian pekerjaannya yang lebih mudah dengan tetikus.
+    // Pelanggan juga tidak: memesan dari meja butuh kamera untuk
+    // memindai QR-nya.
+    if (kIsWeb && punyaVersiWeb(auth)) {
+      final shell = KeyedSubtree(
+        key: ValueKey(auth.restoId),
+        child: const WebShellScreen(),
+      );
+      // Gerbang langganannya tetap berlaku, sama seperti di ponsel —
+      // kecuali untuk KaataGo Admin, yang justru membuka kuncinya.
+      return auth.isSuperAdmin ? shell : BillingGate(child: shell);
+    }
+
     if (auth.isSuperAdmin) return const SuperAdminHomeScreen();
 
     // Layar peran dibangun ulang sepenuhnya saat resto berganti.

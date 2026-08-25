@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 import '../services/app_updater.dart';
@@ -20,6 +21,10 @@ class UpdateDownloadBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Pembaruan APK tidak berlaku di web — halamannya sudah selalu
+    // versi terbaru begitu dimuat ulang.
+    if (kIsWeb) return child;
+
     return Stack(
       children: [
         child,

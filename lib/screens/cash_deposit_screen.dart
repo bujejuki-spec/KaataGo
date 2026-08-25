@@ -22,6 +22,7 @@ import '../widgets/dialog_actions.dart';
 import '../widgets/responsive.dart';
 import '../widgets/app_toast.dart';
 import '../widgets/required_label.dart';
+import '../utils/lebar_web.dart';
 
 /// Menyetorkan uang tunai dari laci kasir ke rekening resto.
 ///
@@ -602,7 +603,7 @@ class _DepositTile extends StatelessWidget {
     showDialog<void>(
       context: context,
       builder: (_) => Dialog(
-        insetPadding: const EdgeInsets.all(16),
+        insetPadding: insetDialogWeb(context, minimal: 16, vertikal: 16),
         child: InteractiveViewer(
           child: Image.memory(base64Decode(deposit.proofBase64!)),
         ),

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 import '../theme.dart';
@@ -51,6 +52,20 @@ class _ProductListScreenState extends State<ProductListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Di web, Kategori dan Level punya menunya sendiri di sidebar.
+    //
+    // Membiarkan tabnya tetap di sini berarti satu hal yang sama bisa
+    // dicapai lewat dua jalan yang tampak berbeda — dan yang satu
+    // bersarang di dalam menu yang namanya "Kelola Produk", tempat
+    // orang tidak akan mencarinya karena sidebarnya sudah menyebut
+    // keduanya di luar.
+    if (kIsWeb) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Kelola Produk')),
+        body: const _ProductTab(),
+      );
+    }
+
     return DefaultTabController(
       length: 3,
       child: Scaffold(

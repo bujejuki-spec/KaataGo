@@ -5,6 +5,7 @@ import '../db/gl_journal_repository.dart';
 import '../models/gl_journal_entry.dart';
 import '../theme.dart';
 import '../utils/id_time.dart';
+import '../utils/lebar_web.dart';
 
 /// Menampilkan seluruh baris jurnal GL yang lahir dari satu catatan.
 ///
@@ -109,7 +110,7 @@ class _JournalDetailDialogState extends State<_JournalDetailDialog> {
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      insetPadding: insetDialogWeb(context, minimal: 20),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(18, 20, 18, 12),
         child: Column(

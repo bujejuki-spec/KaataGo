@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/customer_order.dart';
 import '../theme.dart';
 import 'dialog_actions.dart';
+import '../utils/lebar_web.dart';
 
 /// Mencentang menu satu per satu sebelum pesanan dinyatakan selesai.
 ///
@@ -44,7 +45,7 @@ class _KitchenChecklistDialogState extends State<KitchenChecklistDialog> {
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      insetPadding: insetDialogWeb(context),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 22, 20, 14),
         child: Column(

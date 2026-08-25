@@ -37,6 +37,7 @@ import '../utils/rupiah_input.dart';
 import '../widgets/app_toast.dart';
 import '../widgets/count_badge.dart';
 import '../widgets/required_label.dart';
+import '../utils/lebar_web.dart';
 
 /// Saldo Total = Saldo Penghasilan + Saldo Petty Cash − Saldo Pengeluaran.
 ///
@@ -1279,7 +1280,7 @@ class _AddExpenseDialogState extends State<_AddExpenseDialog> {
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      insetPadding: insetDialogWeb(context),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
         child: Form(
@@ -1543,7 +1544,7 @@ class _AddPettyCashDialogState extends State<_AddPettyCashDialog> {
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      insetPadding: insetDialogWeb(context),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
         child: Form(

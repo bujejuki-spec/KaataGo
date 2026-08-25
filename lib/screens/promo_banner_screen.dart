@@ -15,6 +15,7 @@ import '../widgets/promo_period_fields.dart';
 import '../widgets/responsive.dart';
 import '../utils/field_rules.dart';
 import '../widgets/app_toast.dart';
+import '../utils/lebar_web.dart';
 
 /// Mengelola banner promo yang tampil di halaman menu customer.
 ///
@@ -472,7 +473,7 @@ class _BannerFormDialogState extends State<_BannerFormDialog> {
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      insetPadding: insetDialogWeb(context, minimal: 20),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: SingleChildScrollView(

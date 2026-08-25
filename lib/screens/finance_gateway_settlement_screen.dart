@@ -12,6 +12,7 @@ import '../widgets/dialog_actions.dart';
 import '../widgets/journal_detail_dialog.dart';
 import '../widgets/responsive.dart';
 import '../widgets/required_label.dart';
+import '../utils/lebar_web.dart';
 
 /// Mencatat dana payment gateway yang benar-benar cair ke rekening.
 ///
@@ -331,7 +332,7 @@ class _AddSettlementDialogState extends State<_AddSettlementDialog> {
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
+      insetPadding: insetDialogWeb(context, minimal: 20, vertikal: 32),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
         child: Form(

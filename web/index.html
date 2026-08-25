@@ -18,18 +18,26 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="KaataGo — konsol web untuk KaataGo Admin, Owner, Admin, dan Finance.">
+
+  <!--
+    Tanpa baris ini google_sign_in tidak punya client id di web, dan
+    login gagal sebelum sempat menyentuh Supabase. Nilainya harus sama
+    persis dengan SupabaseConfig.googleWebClientId — dua tempat, satu
+    nilai, karena yang satu dibaca peramban sebelum Dart-nya jalan.
+  -->
+  <meta name="google-signin-client_id" content="1015088896093-5k1bi18rhsifjd67bduvu58hhd9s7sv3.apps.googleusercontent.com">
 
   <!-- iOS meta tags & icons -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="pos_app">
+  <meta name="apple-mobile-web-app-title" content="KaataGo">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>pos_app</title>
+  <title>KaataGo</title>
   <link rel="manifest" href="manifest.json">
 </head>
 <body>

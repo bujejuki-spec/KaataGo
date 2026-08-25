@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 
 /// Handles all local (offline) SQLite storage.
 /// This is the core of the "offline-first" design: every read/write in the
@@ -18,10 +20,28 @@ class DatabaseHelper {
     return _db!;
   }
 
+  /// Basis data lokal yang sama, ditaruh di IndexedDB saat di web.
+  ///
+  /// Tanpa ini `getDatabasesPath()` melempar di web dan setiap layar yang
+  /// menyentuh katalog — Kelola Produk, Kategori — gagal terbuka. Yang
+  /// dipakai tetap SQLite: berkas wasm-nya dijalankan di dalam
+  /// shared worker (`web/sqflite_sw.js`), jadi skema, versi, dan seluruh
+  /// migrasinya di bawah ini berlaku apa adanya.
+  ///
+  /// Konsekuensinya perlu diingat: penyimpanan web terikat pada satu
+  /// peramban di satu perangkat, dan bisa dihapus orangnya bersama data
+  /// situs. Itu tidak apa-apa selama sisi web hanya dipakai peran meja
+  /// kerja, yang datanya toh bersumber dari Supabase.
   Future<Database> _initDb() async {
+    if (kIsWeb) {
+      databaseFactory = databaseFactoryFfiWeb;
+      return _openAt('pos_app.db');
+    }
     final dbPath = await getDatabasesPath();
-    final path = join(dbPath, 'pos_app.db');
+    return _openAt(join(dbPath, 'pos_app.db'));
+  }
 
+  Future<Database> _openAt(String path) {
     return openDatabase(
       path,
       version: 15,

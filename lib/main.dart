@@ -1,4 +1,5 @@
 import 'services/notification_router.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -21,6 +22,7 @@ import 'widgets/order_notification_binder.dart';
 import 'widgets/update_download_banner.dart';
 import 'supabase_config.dart';
 import 'theme.dart';
+import 'utils/lebar_web.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -108,12 +110,43 @@ class PosApp extends StatelessWidget {
           //
           // `builder` membungkus Navigator-nya, jadi penandanya
           // mengambang di atas rute mana pun yang sedang terbuka.
-          builder: (context, child) => UpdateDownloadBanner(
-            child: child ?? const SizedBox.shrink(),
+          builder: (context, child) => _PopupTerbatas(
+            child: UpdateDownloadBanner(
+              child: child ?? const SizedBox.shrink(),
+            ),
           ),
           home: const OrderNotificationBinder(child: RootScreen()),
         ),
       ),
+    );
+  }
+}
+
+/// Menyetel jarak tepi popup di web, satu kali untuk seluruh aplikasi.
+///
+/// Dipasang di `builder`, jadi ia berada di atas Navigator — dan
+/// popup, yang dibangun sebagai rute di dalam Navigator itu, ikut
+/// membacanya. Meletakkannya di `theme:` tidak bisa: nilainya perlu
+/// tahu lebar jendela, dan ThemeData dibuat sebelum ada MediaQuery.
+///
+/// Yang menyetel `insetPadding` sendiri di tempatnya tidak tersentuh
+/// ini — nilai di tempat pemakaian selalu menang atas nilai tema.
+class _PopupTerbatas extends StatelessWidget {
+  final Widget child;
+
+  const _PopupTerbatas({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    if (!kIsWeb) return child;
+    final tema = Theme.of(context);
+    return Theme(
+      data: tema.copyWith(
+        dialogTheme: tema.dialogTheme.copyWith(
+          insetPadding: insetDialogWeb(context),
+        ),
+      ),
+      child: child,
     );
   }
 }

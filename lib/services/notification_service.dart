@@ -65,6 +65,13 @@ class NotificationService {
 
   Future<void> init() async {
     if (_ready) return;
+    // Tidak ada notifikasi sistem di web — plugin-nya pun tidak punya
+    // implementasinya. Dimatikan di sini supaya pemanggilnya tidak perlu
+    // memeriksa satu per satu.
+    if (kIsWeb) {
+      _ready = true;
+      return;
+    }
 
     // 'ic_notification', bukan '@mipmap/ic_launcher'. Plugin mencari
     // ikonnya dengan getIdentifier(name, "drawable", package) — hanya di

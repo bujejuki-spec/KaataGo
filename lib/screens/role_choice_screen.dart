@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
@@ -28,9 +29,22 @@ class _RoleChoiceScreenState extends State<RoleChoiceScreen> {
   String _versionLabel = '';
   bool _signingInEmployee = false;
 
+  /// Web ini konsol backoffice, bukan tempat pelanggan memesan.
+  ///
+  /// Pintu Pelanggan tidak ditampilkan sama sekali di sini — bukan
+  /// disembunyikan supaya rapi, tapi karena seluruh yang ada di
+  /// baliknya (pindai QR meja, kamera, keranjang) memang tidak
+  /// dibuatkan versi webnya. Pintu yang ada tapi tidak menuju ke mana-
+  /// mana lebih buruk daripada pintu yang tidak ada.
+  bool get _hanyaMerchant => kIsWeb;
+
   @override
   void initState() {
     super.initState();
+    // Nomor versi tidak berlaku di web: yang dibuka selalu versi yang
+    // sedang dilayani servernya, tidak ada yang bisa tertinggal dan
+    // perlu dicocokkan saat melapor masalah.
+    if (_hanyaMerchant) return;
     PackageInfo.fromPlatform().then((info) {
       if (!mounted) return;
       setState(() => _versionLabel = 'v${info.version} (${info.buildNumber})');
@@ -180,7 +194,13 @@ class _RoleChoiceScreenState extends State<RoleChoiceScreen> {
     return Scaffold(
       backgroundColor: KaataTheme.surfaceOf(context),
       body: SafeArea(
-        child: Padding(
+        child: Center(
+          child: ConstrainedBox(
+            // Tombol selebar layar 1600 piksel bukan tombol lagi — itu
+            // pita. Lebarnya dikunci ke ukuran yang wajar dijangkau
+            // mata dan tetikus, lalu ditaruh di tengah.
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
             children: [
@@ -235,31 +255,42 @@ class _RoleChoiceScreenState extends State<RoleChoiceScreen> {
                     color: KaataTheme.mutedOf(context), fontSize: 15),
               ),
               const SizedBox(height: 40),
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: FilledButton.icon(
-                  icon: const Icon(Icons.person_outline),
-                  label: Text(context.tr('Pelanggan')),
-                  onPressed: _chooseCustomer,
+              if (!_hanyaMerchant) ...[
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: FilledButton.icon(
+                    icon: const Icon(Icons.person_outline),
+                    label: Text(context.tr('Pelanggan')),
+                    onPressed: _chooseCustomer,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: OutlinedButton.icon(
-                  icon: _signingInEmployee
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.storefront_outlined),
-                  label: Text(context.tr('KaataGo Merchant')),
-                  onPressed: _signingInEmployee ? null : _chooseEmployee,
-                ),
-              ),
+                const SizedBox(height: 12),
+              ],
+              // Satu-satunya pintu di web, jadi diberi bobot penuh.
+              // Tombol bergaris di layar tanpa pembanding terbaca
+              // seperti pilihan kedua yang pilihan pertamanya hilang.
+              Builder(builder: (context) {
+                final ikon = _signingInEmployee
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.storefront_outlined);
+                final label = Text(context.tr('KaataGo Merchant'));
+                final tekan = _signingInEmployee ? null : _chooseEmployee;
+
+                return SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: _hanyaMerchant
+                      ? FilledButton.icon(
+                          icon: ikon, label: label, onPressed: tekan)
+                      : OutlinedButton.icon(
+                          icon: ikon, label: label, onPressed: tekan),
+                );
+              }),
               const SizedBox(height: 20),
               // Di bawah kedua tombol masuk, bukan di atas logonya.
               //
@@ -270,13 +301,15 @@ class _RoleChoiceScreenState extends State<RoleChoiceScreen> {
               // berderet sama seperti dua tombol di bawahnya.
               const ThemeToggle(),
               const Spacer(),
-              if (_versionLabel.isNotEmpty)
+              if (!_hanyaMerchant && _versionLabel.isNotEmpty)
                 Text(
                   _versionLabel,
                   style: TextStyle(
                       color: KaataTheme.mutedOf(context), fontSize: 12),
                 ),
             ],
+          ),
+            ),
           ),
         ),
       ),

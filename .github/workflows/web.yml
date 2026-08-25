@@ -1,0 +1,63 @@
+name: Konsol Web
+
+# Dijalankan manual, bukan tiap push.
+#
+# Yang ada di branch ini bukan selalu yang layak dipakai orang untuk
+# menguji: setengah fitur bisa sedang dikerjakan. Deploy yang berjalan
+# sendiri tiap commit membuat alamat yang sama kadang berisi aplikasi
+# yang sedang setengah jalan, dan yang mengujinya tidak punya cara tahu
+# sedang melihat yang mana.
+on:
+  workflow_dispatch:
+
+# Satu deploy pada satu waktu; yang belakangan menunggu, tidak
+# menyalip.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  bangun:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          # Dipatok sama dengan yang dipakai di mesin lokal. Versi
+          # Flutter yang berbeda menghasilkan galat yang tidak pernah
+          # terlihat saat dibangun di tempat lain.
+          flutter-version: '3.24.5'
+          channel: stable
+
+      - run: flutter pub get
+
+      # Pekerja sqflite untuk web tidak ikut ke dalam git — dibangkitkan
+      # ulang di sini supaya isinya sesuai versi paketnya.
+      - run: dart run sqflite_common_ffi_web:setup
+
+      # base-href wajib diisi: di GitHub Pages aplikasinya tinggal di
+      # bawah /<nama-repo>/, bukan di akar domain. Tanpa ini semua
+      # permintaan aset menunjuk ke akar dan halamannya kosong.
+      - run: flutter build web --release --base-href "/${GITHUB_REPOSITORY#*/}/"
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/web
+
+  terbitkan:
+    needs: bangun
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4
