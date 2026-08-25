@@ -428,12 +428,47 @@ void main() {
     }
   });
 
+  group('notifikasi dorong di web', () {
+    final push = File('lib/services/push_service.dart').readAsStringSync();
+
+    test('memakai konfigurasi web dan kunci VAPID', () {
+      expect(push, contains('Firebase.initializeApp(options: firebaseWebOptions)'));
+      // Tanpa kunci VAPID, getToken di web selalu gagal — dan tidak ada
+      // padanannya sama sekali di Android.
+      expect(push, contains('getToken(vapidKey: kVapidKey)'));
+    });
+
+    // Berkas ini berjalan di luar aplikasi Flutter dan tetap
+    // dibangunkan saat seluruh tab sudah ditutup, jadi konfigurasinya
+    // harus ada di dalamnya sendiri.
+    test('service worker penerima ada dan membawa konfigurasinya', () {
+      final sw = File('web/firebase-messaging-sw.js').readAsStringSync();
+      expect(sw, contains('firebase.initializeApp('));
+      expect(sw, contains('messagingSenderId'));
+      expect(sw, contains('onBackgroundMessage'));
+      expect(sw, contains('notificationclick'));
+    });
+
+    // flutter_local_notifications tidak punya sisi web.
+    test('notifikasi depan layar memakai API peramban', () {
+      expect(push, contains('tampilkanNotifWeb('));
+      final pintu = File('lib/services/notifikasi_web.dart').readAsStringSync();
+      expect(pintu, contains("if (dart.library.html) 'notifikasi_web_html.dart'"));
+      // Sisi bukan-web harus tetap ada, kalau tidak Android gagal
+      // dibangun begitu berkas ini dipanggil.
+      expect(File('lib/services/notifikasi_web_kosong.dart').existsSync(), isTrue);
+    });
+
+    test('izin yang ditolak tidak dianggap kerusakan', () {
+      expect(push, contains('Izin notifikasi ditolak di peramban ini.'));
+    });
+  });
+
   group('yang dimatikan di web', () {
-    test('notifikasi dorong dan notifikasi sistem', () {
-      for (final f in ['push_service', 'notification_service']) {
-        final isi = File('lib/services/$f.dart').readAsStringSync();
-        expect(isi, contains('if (kIsWeb) {'), reason: f);
-      }
+    test('notifikasi sistem bawaan aplikasi', () {
+      final isi =
+          File('lib/services/notification_service.dart').readAsStringSync();
+      expect(isi, contains('if (kIsWeb) {'));
     });
 
     // Halamannya sudah selalu versi terbaru begitu dimuat ulang.

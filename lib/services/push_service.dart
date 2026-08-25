@@ -7,7 +7,9 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../firebase_web_options.dart';
 import 'notification_service.dart';
+import 'notifikasi_web.dart';
 
 /// Mendaftarkan perangkat ini supaya bisa dikirimi notifikasi walau
 /// aplikasinya sedang tertutup.
@@ -57,18 +59,28 @@ class PushService {
 
   Future<void> init() async {
     if (_ready) return;
-    // Notifikasi dorong tidak ada di web.
-    //
-    // Bukan sekadar tidak didukung: konsol web dibuka di depan layar
-    // yang sedang ditatap orangnya, dan yang dikabarkan notifikasi
-    // justru hal yang terjadi saat aplikasinya TIDAK dibuka.
-    if (kIsWeb) {
-      _ready = true;
-      return;
-    }
     try {
-      await Firebase.initializeApp();
-      _token = await FirebaseMessaging.instance.getToken();
+      // Web tidak punya google-services.json yang disisipkan saat
+      // membangun, jadi nilainya diserahkan dari kode. Dan tokennya
+      // tidak bisa diambil tanpa kunci VAPID — di Android tidak ada
+      // padanannya sama sekali.
+      if (kIsWeb) {
+        await Firebase.initializeApp(options: firebaseWebOptions);
+        // Peramban bertanya lebih dulu ke orangnya, dan jawabannya
+        // menempel pada situs itu sampai dicabut sendiri. Yang menolak
+        // bukan sedang mengalami kerusakan — dia menyatakan pilihan.
+        final izin = await FirebaseMessaging.instance.requestPermission();
+        if (izin.authorizationStatus != AuthorizationStatus.authorized &&
+            izin.authorizationStatus != AuthorizationStatus.provisional) {
+          lastError = 'Izin notifikasi ditolak di peramban ini.';
+          _ready = true;
+          return;
+        }
+        _token = await FirebaseMessaging.instance.getToken(vapidKey: kVapidKey);
+      } else {
+        await Firebase.initializeApp();
+        _token = await FirebaseMessaging.instance.getToken();
+      }
 
       // Token bisa berganti sendiri — setelah aplikasi dipasang ulang,
       // data aplikasinya dibersihkan, atau Google memutar ulang token
@@ -92,7 +104,11 @@ class PushService {
       // dari layar kunci cuma membuka aplikasi di halaman terakhir —
       // dan yang paling sering diketuk dari layar kunci justru yang
       // paling mendesak.
-      final awal = await FirebaseMessaging.instance.getInitialMessage();
+      // Di web tidak ada "aplikasi tertutup lalu dibuka lewat
+      // notifikasi": ketukannya ditangani service worker, yang
+      // memunculkan tab yang sudah ada ke depan.
+      final awal =
+          kIsWeb ? null : await FirebaseMessaging.instance.getInitialMessage();
       if (awal != null) {
         // Ditunda satu frame: saat ini navigator-nya belum terpasang,
         // dan mendorong halaman ke navigator yang belum ada tidak
@@ -170,6 +186,17 @@ class PushService {
 
     if (event == 'support_message' &&
         message.data['ticket_id'] == tiketSupportTerbuka) {
+      return;
+    }
+
+    // Di web `flutter_local_notifications` tidak ada sisinya; yang
+    // dipakai API notifikasi milik peramban.
+    if (kIsWeb) {
+      tampilkanNotifWeb(
+        judul: notification.title ?? 'KaataGo',
+        isi: notification.body ?? '',
+        tag: message.messageId,
+      );
       return;
     }
 
