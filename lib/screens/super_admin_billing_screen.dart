@@ -13,6 +13,7 @@ import '../utils/rupiah_input.dart';
 import '../widgets/app_toast.dart';
 import '../widgets/required_label.dart';
 import '../widgets/responsive.dart';
+import '../widgets/dialog_actions.dart';
 
 final _rupiah =
     NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
@@ -476,7 +477,11 @@ class _DialogSetelanState extends State<_DialogSetelan> {
                 labelText: 'Tanggal Tagihan',
                 helperText: 'Tiap bulan pada tanggal ini. Tanggal 29–31 '
                     'jatuh di hari terakhir bulan yang lebih pendek.',
-                helperMaxLines: 2,
+                // Tiga, bukan dua. Popup di web lebih sempit daripada
+                // layar HP tempat angka ini dipilih, dan kalimat yang
+                // terpotong di tengah kata justru kalimat yang
+                // menjelaskan kenapa tanggal 31 boleh dipilih.
+                helperMaxLines: 3,
               ),
               items: [
                 for (var d = 1; d <= 31; d++)
@@ -519,12 +524,15 @@ class _DialogSetelanState extends State<_DialogSetelan> {
       ),
       actionsAlignment: MainAxisAlignment.center,
       actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Batal'),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.pop(
+        // DialogActions, bukan dua tombol berjajar.
+        //
+        // Baris `actions` milik AlertDialog melipat jadi kolom begitu
+        // labelnya tidak muat — dan saat melipat, urutannya mengikuti
+        // daftar, jadi Batal berdiri di atas hal yang justru
+        // didatangi orangnya.
+        DialogActions(
+          confirmLabel: 'Simpan',
+          onConfirm: () => Navigator.pop(
             context,
             widget.awal.copyWith(
               monthlyPrice: parseRupiah(_harga.text) ?? 0,
@@ -533,7 +541,6 @@ class _DialogSetelanState extends State<_DialogSetelan> {
               active: _aktif,
             ),
           ),
-          child: const Text('Simpan'),
         ),
       ],
     );
@@ -584,18 +591,14 @@ class _DialogTolakState extends State<_DialogTolak> {
       ),
       actionsAlignment: MainAxisAlignment.center,
       actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Batal'),
-        ),
-        FilledButton(
-          onPressed: () {
+        DialogActions(
+          confirmLabel: 'Tolak',
+          destructive: true,
+          onConfirm: () {
             final t = _alasan.text.trim();
             if (t.isEmpty) return;
             Navigator.pop(context, t);
           },
-          style: FilledButton.styleFrom(backgroundColor: Colors.red),
-          child: const Text('Tolak'),
         ),
       ],
     );

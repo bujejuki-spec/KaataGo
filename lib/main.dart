@@ -144,6 +144,14 @@ class _PopupTerbatas extends StatelessWidget {
       data: tema.copyWith(
         dialogTheme: tema.dialogTheme.copyWith(
           insetPadding: insetDialogWeb(context),
+          // Menempel ke atas, bukan melayang di tengah.
+          //
+          // Popup di tengah jendela tinggi memaksa mata berpindah jauh
+          // dari tempat yang barusan diketuk, dan popup yang isinya
+          // panjang jadi memanjang ke dua arah sekaligus. Di atas,
+          // titik mulai membacanya selalu sama berapa pun tinggi
+          // isinya.
+          alignment: Alignment.topCenter,
         ),
       ),
       child: child,

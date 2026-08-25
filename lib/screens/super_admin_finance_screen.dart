@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -540,13 +541,22 @@ class _AllRestoJournalScreenState extends State<AllRestoJournalScreen> {
       backgroundColor: KaataTheme.backgroundOf(context),
       appBar: AppBar(
         title: const Text('Jurnal GL Semua Merchant'),
-        actions: [
-          IconButton(
-            tooltip: 'Saring per merchant',
-            icon: const Icon(Icons.filter_list),
-            onPressed: _memuat ? null : _pilihResto,
-          ),
-        ],
+        // Ikon saring di pojok kanan atas tidak ditampilkan di web.
+        //
+        // Saringan yang sama sudah berdiri sebagai pita di bawah judul,
+        // menyebutkan merchant yang sedang berlaku dan bisa diketuk.
+        // Dua pintu ke satu saringan membuat yang satu tampak
+        // melakukan hal lain — dan yang berupa ikon tanpa label
+        // adalah yang lebih sulit ditebak isinya.
+        actions: kIsWeb
+            ? null
+            : [
+                IconButton(
+                  tooltip: 'Saring per merchant',
+                  icon: const Icon(Icons.filter_list),
+                  onPressed: _memuat ? null : _pilihResto,
+                ),
+              ],
       ),
       body: _memuat
           ? const Center(child: CircularProgressIndicator())
@@ -638,8 +648,17 @@ class _AllRestoJournalScreenState extends State<AllRestoJournalScreen> {
                             )
                           : RefreshIndicator(
                               onRefresh: _muat,
-                              child: ResponsiveCenter(
-                                child: ListView.builder(
+                              // Tanpa pembatas lebar, sama seperti
+                              // Jurnal GL KaataGo di sebelahnya.
+                              //
+                              // Daftarnya bukan bacaan mengalir yang
+                              // barisnya perlu dipendekkan supaya
+                              // nyaman dibaca — tiap barisnya kartu
+                              // bertumpu pada nomor akun di kiri dan
+                              // nominal di kanan, dan justru jarak
+                              // itulah yang membuat keduanya terbaca
+                              // sebagai sepasang.
+                              child: ListView.builder(
                                   padding: const EdgeInsets.fromLTRB(
                                       14, 12, 14, 28),
                                   itemCount: tanggal.length,
@@ -658,7 +677,6 @@ class _AllRestoJournalScreenState extends State<AllRestoJournalScreen> {
                                     );
                                   },
                                 ),
-                              ),
                             ),
                     ),
                   ],

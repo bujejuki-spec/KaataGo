@@ -1,6 +1,8 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import '../utils/lebar_web.dart';
 
 
 /// Pesan singkat yang selalu tampil di depan, termasuk saat ada dialog
@@ -135,7 +137,17 @@ class _ToastViewState extends State<_ToastView> with SingleTickerProviderStateMi
         child: SlideTransition(
           position: Tween<Offset>(begin: const Offset(0, 0.35), end: Offset.zero)
               .animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut)),
-          child: Material(
+          // Di layar lebar pesannya dibatasi dan ditaruh di tengah.
+          //
+          // Membentang dari tepi ke tepi jendela 1900 piksel, satu
+          // kalimat pendek jadi pita setipis garis yang isinya menempel
+          // di ujung kiri — jauh dari tempat mata orangnya berada.
+          child: Align(
+            alignment: kIsWeb ? Alignment.bottomCenter : Alignment.bottomLeft,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                  maxWidth: kIsWeb ? kLebarDialogWeb : double.infinity),
+              child: Material(
             color: Colors.transparent,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
@@ -167,6 +179,8 @@ class _ToastViewState extends State<_ToastView> with SingleTickerProviderStateMi
                   ),
                 ],
               ),
+            ),
+          ),
             ),
           ),
         ),

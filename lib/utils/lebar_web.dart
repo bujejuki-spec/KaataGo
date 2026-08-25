@@ -29,7 +29,7 @@ EdgeInsets insetDialogWeb(
   BuildContext context, {
   double maks = kLebarDialogWeb,
   double minimal = 24,
-  double vertikal = 24,
+  double vertikal = 40,
 }) {
   final lebar = MediaQuery.sizeOf(context).width;
   final sisi = ((lebar - maks) / 2).clamp(minimal, double.infinity);

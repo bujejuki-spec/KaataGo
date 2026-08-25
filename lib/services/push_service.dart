@@ -255,7 +255,15 @@ class PushService {
         'p_resto_id': restoId,
         'p_role': role,
         'p_session_id': sessionId,
-        'p_platform': Platform.isIOS ? 'ios' : 'android',
+        // kIsWeb diperiksa lebih dulu, dan urutannya bukan selera.
+        //
+        // `Platform` datang dari dart:io, yang di web melempar
+        // UnsupportedError begitu disentuh. Galatnya tertangkap catch
+        // di bawah dan tersamar jadi "gagal disimpan ke server", jadi
+        // yang terlihat cuma notifikasi yang tidak pernah datang —
+        // padahal tokennya sudah didapat, hanya tidak pernah sempat
+        // dikirim.
+        'p_platform': kIsWeb ? 'web' : (Platform.isIOS ? 'ios' : 'android'),
       });
       _lastRegistration = signature;
       lastError = null;

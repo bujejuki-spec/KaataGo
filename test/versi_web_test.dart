@@ -185,6 +185,31 @@ void main() {
       expect(utama, contains('if (!kIsWeb) return child;'));
     });
 
+    // Popup di tengah jendela tinggi memaksa mata berpindah jauh dari
+    // tempat yang barusan diketuk, dan popup berisi panjang memanjang
+    // ke dua arah sekaligus.
+    test('popup menempel ke atas, bukan melayang di tengah', () {
+      expect(utama, contains('alignment: Alignment.topCenter'));
+    });
+
+    // Membentang tepi ke tepi jendela lebar, satu kalimat pendek jadi
+    // pita setipis garis yang isinya menempel di ujung kiri.
+    test('pesan sekilas dibatasi lebarnya di web', () {
+      final toast = File('lib/widgets/app_toast.dart').readAsStringSync();
+      expect(toast, contains('kIsWeb ? Alignment.bottomCenter'));
+      expect(toast, contains('maxWidth: kIsWeb ? kLebarDialogWeb'));
+    });
+
+    // Baris `actions` milik AlertDialog melipat jadi kolom begitu
+    // labelnya tidak muat, dan urutannya mengikuti daftar — Batal jadi
+    // berdiri di atas hal yang justru didatangi orangnya.
+    test('tombol batal di bawah, bukan di atas', () {
+      final billing =
+          File('lib/screens/super_admin_billing_screen.dart').readAsStringSync();
+      expect(billing, contains('DialogActions('));
+      expect(billing, isNot(contains("child: const Text('Batal')")));
+    });
+
     // Nilai di tempat pemakaian selalu menang atas nilai tema, jadi
     // satu pun yang tertinggal akan tetap melar.
     test('tidak ada lagi popup yang mematok jarak tepinya sendiri', () {
@@ -461,6 +486,50 @@ void main() {
 
     test('izin yang ditolak tidak dianggap kerusakan', () {
       expect(push, contains('Izin notifikasi ditolak di peramban ini.'));
+    });
+
+    // Platform datang dari dart:io, yang di web melempar begitu
+    // disentuh — dan galatnya tertangkap catch di sekitarnya, tersamar
+    // jadi "gagal disimpan ke server". Yang terlihat cuma notifikasi
+    // yang tidak pernah datang.
+    test('platform perangkat tidak menyentuh dart:io di web', () {
+      expect(push, contains("kIsWeb ? 'web' : (Platform.isIOS"));
+      expect(push, isNot(contains("'p_platform': Platform.isIOS")));
+    });
+
+    // Izin ditolak, token tidak terbit, dan token terbit tapi gagal
+    // disimpan terlihat sama saja dari luar: notifikasi yang tidak
+    // datang.
+    test('ada alat untuk memastikan pendaftarannya di web', () {
+      final shell = File('lib/screens/web_shell_screen.dart').readAsStringSync();
+      expect(shell, contains('showNotificationTest(context)'));
+    });
+  });
+
+  group('Jurnal GL Semua Merchant', () {
+    final isi =
+        File('lib/screens/super_admin_finance_screen.dart').readAsStringSync();
+    final layar = isi.substring(isi.indexOf('class _AllRestoJournalScreenState'));
+
+    // Sama seperti Jurnal GL KaataGo di sebelahnya: daftarnya bukan
+    // bacaan mengalir yang barisnya perlu dipendekkan — tiap barisnya
+    // kartu bertumpu pada nomor akun di kiri dan nominal di kanan, dan
+    // jarak itulah yang membuat keduanya terbaca sebagai sepasang.
+    test('kartunya selebar isi, tanpa pembatas', () {
+      final daftar = layar.substring(layar.indexOf('RefreshIndicator('));
+      expect(daftar.substring(0, daftar.indexOf('ListView.builder')),
+          isNot(contains('ResponsiveCenter')));
+      final kaataGo =
+          File('lib/screens/finance_journal_screen.dart').readAsStringSync();
+      expect(kaataGo, isNot(contains('ResponsiveCenter')));
+    });
+
+    // Saringan yang sama sudah berdiri sebagai pita di bawah judul.
+    // Dua pintu ke satu saringan membuat yang satu tampak melakukan
+    // hal lain.
+    test('ikon saring di pojok tidak ditampilkan di web', () {
+      expect(layar, contains('actions: kIsWeb'));
+      expect(layar, contains('_PitaSaringan('));
     });
   });
 

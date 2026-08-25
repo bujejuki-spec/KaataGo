@@ -9,6 +9,7 @@ import '../utils/logout_confirm.dart';
 import '../widgets/kaata_logo.dart';
 import '../widgets/language_theme_toggle.dart';
 import '../widgets/resto_switcher.dart';
+import '../widgets/notification_test_tile.dart';
 import '../widgets/support_fab.dart';
 import 'web_menu.dart';
 
@@ -294,6 +295,18 @@ class _Sidebar extends StatelessWidget {
             child: Row(
               children: [
                 const AppearanceIconButton(),
+                // Satu-satunya cara memastikan perangkat ini benar
+                // terdaftar. Notifikasi yang tidak datang selalu
+                // terlihat sama saja dari luar — izin ditolak, token
+                // tidak terbit, atau token terbit tapi gagal disimpan —
+                // dan tanpa alat ini ketiganya cuma bisa ditebak.
+                IconButton(
+                  icon: const Icon(Icons.notifications_active_outlined,
+                      size: 18),
+                  tooltip: 'Tes Notifikasi',
+                  color: KaataTheme.mutedOf(context),
+                  onPressed: () => showNotificationTest(context),
+                ),
                 const SizedBox(width: 6),
                 Expanded(
                   child: TextButton.icon(
