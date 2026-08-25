@@ -1,13 +1,25 @@
 name: Konsol Web
 
-# Dijalankan manual, bukan tiap push.
+# Terbit sendiri tiap push ke branch kerja, dan tetap bisa dipicu
+# manual.
 #
-# Yang ada di branch ini bukan selalu yang layak dipakai orang untuk
-# menguji: setengah fitur bisa sedang dikerjakan. Deploy yang berjalan
-# sendiri tiap commit membuat alamat yang sama kadang berisi aplikasi
-# yang sedang setengah jalan, dan yang mengujinya tidak punya cara tahu
-# sedang melihat yang mana.
+# Konsekuensinya perlu diingat: alamat yang sama kadang berisi aplikasi
+# yang sedang setengah dikerjakan, dan yang mengujinya tidak punya cara
+# tahu sedang melihat yang mana. Selama ini masih dipakai untuk
+# menguji sendiri, itu harga yang wajar dibanding harus menekan tombol
+# tiap kali.
 on:
+  push:
+    branches: [prod-deploy-setup]
+    # Perubahan yang tidak ikut terbangun tidak perlu membangun ulang.
+    # Satu commit dokumen menghabiskan lima menit runner dan
+    # menghasilkan halaman yang sama persis.
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'supabase/**'
+      - 'android/**'
+      - 'ios/**'
   workflow_dispatch:
 
 # Satu deploy pada satu waktu; yang belakangan menunggu, tidak
