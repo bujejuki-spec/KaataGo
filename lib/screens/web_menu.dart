@@ -138,7 +138,7 @@ List<MenuWeb> menuWebUntuk(AuthProvider auth) {
 /// memindahkan pilihan di sidebar, dan yang memegang pilihan itu
 /// kerangkanya.
 const menuBerandaWeb = MenuWeb(
-  ikon: Icons.dashboard_outlined,
+  ikon: Icons.home_outlined,
   judul: 'Beranda',
   layar: _berandaKosong,
 );
