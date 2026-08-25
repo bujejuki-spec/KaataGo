@@ -236,11 +236,21 @@ void main() {
     // data. Sendirian di sidebar, daftarnya cuma kosong — dan yang
     // ditambahkan diam-diam tidak tersimpan.
     test('keduanya dibungkus penyiap datanya', () {
-      expect(menu, contains('KatalogSiap(child: CategoryManagementScreen())'));
-      expect(menu, contains('KatalogSiap(child: LevelManagementScreen())'));
+      expect(menu, contains('child: CategoryManagementScreen(),'));
+      expect(menu, contains('child: LevelManagementScreen(),'));
+      expect('KatalogSiap('.allMatches(menu).length, 2);
       final siap = File('lib/screens/katalog_siap.dart').readAsStringSync();
       expect(siap, contains('categories.restoId = restoId'));
       expect(siap, contains('if (restoId == _dimuatUntuk) return;'));
+    });
+
+    // Keduanya ditulis tanpa AppBar karena sebagai tab judulnya
+    // dipegang layar induknya.
+    test('keduanya diberi judul di atasnya', () {
+      final siap = File('lib/screens/katalog_siap.dart').readAsStringSync();
+      expect(siap, contains('appBar: AppBar(title: Text(widget.judul))'));
+      expect(menu, contains("judul: 'Kategori',"));
+      expect(menu, contains("judul: 'Level',"));
     });
   });
 

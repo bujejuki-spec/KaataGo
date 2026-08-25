@@ -75,8 +75,14 @@ Widget _tagihan() => Builder(builder: (context) {
 
 /// Kategori dan Level berdiri sendiri di sidebar, tanpa induk Kelola
 /// Produk yang biasanya memuatkan datanya lebih dulu.
-Widget _kategori() => const KatalogSiap(child: CategoryManagementScreen());
-Widget _level() => const KatalogSiap(child: LevelManagementScreen());
+Widget _kategori() => const KatalogSiap(
+      judul: 'Kategori',
+      child: CategoryManagementScreen(),
+    );
+Widget _level() => const KatalogSiap(
+      judul: 'Level',
+      child: LevelManagementScreen(),
+    );
 
 /// Menu sidebar untuk tiap peran yang punya versi web.
 ///
