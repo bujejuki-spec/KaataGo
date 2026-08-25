@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -271,6 +273,8 @@ class _Sidebar extends StatelessWidget {
                                   ),
                                 ),
                               ),
+                              if (m.belumDibaca != null)
+                                _PenandaMenu(hitung: m.belumDibaca!),
                             ],
                           ),
                         ),
@@ -305,6 +309,70 @@ class _Sidebar extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Angka merah kecil di kanan baris sidebar.
+///
+/// Dihitung ulang berkala, bukan sekali saat sidebarnya dibangun.
+/// Sidebar tidak pernah dibangun ulang sendiri selama orangnya berada
+/// di satu menu yang sama — dan justru selama itulah pesan baru
+/// berdatangan.
+class _PenandaMenu extends StatefulWidget {
+  final Future<int> Function() hitung;
+
+  const _PenandaMenu({required this.hitung});
+
+  @override
+  State<_PenandaMenu> createState() => _PenandaMenuState();
+}
+
+class _PenandaMenuState extends State<_PenandaMenu> {
+  int _jumlah = 0;
+  Timer? _pewaktu;
+
+  @override
+  void initState() {
+    super.initState();
+    _muat();
+    _pewaktu = Timer.periodic(const Duration(seconds: 30), (_) => _muat());
+  }
+
+  @override
+  void dispose() {
+    _pewaktu?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _muat() async {
+    try {
+      final n = await widget.hitung();
+      if (!mounted) return;
+      setState(() => _jumlah = n);
+    } catch (_) {
+      // Jaringan sedang tidak bisa dihubungi. Angka yang terakhir
+      // diketahui lebih berguna daripada penanda yang hilang.
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_jumlah <= 0) return const SizedBox.shrink();
+    return Container(
+      margin: const EdgeInsets.only(left: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+      constraints: const BoxConstraints(minWidth: 18),
+      decoration: BoxDecoration(
+        color: Colors.red,
+        borderRadius: BorderRadius.circular(9),
+      ),
+      child: Text(
+        '$_jumlah',
+        textAlign: TextAlign.center,
+        style: const TextStyle(
+            color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.bold),
+      ),
     );
   }
 }

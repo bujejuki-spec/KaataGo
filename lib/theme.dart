@@ -96,6 +96,23 @@ class KaataTheme {
           ? base.shade200
           : base.shade700;
 
+  /// Latar kotak keterangan berwarna merek, dan warna tulisan di
+  /// atasnya.
+  ///
+  /// [brandDark] dipilih untuk latar pastel di tema terang. Di tema
+  /// gelap latarnya jadi nyaris hitam, dan biru tua di atasnya tidak
+  /// terbaca sama sekali — kotak keterangan yang justru dipasang
+  /// karena isinya penting dibaca.
+  static Color brandTintOf(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+          ? Color.alphaBlend(brand.withOpacity(0.16), darkSurface)
+          : brand.withOpacity(0.07);
+
+  static Color onBrandTintOf(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+          ? const Color(0xFFC7D2FE)
+          : brandDark;
+
   /// Warna teks utama. Menggantikan Colors.black87 yang ditulis
   /// langsung di layar — hitam di atas latar gelap tidak terbaca sama
   /// sekali.

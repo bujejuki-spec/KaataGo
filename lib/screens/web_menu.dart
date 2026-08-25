@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../db/support_repository.dart';
 import '../models/billing.dart';
 import '../providers/auth_provider.dart';
 import 'billing_discount_screen.dart';
@@ -47,13 +48,24 @@ class MenuWeb {
   /// sebelumnya.
   final String? kelompok;
 
+  /// Berapa hal yang menunggu dibaca di balik menu ini.
+  ///
+  /// Angkanya ditempel di sidebar. Tanpa ini, tanda "1 belum dibaca"
+  /// hanya terlihat sesudah menunya dibuka — padahal justru itu yang
+  /// seharusnya membuat orang membukanya.
+  final Future<int> Function()? belumDibaca;
+
   const MenuWeb({
     required this.ikon,
     required this.judul,
     required this.layar,
     this.kelompok,
+    this.belumDibaca,
   });
 }
+
+/// Percakapan yang menunggu jawaban KaataGo Admin.
+Future<int> _supportBelumDibaca() => SupportRepository().milikSemuaBelumDibaca();
 
 /// Pembukuan KaataGo sendiri, bukan pembukuan merchant — ketiganya
 /// selalu menunjuk resto semu 'kaatago'.
@@ -172,6 +184,7 @@ const _superAdmin = <MenuWeb>[
     ikon: Icons.support_agent,
     judul: 'Customer Service',
     layar: SupportAdminScreen.new,
+    belumDibaca: _supportBelumDibaca,
   ),
   MenuWeb(
     ikon: Icons.insights_outlined,

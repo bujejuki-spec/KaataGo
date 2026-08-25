@@ -318,6 +318,39 @@ void main() {
     });
   });
 
+  group('penanda dan popup di sidebar', () {
+    final shell = File('lib/screens/web_shell_screen.dart').readAsStringSync();
+
+    // Tanpa ini, "1 belum dibaca" hanya terlihat sesudah menunya
+    // dibuka — padahal justru itu yang seharusnya membuat orang
+    // membukanya.
+    test('Customer Service membawa angka belum dibaca ke sidebar', () {
+      expect(menu, contains('belumDibaca: _supportBelumDibaca'));
+      expect(menu, contains('milikSemuaBelumDibaca()'));
+      expect(shell, contains('if (m.belumDibaca != null)'));
+    });
+
+    // Sidebar tidak pernah dibangun ulang sendiri selama orangnya
+    // berada di satu menu yang sama — dan justru selama itulah pesan
+    // baru berdatangan.
+    test('angkanya dihitung ulang berkala, bukan sekali', () {
+      expect(shell, contains('Timer.periodic('));
+      expect(shell, contains('_pewaktu?.cancel();'));
+    });
+
+    // Lembar bawah selalu selebar jendela dan menempel di dasarnya; di
+    // jendela lebar ia jadi panel raksasa di pojok yang berlawanan
+    // dengan tombol yang barusan ditekan.
+    test('menu Support menempel pada tombolnya di web', () {
+      final fab = File('lib/widgets/support_fab.dart').readAsStringSync();
+      expect(fab, contains('if (kIsWeb) {'));
+      expect(fab, contains('alignment: Alignment.bottomRight'));
+      // Satu badan menu, dipakai dua bentuk — bukan dua salinan yang
+      // bisa berpisah pada perubahan berikutnya.
+      expect("title: const Text('Chat KaataGo Admin')".allMatches(fab).length, 1);
+    });
+  });
+
   group('yang tidak boleh hilang di web', () {
     final shell = File('lib/screens/web_shell_screen.dart').readAsStringSync();
 

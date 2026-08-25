@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -68,10 +69,16 @@ class _SupportFabState extends State<SupportFab> {
   int get _belumDibaca =>
       SupportRepository.belumDibaca(_tiket, sebagaiAdmin: false);
 
-  Future<void> _buka() async {
-    final auth = context.read<AuthProvider>();
-    // Chat bebas tidak ikut dihitung di sini: ia bukan pengaduan, tidak
-    // punya status, dan pintunya sudah ada sendiri di atas.
+
+  /// Badan menu KaataGo Support — satu untuk kedua bentuknya.
+  ///
+  /// Lembar bawah di ponsel dan popup menempel di web menampilkan
+  /// pilihan yang sama persis. Menyalinnya jadi dua berarti perubahan
+  /// berikutnya hanya sampai ke salah satunya, dan yang tertinggal
+  /// adalah yang lebih jarang dilihat orang yang mengubahnya.
+  Widget _menuSupport(BuildContext sheetContext) {
+    // Chat bebas tidak ikut dihitung sebagai pengaduan: ia tidak punya
+    // status, dan pintunya sudah ada sendiri di atas.
     final pengaduan = [for (final t in _tiket) if (!t.chatBebas) t];
     final chat = [for (final t in _tiket) if (t.chatBebas) t];
     final adaRiwayat = pengaduan.isNotEmpty;
@@ -80,12 +87,7 @@ class _SupportFabState extends State<SupportFab> {
     final belumDibacaChat =
         SupportRepository.belumDibaca(chat, sebagaiAdmin: false);
 
-    final pilihan = await showModalBottomSheet<String>(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (sheetContext) => SafeArea(
+    return SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -149,8 +151,56 @@ class _SupportFabState extends State<SupportFab> {
             const SizedBox(height: 10),
           ],
         ),
-      ),
-    );
+      );
+  }
+
+  Future<void> _buka() async {
+    final auth = context.read<AuthProvider>();
+
+    // Di web menunya muncul menempel pada tombolnya, bukan sebagai
+    // panel yang naik dari dasar jendela.
+    //
+    // Lembar bawah dirancang untuk layar yang lebarnya segenggam: ia
+    // selalu selebar jendela dan menempel di dasarnya. Di jendela 1600
+    // piksel ia jadi panel raksasa di pojok kiri bawah, sejauh mungkin
+    // dari tombol yang barusan ditekan — dan hubungan antara keduanya
+    // hilang sama sekali.
+    // if/else, bukan ternary: dalam ternary, cabang keduanya dianggap
+    // berada sesudah await cabang pertama, dan context yang dipakai di
+    // sana jadi terbaca melewati jeda asinkron.
+    final String? pilihan;
+    if (kIsWeb) {
+      pilihan = await showDialog<String>(
+            context: context,
+            barrierColor: Colors.black.withOpacity(0.2),
+            builder: (sheetContext) => Align(
+              alignment: Alignment.bottomRight,
+              child: Padding(
+                // Di atas tombolnya, bukan menimpanya.
+                padding: const EdgeInsets.only(right: 16, bottom: 140),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 340),
+                  child: Material(
+                    color: KaataTheme.surfaceOf(sheetContext),
+                    elevation: 8,
+                    borderRadius: BorderRadius.circular(16),
+                    clipBehavior: Clip.antiAlias,
+                    child: _menuSupport(sheetContext),
+                  ),
+                ),
+              ),
+            ),
+          );
+    } else {
+      pilihan = await showModalBottomSheet<String>(
+            context: context,
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            builder: _menuSupport,
+          );
+    }
+
     if (pilihan == null || !mounted) return;
 
     // Percakapan bebas yang masih terbuka dipakai lagi, bukan dibuat

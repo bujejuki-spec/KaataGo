@@ -184,9 +184,11 @@ class _PromoBannerScreenState extends State<PromoBannerScreen> {
                         Container(
                           padding: const EdgeInsets.all(13),
                           decoration: BoxDecoration(
-                            color: KaataTheme.brand.withOpacity(0.07),
+                            color: KaataTheme.brandTintOf(context),
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: KaataTheme.brand.withOpacity(0.2)),
+                            border: Border.all(
+                                color: KaataTheme.onBrandTintOf(context)
+                                    .withOpacity(0.3)),
                           ),
                           child: Text(
                             _banners.isEmpty
@@ -195,7 +197,9 @@ class _PromoBannerScreenState extends State<PromoBannerScreen> {
                                     'tidak terpotong.'
                                 : '$aktif dari ${_banners.length} banner sedang tampil ke '
                                     'customer. Urutannya mengikuti daftar di bawah.',
-                            style: const TextStyle(fontSize: 12.5, color: KaataTheme.brandDark),
+                            style: TextStyle(
+                                fontSize: 12.5,
+                                color: KaataTheme.onBrandTintOf(context)),
                           ),
                         ),
                         const SizedBox(height: 16),
