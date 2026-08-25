@@ -76,6 +76,7 @@ class _MarketReportScreenState extends State<MarketReportScreen> {
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(16, 14, 16, 30),
                   children: [
+                    KartuBerdampingan(kartu: [
                     _Bagian(
                       icon: Icons.emoji_events_outlined,
                       warna: const Color(0xFFF59E0B),
@@ -129,6 +130,7 @@ class _MarketReportScreenState extends State<MarketReportScreen> {
                           r.count == 0 ? 'Belum ada pesanan' : '${r.count} pesanan terbayar',
                       berperingkat: false,
                     ),
+                    ]),
                   ],
                 ),
               ),

@@ -53,7 +53,11 @@ class MenuWeb {
   /// Angkanya ditempel di sidebar. Tanpa ini, tanda "1 belum dibaca"
   /// hanya terlihat sesudah menunya dibuka — padahal justru itu yang
   /// seharusnya membuat orang membukanya.
-  final Future<int> Function()? belumDibaca;
+  ///
+  /// Aliran, bukan sekali hitung. Angka yang diperbarui berkala selalu
+  /// tertinggal sebanyak selang waktunya, dan yang menunggu jawaban
+  /// membaca keterlambatan itu sebagai "harus muat ulang dulu".
+  final Stream<int> Function()? belumDibaca;
 
   const MenuWeb({
     required this.ikon,
@@ -65,7 +69,14 @@ class MenuWeb {
 }
 
 /// Percakapan yang menunggu jawaban KaataGo Admin.
-Future<int> _supportBelumDibaca() => SupportRepository().milikSemuaBelumDibaca();
+///
+/// Dihitung dari aliran tiket yang sama dengan yang dipakai layar
+/// Customer Service — bukan permintaan terpisah. Dua sumber untuk satu
+/// angka akan berbeda cepat atau lambat, dan yang berbeda dengan isi
+/// layarnya sendiri adalah yang lebih membingungkan.
+Stream<int> _supportBelumDibaca() => SupportRepository().semua().map(
+      (tiket) => SupportRepository.belumDibaca(tiket, sebagaiAdmin: true),
+    );
 
 /// Pembukuan KaataGo sendiri, bukan pembukuan merchant — ketiganya
 /// selalu menunjuk resto semu 'kaatago'.
@@ -113,6 +124,26 @@ List<MenuWeb> menuWebUntuk(AuthProvider auth) {
   if (auth.isFinance) return _finance;
   return const [];
 }
+
+/// Pintasan ke seluruh menu, sebagai halaman pertama.
+///
+/// Sidebar sudah memuat semuanya, jadi ini bukan satu-satunya jalan ke
+/// mana pun — dan memang bukan itu gunanya. Yang baru masuk menghadapi
+/// dua puluh baris teks sempit di kiri layar dan ruang kosong yang
+/// jauh lebih luas di sebelahnya; halaman ini memakai ruang itu untuk
+/// menunjukkan apa saja yang ada, dengan ukuran yang bisa dibaca
+/// sekilas.
+///
+/// Layarnya dirakit kerangka web, bukan di sini: menekan kartunya harus
+/// memindahkan pilihan di sidebar, dan yang memegang pilihan itu
+/// kerangkanya.
+const menuBerandaWeb = MenuWeb(
+  ikon: Icons.dashboard_outlined,
+  judul: 'Beranda',
+  layar: _berandaKosong,
+);
+
+Widget _berandaKosong() => const SizedBox.shrink();
 
 /// Peran ini punya versi webnya sendiri.
 bool punyaVersiWeb(AuthProvider auth) => menuWebUntuk(auth).isNotEmpty;

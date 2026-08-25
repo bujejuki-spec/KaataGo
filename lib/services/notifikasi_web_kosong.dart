@@ -7,3 +7,6 @@ void tampilkanNotifWeb({
   required String isi,
   String? tag,
 }) {}
+
+/// Sisi bukan-web: nadanya diurus flutter_local_notifications.
+void bunyikanNadaWeb() {}

@@ -351,16 +351,38 @@ void main() {
     // membukanya.
     test('Customer Service membawa angka belum dibaca ke sidebar', () {
       expect(menu, contains('belumDibaca: _supportBelumDibaca'));
-      expect(menu, contains('milikSemuaBelumDibaca()'));
+      expect(menu, contains('SupportRepository().semua()'));
       expect(shell, contains('if (m.belumDibaca != null)'));
     });
 
-    // Sidebar tidak pernah dibangun ulang sendiri selama orangnya
-    // berada di satu menu yang sama — dan justru selama itulah pesan
-    // baru berdatangan.
-    test('angkanya dihitung ulang berkala, bukan sekali', () {
-      expect(shell, contains('Timer.periodic('));
-      expect(shell, contains('_pewaktu?.cancel();'));
+    // Angka yang diperbarui berkala selalu tertinggal sebanyak selang
+    // waktunya, dan yang menunggu jawaban membaca keterlambatan itu
+    // sebagai "harus muat ulang dulu".
+    test('angkanya mengalir, bukan dihitung berkala', () {
+      expect(shell, contains('StreamBuilder<int>('));
+      expect(shell, isNot(contains('Timer.periodic(')));
+      // Dari aliran tiket yang sama dengan layar Customer Service: dua
+      // sumber untuk satu angka akan berbeda cepat atau lambat.
+      expect(menu, contains('SupportRepository().semua().map('));
+    });
+
+    // Sidebar sudah memuat semuanya, jadi ini bukan satu-satunya jalan
+    // ke mana pun — gunanya memakai ruang kosong di sebelah sidebar
+    // untuk menunjukkan apa saja yang ada.
+    test('beranda berisi pintasan ke seluruh menu perannya', () {
+      expect(menu, contains('const menuBerandaWeb = MenuWeb('));
+      expect(shell, contains('if (tujuan.isNotEmpty) menuBerandaWeb'));
+      expect(shell, contains('class _Beranda'));
+    });
+
+    // Kartunya dirakit per kelompok, dan yang berada sebelum judul
+    // kelompok pertama tidak akan ikut terpasang sama sekali.
+    test('tiap peran mulai dengan sebuah kelompok', () {
+      for (final peran in ['_superAdmin', '_owner', '_admin', '_finance']) {
+        final b = menu.substring(menu.indexOf('const $peran = <MenuWeb>['));
+        final pertama = b.substring(0, b.indexOf('judul:'));
+        expect(pertama, contains('kelompok:'), reason: peran);
+      }
     });
 
     // Lembar bawah selalu selebar jendela dan menempel di dasarnya; di
@@ -475,6 +497,22 @@ void main() {
     });
 
     // flutter_local_notifications tidak punya sisi web.
+    // Notification API punya pilihan `sound` di spesifikasinya, tapi
+    // tidak ada satu pun peramban yang menjalankannya — jadi nadanya
+    // dibunyikan terpisah oleh halamannya sendiri.
+    test('nadanya sama dengan yang di HP', () {
+      final html =
+          File('lib/services/notifikasi_web_html.dart').readAsStringSync();
+      expect(html, contains("_berkasNada = 'kaata_notif.wav'"));
+      expect(html, contains('bunyikanNadaWeb()'));
+      // Berkasnya harus benar-benar ikut terkirim; yang di res/raw
+      // dibungkus Gradle ke dalam APK dan tidak pernah sampai ke web.
+      expect(File('web/kaata_notif.wav').existsSync(), isTrue);
+      final kosong =
+          File('lib/services/notifikasi_web_kosong.dart').readAsStringSync();
+      expect(kosong, contains('void bunyikanNadaWeb()'));
+    });
+
     test('notifikasi depan layar memakai API peramban', () {
       expect(push, contains('tampilkanNotifWeb('));
       final pintu = File('lib/services/notifikasi_web.dart').readAsStringSync();
@@ -530,6 +568,67 @@ void main() {
     test('ikon saring di pojok tidak ditampilkan di web', () {
       expect(layar, contains('actions: kIsWeb'));
       expect(layar, contains('_PitaSaringan('));
+    });
+  });
+
+  // APK terbit sesekali dan nomornya menempel pada berkas yang sudah
+  // terpasang di HP orang; konsol web terbit tiap push dan yang dibuka
+  // selalu yang terakhir. Satu nomor untuk keduanya pasti berbohong
+  // tentang salah satunya.
+  group('versi konsol web berdiri sendiri', () {
+    final versi = File('lib/versi_web.dart').readAsStringSync();
+    final shell = File('lib/screens/web_shell_screen.dart').readAsStringSync();
+    final alur = File('.github/workflows/web.yml').readAsStringSync();
+
+    test('nomornya sendiri, bukan dari pubspec', () {
+      expect(versi, contains("const kVersiWeb = '"));
+      expect(versi, isNot(contains('PackageInfo')));
+    });
+
+    // Dalam satu versi yang sama bisa ada belasan build, dan yang
+    // melaporkan masalah hampir selalu sedang membuka salah satunya
+    // yang bukan terbaru.
+    test('penanda build ikut, ditempel CI saat membangun', () {
+      expect(versi, contains("String.fromEnvironment('BUILD_WEB')"));
+      expect(alur, contains('--dart-define=BUILD_WEB='));
+    });
+
+    test('ditulis di kaki sidebar', () {
+      expect(shell, contains('labelVersiWeb'));
+    });
+  });
+
+  // Konsol web dibuka dari PC maupun dari HP, dan susunan yang benar
+  // di satu tempat salah di tempat lain.
+  group('isinya menyesuaikan lebar layar', () {
+    final resp = File('lib/widgets/responsive.dart').readAsStringSync();
+
+    // Angka 840 lahir dari tablet kasir melintang. Di monitor 1900
+    // piksel ia menyisakan dua pita kosong selebar telapak tangan.
+    test('batas lebar isi lebih lapang di web', () {
+      expect(resp, contains('_bawaanWeb = 1280.0'));
+      expect(resp, contains('maxWidth ?? (kIsWeb ? _bawaanWeb : _bawaanPonsel)'));
+    });
+
+    // Yang menyetel angkanya sendiri tidak ikut melebar: formulir yang
+    // sengaja dipersempit tetap sempit.
+    test('yang menentukan lebarnya sendiri tidak tersentuh', () {
+      expect(resp, contains('final double? maxWidth;'));
+    });
+
+    // Popup tetap sempit — namanya juga popup.
+    test('popup tidak ikut melebar', () {
+      final lebar = File('lib/utils/lebar_web.dart').readAsStringSync();
+      expect(lebar, contains('kLebarDialogWeb = 460'));
+    });
+
+    // Tumpukan kartu di monitor memaksa orang menggulir melewati ruang
+    // kosong selebar kartunya sendiri di sebelah kanan.
+    test('kartu ringkasan berdampingan saat ruangnya cukup', () {
+      expect(resp, contains('class KartuBerdampingan'));
+      final pasar =
+          File('lib/screens/market_report_screen.dart').readAsStringSync();
+      expect(pasar, contains('KartuBerdampingan(kartu: ['));
     });
   });
 

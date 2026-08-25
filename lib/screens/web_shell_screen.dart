@@ -1,10 +1,9 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
 import '../theme.dart';
+import '../versi_web.dart';
 import '../utils/logout_confirm.dart';
 import '../widgets/kaata_logo.dart';
 import '../widgets/language_theme_toggle.dart';
@@ -72,7 +71,8 @@ class _WebShellScreenState extends State<WebShellScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
-    final menu = menuWebUntuk(auth);
+    final tujuan = menuWebUntuk(auth);
+    final menu = [if (tujuan.isNotEmpty) menuBerandaWeb, ...tujuan];
 
     if (menu.isEmpty) {
       // Tidak seharusnya sampai ke sini — RootScreen sudah menyaringnya.
@@ -94,7 +94,12 @@ class _WebShellScreenState extends State<WebShellScreen> {
           // restoId di dalamnya, berpindah cabang meninggalkan data
           // cabang lama di layar yang sudah terlanjur memuatnya.
           key: ValueKey('${menu[terpilih].judul}|${auth.restoId}'),
-          child: menu[terpilih].layar(),
+          child: terpilih == 0
+              ? _Beranda(
+                  menu: menu,
+                  onPilih: (i) => setState(() => _terpilih = i),
+                )
+              : menu[terpilih].layar(),
         );
 
         if (!lebar) {
@@ -289,7 +294,7 @@ class _Sidebar extends StatelessWidget {
         ),
         Divider(height: 1, color: KaataTheme.borderOf(context)),
         Padding(
-          padding: const EdgeInsets.fromLTRB(10, 6, 10, 12),
+          padding: const EdgeInsets.fromLTRB(10, 6, 10, 0),
           child: SizedBox(
             width: double.infinity,
             child: Row(
@@ -321,7 +326,162 @@ class _Sidebar extends StatelessWidget {
             ),
           ),
         ),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: Text(
+            labelVersiWeb,
+            style: TextStyle(fontSize: 10.5, color: muted),
+          ),
+        ),
       ],
+    );
+  }
+}
+
+/// Halaman pertama konsol: pintasan ke seluruh menu perannya.
+///
+/// Dikelompokkan persis seperti sidebarnya. Dua susunan berbeda untuk
+/// daftar yang sama memaksa orang belajar dua kali, dan yang dipelajari
+/// belakangan biasanya menang — jadi sidebar yang dipakai sehari-hari
+/// justru jadi yang terasa asing.
+class _Beranda extends StatelessWidget {
+  final List<MenuWeb> menu;
+  final ValueChanged<int> onPilih;
+
+  const _Beranda({required this.menu, required this.onPilih});
+
+  @override
+  Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+    final nama = auth.employeeName?.trim();
+    final muted = KaataTheme.mutedOf(context);
+
+    // Indeksnya dibawa serta, karena itulah yang dipakai memindahkan
+    // pilihan sidebar. Menyaring dulu lalu mencari indeksnya kemudian
+    // akan menunjuk baris yang salah begitu ada dua menu bernama sama.
+    final isi = <(int, MenuWeb)>[
+      for (var i = 1; i < menu.length; i++) (i, menu[i]),
+    ];
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Beranda')),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 18, 20, 30),
+        children: [
+          Text(
+            (nama == null || nama.isEmpty) ? 'Selamat datang' : 'Halo, $nama',
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Pilih yang mau dibuka. Semuanya juga ada di sebelah kiri.',
+            style: TextStyle(fontSize: 12.5, color: muted),
+          ),
+          const SizedBox(height: 20),
+          for (var i = 0; i < isi.length; i++) ...[
+            if (isi[i].$2.kelompok != null) ...[
+              if (i > 0) const SizedBox(height: 22),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Text(
+                  isi[i].$2.kelompok!.toUpperCase(),
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.8,
+                    color: muted,
+                  ),
+                ),
+              ),
+            ],
+            if (isi[i].$2.kelompok != null)
+              _BarisKartu(
+                // Sekelompok sampai judul kelompok berikutnya.
+                kartu: [
+                  for (var j = i;
+                      j < isi.length && (j == i || isi[j].$2.kelompok == null);
+                      j++)
+                    isi[j],
+                ],
+                onPilih: onPilih,
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _BarisKartu extends StatelessWidget {
+  final List<(int, MenuWeb)> kartu;
+  final ValueChanged<int> onPilih;
+
+  const _BarisKartu({required this.kartu, required this.onPilih});
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, c) {
+        const jarak = 12.0;
+        const lebarMinimal = 240.0;
+        final kolom =
+            ((c.maxWidth + jarak) / (lebarMinimal + jarak)).floor().clamp(1, 5);
+        final lebar = (c.maxWidth - jarak * (kolom - 1)) / kolom;
+
+        return Wrap(
+          spacing: jarak,
+          runSpacing: jarak,
+          children: [
+            for (final (indeks, m) in kartu)
+              SizedBox(
+                width: lebar,
+                child: Material(
+                  color: KaataTheme.surfaceOf(context),
+                  borderRadius: BorderRadius.circular(14),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(14),
+                    onTap: () => onPilih(indeks),
+                    child: Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(14),
+                        border:
+                            Border.all(color: KaataTheme.borderOf(context)),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(9),
+                            decoration: BoxDecoration(
+                              color: KaataTheme.brandTintOf(context),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Icon(m.ikon,
+                                size: 19,
+                                color: KaataTheme.onBrandTintOf(context)),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              m.judul,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                          if (m.belumDibaca != null)
+                            _PenandaMenu(hitung: m.belumDibaca!),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 }
@@ -333,7 +493,7 @@ class _Sidebar extends StatelessWidget {
 /// di satu menu yang sama — dan justru selama itulah pesan baru
 /// berdatangan.
 class _PenandaMenu extends StatefulWidget {
-  final Future<int> Function() hitung;
+  final Stream<int> Function() hitung;
 
   const _PenandaMenu({required this.hitung});
 
@@ -342,36 +502,27 @@ class _PenandaMenu extends StatefulWidget {
 }
 
 class _PenandaMenuState extends State<_PenandaMenu> {
-  int _jumlah = 0;
-  Timer? _pewaktu;
+  late final Stream<int> _aliran;
 
   @override
   void initState() {
     super.initState();
-    _muat();
-    _pewaktu = Timer.periodic(const Duration(seconds: 30), (_) => _muat());
-  }
-
-  @override
-  void dispose() {
-    _pewaktu?.cancel();
-    super.dispose();
-  }
-
-  Future<void> _muat() async {
-    try {
-      final n = await widget.hitung();
-      if (!mounted) return;
-      setState(() => _jumlah = n);
-    } catch (_) {
-      // Jaringan sedang tidak bisa dihubungi. Angka yang terakhir
-      // diketahui lebih berguna daripada penanda yang hilang.
-    }
+    // Dibuat sekali di sini, bukan di build: aliran baru tiap kali
+    // sidebarnya dibangun ulang berarti langganan baru tiap kali, dan
+    // yang lama tidak pernah ditutup.
+    _aliran = widget.hitung();
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_jumlah <= 0) return const SizedBox.shrink();
+    return StreamBuilder<int>(
+      stream: _aliran,
+      builder: (context, snap) => _angka(context, snap.data ?? 0),
+    );
+  }
+
+  Widget _angka(BuildContext context, int jumlah) {
+    if (jumlah <= 0) return const SizedBox.shrink();
     return Container(
       margin: const EdgeInsets.only(left: 6),
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
@@ -381,7 +532,7 @@ class _PenandaMenuState extends State<_PenandaMenu> {
         borderRadius: BorderRadius.circular(9),
       ),
       child: Text(
-        '$_jumlah',
+        '$jumlah',
         textAlign: TextAlign.center,
         style: const TextStyle(
             color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.bold),

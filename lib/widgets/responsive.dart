@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 /// Ambang lebar layar.
@@ -35,15 +36,33 @@ const kFabSafeBottom = 96.0;
 /// membuat layar lebar terasa lapang, bukan melar.
 class ResponsiveCenter extends StatelessWidget {
   final Widget child;
-  final double maxWidth;
+
+  /// Null berarti pakai batas bawaan, dan bawaannya berbeda di web.
+  ///
+  /// Angka 840 lahir dari tablet kasir yang dipegang melintang. Konsol
+  /// web dibuka di monitor 1600–1900 piksel, dan di sana batas yang
+  /// sama menyisakan dua pita kosong selebar telapak tangan di kiri
+  /// dan kanan — ruang yang justru dicari orang saat membuka konsol
+  /// dari PC alih-alih dari HP-nya.
+  ///
+  /// Yang menyetel angkanya sendiri tidak tersentuh ini: formulir yang
+  /// sengaja dipersempit tetap sempit, karena baris isian yang panjang
+  /// menyusahkan di lebar berapa pun.
+  final double? maxWidth;
+
   final EdgeInsetsGeometry? padding;
 
   const ResponsiveCenter({
     super.key,
     required this.child,
-    this.maxWidth = 840,
+    this.maxWidth,
     this.padding,
   });
+
+  static const _bawaanPonsel = 840.0;
+  static const _bawaanWeb = 1280.0;
+
+  double get _batas => maxWidth ?? (kIsWeb ? _bawaanWeb : _bawaanPonsel);
 
   @override
   Widget build(BuildContext context) {
@@ -63,7 +82,7 @@ class ResponsiveCenter extends StatelessWidget {
       // berpengaruh apa-apa: ukuran pasti tetap menang.
       heightFactor: 1,
       child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: maxWidth),
+        constraints: BoxConstraints(maxWidth: _batas),
         child: padding == null ? child : Padding(padding: padding!, child: child),
       ),
     );
@@ -139,6 +158,59 @@ class HubMenuLayout extends StatelessWidget {
                 );
               },
             ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// Menyusun kartu berdampingan saat ruangnya cukup.
+///
+/// Beberapa layar hanya berisi empat-lima kartu ringkasan yang
+/// ditumpuk ke bawah. Di HP itu satu-satunya susunan yang mungkin. Di
+/// monitor, tumpukan yang sama memaksa orang menggulir melewati ruang
+/// kosong selebar kartunya sendiri di sebelah kanan — padahal yang
+/// dicari justru membandingkan angka-angka itu sekaligus.
+class KartuBerdampingan extends StatelessWidget {
+  final List<Widget> kartu;
+
+  /// Lebar minimal tiap kartu. Di bawah ini kartunya terlalu sempit
+  /// untuk isinya sendiri, dan dua kolom sempit lebih buruk daripada
+  /// satu kolom lapang.
+  final double lebarMinimal;
+
+  final double jarak;
+
+  const KartuBerdampingan({
+    super.key,
+    required this.kartu,
+    this.lebarMinimal = 420,
+    this.jarak = 12,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, c) {
+        final kolom =
+            ((c.maxWidth + jarak) / (lebarMinimal + jarak)).floor().clamp(1, 3);
+        if (kolom == 1) {
+          return Column(
+            children: [
+              for (final k in kartu) ...[k, SizedBox(height: jarak)],
+            ],
+          );
+        }
+        final lebar = (c.maxWidth - jarak * (kolom - 1)) / kolom;
+        // Wrap, bukan GridView: tinggi tiap kartu mengikuti isinya, dan
+        // petak sama besar akan memaksa semuanya setinggi yang
+        // terpanjang.
+        return Wrap(
+          spacing: jarak,
+          runSpacing: jarak,
+          children: [
+            for (final k in kartu) SizedBox(width: lebar, child: k),
           ],
         );
       },
