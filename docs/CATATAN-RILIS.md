@@ -37,6 +37,12 @@ Formatnya dibaca `scripts/release.sh`: judul `## <versi>`, lalu
 poin-poinnya. Versi yang tidak punya bagiannya di sini tetap terbit,
 hanya pengumumannya memakai kalimat umum.
 
+## 2.20.0
+
+- Pesanan yang dibatalkan atau hangus tidak lagi menampilkan struk —
+  tidak ada pembayaran yang bisa dibuktikan di sana
+- Perbaikan bug dan penyempurnaan tampilan
+
 ## 2.19.0
 
 - Notifikasi KaataGo Support kini muncul juga saat aplikasinya sedang

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../theme.dart';
 import '../db/restaurant_repository.dart';
 import '../models/customer_order.dart';
 import '../models/order_type.dart';
@@ -125,6 +126,20 @@ class _CustomerReceiptScreenState extends State<CustomerReceiptScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Pesanan yang batal tidak punya struk, dan tidak boleh punya.
+    //
+    // Struk adalah bukti pembayaran. Menerbitkannya untuk pesanan yang
+    // uangnya tidak pernah berpindah berarti membuat bukti atas sesuatu
+    // yang tidak terjadi — dan yang memegangnya bisa memakainya untuk
+    // menagih, mengklaim ke kantor, atau menuntut barangnya.
+    //
+    // Penjaganya di sini, bukan di tiap tombol yang membukanya. Ada tiga
+    // pintu menuju layar ini hari ini, dan pintu keempat yang dibuat
+    // nanti tidak akan ingat memasang penjaganya sendiri.
+    if (widget.order.dibatalkan) {
+      return const _TanpaStruk();
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.forStaff ? 'Cetak Ulang Struk' : 'Struk Pembayaran'),
@@ -193,6 +208,44 @@ class _CustomerReceiptScreenState extends State<CustomerReceiptScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Yang ditampilkan menggantikan struk pesanan yang batal.
+class _TanpaStruk extends StatelessWidget {
+  const _TanpaStruk();
+
+  @override
+  Widget build(BuildContext context) {
+    final muted = KaataTheme.mutedOf(context);
+    return Scaffold(
+      backgroundColor: KaataTheme.backgroundOf(context),
+      appBar: AppBar(title: const Text('Struk Pembayaran')),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.receipt_long_outlined, size: 46, color: muted),
+              const SizedBox(height: 14),
+              const Text(
+                'Pesanan ini tidak punya struk',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Pesanannya dibatalkan atau hangus sebelum dibayar, jadi '
+                'tidak ada pembayaran yang bisa dibuktikan.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 13, color: muted, height: 1.4),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

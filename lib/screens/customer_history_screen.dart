@@ -348,10 +348,16 @@ class _CustomerHistoryScreenState extends State<CustomerHistoryScreen> {
               currency.format(order.total),
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                      builder: (_) => CustomerReceiptScreen(order: order)),
-                ),
+                // Pesanan yang batal tidak bisa dibuka strukmya —
+                // barisnya tetap ada di riwayat, tapi tidak menawarkan
+                // bukti pembayaran yang memang tidak pernah ada.
+                onTap: order.dibatalkan
+                    ? null
+                    : () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                              builder: (_) =>
+                                  CustomerReceiptScreen(order: order)),
+                        ),
               ),
               // Tombolnya hanya muncul selagi benar-benar bisa dipakai.
               // Tombol yang selalu ada lalu menolak saat ditekan membuat

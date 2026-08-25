@@ -145,6 +145,10 @@ class CustomerOrderStatusScreen extends StatelessWidget {
                             children: [
                               Text(dateFmt.format(order.createdAt.toWib()),
                                   style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                              // Tombol yang membuka penjelasan "tidak ada
+                              // struk" tetap tombol yang mengecewakan.
+                              // Yang batal tidak ditawari sama sekali.
+                              if (!order.dibatalkan)
                               IconButton(
                                 icon: const Icon(Icons.receipt_long_outlined, size: 20),
                                 tooltip: 'Struk Pembayaran',
