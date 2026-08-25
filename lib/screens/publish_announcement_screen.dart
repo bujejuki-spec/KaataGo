@@ -212,12 +212,21 @@ class _AnnouncementFormState extends State<_AnnouncementForm>
         child: ListView(
           padding: const EdgeInsets.all(20),
           children: [
+            // Warnanya dari tema, bukan ditulis mati.
+            //
+            // Sebelumnya biru tua 0xFF075985 — dipilih untuk latar
+            // pastel di tema terang, dan nyaris lenyap begitu latarnya
+            // jadi gelap. Kalimat di sini menjelaskan siapa yang akan
+            // menerima pengumumannya; yang tidak terbaca membuat orang
+            // menekan Kirim tanpa tahu ke mana perginya.
             Container(
               padding: const EdgeInsets.all(13),
               decoration: BoxDecoration(
-                color: const Color(0xFF0EA5E9).withOpacity(0.08),
+                color: KaataTheme.tintOf(context, Colors.lightBlue),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF0EA5E9).withOpacity(0.25)),
+                border: Border.all(
+                    color: KaataTheme.onTintOf(context, Colors.lightBlue)
+                        .withOpacity(0.35)),
               ),
               child: Text(
                 _isUpdate
@@ -231,7 +240,9 @@ class _AnnouncementFormState extends State<_AnnouncementForm>
                             '${_restoName ?? 'merchant yang sedang kamu buka'}. '
                             'Masuk ke tab "General" di kotak masuk, berikut '
                             'notifikasinya. Merchant lain tidak menerimanya.',
-                style: const TextStyle(fontSize: 12.5, color: Color(0xFF075985)),
+                style: TextStyle(
+                    fontSize: 12.5,
+                    color: KaataTheme.onTintOf(context, Colors.lightBlue)),
               ),
             ),
             const SizedBox(height: 18),

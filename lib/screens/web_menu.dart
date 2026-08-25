@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../models/billing.dart';
 import '../providers/auth_provider.dart';
+import 'billing_discount_screen.dart';
 import 'billing_screen.dart';
 import 'cash_deposit_screen.dart';
 import 'cashier_shift_screen.dart';
@@ -52,6 +54,13 @@ class MenuWeb {
     this.kelompok,
   });
 }
+
+/// Pembukuan KaataGo sendiri, bukan pembukuan merchant — ketiganya
+/// selalu menunjuk resto semu 'kaatago'.
+Widget _saldoKaataGo() => const FinanceBalanceScreen(restoId: kPlatformRestoId);
+Widget _mappingKaataGo() =>
+    const FinanceGlMappingScreen(restoId: kPlatformRestoId);
+Widget _jurnalKaataGo() => const FinanceJournalScreen(restoId: kPlatformRestoId);
 
 /// Tagihan langganan butuh tahu cabang mana yang sedang dibuka.
 Widget _tagihan() => Builder(builder: (context) {
@@ -108,15 +117,49 @@ const _superAdmin = <MenuWeb>[
     judul: 'Billing Merchant',
     layar: SuperAdminBillingScreen.new,
   ),
+  // Isi hub Finance KaataGo dibongkar ke sidebar.
+  //
+  // Hub bertingkat masuk akal di ponsel: layarnya sempit, jadi tujuh
+  // tujuan disembunyikan di balik satu kartu. Di sidebar yang memang
+  // memuat semuanya, kartu itu berubah jadi ketukan tambahan menuju
+  // daftar yang seharusnya sudah terlihat sejak awal — dan tujuh
+  // tujuan itu jadi satu-satunya bagian aplikasi yang tidak bisa
+  // dicapai langsung dari kiri layar.
   MenuWeb(
-    ikon: Icons.account_balance_wallet_outlined,
-    judul: 'Finance',
-    layar: SuperAdminFinanceScreen.new,
+    ikon: Icons.history,
+    judul: 'Riwayat Langganan',
+    layar: BillingHistoryScreen.new,
+  ),
+  MenuWeb(
+    ikon: Icons.local_offer_outlined,
+    judul: 'Diskon Langganan',
+    layar: BillingDiscountScreen.new,
   ),
   MenuWeb(
     ikon: Icons.card_giftcard,
     judul: 'Voucher Pelanggan',
     layar: VoucherScreen.new,
+  ),
+  MenuWeb(
+    kelompok: 'Pembukuan KaataGo',
+    ikon: Icons.account_balance_wallet_outlined,
+    judul: 'Saldo & Pengeluaran',
+    layar: _saldoKaataGo,
+  ),
+  MenuWeb(
+    ikon: Icons.numbers,
+    judul: 'Mapping GL Account',
+    layar: _mappingKaataGo,
+  ),
+  MenuWeb(
+    ikon: Icons.menu_book_outlined,
+    judul: 'Jurnal GL KaataGo',
+    layar: _jurnalKaataGo,
+  ),
+  MenuWeb(
+    ikon: Icons.travel_explore,
+    judul: 'Jurnal GL Semua Merchant',
+    layar: AllRestoJournalScreen.new,
   ),
   MenuWeb(
     kelompok: 'Pelanggan',
@@ -242,14 +285,15 @@ const _owner = <MenuWeb>[
     layar: RestaurantInfoScreen.new,
   ),
   MenuWeb(
-    ikon: Icons.badge_outlined,
-    judul: 'Kelola Karyawan',
-    layar: EmployeeManagementScreen.new,
-  ),
-  MenuWeb(
     ikon: Icons.qr_code_2,
     judul: 'QR Meja',
     layar: TableQrGeneratorScreen.new,
+  ),
+  // Owner memegang rekeningnya sendiri, jadi ia boleh mengubahnya.
+  MenuWeb(
+    ikon: Icons.payments_outlined,
+    judul: 'Info Pembayaran',
+    layar: SettingsScreen.new,
   ),
   MenuWeb(
     ikon: Icons.campaign_outlined,
@@ -338,10 +382,13 @@ const _admin = <MenuWeb>[
     judul: 'QR Meja',
     layar: TableQrGeneratorScreen.new,
   ),
+  // Baca-saja, sama seperti di HP. Rekening tujuan dan ID merchant
+  // menentukan ke mana uang merchant mengalir; yang boleh mengubahnya
+  // adalah yang menanggung akibatnya kalau salah.
   MenuWeb(
-    ikon: Icons.settings_outlined,
-    judul: 'Pengaturan',
-    layar: SettingsScreen.new,
+    ikon: Icons.payments_outlined,
+    judul: 'Info Pembayaran',
+    layar: PaymentInfoScreen.new,
   ),
   MenuWeb(
     ikon: Icons.campaign_outlined,
@@ -407,7 +454,7 @@ const _finance = <MenuWeb>[
   MenuWeb(
     ikon: Icons.payments_outlined,
     judul: 'Pengaturan Pembayaran',
-    layar: PaymentInfoScreen.new,
+    layar: SettingsScreen.new,
   ),
   MenuWeb(
     ikon: Icons.inbox_outlined,

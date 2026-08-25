@@ -42,6 +42,30 @@ class _WebShellScreenState extends State<WebShellScreen> {
   static const _lebarMinimal = 1000.0;
   static const _lebarSidebar = 260.0;
 
+  /// Tombol mengambang KaataGo Support — hanya untuk sisi merchant.
+  ///
+  /// Di versi HP tombol ini menempel di beranda tiap peran merchant,
+  /// dan beranda itu tidak dipakai sama sekali di web. Tanpa dipasang
+  /// di kerangkanya, pegawai merchant yang bekerja dari konsol tidak
+  /// punya satu pun jalan untuk mengadu atau bertanya.
+  ///
+  /// KaataGo Admin tidak mendapatkannya. Dia berada di sisi seberang
+  /// percakapan yang sama — yang dibukanya lewat menu Customer Service
+  /// — dan tombol mengadu di layarnya sendiri hanya membuat dia bisa
+  /// membuat tiket yang ujungnya dia jawab sendiri.
+  ///
+  /// Digeser ke atas karena layar di sebelahnya membawa tombol
+  /// mengambangnya sendiri, dan keduanya berebut sudut yang sama:
+  /// tanpa jarak ini yang satu menutupi yang lain, dan yang tertutup
+  /// tampak seperti hilang.
+  Widget? _support(AuthProvider auth) {
+    if (auth.isSuperAdmin) return null;
+    return const Padding(
+      padding: EdgeInsets.only(bottom: 72),
+      child: SupportFab(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
@@ -72,13 +96,7 @@ class _WebShellScreenState extends State<WebShellScreen> {
 
         if (!lebar) {
           return Scaffold(
-            // KaataGo Support menempel di beranda tiap peran di versi
-            // HP — beranda yang tidak dipakai sama sekali di web. Tanpa
-            // dipasang di sini, pegawai merchant yang bekerja dari
-            // konsol web tidak punya satu pun jalan untuk mengadu atau
-            // bertanya, dan tidak ada apa pun di layar yang memberi
-            // tahu bahwa jalan itu ada di aplikasi HP-nya.
-            floatingActionButton: const SupportFab(),
+            floatingActionButton: _support(auth),
             appBar: AppBar(title: Text(menu[terpilih].judul)),
             drawer: Drawer(
               child: _Sidebar(
@@ -95,7 +113,7 @@ class _WebShellScreenState extends State<WebShellScreen> {
         }
 
         return Scaffold(
-          floatingActionButton: const SupportFab(),
+          floatingActionButton: _support(auth),
           body: Row(
             children: [
               SizedBox(

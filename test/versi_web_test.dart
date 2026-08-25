@@ -244,6 +244,70 @@ void main() {
     });
   });
 
+  // Sidebar web menunjuk layarnya langsung, tanpa melewati layar
+  // perantara yang di HP menyaring siapa boleh apa. Menunjuk layar
+  // yang keliru berarti memberi hak yang tidak pernah dimiliki peran
+  // itu di aplikasinya — dan hak yang diberi lewat menu tidak terlihat
+  // seperti pemberian hak, cuma seperti menu biasa.
+  group('hak ubah sama dengan versi HP', () {
+    String blok(String peran) {
+      final b = menu.substring(menu.indexOf('const $peran = <MenuWeb>['));
+      return b.substring(0, b.indexOf('\n];'));
+    }
+
+    // SettingsScreen bisa mengubah QRIS dan rekening bank;
+    // PaymentInfoScreen hanya menampilkannya.
+    test('info pembayaran hanya bisa diubah Owner dan Finance', () {
+      expect(blok('_owner'), contains('layar: SettingsScreen.new'));
+      expect(blok('_finance'), contains('layar: SettingsScreen.new'));
+      expect(blok('_admin'), isNot(contains('layar: SettingsScreen.new')));
+      expect(blok('_admin'), contains('layar: PaymentInfoScreen.new'));
+    });
+
+    // Di HP hanya KaataGo Admin yang punya jalan ke sana sama sekali.
+    test('kelola karyawan hanya untuk KaataGo Admin', () {
+      expect(blok('_superAdmin'), contains('EmployeeManagementScreen'));
+      for (final peran in ['_owner', '_admin', '_finance']) {
+        expect(blok(peran), isNot(contains('EmployeeManagementScreen')),
+            reason: peran);
+      }
+    });
+  });
+
+  // Hub bertingkat masuk akal di ponsel yang sempit. Di sidebar yang
+  // memang memuat semuanya, kartu hub cuma jadi ketukan tambahan
+  // menuju daftar yang seharusnya sudah terlihat sejak awal.
+  group('hub tidak bersarang lagi di sidebar', () {
+    final blok = menu.substring(menu.indexOf('const _superAdmin'));
+    final superAdmin = blok.substring(0, blok.indexOf('\n];'));
+
+    test('isi Finance KaataGo dibongkar ke sidebar', () {
+      for (final m in [
+        'Riwayat Langganan',
+        'Diskon Langganan',
+        'Voucher Pelanggan',
+        'Saldo & Pengeluaran',
+        'Mapping GL Account',
+        'Jurnal GL KaataGo',
+        'Jurnal GL Semua Merchant',
+      ]) {
+        expect(superAdmin, contains("judul: '$m'"), reason: m);
+      }
+      // Kartunya sendiri tidak ikut, kalau tidak jadi dua jalan ke
+      // tujuan yang sama.
+      expect(superAdmin, isNot(contains('SuperAdminFinanceScreen')));
+    });
+
+    // Ketiganya membaca pembukuan KaataGo sendiri, bukan pembukuan
+    // merchant mana pun — salah resto berarti angka orang lain.
+    test('pembukuan KaataGo menunjuk resto semu kaatago', () {
+      for (final f in ['_saldoKaataGo', '_mappingKaataGo', '_jurnalKaataGo']) {
+        expect(menu, contains(f));
+      }
+      expect('restoId: kPlatformRestoId'.allMatches(menu).length, 3);
+    });
+  });
+
   group('yang tidak boleh hilang di web', () {
     final shell = File('lib/screens/web_shell_screen.dart').readAsStringSync();
 
@@ -252,7 +316,21 @@ void main() {
     // kerangkanya, pegawai merchant yang bekerja dari konsol tidak
     // punya satu pun jalan untuk mengadu atau bertanya.
     test('KaataGo Support ada di kedua bentuk kerangka', () {
-      expect('floatingActionButton: const SupportFab(),'.allMatches(shell).length, 2);
+      expect('floatingActionButton: _support(auth),'.allMatches(shell).length, 2);
+      expect(shell, contains('child: SupportFab(),'));
+    });
+
+    // KaataGo Admin berada di sisi seberang percakapan yang sama —
+    // tombol mengadu di layarnya sendiri hanya membuat dia bisa
+    // membuat tiket yang ujungnya dia jawab sendiri.
+    test('KaataGo Admin tidak mendapat tombolnya', () {
+      expect(shell, contains('if (auth.isSuperAdmin) return null;'));
+    });
+
+    // Layar di sebelahnya membawa tombol mengambangnya sendiri, dan
+    // keduanya berebut sudut yang sama.
+    test('tidak berebut sudut dengan tombol layarnya', () {
+      expect(shell, contains('padding: EdgeInsets.only(bottom: 72)'));
     });
 
     // Menu yang ada di beranda HP tapi tidak di sidebar berarti hilang
@@ -281,6 +359,7 @@ void main() {
       final admin = blokAdmin.substring(0, blokAdmin.indexOf('\n];'));
       expect(admin, contains("judul: 'Laporan Penjualan'"));
       expect(admin, contains("judul: 'Kirim Pengumuman'"));
+      expect(admin, contains("judul: 'Info Pembayaran'"));
     });
 
     // Tagihan langganan butuh tahu cabang mana yang sedang dibuka.
