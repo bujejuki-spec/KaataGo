@@ -3,6 +3,7 @@ import '../widgets/side_cart_dialog.dart';
 import 'dart:convert';
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -340,7 +341,17 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
             MaterialPageRoute(builder: (_) => const CustomerHistoryScreen()),
           ),
         )
-      else
+      // Tombol login tidak ada di web.
+      //
+      // Web pelanggan sengaja hanya untuk yang tidak masuk akun: ia
+      // dibuka dari kamera bawaan HP tanpa memasang apa pun, dan
+      // gunanya satu — memesan dari meja yang barusan dipindai. Akun,
+      // riwayat lintas merchant, dan voucher ada di aplikasinya.
+      //
+      // Menyediakan pintu masuk di sini berarti menjanjikan hal yang
+      // tidak ada di baliknya: separuh isi akun tidak dibuatkan versi
+      // webnya.
+      else if (!kIsWeb)
         IconButton(
           icon: _loggingIn
               ? const SizedBox(
@@ -813,7 +824,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
               if (!loggedInAsCustomer)
                 const Padding(
                   padding: EdgeInsets.only(top: 12),
-                  child: UpdateBanner(),
+                  child: kIsWeb ? SizedBox.shrink() : UpdateBanner(),
                 ),
               Expanded(
                 child: Padding(

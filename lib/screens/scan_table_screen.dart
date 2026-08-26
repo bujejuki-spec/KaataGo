@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../providers/table_session_provider.dart';
 import '../widgets/dialog_actions.dart';
 import '../widgets/required_label.dart';
+import '../utils/tautan_meja.dart';
 
 /// Required before a customer can order: scan the QR code printed/shown
 /// at their table. The dummy QR codes encode "RESTO:<restoId>|TABLE:<n>"
@@ -32,18 +33,19 @@ class _ScanTableScreenState extends State<ScanTableScreen> {
     final raw = capture.barcodes.firstOrNull?.rawValue;
     if (raw == null) return;
 
-    // Table labels are free-form ("A01", "VIP-2"), not just digits — but
-    // stickers printed back when they had to be numeric still match.
-    final match = RegExp(r'^RESTO:([^|]+)\|TABLE:(.+)$').firstMatch(raw.trim());
-    if (match == null) {
+    // Dua bentuk diterima: tautan web yang dipakai stiker baru, dan
+    // teks lama yang masih tertempel di meja-meja yang tercetak
+    // sebelumnya. Lihat bacaTautanMeja.
+    final meja = bacaTautanMeja(raw);
+    if (meja == null) {
       setState(() => _error = 'QR tidak dikenali: "$raw"');
       return;
     }
 
     _handled = true;
-    final restoId = match.group(1)!;
-    final table = match.group(2)!.trim();
-    await context.read<TableSessionProvider>().setTable(restoId, table);
+    await context
+        .read<TableSessionProvider>()
+        .setTable(meja.restoId, meja.meja);
     if (!mounted) return;
     Navigator.of(context).pop();
   }

@@ -9,13 +9,15 @@ import '../utils/table_qr_image.dart';
 import '../widgets/kaata_qr_card.dart';
 import '../widgets/responsive.dart';
 import '../widgets/required_label.dart';
+import '../utils/tautan_meja.dart';
 
 /// Builds the QR sticker a customer scans at their table. The Resto ID is
 /// taken from the logged-in employee's own account and shown read-only —
 /// an Admin can only ever generate codes for their own restaurant — so
 /// the only thing to fill in is the table number.
 ///
-/// The encoded payload is `RESTO:<restoId>|TABLE:<n>`, which is exactly
+/// The encoded payload is a KaataGo web link carrying resto and table —
+/// see [tautanMeja]. Bentuk lamanya `RESTO:<restoId>|TABLE:<n>`, which is exactly
 /// what [ScanTableScreen]'s parser expects; changing the format here
 /// would silently break scanning.
 class TableQrGeneratorScreen extends StatefulWidget {
@@ -65,7 +67,8 @@ class _TableQrGeneratorScreenState extends State<TableQrGeneratorScreen> {
     super.dispose();
   }
 
-  String _payloadFor(String table, String restoId) => 'RESTO:$restoId|TABLE:$table';
+  String _payloadFor(String table, String restoId) =>
+      tautanMeja(restoId, table);
 
   /// Daftar meja yang sedang dipilih — satu isinya di mode tunggal,
   /// serentetan di mode banyak.

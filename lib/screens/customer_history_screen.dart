@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -426,8 +427,12 @@ class _GuestNotice extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'Riwayat ini tersimpan di HP ini saja. Login dengan Gmail '
-              'supaya riwayatmu tetap ada walau ganti HP.',
+              kIsWeb
+                  ? 'Riwayat ini tersimpan di peramban ini saja, dan hilang '
+                      'kalau data situsnya dibersihkan. Pasang aplikasi '
+                      'KaataGo untuk menyimpannya di akunmu.'
+                  : 'Riwayat ini tersimpan di HP ini saja. Login dengan Gmail '
+                      'supaya riwayatmu tetap ada walau ganti HP.',
               style: TextStyle(fontSize: 12, color: Colors.orange.shade900),
             ),
           ),

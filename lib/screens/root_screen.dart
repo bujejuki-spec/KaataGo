@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
 import '../providers/table_session_provider.dart';
+import '../utils/tautan_meja.dart';
 import 'admin_home_screen.dart';
 import 'chef_home_screen.dart';
 import 'customer_home_screen.dart';
@@ -35,10 +36,35 @@ class _RootScreenState extends State<RootScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final session = context.read<TableSessionProvider>();
-      if (!session.loaded) session.load();
+      if (!session.loaded) await session.load();
+      if (!mounted) return;
+      await _bukaMejaDariAlamat(session);
     });
+  }
+
+  /// Meja yang datang dari alamat halaman, bukan dari kamera.
+  ///
+  /// Inilah pintu masuk pelanggan di web: QR di meja berisi tautan, dan
+  /// yang memindainya dengan kamera bawaan HP mendarat di sini dengan
+  /// resto dan nomor mejanya menempel di alamat. Tidak ada kamera yang
+  /// perlu dibuka aplikasi ini, karena kameranyalah yang mengantar
+  /// orangnya ke sini.
+  Future<void> _bukaMejaDariAlamat(TableSessionProvider session) async {
+    if (!kIsWeb) return;
+    final meja = bacaTautanMeja(Uri.base.toString());
+    if (meja == null) return;
+    // Memindai QR meja yang sama berulang kali — atau sekadar memuat
+    // ulang halamannya — tidak boleh memulai sesi baru. Sesi baru
+    // berarti pesanan yang sedang berjalan ditinggalkan di sesi lama,
+    // dan yang menunggu makanannya kehilangan jejak pesanannya sendiri.
+    if (session.hasActiveResto &&
+        session.restoId == meja.restoId &&
+        session.tableNumber == meja.meja) {
+      return;
+    }
+    await session.setTable(meja.restoId, meja.meja);
   }
 
   @override
