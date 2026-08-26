@@ -63,6 +63,25 @@ void main() {
   });
 
   group('yang tidak diberikan di web pelanggan', () {
+    // Tombol kembali mengakhiri sesi restonya lalu membangun layar ini
+    // jadi pemilih merchant. Di web pemilih itu tidak ada — yang
+    // tersisa cuma halaman masuk merchant, dan satu-satunya jalan
+    // kembali ke mejanya adalah memindai ulang QR yang barangkali
+    // sudah tidak ada di depannya.
+    test('tidak ada tombol kembali saat datang dari QR meja', () {
+      final beranda =
+          File('lib/screens/customer_home_screen.dart').readAsStringSync();
+      expect(beranda,
+          contains('final tanpaKembali = kIsWeb && session.enteredViaQr;'));
+      expect(beranda, contains('leading: tanpaKembali'));
+      // Tombol kembali milik sistem — sapuan di tepi layar, tombol
+      // kembali peramban — lewat jalur yang sama dan harus ikut diam.
+      expect(beranda, contains('if (!didPop && !tanpaKembali)'));
+      // Tanpa ini Scaffold memasang panah kembalinya sendiri begitu
+      // leading dibiarkan null.
+      expect(beranda, contains('automaticallyImplyLeading: false'));
+    });
+
     test('tidak ada pintu login', () {
       final beranda =
           File('lib/screens/customer_home_screen.dart').readAsStringSync();

@@ -891,18 +891,34 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
     // depends on hasActiveResto — so "back" here can't pop to the chooser,
     // it has to drop the resto session and let this screen rebuild into
     // it. Same for guests and logged-in customers alike.
+    // Pelanggan web yang datang dari QR meja tidak punya "kembali".
+    //
+    // Tombol itu mengakhiri sesi restonya lalu membangun ulang layar ini
+    // jadi pemilih merchant. Di aplikasi itu masuk akal — pemilihnya
+    // ada, dan QR-nya bisa dipindai lagi dari sana. Di web pemilih itu
+    // tidak ada: yang tersisa cuma halaman masuk merchant, dan satu-
+    // satunya jalan kembali ke mejanya adalah memindai ulang QR yang
+    // barangkali sudah tidak ada di depannya.
+    //
+    // Jadi yang ditekan sekali karena mengira akan mundur satu langkah
+    // justru kehilangan keranjangnya sekaligus jalan pulangnya.
+    final tanpaKembali = kIsWeb && session.enteredViaQr;
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) _backToChooser(context);
+        if (!didPop && !tanpaKembali) _backToChooser(context);
       },
       child: Scaffold(
         appBar: AppBar(
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            tooltip: 'Kembali',
-            onPressed: () => _backToChooser(context),
-          ),
+          automaticallyImplyLeading: false,
+          leading: tanpaKembali
+              ? null
+              : IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  tooltip: 'Kembali',
+                  onPressed: () => _backToChooser(context),
+                ),
           title: Text(
             session.tableNumber != null ? 'Meja ${session.tableNumber}' : 'KaataGo (Customer)',
           ),
