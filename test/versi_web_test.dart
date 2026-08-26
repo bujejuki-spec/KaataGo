@@ -585,12 +585,12 @@ void main() {
       expect(versi, isNot(contains('PackageInfo')));
     });
 
-    // Dalam satu versi yang sama bisa ada belasan build, dan yang
-    // melaporkan masalah hampir selalu sedang membuka salah satunya
-    // yang bukan terbaru.
-    test('penanda build ikut, ditempel CI saat membangun', () {
-      expect(versi, contains("String.fromEnvironment('BUILD_WEB')"));
-      expect(alur, contains('--dart-define=BUILD_WEB='));
+    // Yang dibaca orang cuma nomor versinya. Tujuh huruf commit di
+    // sebelahnya tidak berarti apa-apa baginya, dan yang tidak berarti
+    // apa-apa di kaki layar cuma jadi sampah yang harus dilewati mata.
+    test('tanpa penanda build', () {
+      expect(versi, isNot(contains('BUILD_WEB')));
+      expect(alur, isNot(contains('--dart-define=BUILD_WEB=')));
     });
 
     test('ditulis di kaki sidebar', () {

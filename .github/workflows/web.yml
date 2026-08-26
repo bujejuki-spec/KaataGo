@@ -66,12 +66,7 @@ jobs:
       - run: dart run sqflite_common_ffi_web:setup
 
       # Tanpa --base-href: situsnya melayani akar domain.
-      #
-      # BUILD_WEB ditempel supaya kaki sidebar bisa menyebut build mana
-      # yang sedang dibuka. Dalam satu versi yang sama bisa ada belasan
-      # build, dan yang melaporkan masalah hampir selalu sedang membuka
-      # salah satunya yang bukan terbaru.
-      - run: flutter build web --release --dart-define=BUILD_WEB=${GITHUB_SHA::7}
+      - run: flutter build web --release
 
       # Jekyll mengabaikan berkas dan folder berawalan garis bawah.
       # Flutter tidak memakainya sekarang, tapi satu berkas yang hilang

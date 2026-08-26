@@ -12,14 +12,5 @@
 /// otomatis tidak.
 const kVersiWeb = '1.0.0';
 
-/// Penanda build dari CI — tujuh huruf pertama commit-nya.
-///
-/// Nomor versi saja tidak cukup untuk menjawab "yang kamu buka itu
-/// yang mana": dalam satu versi yang sama bisa ada belasan build, dan
-/// yang melaporkan masalah hampir selalu sedang membuka salah satunya
-/// yang bukan terbaru. Kosong saat dibangun di mesin sendiri.
-const kBuildWeb = String.fromEnvironment('BUILD_WEB');
-
 /// Yang ditulis di kaki sidebar.
-String get labelVersiWeb =>
-    kBuildWeb.isEmpty ? 'Web v$kVersiWeb' : 'Web v$kVersiWeb · $kBuildWeb';
+String get labelVersiWeb => 'Web v$kVersiWeb';
