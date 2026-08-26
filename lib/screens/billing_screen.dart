@@ -13,6 +13,7 @@ import '../theme.dart';
 import '../utils/photo_picker.dart';
 import '../widgets/app_toast.dart';
 import '../widgets/responsive.dart';
+import '../widgets/dialog_actions.dart';
 
 final _rupiah =
     NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
@@ -782,19 +783,15 @@ class _DialogBayarState extends State<_DialogBayar> {
       ),
       actionsAlignment: MainAxisAlignment.center,
       actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Batal'),
-        ),
-        FilledButton(
-          // Bukti yang tidak dilampirkan membuat pemeriksanya harus
-          // menebak — dan yang menanggung tebakan itu adalah resto yang
-          // menunggu kuncinya dibuka.
-          onPressed: _foto == null
+        // Bukti yang tidak dilampirkan membuat pemeriksanya harus
+        // menebak — dan yang menanggung tebakan itu adalah resto yang
+        // menunggu kuncinya dibuka.
+        DialogActions(
+          confirmLabel: 'Kirim',
+          onConfirm: _foto == null
               ? null
               : () => Navigator.pop(
                   context, _Bukti(_foto, _catatan.text.trim())),
-          child: const Text('Kirim'),
         ),
       ],
     );

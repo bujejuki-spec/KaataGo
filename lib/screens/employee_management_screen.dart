@@ -379,16 +379,13 @@ class _EmployeeFormDialogState extends State<_EmployeeFormDialog> {
           ),
         ),
       ),
+      actionsAlignment: MainAxisAlignment.center,
       actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(false),
-          child: const Text('Batal'),
-        ),
-        FilledButton(
-          onPressed: _saving ? null : _save,
-          child: _saving
-              ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-              : const Text('Simpan'),
+        DialogActions(
+          confirmLabel: 'Simpan',
+          busy: _saving,
+          onConfirm: _save,
+          onCancel: () => Navigator.of(context).pop(false),
         ),
       ],
     );

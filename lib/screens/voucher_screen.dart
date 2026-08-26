@@ -15,6 +15,7 @@ import '../utils/rupiah_input.dart';
 import '../widgets/app_toast.dart';
 import '../widgets/required_label.dart';
 import '../widgets/responsive.dart';
+import '../widgets/dialog_actions.dart';
 
 final _rupiah =
     NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
@@ -112,14 +113,13 @@ class _VoucherScreenState extends State<VoucherScreen>
           '${_rupiah.format(v.totalAmount)} kembali ke saldo KaataGo. '
           'Pengumumannya di kotak masuk pelanggan ikut dicabut.',
         ),
+        actionsAlignment: MainAxisAlignment.center,
         actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(d, false),
-              child: const Text('Batal')),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () => Navigator.pop(d, true),
-            child: const Text('Hapus'),
+          DialogActions(
+            confirmLabel: 'Hapus',
+            destructive: true,
+            onConfirm: () => Navigator.pop(d, true),
+            onCancel: () => Navigator.pop(d, false),
           ),
         ],
       ),

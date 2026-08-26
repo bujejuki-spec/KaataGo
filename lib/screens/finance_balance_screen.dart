@@ -1445,7 +1445,17 @@ class _AddExpenseDialogState extends State<_AddExpenseDialog> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: FilledButton(
-                        style: FilledButton.styleFrom(backgroundColor: accentColor),
+                        // Tanpa warna sendiri.
+                        //
+                        // accentColor menandai bagiannya — ungu untuk
+                        // Petty Cash, hijau untuk penarikan — dan itu
+                        // berguna pada ikon dan kotak keterangannya.
+                        // Pada tombol simpan ia jadi hal lain: warna
+                        // tombol adalah bahasa yang sudah dipakai
+                        // seluruh aplikasi untuk membedakan tindakan
+                        // biasa dari yang merusak, dan hijau di sini
+                        // membuat satu tombol simpan tampak beda jenis
+                        // dari semua tombol simpan lainnya.
                         onPressed: _saving ? null : _save,
                         child: _saving
                             ? const SizedBox(
@@ -1694,7 +1704,17 @@ class _AddPettyCashDialogState extends State<_AddPettyCashDialog> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: FilledButton(
-                        style: FilledButton.styleFrom(backgroundColor: accentColor),
+                        // Tanpa warna sendiri.
+                        //
+                        // accentColor menandai bagiannya — ungu untuk
+                        // Petty Cash, hijau untuk penarikan — dan itu
+                        // berguna pada ikon dan kotak keterangannya.
+                        // Pada tombol simpan ia jadi hal lain: warna
+                        // tombol adalah bahasa yang sudah dipakai
+                        // seluruh aplikasi untuk membedakan tindakan
+                        // biasa dari yang merusak, dan hijau di sini
+                        // membuat satu tombol simpan tampak beda jenis
+                        // dari semua tombol simpan lainnya.
                         onPressed: _saving ? null : _save,
                         child: _saving
                             ? const SizedBox(
@@ -2061,17 +2081,13 @@ class _FormModalState extends State<_FormModal> {
           ),
         ),
       ),
+      actionsAlignment: MainAxisAlignment.center,
       actions: [
-        TextButton(
-            onPressed: _menyimpan ? null : () => Navigator.pop(context, false),
-            child: const Text('Batal')),
-        FilledButton(
-          onPressed: _menyimpan ? null : _simpan,
-          child: _menyimpan
-              ? const SizedBox(
-                  width: 16, height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2))
-              : const Text('Simpan'),
+        DialogActions(
+          confirmLabel: 'Simpan',
+          busy: _menyimpan,
+          onConfirm: _simpan,
+          onCancel: () => Navigator.pop(context, false),
         ),
       ],
     );
