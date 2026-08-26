@@ -39,11 +39,19 @@ hanya pengumumannya memakai kalimat umum.
 
 ## 2.21.0
 
-- Versi web untuk KaataGo Admin, Owner, Admin, dan Finance — menunya di
-  sidebar kiri, tidak lagi ditumpuk di balik kelompok seperti di HP
-- Layarnya sama persis dengan versi HP-nya, termasuk gerbang langganan
-- Jendela yang disempitkan mengubah sidebar jadi laci yang ditarik dari
-  tepi
+- QR meja sekarang berisi tautan, jadi pelanggan bisa memindainya
+  dengan kamera bawaan HP dan langsung memesan lewat web — tanpa
+  memasang aplikasi. Cetak ulang QR mejamu dari menu QR Meja — yang
+  lama tetap bisa dipindai dari dalam aplikasi, tapi tidak membuka web
+- Konsol web KaataGo untuk Owner, Admin, Finance, dan KaataGo Admin:
+  menunya di sidebar kiri, dibuka dari peramban di PC
+- Kelola Produk dan Kategori tampil sebagai kartu, seperti Level
+- Tombol Batal di dialog Top Up Saldo, hapus voucher, kirim bukti
+  bayar, dan kelola karyawan pindah ke bawah tombol utamanya
+- Tombol Simpan di Saldo & Pengeluaran memakai warna yang sama dengan
+  tombol simpan lainnya
+- Keterangan di Kirim Pengumuman dan Banner Promo terbaca di tema gelap
+- Di tablet, popup tidak lagi melebar hampir selebar layar
 - Perbaikan bug dan penyempurnaan tampilan
 
 ## 2.20.0
