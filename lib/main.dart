@@ -86,7 +86,12 @@ class PosApp extends StatelessWidget {
           // Notifikasi tiba di luar pohon widget; tanpa kunci ini tidak
           // ada context yang bisa dipakai bernavigasi dari sana.
           navigatorKey: navigatorKey,
-          title: 'KaataGo',
+          // Judul tab peramban, dan di Android judul kartunya di
+          // Recent Apps. Yang panjang cocok di tab — di sana ada ruang,
+          // dan tab yang cuma bertulis nama tidak membedakan dirinya
+          // dari puluhan tab lain. Di Recent Apps ruangnya sesempit
+          // ikonnya, dan sisanya dipotong jadi "KaataGo - Order Cep…".
+          title: kIsWeb ? 'KaataGo - Order Cepat, Merchant Hebat' : 'KaataGo',
           debugShowCheckedModeBanner: false,
           theme: KaataTheme.light(),
           darkTheme: KaataTheme.dark(),
