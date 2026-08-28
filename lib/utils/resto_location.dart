@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:url_launcher/url_launcher.dart';
 
 /// Titik lokasi resto beserta alamat yang terbaca dari titik itu.
@@ -92,15 +93,45 @@ Future<String?> addressOf(double latitude, double longitude) async {
 
 /// Membuka titik resto di aplikasi peta.
 ///
-/// Memakai tautan universal Google Maps, yang tidak butuh kunci API dan
-/// tetap bekerja lewat peramban kalau aplikasi Maps-nya tidak terpasang.
-Future<bool> openInMaps(double latitude, double longitude, {String? label}) {
-  final uri = Uri.https('www.google.com', '/maps/search/', {
+/// Mencoba `geo:` lebih dulu. Itu skema yang dijawab langsung oleh
+/// aplikasi peta yang terpasang — Google Maps, atau apa pun yang
+/// dipilih orangnya — jadi petanya terbuka di aplikasinya, bukan di tab
+/// peramban yang harus memuat ulang seluruh Google Maps versi web.
+///
+/// Kalau tidak ada yang menjawab `geo:` — iOS tidak mengenalnya, dan
+/// web jelas tidak — barulah tautan Google Maps biasa dipakai. Yang
+/// terakhir ini tidak butuh kunci API dan tetap bekerja di peramban.
+Future<bool> openInMaps(double latitude, double longitude,
+    {String? label}) async {
+  final nama = (label ?? '').trim();
+
+  // `query_place_id` kosong sengaja tidak dikirim lagi.
+  //
+  // Sebelumnya parameter itu ikut terkirim tanpa isi setiap kali resto
+  // punya nama, dan Google Maps memperlakukan id tempat kosong sebagai
+  // id yang tidak ditemukan — halamannya terbuka, petanya kosong.
+  final web = Uri.https('www.google.com', '/maps/search/', {
     'api': '1',
     'query': '$latitude,$longitude',
-    if (label != null && label.isNotEmpty) 'query_place_id': '',
   });
-  return launchUrl(uri, mode: LaunchMode.externalApplication);
+
+  if (!kIsWeb) {
+    // Nama di dalam kurung jadi label pin-nya di aplikasi peta.
+    final geo = Uri.parse('geo:$latitude,$longitude?q=$latitude,$longitude'
+        '${nama.isEmpty ? '' : '(${Uri.encodeComponent(nama)})'}');
+    try {
+      if (await canLaunchUrl(geo)) {
+        if (await launchUrl(geo, mode: LaunchMode.externalApplication)) {
+          return true;
+        }
+      }
+    } catch (_) {
+      // Tidak ada yang menangani geo: di perangkat ini. Bukan kegagalan
+      // yang perlu dikabarkan — masih ada jalan lewat peramban.
+    }
+  }
+
+  return launchUrl(web, mode: LaunchMode.externalApplication);
 }
 
 /// Membaca koordinat dari teks yang ditempel orang.

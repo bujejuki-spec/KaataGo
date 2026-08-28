@@ -81,5 +81,15 @@
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
+        <!-- Supaya canLaunchUrl("geo:...") bisa melihat aplikasi peta.
+             Sejak Android 11, aplikasi tidak boleh lagi mengintip
+             aplikasi lain tanpa menyebutkannya di sini — dan yang
+             terjadi kalau lupa bukan galat, melainkan canLaunchUrl
+             yang menjawab "tidak ada" pada HP yang jelas-jelas punya
+             Google Maps terpasang. -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="geo"/>
+        </intent>
     </queries>
 </manifest>
