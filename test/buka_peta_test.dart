@@ -32,6 +32,17 @@ void main() {
       expect(sumber, contains('return launchUrl(web'));
     });
 
+    // externalApplication di web berarti window.open, dan tab baru
+    // itulah halaman kosongnya — sering ditahan penghalang popup, dan
+    // kalaupun lolos, Android tidak menyerahkannya ke aplikasi Maps.
+    test('di web memindahkan tab yang ada, bukan membuka tab baru', () {
+      expect(sumber, contains("webOnlyWindowName: '_self'"));
+      final web = sumber.indexOf('if (kIsWeb) {');
+      expect(web, greaterThan(0));
+      final cabang = sumber.substring(web, sumber.indexOf('}', web));
+      expect(cabang, isNot(contains('LaunchMode.externalApplication')));
+    });
+
     test('nama resto jadi label pin, bukan dibuang', () {
       expect(sumber, contains('Uri.encodeComponent(nama)'));
     });

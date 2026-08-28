@@ -131,6 +131,25 @@ Future<bool> openInMaps(double latitude, double longitude,
     }
   }
 
+  // Di web: pindahkan tab yang sedang dibuka, jangan buka tab baru.
+  //
+  // `externalApplication` di web berarti window.open — dan tab baru
+  // itulah halaman kosongnya. Ia sering ditahan penghalang popup
+  // karena tidak dianggap datang dari ketukan orangnya, dan kalaupun
+  // lolos, ia lahir sebagai tab kosong yang harus memuat seluruh
+  // Google Maps versi web dari nol.
+  //
+  // Yang lebih penting: tautan universal Google Maps hanya diserahkan
+  // Android ke aplikasi Maps kalau ia dibuka sebagai perpindahan
+  // halaman biasa. Dibuka sebagai tab baru, ia berhenti di peramban.
+  //
+  // Halamannya sendiri tidak hilang — begitu aplikasi Maps mengambil
+  // alih, tab ini tetap ada di belakangnya dan tombol kembali
+  // mengembalikan orangnya ke pesanan yang sedang dikerjakan.
+  if (kIsWeb) {
+    return launchUrl(web, webOnlyWindowName: '_self');
+  }
+
   return launchUrl(web, mode: LaunchMode.externalApplication);
 }
 
