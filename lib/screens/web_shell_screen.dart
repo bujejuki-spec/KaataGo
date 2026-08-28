@@ -83,67 +83,83 @@ class _WebShellScreenState extends State<WebShellScreen> {
 
     final terpilih = _terpilih.clamp(0, menu.length - 1);
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final lebar = constraints.maxWidth >= _lebarMinimal;
-        final isi = KeyedSubtree(
-          // Kunci per tujuan DAN per merchant.
-          //
-          // Tanpa kunci, berpindah menu memakai ulang State layar
-          // sebelumnya kalau jenis widgetnya kebetulan sama. Tanpa
-          // restoId di dalamnya, berpindah cabang meninggalkan data
-          // cabang lama di layar yang sudah terlanjur memuatnya.
-          key: ValueKey('${menu[terpilih].judul}|${auth.restoId}'),
-          child: terpilih == 0
-              ? _Beranda(
-                  menu: menu,
-                  onPilih: (i) => setState(() => _terpilih = i),
-                )
-              : menu[terpilih].layar(),
-        );
-
-        if (!lebar) {
-          return Scaffold(
-            floatingActionButton: _support(auth),
-            appBar: AppBar(title: Text(menu[terpilih].judul)),
-            drawer: Drawer(
-              child: _Sidebar(
-                menu: menu,
-                terpilih: terpilih,
-                onPilih: (i) {
-                  setState(() => _terpilih = i);
-                  Navigator.pop(context);
-                },
-              ),
-            ),
-            body: isi,
-          );
-        }
-
-        return Scaffold(
-          floatingActionButton: _support(auth),
-          body: Row(
-            children: [
-              SizedBox(
-                width: _lebarSidebar,
-                child: Material(
-                  color: KaataTheme.surfaceOf(context),
-                  child: _Sidebar(
+    // Tombol kembali peramban tidak membawa ke mana-mana dari sini.
+    //
+    // Konsol ini halaman pertama sesudah masuk, dan yang ada di
+    // belakangnya di riwayat peramban adalah halaman masuk — yang
+    // sudah tidak berlaku, karena orangnya sudah masuk. Kembali ke
+    // sana cuma memunculkan layar masuk kepada orang yang barusan
+    // berhasil masuk.
+    //
+    // Menutup tabnya sendiri tidak bisa: window.close() ditolak
+    // peramban untuk tab yang tidak dibuka oleh skrip, dan itu berlaku
+    // untuk semua tab yang dibuka orang lewat alamat atau penanda.
+    // Jadi yang bisa dilakukan adalah tidak ke mana-mana, dan itu yang
+    // dikerjakan di sini.
+    return PopScope(
+      canPop: false,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final lebar = constraints.maxWidth >= _lebarMinimal;
+          final isi = KeyedSubtree(
+            // Kunci per tujuan DAN per merchant.
+            //
+            // Tanpa kunci, berpindah menu memakai ulang State layar
+            // sebelumnya kalau jenis widgetnya kebetulan sama. Tanpa
+            // restoId di dalamnya, berpindah cabang meninggalkan data
+            // cabang lama di layar yang sudah terlanjur memuatnya.
+            key: ValueKey('${menu[terpilih].judul}|${auth.restoId}'),
+            child: terpilih == 0
+                ? _Beranda(
                     menu: menu,
-                    terpilih: terpilih,
                     onPilih: (i) => setState(() => _terpilih = i),
-                  ),
+                  )
+                : menu[terpilih].layar(),
+          );
+
+          if (!lebar) {
+            return Scaffold(
+              floatingActionButton: _support(auth),
+              appBar: AppBar(title: Text(menu[terpilih].judul)),
+              drawer: Drawer(
+                child: _Sidebar(
+                  menu: menu,
+                  terpilih: terpilih,
+                  onPilih: (i) {
+                    setState(() => _terpilih = i);
+                    Navigator.pop(context);
+                  },
                 ),
               ),
-              VerticalDivider(width: 1, color: KaataTheme.borderOf(context)),
-              // Layar yang dipilih membawa AppBar-nya sendiri. Itu
-              // disengaja: judul, tombol, dan tab yang sudah ada di
-              // versi ponselnya tetap berada di tempat yang sama.
-              Expanded(child: isi),
-            ],
-          ),
-        );
-      },
+              body: isi,
+            );
+          }
+
+          return Scaffold(
+            floatingActionButton: _support(auth),
+            body: Row(
+              children: [
+                SizedBox(
+                  width: _lebarSidebar,
+                  child: Material(
+                    color: KaataTheme.surfaceOf(context),
+                    child: _Sidebar(
+                      menu: menu,
+                      terpilih: terpilih,
+                      onPilih: (i) => setState(() => _terpilih = i),
+                    ),
+                  ),
+                ),
+                VerticalDivider(width: 1, color: KaataTheme.borderOf(context)),
+                // Layar yang dipilih membawa AppBar-nya sendiri. Itu
+                // disengaja: judul, tombol, dan tab yang sudah ada di
+                // versi ponselnya tetap berada di tempat yang sama.
+                Expanded(child: isi),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 }
@@ -240,8 +256,8 @@ class _Sidebar extends StatelessWidget {
                       ),
                     ),
                   Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 1),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 1),
                     child: Material(
                       color: aktif
                           ? KaataTheme.brand.withOpacity(0.12)
@@ -258,9 +274,8 @@ class _Sidebar extends StatelessWidget {
                               Icon(
                                 m.ikon,
                                 size: 18,
-                                color: aktif
-                                    ? KaataTheme.brandOf(context)
-                                    : muted,
+                                color:
+                                    aktif ? KaataTheme.brandOf(context) : muted,
                               ),
                               const SizedBox(width: 12),
                               Expanded(
@@ -306,8 +321,8 @@ class _Sidebar extends StatelessWidget {
                 // tidak terbit, atau token terbit tapi gagal disimpan —
                 // dan tanpa alat ini ketiganya cuma bisa ditebak.
                 IconButton(
-                  icon: const Icon(Icons.notifications_active_outlined,
-                      size: 18),
+                  icon:
+                      const Icon(Icons.notifications_active_outlined, size: 18),
                   tooltip: 'Tes Notifikasi',
                   color: KaataTheme.mutedOf(context),
                   onPressed: () => showNotificationTest(context),
@@ -318,8 +333,7 @@ class _Sidebar extends StatelessWidget {
                     onPressed: () => _keluar(context),
                     icon: const Icon(Icons.logout, size: 18),
                     label: const Text('Keluar'),
-                    style:
-                        TextButton.styleFrom(foregroundColor: Colors.red),
+                    style: TextButton.styleFrom(foregroundColor: Colors.red),
                   ),
                 ),
               ],
@@ -445,8 +459,7 @@ class _BarisKartu extends StatelessWidget {
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(14),
-                        border:
-                            Border.all(color: KaataTheme.borderOf(context)),
+                        border: Border.all(color: KaataTheme.borderOf(context)),
                       ),
                       child: Row(
                         children: [
@@ -467,8 +480,7 @@ class _BarisKartu extends StatelessWidget {
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
-                                  fontSize: 13.5,
-                                  fontWeight: FontWeight.w600),
+                                  fontSize: 13.5, fontWeight: FontWeight.w600),
                             ),
                           ),
                           if (m.belumDibaca != null)

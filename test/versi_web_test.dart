@@ -57,6 +57,14 @@ void main() {
       expect(shell, contains('drawer: Drawer('));
     });
 
+    // Yang ada di belakang konsol di riwayat peramban adalah halaman
+    // masuk — yang sudah tidak berlaku, karena orangnya sudah masuk.
+    // Kembali ke sana cuma memunculkan layar masuk kepada orang yang
+    // barusan berhasil masuk.
+    test('tombol kembali peramban tidak membawa ke halaman masuk', () {
+      expect(shell, contains('canPop: false'));
+    });
+
     test('berpindah merchant membangun ulang layarnya', () {
       expect(shell, contains(r"ValueKey('${menu[terpilih].judul}|${auth.restoId}')"));
     });
