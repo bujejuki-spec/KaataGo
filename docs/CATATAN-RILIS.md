@@ -37,6 +37,12 @@ Formatnya dibaca `scripts/release.sh`: judul `## <versi>`, lalu
 poin-poinnya. Versi yang tidak punya bagiannya di sini tetap terbit,
 hanya pengumumannya memakai kalimat umum.
 
+## 2.22.0
+
+- Alamat email karyawan boleh sampai 40 karakter — yang panjang tidak
+  lagi ditolak saat didaftarkan di Kelola Karyawan
+- Perbaikan bug dan penyempurnaan tampilan
+
 ## 2.21.0
 
 - QR meja sekarang berisi tautan, jadi pelanggan bisa memindainya
