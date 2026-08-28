@@ -37,6 +37,12 @@ Formatnya dibaca `scripts/release.sh`: judul `## <versi>`, lalu
 poin-poinnya. Versi yang tidak punya bagiannya di sini tetap terbit,
 hanya pengumumannya memakai kalimat umum.
 
+## 2.23.0
+
+- Tombol lokasi merchant langsung membuka aplikasi peta di HP, tidak
+  lagi lewat halaman peramban yang sering terbuka kosong
+- Perbaikan bug dan penyempurnaan tampilan
+
 ## 2.22.0
 
 - Alamat email karyawan boleh sampai 40 karakter — yang panjang tidak
