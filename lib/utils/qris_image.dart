@@ -46,6 +46,7 @@ Future<bool> saveQrisToGallery(
     context,
     bytes,
     successMessage: 'QR pembayaran tersimpan di galeri (album KaataGo).',
+    namaBerkas: 'QR Pembayaran KaataGo.png',
     failurePrefix: 'Gagal menyimpan QR',
   );
 }

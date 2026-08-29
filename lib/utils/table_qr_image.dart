@@ -128,6 +128,7 @@ Future<bool> saveTableQrToGallery(BuildContext context, TableQrCard card) async 
     context,
     bytes,
     successMessage: 'QR Meja ${card.table} tersimpan di galeri (album KaataGo).',
+    namaBerkas: 'QR Meja ${namaBerkasAman(card.table)}.png',
     failurePrefix: 'Gagal menyimpan QR',
   );
 }
@@ -158,7 +159,10 @@ Future<int> saveTableQrBatchToGallery(
   final failed = <String>[];
   for (final card in cards) {
     try {
-      await putPngInGallery(await renderTableQrPng(card));
+      await putPngInGallery(
+        await renderTableQrPng(card),
+        namaBerkas: 'QR Meja ${namaBerkasAman(card.table)}.png',
+      );
       saved++;
     } catch (_) {
       failed.add(card.table);

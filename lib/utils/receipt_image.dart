@@ -40,6 +40,7 @@ Future<bool> saveReceiptToGallery(BuildContext context, ReceiptData data) async 
     context,
     bytes,
     successMessage: 'Struk tersimpan di galeri (album KaataGo).',
+    namaBerkas: 'Struk KaataGo.png',
     failurePrefix: 'Gagal menyimpan struk',
   );
 }
