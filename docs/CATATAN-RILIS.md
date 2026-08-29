@@ -37,6 +37,20 @@ Formatnya dibaca `scripts/release.sh`: judul `## <versi>`, lalu
 poin-poinnya. Versi yang tidak punya bagiannya di sini tetap terbit,
 hanya pengumumannya memakai kalimat umum.
 
+## 2.25.0
+
+- Selisih lebih saat tutup shift kini jadi pekerjaan yang bisa
+  diselesaikan, bukan cuma angka yang lewat — Owner dan Finance memilih
+  "penjualannya sudah diinput" atau "akui pendapatan lain-lain"
+- Uang kelebihan di laci ikut dihitung Saldo Cash, supaya angkanya sama
+  dengan yang benar-benar bisa dihitung tangan
+- Bayar selisih kurang bisa tunai atau transfer — yang transfer masuk
+  ke Saldo Non Cash, bukan kembali ke laci
+- Setoran tunai sekarang terlihat di Saldo Non Cash, jadi Saldo Cash
+  dan Non Cash berjumlah sama dengan Penghasilan
+- Akun baru GL Pendapatan Lain-lain di Mapping GL Account
+- Perbaikan bug dan penyempurnaan tampilan
+
 ## 2.24.0
 
 - QR Meja untuk banyak meja sekaligus bisa dimulai dari nomor berapa
