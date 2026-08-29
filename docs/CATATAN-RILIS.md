@@ -37,6 +37,17 @@ Formatnya dibaca `scripts/release.sh`: judul `## <versi>`, lalu
 poin-poinnya. Versi yang tidak punya bagiannya di sini tetap terbit,
 hanya pengumumannya memakai kalimat umum.
 
+## 2.26.0
+
+- Kasir yang masih punya selisih kurang belum bisa membuka shift baru
+  sebelum melunasinya — alasannya tertulis di kartu Shift Kasir, bukan
+  muncul sebagai galat setelah tombolnya ditekan
+- Selisih lebih tidak menahan siapa pun; uangnya ada di laci dan yang
+  menelusurinya Finance
+- Membuka shift sekarang khusus Kasir, Admin, dan Owner. Finance tetap
+  membaca riwayat dan menutup selisih, tapi tidak lagi memegang laci
+- Perbaikan bug dan penyempurnaan tampilan
+
 ## 2.25.0
 
 - Selisih lebih saat tutup shift kini jadi pekerjaan yang bisa

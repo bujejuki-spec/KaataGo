@@ -113,6 +113,38 @@ class _CashierShiftScreenState extends State<CashierShiftScreen> {
     return auth.isOwner || auth.isFinance || auth.isAdmin;
   }
 
+  /// Siapa yang boleh memegang laci.
+  ///
+  /// Finance sengaja tidak ada di sini. Finance memeriksa uang; yang
+  /// memegangnya Kasir. Orang yang membuka lacinya sendiri lalu
+  /// memeriksa selisihnya sendiri membuat pemeriksaannya tidak berarti.
+  /// Membaca riwayat dan menutup selisih tetap boleh — yang dicabut
+  /// hanya membukanya. Servernya menegakkan hal yang sama.
+  bool get _bolehBukaShift {
+    final auth = context.read<AuthProvider>();
+    return auth.isOwner || auth.isAdmin || auth.isKasir;
+  }
+
+  /// Selisih kurang atas nama orang yang sedang masuk dan belum lunas.
+  ///
+  /// Miliknya sendiri, bukan milik merchant: kasir lain yang belum
+  /// melunasi tanggungannya bukan alasan menahan orang ini.
+  ///
+  /// Selisih lebih tidak dihitung di sini. Uangnya ada di laci, bukan di
+  /// tangan kasirnya, dan yang menelusurinya Finance — menahan kasir
+  /// karena pekerjaan orang lain belum selesai adalah menghukum orang
+  /// yang tidak melakukan apa-apa.
+  int get _utangSendiri {
+    final email = context.read<AuthProvider>().user?.email?.toLowerCase();
+    if (email == null) return 0;
+    return _selisih
+        .where((v) =>
+            !v.lebih &&
+            !v.lunas &&
+            v.employeeEmail.toLowerCase() == email)
+        .fold(0, (jumlah, v) => jumlah + v.amount);
+  }
+
   /// Sengaja lebih sempit daripada [_bolehBayar] — tanpa Admin.
   ///
   /// Mencatat kasir sudah membayar kekurangannya adalah pekerjaan
@@ -702,6 +734,18 @@ class _CashierShiftScreenState extends State<CashierShiftScreen> {
     final s = _terbuka;
     final muted = KaataTheme.mutedOf(context);
 
+    // Kenapa lacinya belum boleh dibuka, kalau memang belum boleh.
+    // Dijawab di kartunya, bukan lewat galat setelah tombolnya ditekan —
+    // kasir yang berdiri di depan antrean tidak punya waktu menebak.
+    final boleh = _bolehBukaShift;
+    final utang = _utangSendiri;
+    final tertahan = s == null && (!boleh || utang > 0);
+    final alasan = !boleh
+        ? 'Yang membuka laci adalah Kasir. Di sini kamu memantau '
+            'riwayatnya dan menutup selisihnya.'
+        : 'Selisih kurang ${_rp.format(utang)} atas namamu belum '
+            'dilunasi. Lunasi dulu sebelum memegang laci lagi.';
+
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
       decoration: BoxDecoration(
@@ -735,9 +779,14 @@ class _CashierShiftScreenState extends State<CashierShiftScreen> {
           const SizedBox(height: 10),
           if (s == null)
             Text(
-              'Buka shift sebelum mulai melayani, supaya uang di laci '
-              'punya titik awal yang jelas.',
-              style: TextStyle(fontSize: 12.5, color: muted),
+              tertahan
+                  ? alasan
+                  : 'Buka shift sebelum mulai melayani, supaya uang di '
+                      'laci punya titik awal yang jelas.',
+              style: TextStyle(
+                fontSize: 12.5,
+                color: tertahan && boleh ? const Color(0xFFDC2626) : muted,
+              ),
             )
           else ...[
             Text(s.namaTampil,
@@ -750,12 +799,17 @@ class _CashierShiftScreenState extends State<CashierShiftScreen> {
             Text('Modal awal ${_rp.format(s.openingCash)}',
                 style: TextStyle(fontSize: 12, color: muted)),
           ],
+          // Tanpa hak membuka, tidak ada tombol sama sekali. Tombol mati
+          // yang tidak akan pernah hidup cuma memajang pintu terkunci.
+          if (s == null && !boleh)
+            const SizedBox.shrink()
+          else ...[
           const SizedBox(height: 14),
           SizedBox(
             width: double.infinity,
             child: s == null
                 ? FilledButton.icon(
-                    onPressed: _sibuk ? null : _buka,
+                    onPressed: _sibuk || utang > 0 ? null : _buka,
                     icon: const Icon(Icons.play_arrow, size: 18),
                     label: const Text('Buka Shift'),
                   )
@@ -767,6 +821,7 @@ class _CashierShiftScreenState extends State<CashierShiftScreen> {
                     label: const Text('Tutup Shift'),
                   ),
           ),
+          ],
         ],
       ),
     );

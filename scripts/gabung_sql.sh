@@ -79,6 +79,8 @@ FILES=(
   product_review_per_order.sql
   cash_variance.sql
   cash_variance_lebih.sql
+  backfill_selisih_lebih.sql
+  buka_shift_terkunci.sql
   merchant_report.sql
   shift_opening_check.sql
   support_tickets.sql
