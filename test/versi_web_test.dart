@@ -379,6 +379,37 @@ void main() {
       expect(shell, contains('if (m.belumDibaca != null)'));
     });
 
+    // Angka yang cuma tampil sesudah menunya dibuka datang terlambat:
+    // yang perlu tahu ada pesan baru justru yang belum membukanya.
+    test('Kotak Masuk membawa angkanya di semua peran', () {
+      final pasang = 'belumDibaca: _inboxBelumDibaca'.allMatches(menu).length;
+      final punya = "judul: 'Kotak Masuk'".allMatches(menu).length;
+      expect(punya, greaterThan(0));
+      expect(pasang, punya,
+          reason: 'ada Kotak Masuk yang tidak membawa penandanya');
+    });
+
+    // Kotak masuk milik orang per orang: pengumuman untuk merchant lain
+    // bukan urusannya, dan yang sudah dibaca tidak boleh ikut terhitung.
+    test('kotak masuk dihitung per orang, bukan seluruh pengumuman', () {
+      expect(menu, contains('auth.user?.email'));
+      expect(menu, contains('restoId: auth.restoId'));
+      expect(menu, contains('.where((a) => !a.read)'));
+    });
+
+    // Kotak masuk tidak punya langganan realtime: bacaannya digabung
+    // dari dua tabel, dan itu tidak bisa dijadikan satu stream Postgres.
+    test('kotak masuk ditanyakan berkala, gagalnya tidak menghentikan', () {
+      expect(menu, contains('Duration(seconds: 40)'));
+      expect(menu, contains('} catch (_) {'));
+    });
+
+    // Beranda menampilkan menu yang sama sebagai kartu; angka yang cuma
+    // ada di salah satunya membuat keduanya bertentangan.
+    test('kartu di Beranda ikut menampilkannya', () {
+      expect('_PenandaMenu('.allMatches(shell).length, greaterThanOrEqualTo(3));
+    });
+
     // Angka yang diperbarui berkala selalu tertinggal sebanyak selang
     // waktunya, dan yang menunggu jawaban membaca keterlambatan itu
     // sebagai "harus muat ulang dulu".
