@@ -84,4 +84,34 @@ void main() {
     // gagal, kalau tidak angkanya berhenti di tengah tanpa penjelasan.
     expect(badan, contains('for (; i < cards.length; i++)'));
   });
+
+  // Paket printing memuat pdf.js sendiri dari unpkg, lalu mengambil
+  // `pdfjsLib` dari window. Kalau CDN-nya tidak terjangkau — atau
+  // skripnya termuat tanpa memasang globalnya — dereference itu jatuh
+  // ke null, dan yang terlihat orang cuma "Null check operator used on
+  // a null value" saat menyimpan QR meja.
+  group('pdf.js dilayani sendiri', () {
+    final index = File('web/index.html').readAsStringSync();
+
+    test('dimuat sebelum Flutter, bukan dari CDN', () {
+      expect(index, contains('<script src="pdf.min.js"></script>'));
+      expect(index, isNot(contains('unpkg.com')));
+      expect(index.indexOf('pdf.min.js'),
+          lessThan(index.indexOf('flutter_bootstrap.js')));
+    });
+
+    // Plugin melewati pemuatannya sendiri hanya kalau KEDUANYA ada:
+    // globalnya terpasang, dan workerSrc sudah diisi.
+    test('workerSrc ikut diisi', () {
+      expect(index, contains("workerSrc = 'pdf.worker.min.js'"));
+    });
+
+    test('berkasnya benar-benar ikut terkirim', () {
+      for (final f in ['web/pdf.min.js', 'web/pdf.worker.min.js']) {
+        final b = File(f);
+        expect(b.existsSync(), isTrue, reason: f);
+        expect(b.lengthSync(), greaterThan(100000), reason: f);
+      }
+    });
+  });
 }
