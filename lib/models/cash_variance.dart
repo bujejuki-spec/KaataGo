@@ -26,6 +26,14 @@ class CashVariance {
   /// `pendapatan`. Null selama masih terbuka.
   final String? resolution;
 
+  /// Untuk selisih kurang: `cash` atau `transfer`. Null selama belum
+  /// dibayar.
+  ///
+  /// Bukan sekadar catatan. Dibayar tunai, uangnya kembali ke laci.
+  /// Ditransfer, lacinya tetap kurang selamanya dan yang bertambah
+  /// rekening merchant — dan Saldo Cash harus tetap mengurangkannya.
+  final String? settleMethod;
+
   final bool lunas;
   final String? note;
   final DateTime createdAt;
@@ -42,6 +50,7 @@ class CashVariance {
     required this.amount,
     this.lebih = false,
     this.resolution,
+    this.settleMethod,
     this.lunas = false,
     this.note,
     required this.createdAt,
@@ -52,8 +61,13 @@ class CashVariance {
 
   /// Kalimat pendek yang menyebut apa yang sebenarnya terjadi pada
   /// barisnya. Dipakai di daftar dan di rinciannya.
+  /// Selisih kurang yang dibayar transfer: uangnya tidak pernah kembali
+  /// ke laci.
+  bool get dibayarTransfer => settleMethod == 'transfer';
+
   String get caraSelesai => switch (resolution) {
-        'dibayar' => 'Dibayar kasir',
+        'dibayar' =>
+          dibayarTransfer ? 'Dibayar transfer' : 'Dibayar tunai',
         'input_penjualan' => 'Penjualannya sudah diinput',
         'pendapatan' => 'Diakui pendapatan lain-lain',
         _ => 'Belum diselesaikan',
@@ -74,6 +88,7 @@ class CashVariance {
         amount: (map['amount'] as num?)?.toInt() ?? 0,
         lebih: map['kind'] == 'lebih',
         resolution: map['resolution']?.toString(),
+        settleMethod: map['settle_method']?.toString(),
         lunas: map['status'] == 'settled',
         note: map['note']?.toString(),
         createdAt: DateTime.tryParse(map['created_at']?.toString() ?? '') ??

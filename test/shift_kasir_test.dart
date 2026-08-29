@@ -260,7 +260,8 @@ void main() {
       // selisih kurang maupun lebih.
       expect(kartu,
           contains("tagihan.lebih ? 'Selisih lebih' : 'Selisih kurang'"));
-      expect(kartu, contains('Dibayar tunai oleh '));
+      // Kalimatnya mengikuti cara pembayarannya — tunai atau transfer.
+      expect(kartu, contains(r'${tagihan.caraSelesai} oleh '));
       expect(kartu, contains('Dicatat oleh '));
     });
 

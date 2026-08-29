@@ -10,6 +10,7 @@ CashVariance _selisih({
   bool lebih = false,
   bool lunas = false,
   String? resolution,
+  String? settleMethod,
 }) =>
     CashVariance(
       id: 'v-$amount-$lebih',
@@ -20,6 +21,7 @@ CashVariance _selisih({
       lebih: lebih,
       lunas: lunas,
       resolution: resolution,
+      settleMethod: settleMethod,
       createdAt: DateTime(2026, 1, 1),
     );
 
@@ -173,6 +175,70 @@ void main() {
 
     test('rincian yang sudah ditutup menyebut caranya', () {
       expect(layar, contains('tagihan.caraSelesai'));
+    });
+  });
+
+  // Uang yang hilang dari laci tidak pernah kembali ke laci kalau
+  // dibayar lewat transfer; yang bertambah rekening merchant.
+  group('selisih kurang dibayar transfer', () {
+    test('Saldo Cash tetap dikurangi, selamanya', () {
+      expect(
+        cashOnHand(
+          cashIncome: 1000000,
+          deposits: const [],
+          pettyCash: const [],
+          selisih: [
+            _selisih(
+                amount: 30000,
+                lunas: true,
+                resolution: 'dibayar',
+                settleMethod: 'transfer'),
+          ],
+        ),
+        970000,
+      );
+    });
+
+    test('yang dibayar tunai pulih seperti biasa', () {
+      expect(
+        cashOnHand(
+          cashIncome: 1000000,
+          deposits: const [],
+          pettyCash: const [],
+          selisih: [
+            _selisih(
+                amount: 30000,
+                lunas: true,
+                resolution: 'dibayar',
+                settleMethod: 'cash'),
+          ],
+        ),
+        1000000,
+      );
+    });
+
+    test('yang transfer masuk hitungan Saldo Non Cash', () {
+      final daftar = [
+        _selisih(
+            amount: 30000,
+            lunas: true,
+            resolution: 'dibayar',
+            settleMethod: 'transfer'),
+        _selisih(
+            amount: 20000,
+            lunas: true,
+            resolution: 'dibayar',
+            settleMethod: 'cash'),
+      ];
+      expect(selisihDibayarTransfer(daftar), 30000);
+    });
+
+    test('layarnya menawarkan keduanya, dan Non Cash memakainya', () {
+      expect(layar, contains("'Tunai — Masuk Laci'"));
+      expect(layar, contains("'Transfer — Masuk Rekening'"));
+      final saldo =
+          File('lib/screens/finance_balance_screen.dart').readAsStringSync();
+      expect(saldo, contains('selisihDibayarTransfer(_selisih)'));
     });
   });
 }

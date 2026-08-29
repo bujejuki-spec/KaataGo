@@ -55,7 +55,7 @@ int selisihLebihDiLaci(List<CashVariance> selisih) => selisih
     .where((s) => s.lebih && s.resolution != 'input_penjualan')
     .fold(0, (sum, s) => sum + s.amount);
 
-/// Selisih kurang yang belum dilunasi kasirnya.
+/// Selisih kurang yang uangnya tidak ada di laci.
 ///
 /// Dikurangkan karena uangnya memang tidak ada di laci. Selama ini
 /// angka Saldo Cash menyebut jumlah yang lebih besar daripada yang
@@ -65,8 +65,22 @@ int selisihLebihDiLaci(List<CashVariance> selisih) => selisih
 /// Yang sudah dilunasi tidak dikurangkan lagi: uangnya sudah kembali ke
 /// laci, dan mengurangkannya dua kali berarti menghukum kasir yang
 /// justru sudah membayar.
+/// Yang dibayar transfer tetap dikurangkan — selamanya.
+///
+/// Uang yang hilang dari laci tidak pernah kembali ke laci; yang
+/// bertambah rekening merchant, dan itu urusan Saldo Non Cash.
+/// Berhenti mengurangkannya di sini berarti Saldo Cash mengaku punya
+/// lembaran yang tidak ada di laci mana pun.
 int selisihBelumDibayar(List<CashVariance> selisih) => selisih
-    .where((s) => !s.lebih && !s.lunas)
+    .where((s) => !s.lebih && !(s.lunas && !s.dibayarTransfer))
+    .fold(0, (sum, s) => sum + s.amount);
+
+/// Selisih kurang yang dilunasi lewat transfer.
+///
+/// Uangnya mendarat di rekening, jadi ia menambah Saldo Non Cash —
+/// sama seperti setoran tunai yang sudah diserahkan ke bank.
+int selisihDibayarTransfer(List<CashVariance> selisih) => selisih
+    .where((s) => !s.lebih && s.lunas && s.dibayarTransfer)
     .fold(0, (sum, s) => sum + s.amount);
 
 /// Setoran yang sudah keluar dari laci.

@@ -134,81 +134,7 @@ end;
 $$;
 
 -- ─────────────────────────────────────────────────────────────────────
--- 4. Pelunasan yang lama dijaga agar tetap untuk yang kurang saja
--- ─────────────────────────────────────────────────────────────────────
-create or replace function settle_cash_variance(
-  p_id uuid,
-  p_note text default null)
-returns cash_variances
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  v_email text := auth.jwt() ->> 'email';
-  v_row cash_variances;
-  v_gl record;
-  v_saat timestamptz := now();
-  v_hasil cash_variances;
-begin
-  if v_email is null then
-    raise exception 'Harus masuk dulu.';
-  end if;
-
-  select * into v_row from cash_variances where id = p_id;
-  if v_row is null then
-    raise exception 'Tagihan selisihnya tidak ditemukan.';
-  end if;
-
-  -- Yang lebih tidak dibayar siapa-siapa. Tanpa penjaga ini, tombol
-  -- Bayar Selisih akan mencatat kasir "melunasi" uang yang justru
-  -- berlebih — dan jurnalnya menggandakan kreditnya, bukan menutupnya.
-  if v_row.kind <> 'kurang' then
-    raise exception 'Selisih lebih tidak dibayar; telusuri lewat '
-                    'resolve_cash_overage.';
-  end if;
-
-  if not is_resto_employee(v_row.resto_id, array['owner', 'finance', 'admin']) then
-    raise exception 'Hanya Owner, Finance, dan Admin yang boleh mencatat '
-                    'pembayaran selisih.';
-  end if;
-
-  if v_row.status = 'settled' then
-    raise exception 'Selisih ini sudah dilunasi.';
-  end if;
-
-  update cash_variances
-     set status = 'settled',
-         resolution = 'dibayar',
-         settled_at = v_saat,
-         settled_by = v_email,
-         settle_note = nullif(btrim(coalesce(p_note, '')), '')
-   where id = p_id
-  returning * into v_hasil;
-
-  select * into v_gl from _gl_account_for(v_row.resto_id, 'cash_variance');
-  if v_gl.gl_code is not null and v_gl.gl_code <> '' then
-    insert into gl_journal_entries (
-      resto_id, entry_date, entry_time, gl_code, gl_name,
-      reference_type, reference_id, amount, entry_type, description
-    ) values (
-      v_row.resto_id,
-      (v_saat at time zone 'Asia/Jakarta')::date,
-      (v_saat at time zone 'Asia/Jakarta')::time,
-      v_gl.gl_code, v_gl.gl_name, 'cash_variance', v_row.id::text,
-      v_row.amount, 'credit',
-      'Pelunasan selisih kasir ' ||
-        coalesce(nullif(btrim(coalesce(v_row.employee_name, '')), ''),
-                 split_part(v_row.employee_email, '@', 1))
-    );
-  end if;
-
-  return v_hasil;
-end;
-$$;
-
--- ─────────────────────────────────────────────────────────────────────
--- 5. Menelusuri selisih lebih
+-- 4. Menelusuri selisih lebih
 -- ─────────────────────────────────────────────────────────────────────
 --
 -- Dua jalan keluar, dan keduanya sama-sama mendebit GL Selisih Kasir
@@ -315,6 +241,111 @@ begin
         'Selisih lebih shift ' || v_nama || ' yang tidak ditemukan asalnya'
       );
     end if;
+  end if;
+
+  return v_hasil;
+end;
+$$;
+
+
+
+-- ─────────────────────────────────────────────────────────────────────
+-- 5. Selisih kurang bisa dibayar tunai atau transfer
+-- ─────────────────────────────────────────────────────────────────────
+--
+-- Bedanya bukan soal pencatatan saja: uangnya mendarat di tempat yang
+-- berbeda.
+--
+-- Dibayar tunai, lembarannya kembali ke laci dan Saldo Cash pulih.
+-- Ditransfer, lacinya TETAP kurang selamanya — uang yang hilang dari
+-- laci tidak pernah kembali ke sana — dan yang bertambah rekening
+-- merchant. Menyamakan keduanya membuat Saldo Cash mengaku punya uang
+-- yang tidak ada di laci mana pun.
+-- Tanda tangan lamanya dilepas, bukan dibiarkan berdampingan.
+--
+-- `create or replace` dengan daftar parameter berbeda tidak mengganti
+-- apa pun — ia membuat fungsi kedua. Panggilan dua argumen akan tetap
+-- mendarat di yang lama, yang tidak mengisi settle_method sama sekali,
+-- dan selisih yang dibayar transfer akan tercatat seolah tunai.
+drop function if exists settle_cash_variance(uuid, text);
+
+alter table cash_variances
+  add column if not exists settle_method text;
+
+alter table cash_variances drop constraint if exists cash_variances_settle_method_check;
+alter table cash_variances add constraint cash_variances_settle_method_check
+  check (settle_method is null or settle_method in ('cash', 'transfer'));
+
+create or replace function settle_cash_variance(
+  p_id uuid,
+  p_note text default null,
+  p_method text default 'cash')
+returns cash_variances
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_email text := auth.jwt() ->> 'email';
+  v_row cash_variances;
+  v_gl record;
+  v_saat timestamptz := now();
+  v_hasil cash_variances;
+  v_cara text := coalesce(nullif(btrim(coalesce(p_method, '')), ''), 'cash');
+begin
+  if v_email is null then
+    raise exception 'Harus masuk dulu.';
+  end if;
+
+  if v_cara not in ('cash', 'transfer') then
+    raise exception 'Cara pembayarannya tidak dikenali.';
+  end if;
+
+  select * into v_row from cash_variances where id = p_id;
+  if v_row is null then
+    raise exception 'Tagihan selisihnya tidak ditemukan.';
+  end if;
+
+  if v_row.kind <> 'kurang' then
+    raise exception 'Selisih lebih tidak dibayar; telusuri lewat '
+                    'resolve_cash_overage.';
+  end if;
+
+  if not is_resto_employee(v_row.resto_id, array['owner', 'finance', 'admin']) then
+    raise exception 'Hanya Owner, Finance, dan Admin yang boleh mencatat '
+                    'pembayaran selisih.';
+  end if;
+
+  if v_row.status = 'settled' then
+    raise exception 'Selisih ini sudah dilunasi.';
+  end if;
+
+  update cash_variances
+     set status = 'settled',
+         resolution = 'dibayar',
+         settle_method = v_cara,
+         settled_at = v_saat,
+         settled_by = v_email,
+         settle_note = nullif(btrim(coalesce(p_note, '')), '')
+   where id = p_id
+  returning * into v_hasil;
+
+  select * into v_gl from _gl_account_for(v_row.resto_id, 'cash_variance');
+  if v_gl.gl_code is not null and v_gl.gl_code <> '' then
+    insert into gl_journal_entries (
+      resto_id, entry_date, entry_time, gl_code, gl_name,
+      reference_type, reference_id, amount, entry_type, description
+    ) values (
+      v_row.resto_id,
+      (v_saat at time zone 'Asia/Jakarta')::date,
+      (v_saat at time zone 'Asia/Jakarta')::time,
+      v_gl.gl_code, v_gl.gl_name, 'cash_variance', v_row.id::text,
+      v_row.amount, 'credit',
+      'Pelunasan selisih kasir ' ||
+        coalesce(nullif(btrim(coalesce(v_row.employee_name, '')), ''),
+                 split_part(v_row.employee_email, '@', 1)) ||
+        case when v_cara = 'transfer' then ' (transfer)' else ' (tunai)' end
+    );
   end if;
 
   return v_hasil;

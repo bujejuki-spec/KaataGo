@@ -297,7 +297,8 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
   int get _nonCashBalance =>
       _nonCashIncome +
       _topupTotal +
-      _depositedTotal -
+      _depositedTotal +
+      selisihDibayarTransfer(_selisih) -
       _pettyCashFrom(PettyCashSource.incomeWithdrawal);
 
   /// Hanya yang sudah disetujui yang dihitung sebagai saldo petty cash.

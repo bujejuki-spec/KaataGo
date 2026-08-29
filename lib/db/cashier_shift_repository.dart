@@ -61,11 +61,13 @@ class CashierShiftRepository {
   /// tidak menutup tagihan atas namanya sendiri.
   Future<CashVariance> bayarSelisih({
     required String id,
+    String cara = 'cash',
     String? catatan,
   }) async {
     final row = await _client.rpc('settle_cash_variance', params: {
       'p_id': id,
       'p_note': catatan,
+      'p_method': cara,
     });
     return CashVariance.fromMap(Map<String, dynamic>.from(row as Map));
   }

@@ -200,32 +200,68 @@ class _CashierShiftScreenState extends State<CashierShiftScreen> {
     }
   }
 
+  /// Tunai atau transfer, dan bedanya bukan sekadar catatan.
+  ///
+  /// Tunai: lembarannya kembali ke laci, Saldo Cash pulih. Transfer:
+  /// lacinya tetap kurang selamanya — uang yang hilang dari laci tidak
+  /// pernah kembali ke sana — dan yang bertambah rekening merchant.
+  /// Menyamakan keduanya membuat Saldo Cash mengaku punya uang yang
+  /// tidak ada di laci mana pun.
   Future<void> _bayarSelisih(CashVariance v) async {
     final rp = _rp.format(v.amount);
-    final setuju = await showDialog<bool>(
+    final cara = await showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Bayar Selisih'),
         content: Text(
-          '${v.namaTampil} menyerahkan $rp tunai, dan uangnya masuk '
-          'kembali ke laci. Catat sekarang?',
+          '${v.namaTampil} melunasi $rp. Uangnya masuk ke mana?',
         ),
         actionsAlignment: MainAxisAlignment.center,
         actions: [
-          DialogActions(
-            confirmLabel: 'Sudah Dibayar',
-            onConfirm: () => Navigator.pop(dialogContext, true),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  icon: const Icon(Icons.payments_outlined, size: 18),
+                  onPressed: () => Navigator.pop(dialogContext, 'cash'),
+                  label: const Text('Tunai — Masuk Laci'),
+                ),
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.account_balance_outlined, size: 18),
+                  onPressed: () => Navigator.pop(dialogContext, 'transfer'),
+                  label: const Text('Transfer — Masuk Rekening'),
+                ),
+              ),
+              const SizedBox(height: 4),
+              SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('Batal'),
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
-    if (setuju != true || !mounted) return;
+    if (cara == null || !mounted) return;
 
     setState(() => _sibuk = true);
     try {
-      await _repo.bayarSelisih(id: v.id);
+      await _repo.bayarSelisih(id: v.id, cara: cara);
       if (!mounted) return;
-      showAppToast(context, 'Selisih $rp dilunasi.');
+      showAppToast(
+          context,
+          cara == 'transfer'
+              ? 'Selisih $rp dilunasi lewat transfer — masuk Saldo Non Cash.'
+              : 'Selisih $rp dilunasi tunai — masuk kembali ke laci.');
       await _muat();
     } catch (e) {
       if (!mounted) return;
@@ -1055,7 +1091,7 @@ class _RincianPelunasan extends StatelessWidget {
                 ? '${tagihan.caraSelesai}'
                     '${tagihan.settledAt == null ? '' : ' pada '
                         '${tgl.format(tagihan.settledAt!.toWib())}'}.'
-                : 'Dibayar tunai oleh ${tagihan.namaTampil}'
+                : '${tagihan.caraSelesai} oleh ${tagihan.namaTampil}'
                     '${tagihan.settledAt == null ? '' : ' pada '
                         '${tgl.format(tagihan.settledAt!.toWib())}'}.',
             style: TextStyle(fontSize: 11.5, color: muted, height: 1.35),
