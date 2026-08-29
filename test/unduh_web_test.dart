@@ -32,10 +32,14 @@ void main() {
     // Bytes-nya menetap di memori tab sampai halamannya ditutup kalau
     // tidak dilepas — dan pada layar yang menyimpan puluhan QR meja
     // sekaligus, itu puluhan salinan yang tidak pernah dipakai lagi.
-    test('object URL-nya dilepas sesudah dipakai', () {
+    // Melepasnya tepat sesudah click() membatalkan unduhannya sendiri
+    // di sebagian peramban: tautannya sudah diklik, tapi berkasnya
+    // belum sempat dibaca.
+    test('object URL-nya dilepas belakangan, bukan seketika', () {
       final html = File('lib/utils/unduh_web_html.dart').readAsStringSync();
       expect(html, contains('revokeObjectUrl'));
-      expect(html, contains('finally {'));
+      expect(html, isNot(contains('finally {')));
+      expect(html, contains('Future<void>.delayed('));
     });
   });
 
@@ -62,5 +66,22 @@ void main() {
       final isi = File('lib/utils/$f.dart').readAsStringSync();
       expect(isi, contains('namaBerkas:'), reason: f);
     }
+  });
+
+  // Di web, memanggil Printing.raster lagi sebelum yang sebelumnya
+  // tuntas membuat keduanya saling menunggu: yang pertama selesai,
+  // yang kedua tidak pernah kembali, dan layarnya berhenti di
+  // "Menyimpan 1/10..." selamanya.
+  test('QR meja massal dirender sekali, bukan sekali per kartu', () {
+    final qr = File('lib/utils/table_qr_image.dart').readAsStringSync();
+    final blok = qr.substring(qr.indexOf('Future<int> saveTableQrBatchToGallery'));
+    // Penutup fungsinya '\n}\n' — bukan '\n}', yang lebih dulu cocok
+    // dengan '})' penutup daftar parameternya.
+    final badan = blok.substring(0, blok.indexOf('\n}\n'));
+    expect('Printing.raster('.allMatches(badan).length, 1);
+    expect(badan, contains('await for (final page in'));
+    // Halaman yang tidak pernah keluar dari alirannya tetap dihitung
+    // gagal, kalau tidak angkanya berhenti di tengah tanpa penjelasan.
+    expect(badan, contains('for (; i < cards.length; i++)'));
   });
 }
