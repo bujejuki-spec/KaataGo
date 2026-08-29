@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../db/announcement_repository.dart';
 import '../db/support_repository.dart';
 import '../models/billing.dart';
 import '../providers/auth_provider.dart';
@@ -57,7 +58,7 @@ class MenuWeb {
   /// Aliran, bukan sekali hitung. Angka yang diperbarui berkala selalu
   /// tertinggal sebanyak selang waktunya, dan yang menunggu jawaban
   /// membaca keterlambatan itu sebagai "harus muat ulang dulu".
-  final Stream<int> Function()? belumDibaca;
+  final Stream<int> Function(AuthProvider auth)? belumDibaca;
 
   const MenuWeb({
     required this.ikon,
@@ -74,9 +75,38 @@ class MenuWeb {
 /// Customer Service — bukan permintaan terpisah. Dua sumber untuk satu
 /// angka akan berbeda cepat atau lambat, dan yang berbeda dengan isi
 /// layarnya sendiri adalah yang lebih membingungkan.
-Stream<int> _supportBelumDibaca() => SupportRepository().semua().map(
-      (tiket) => SupportRepository.belumDibaca(tiket, sebagaiAdmin: true),
-    );
+Stream<int> _supportBelumDibaca(AuthProvider auth) =>
+    SupportRepository().semua().map(
+          (tiket) => SupportRepository.belumDibaca(tiket, sebagaiAdmin: true),
+        );
+
+/// Pengumuman yang belum dibaca di Kotak Masuk.
+///
+/// Ditanyakan berkala, bukan dialirkan. Kotak masuk tidak punya
+/// langganan realtime seperti tiket support: bacaannya digabung dari
+/// dua tabel — pengumumannya sendiri dan catatan siapa sudah membaca
+/// yang mana — dan itu tidak bisa dijadikan satu stream Postgres.
+///
+/// Empat puluh detik dipilih karena pengumuman bukan percakapan.
+/// Sesuatu yang terbit sekali sehari tidak butuh angka yang bergerak
+/// dalam hitungan detik, dan menanyakannya lebih sering hanya menambah
+/// permintaan yang jawabannya hampir selalu sama.
+Stream<int> _inboxBelumDibaca(AuthProvider auth) async* {
+  final email = auth.user?.email;
+  if (email == null) return;
+  final repo = AnnouncementRepository();
+
+  while (true) {
+    try {
+      final isi = await repo.inboxFor(email, restoId: auth.restoId);
+      yield isi.where((a) => !a.read).length;
+    } catch (_) {
+      // Jaringan sedang tidak bisa dihubungi. Angka yang terakhir
+      // diketahui lebih berguna daripada penanda yang hilang.
+    }
+    await Future<void>.delayed(const Duration(seconds: 40));
+  }
+}
 
 /// Pembukuan KaataGo sendiri, bukan pembukuan merchant — ketiganya
 /// selalu menunjuk resto semu 'kaatago'.
@@ -231,6 +261,7 @@ const _superAdmin = <MenuWeb>[
     ikon: Icons.inbox_outlined,
     judul: 'Kotak Masuk',
     layar: InboxScreen.new,
+    belumDibaca: _inboxBelumDibaca,
   ),
 ];
 
@@ -354,6 +385,7 @@ const _owner = <MenuWeb>[
     ikon: Icons.inbox_outlined,
     judul: 'Kotak Masuk',
     layar: InboxScreen.new,
+    belumDibaca: _inboxBelumDibaca,
   ),
 ];
 
@@ -449,6 +481,7 @@ const _admin = <MenuWeb>[
     ikon: Icons.inbox_outlined,
     judul: 'Kotak Masuk',
     layar: InboxScreen.new,
+    belumDibaca: _inboxBelumDibaca,
   ),
 ];
 
@@ -510,5 +543,6 @@ const _finance = <MenuWeb>[
     ikon: Icons.inbox_outlined,
     judul: 'Kotak Masuk',
     layar: InboxScreen.new,
+    belumDibaca: _inboxBelumDibaca,
   ),
 ];

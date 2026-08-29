@@ -295,7 +295,8 @@ class _Sidebar extends StatelessWidget {
                                 ),
                               ),
                               if (m.belumDibaca != null)
-                                _PenandaMenu(hitung: m.belumDibaca!),
+                                _PenandaMenu(
+                                    hitung: m.belumDibaca!, auth: auth),
                             ],
                           ),
                         ),
@@ -434,6 +435,7 @@ class _BarisKartu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
     return LayoutBuilder(
       builder: (context, c) {
         const jarak = 12.0;
@@ -484,7 +486,7 @@ class _BarisKartu extends StatelessWidget {
                             ),
                           ),
                           if (m.belumDibaca != null)
-                            _PenandaMenu(hitung: m.belumDibaca!),
+                            _PenandaMenu(hitung: m.belumDibaca!, auth: auth),
                         ],
                       ),
                     ),
@@ -505,9 +507,10 @@ class _BarisKartu extends StatelessWidget {
 /// di satu menu yang sama — dan justru selama itulah pesan baru
 /// berdatangan.
 class _PenandaMenu extends StatefulWidget {
-  final Stream<int> Function() hitung;
+  final Stream<int> Function(AuthProvider auth) hitung;
+  final AuthProvider auth;
 
-  const _PenandaMenu({required this.hitung});
+  const _PenandaMenu({required this.hitung, required this.auth});
 
   @override
   State<_PenandaMenu> createState() => _PenandaMenuState();
@@ -522,7 +525,7 @@ class _PenandaMenuState extends State<_PenandaMenu> {
     // Dibuat sekali di sini, bukan di build: aliran baru tiap kali
     // sidebarnya dibangun ulang berarti langganan baru tiap kali, dan
     // yang lama tidak pernah ditutup.
-    _aliran = widget.hitung();
+    _aliran = widget.hitung(widget.auth);
   }
 
   @override
