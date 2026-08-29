@@ -256,7 +256,10 @@ void main() {
       expect(kartu, contains("label: 'Modal awal laci'"));
       expect(kartu, contains("label: 'Diinput kasir'"));
       expect(kartu, contains("label: 'Seharusnya'"));
-      expect(kartu, contains("label: 'Selisih kurang'"));
+      // Labelnya kini mengikuti jenisnya — kartu yang sama dipakai
+      // selisih kurang maupun lebih.
+      expect(kartu,
+          contains("tagihan.lebih ? 'Selisih lebih' : 'Selisih kurang'"));
       expect(kartu, contains('Dibayar tunai oleh '));
       expect(kartu, contains('Dicatat oleh '));
     });

@@ -77,9 +77,10 @@ class _CashierShiftScreenState extends State<CashierShiftScreen> {
 
   /// Selisih shift ini sudah dilunasi kasirnya.
   ///
-  /// Shift tanpa tagihan sama sekali — yang uangnya memang pas, atau
-  /// yang justru lebih — tidak dianggap lunas: tidak ada yang perlu
-  /// dilunasi di sana.
+  /// Shift tanpa barisnya sama sekali — yang uangnya memang pas — tidak
+  /// dianggap selesai: tidak ada apa pun yang perlu diselesaikan di
+  /// sana. Yang lebih punya barisnya sendiri sekarang, sama seperti
+  /// yang kurang.
   CashVariance? _tagihanShift(String shiftId) {
     for (final v in _selisih) {
       if (v.shiftId == shiftId) return v;
@@ -87,9 +88,19 @@ class _CashierShiftScreenState extends State<CashierShiftScreen> {
     return null;
   }
 
-  /// Tagihan yang masih terbuka, terbaru lebih dulu.
+  /// Tagihan kurang yang masih terbuka, terbaru lebih dulu.
   List<CashVariance> get _belumLunas =>
-      [for (final v in _selisih) if (!v.lunas) v];
+      [for (final v in _selisih) if (!v.lunas && !v.lebih) v];
+
+  /// Selisih lebih yang belum ditelusuri.
+  ///
+  /// Dipisah dari yang kurang karena keduanya menuntut hal yang berbeda.
+  /// Yang kurang menunggu uang dari kasirnya; yang lebih menunggu
+  /// seseorang mencari tahu uang siapa itu. Menaruh keduanya dalam satu
+  /// daftar berjudul "Selisih Belum Dibayar" membuat separuhnya salah
+  /// dibaca, dan tombol Bayar Selisih di sana pasti ditolak server.
+  List<CashVariance> get _lebihBelumSelesai =>
+      [for (final v in _selisih) if (!v.lunas && v.lebih) v];
 
   /// Kasir hanya melihat. Kalau ia boleh menutup tagihan atas namanya
   /// sendiri, angka yang menilai seseorang bisa dihapus oleh orang itu
@@ -100,6 +111,93 @@ class _CashierShiftScreenState extends State<CashierShiftScreen> {
   bool get _bolehBayar {
     final auth = context.read<AuthProvider>();
     return auth.isOwner || auth.isFinance || auth.isAdmin;
+  }
+
+  /// Sengaja lebih sempit daripada [_bolehBayar] — tanpa Admin.
+  ///
+  /// Mencatat kasir sudah membayar kekurangannya adalah pekerjaan
+  /// operasional. Memutuskan uang yang tidak dikenal asalnya menjadi
+  /// pendapatan adalah keputusan pembukuan, dan admin merchant bukan
+  /// pemegang buku. Servernya menegakkan hal yang sama.
+  bool get _bolehTelusuri {
+    final auth = context.read<AuthProvider>();
+    return auth.isOwner || auth.isFinance;
+  }
+
+  /// Menutup selisih lebih setelah ditelusuri.
+  ///
+  /// Dua jalan keluar, dan bedanya bukan soal tampilan: yang pertama
+  /// hanya melepas titipannya, karena pendapatannya sudah tercatat
+  /// lewat pesanan yang barusan dimasukkan. Yang kedua mengakuinya
+  /// sebagai pendapatan lain-lain. Memilih yang kedua padahal
+  /// penjualannya nanti diinput berarti uang yang sama terhitung dua
+  /// kali.
+  Future<void> _telusuriLebih(CashVariance v) async {
+    final rp = _rp.format(v.amount);
+    final cara = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Selisih Lebih'),
+        content: Text(
+          'Laci ${v.namaTampil} berlebih $rp. Uangnya ada, tapi belum '
+          'jelas asalnya.\n\n'
+          'Kalau penjualannya yang terlewat sudah dimasukkan, pilih yang '
+          'pertama — pendapatannya sudah tercatat lewat pesanan itu. '
+          'Pilih yang kedua hanya kalau sudah ditelusuri dan tidak '
+          'ketemu.',
+        ),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () =>
+                      Navigator.pop(dialogContext, 'input_penjualan'),
+                  child: const Text('Penjualannya Sudah Diinput'),
+                ),
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(dialogContext, 'pendapatan'),
+                  child: const Text('Akui Pendapatan Lain-lain'),
+                ),
+              ),
+              const SizedBox(height: 4),
+              SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('Batal'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+    if (cara == null || !mounted) return;
+
+    setState(() => _sibuk = true);
+    try {
+      await _repo.selesaikanSelisihLebih(id: v.id, cara: cara);
+      if (!mounted) return;
+      showAppToast(
+          context,
+          cara == 'pendapatan'
+              ? 'Selisih $rp diakui sebagai pendapatan lain-lain.'
+              : 'Selisih $rp ditutup — penjualannya sudah diinput.');
+      await _muat();
+    } catch (e) {
+      if (!mounted) return;
+      showAppToast(context, _pesan(e), isError: true);
+    } finally {
+      if (mounted) setState(() => _sibuk = false);
+    }
   }
 
   Future<void> _bayarSelisih(CashVariance v) async {
@@ -515,7 +613,7 @@ class _CashierShiftScreenState extends State<CashierShiftScreen> {
                     _kartuShift(),
                     if (_belumLunas.isNotEmpty) ...[
                       const SizedBox(height: 20),
-                      const Text('Selisih Belum Dibayar',
+                      const Text('Selisih Kurang — Belum Dibayar',
                           style: TextStyle(
                               fontWeight: FontWeight.bold, fontSize: 14)),
                       const SizedBox(height: 8),
@@ -524,6 +622,19 @@ class _CashierShiftScreenState extends State<CashierShiftScreen> {
                           selisih: v,
                           bolehBayar: _bolehBayar,
                           onBayar: () => _bayarSelisih(v),
+                        ),
+                    ],
+                    if (_lebihBelumSelesai.isNotEmpty) ...[
+                      const SizedBox(height: 20),
+                      const Text('Selisih Lebih — Belum Ditelusuri',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 14)),
+                      const SizedBox(height: 8),
+                      for (final v in _lebihBelumSelesai)
+                        _KartuSelisih(
+                          selisih: v,
+                          bolehBayar: _bolehTelusuri,
+                          onBayar: () => _telusuriLebih(v),
                         ),
                     ],
                     const SizedBox(height: 20),
@@ -794,12 +905,21 @@ class _KartuSelisih extends StatelessWidget {
         NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
     final tgl = DateFormat('d MMM yyyy, HH:mm', 'id_ID');
 
+    // Kelebihan bukan kabar buruk, jadi tidak diberi warna kabar buruk.
+    //
+    // Merah dipakai untuk yang kurang karena di sana memang ada uang
+    // yang hilang dan seseorang menanggungnya. Yang lebih cuma belum
+    // ketahuan asalnya — memberinya merah membuat kasir yang lacinya
+    // berlebih merasa sedang dituduh.
+    final lebih = selisih.lebih;
+    final warna = lebih ? const Color(0xFF0EA5E9) : Colors.red;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
       decoration: BoxDecoration(
         color: KaataTheme.surfaceOf(context),
-        border: Border.all(color: Colors.red.withOpacity(0.45)),
+        border: Border.all(color: warna.withOpacity(0.45)),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -807,8 +927,12 @@ class _KartuSelisih extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.warning_amber_rounded,
-                  size: 17, color: Colors.red),
+              Icon(
+                  lebih
+                      ? Icons.help_outline
+                      : Icons.warning_amber_rounded,
+                  size: 17,
+                  color: warna),
               const SizedBox(width: 7),
               Expanded(
                 child: Text(selisih.namaTampil,
@@ -817,11 +941,13 @@ class _KartuSelisih extends StatelessWidget {
                     style: const TextStyle(
                         fontWeight: FontWeight.bold, fontSize: 13.5)),
               ),
-              Text(rp.format(selisih.amount),
+              Text('${lebih ? '+' : '−'}${rp.format(selisih.amount)}',
                   style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 14.5,
-                      color: Colors.red.shade700)),
+                      color: lebih
+                          ? const Color(0xFF0369A1)
+                          : Colors.red.shade700)),
             ],
           ),
           const SizedBox(height: 4),
@@ -838,14 +964,21 @@ class _KartuSelisih extends StatelessWidget {
               width: double.infinity,
               child: OutlinedButton.icon(
                 onPressed: onBayar,
-                icon: const Icon(Icons.payments_outlined, size: 17),
-                label: const Text('Bayar Selisih'),
+                icon: Icon(
+                    lebih
+                        ? Icons.search
+                        : Icons.payments_outlined,
+                    size: 17),
+                label: Text(lebih ? 'Telusuri Selisih' : 'Bayar Selisih'),
               ),
             )
           else
             Text(
-              'Menunggu dilunasi. Yang mencatat pembayarannya Owner, '
-              'Finance, atau Admin.',
+              lebih
+                  ? 'Menunggu ditelusuri. Yang menyelesaikannya Owner '
+                      'atau Finance.'
+                  : 'Menunggu dilunasi. Yang mencatat pembayarannya Owner, '
+                      'Finance, atau Admin.',
               style: TextStyle(fontSize: 11.5, color: muted),
             ),
         ],
@@ -885,12 +1018,15 @@ class _RincianPelunasan extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.verified_outlined, size: 15, color: hijau),
-              SizedBox(width: 6),
-              Text('Selisih sudah dibayar',
-                  style: TextStyle(
+              const Icon(Icons.verified_outlined, size: 15, color: hijau),
+              const SizedBox(width: 6),
+              Text(
+                  tagihan.lebih
+                      ? 'Selisih lebih sudah ditelusuri'
+                      : 'Selisih sudah dibayar',
+                  style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
                       color: hijau)),
@@ -905,15 +1041,23 @@ class _RincianPelunasan extends StatelessWidget {
           _Rincian(
               label: 'Seharusnya', nilai: rp.format(shift.expectedCash ?? 0)),
           _Rincian(
-            label: 'Selisih kurang',
+            label: tagihan.lebih ? 'Selisih lebih' : 'Selisih kurang',
             nilai: rp.format(tagihan.amount),
             tebal: true,
           ),
           const SizedBox(height: 5),
+          // Yang membuka riwayat berbulan-bulan kemudian perlu tahu
+          // bagaimana uangnya diselesaikan, bukan sekadar bahwa ia
+          // selesai. "Diakui pendapatan" dan "penjualannya diinput"
+          // adalah dua hal yang sangat berbeda di pembukuan.
           Text(
-            'Dibayar tunai oleh ${tagihan.namaTampil}'
-            '${tagihan.settledAt == null ? '' : ' pada '
-                '${tgl.format(tagihan.settledAt!.toWib())}'}.',
+            tagihan.lebih
+                ? '${tagihan.caraSelesai}'
+                    '${tagihan.settledAt == null ? '' : ' pada '
+                        '${tgl.format(tagihan.settledAt!.toWib())}'}.'
+                : 'Dibayar tunai oleh ${tagihan.namaTampil}'
+                    '${tagihan.settledAt == null ? '' : ' pada '
+                        '${tgl.format(tagihan.settledAt!.toWib())}'}.',
             style: TextStyle(fontSize: 11.5, color: muted, height: 1.35),
           ),
           if ((tagihan.settledBy ?? '').isNotEmpty)
