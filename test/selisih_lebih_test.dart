@@ -9,6 +9,7 @@ CashVariance _selisih({
   required int amount,
   bool lebih = false,
   bool lunas = false,
+  String? resolution,
 }) =>
     CashVariance(
       id: 'v-$amount-$lebih',
@@ -18,6 +19,7 @@ CashVariance _selisih({
       amount: amount,
       lebih: lebih,
       lunas: lunas,
+      resolution: resolution,
       createdAt: DateTime(2026, 1, 1),
     );
 
@@ -42,15 +44,44 @@ void main() {
       );
     });
 
-    test('tidak bertambah lagi setelah diselesaikan', () {
+    // Kasir menutup shift dengan menghitung uang fisik. Kelebihan yang
+    // diakui sebagai pendapatan tetap berupa lembaran di laci — yang
+    // berubah cuma pengakuannya di pembukuan.
+    test('yang diakui pendapatan TETAP di laci', () {
       expect(
         cashOnHand(
           cashIncome: 1000000,
           deposits: const [],
           pettyCash: const [],
-          selisih: [_selisih(amount: 50000, lebih: true, lunas: true)],
+          selisih: [
+            _selisih(
+                amount: 50000,
+                lebih: true,
+                lunas: true,
+                resolution: 'pendapatan'),
+          ],
         ),
-        1000000,
+        1050000,
+      );
+    });
+
+    // Pesanan yang barusan dimasukkan sudah membawa uangnya lewat
+    // pemasukan tunai; menghitungnya lagi berarti dua kali.
+    test('yang penjualannya sudah diinput berhenti dihitung', () {
+      expect(
+        cashOnHand(
+          cashIncome: 1050000, // pesanannya sudah masuk ke pemasukan tunai
+          deposits: const [],
+          pettyCash: const [],
+          selisih: [
+            _selisih(
+                amount: 50000,
+                lebih: true,
+                lunas: true,
+                resolution: 'input_penjualan'),
+          ],
+        ),
+        1050000,
       );
     });
 

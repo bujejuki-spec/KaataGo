@@ -25,25 +25,34 @@ int cashOnHand({
       depositedFromDrawer(deposits) -
       pettyCashFromDrawer(pettyCash) -
       selisihBelumDibayar(selisih) +
-      selisihLebihBelumSelesai(selisih);
+      selisihLebihDiLaci(selisih);
 }
 
-/// Selisih lebih yang belum ditelusuri.
+/// Selisih lebih yang uangnya masih ada di laci.
 ///
-/// Ditambahkan karena uangnya memang ADA di laci — itulah artinya
-/// berlebih. Selama ini angka Saldo Cash mengabaikannya sama sekali,
-/// jadi ia menyebut jumlah yang lebih kecil daripada yang bisa dihitung
-/// tangan. Akibatnya baru terasa saat kasir menyetorkan seluruh isi
-/// laci: setorannya melebihi saldo yang tercatat, dan lacinya jadi
-/// minus tanpa ada yang salah melakukan apa pun.
+/// Ditambahkan karena uangnya memang ADA — itulah artinya berlebih.
+/// Kasir menutup shift dengan menghitung uang fisik, jadi kelebihannya
+/// nyata di tangan, bukan angka di kertas. Mengabaikannya membuat Saldo
+/// Cash menyebut jumlah yang lebih kecil daripada yang bisa dihitung
+/// tangan, dan setoran seluruh isi laci jadi melebihi saldonya.
 ///
-/// Yang sudah diselesaikan tidak ditambahkan lagi. Kalau penjualannya
-/// sudah diinput, uangnya kini terhitung lewat pemasukan pesanan itu;
-/// kalau diakui pendapatan, ia sudah masuk lewat jalurnya sendiri.
-/// Menambahkannya sekali lagi di sini berarti uang yang sama dihitung
-/// dua kali.
-int selisihLebihBelumSelesai(List<CashVariance> selisih) => selisih
-    .where((s) => s.lebih && !s.lunas)
+/// Yang menentukan bukan "sudah diselesaikan atau belum", melainkan
+/// **bagaimana** diselesaikannya — dan ini bagian yang mudah salah:
+///
+/// - Belum diselesaikan: uangnya di laci, dihitung.
+/// - Diakui pendapatan lain-lain: uangnya **tetap di laci**. Yang
+///   berubah cuma pengakuannya di pembukuan; tidak ada pesanan yang
+///   masuk, jadi tidak ada pemasukan tunai yang menggantikannya. Kalau
+///   berhenti dihitung di sini, uang yang benar-benar ada lenyap dari
+///   Saldo Cash.
+/// - Penjualannya sudah diinput: berhenti dihitung. Pesanan yang
+///   barusan dimasukkan sudah membawa uangnya lewat pemasukan tunai,
+///   dan menghitungnya lagi di sini berarti uang yang sama dua kali.
+///
+/// Keduanya keluar dari laci nanti lewat setoran, seperti uang tunai
+/// lainnya.
+int selisihLebihDiLaci(List<CashVariance> selisih) => selisih
+    .where((s) => s.lebih && s.resolution != 'input_penjualan')
     .fold(0, (sum, s) => sum + s.amount);
 
 /// Selisih kurang yang belum dilunasi kasirnya.
