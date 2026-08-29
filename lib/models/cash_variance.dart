@@ -11,8 +11,20 @@ class CashVariance {
   final String employeeEmail;
   final String? employeeName;
 
-  /// Selalu positif: sebesar itulah uang yang kurang.
+  /// Selalu positif — jenisnya yang menentukan artinya.
   final int amount;
+
+  /// Kurang berarti uang lacinya kurang dari yang seharusnya; lebih
+  /// berarti justru berlebih.
+  ///
+  /// Keduanya disimpan di tabel yang sama karena keduanya lahir dari
+  /// kejadian yang sama — satu shift ditutup dan angkanya tidak cocok.
+  /// Yang berbeda hanya siapa yang menutupnya dan bagaimana.
+  final bool lebih;
+
+  /// Bagaimana barisnya ditutup: `dibayar`, `input_penjualan`, atau
+  /// `pendapatan`. Null selama masih terbuka.
+  final String? resolution;
 
   final bool lunas;
   final String? note;
@@ -28,6 +40,8 @@ class CashVariance {
     required this.employeeEmail,
     this.employeeName,
     required this.amount,
+    this.lebih = false,
+    this.resolution,
     this.lunas = false,
     this.note,
     required this.createdAt,
@@ -35,6 +49,15 @@ class CashVariance {
     this.settledBy,
     this.settleNote,
   });
+
+  /// Kalimat pendek yang menyebut apa yang sebenarnya terjadi pada
+  /// barisnya. Dipakai di daftar dan di rinciannya.
+  String get caraSelesai => switch (resolution) {
+        'dibayar' => 'Dibayar kasir',
+        'input_penjualan' => 'Penjualannya sudah diinput',
+        'pendapatan' => 'Diakui pendapatan lain-lain',
+        _ => 'Belum diselesaikan',
+      };
 
   String get namaTampil {
     final n = employeeName?.trim() ?? '';
@@ -49,6 +72,8 @@ class CashVariance {
         employeeEmail: map['employee_email']?.toString() ?? '',
         employeeName: map['employee_name']?.toString(),
         amount: (map['amount'] as num?)?.toInt() ?? 0,
+        lebih: map['kind'] == 'lebih',
+        resolution: map['resolution']?.toString(),
         lunas: map['status'] == 'settled',
         note: map['note']?.toString(),
         createdAt: DateTime.tryParse(map['created_at']?.toString() ?? '') ??

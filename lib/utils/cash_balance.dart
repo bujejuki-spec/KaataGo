@@ -24,8 +24,27 @@ int cashOnHand({
   return cashIncome -
       depositedFromDrawer(deposits) -
       pettyCashFromDrawer(pettyCash) -
-      selisihBelumDibayar(selisih);
+      selisihBelumDibayar(selisih) +
+      selisihLebihBelumSelesai(selisih);
 }
+
+/// Selisih lebih yang belum ditelusuri.
+///
+/// Ditambahkan karena uangnya memang ADA di laci — itulah artinya
+/// berlebih. Selama ini angka Saldo Cash mengabaikannya sama sekali,
+/// jadi ia menyebut jumlah yang lebih kecil daripada yang bisa dihitung
+/// tangan. Akibatnya baru terasa saat kasir menyetorkan seluruh isi
+/// laci: setorannya melebihi saldo yang tercatat, dan lacinya jadi
+/// minus tanpa ada yang salah melakukan apa pun.
+///
+/// Yang sudah diselesaikan tidak ditambahkan lagi. Kalau penjualannya
+/// sudah diinput, uangnya kini terhitung lewat pemasukan pesanan itu;
+/// kalau diakui pendapatan, ia sudah masuk lewat jalurnya sendiri.
+/// Menambahkannya sekali lagi di sini berarti uang yang sama dihitung
+/// dua kali.
+int selisihLebihBelumSelesai(List<CashVariance> selisih) => selisih
+    .where((s) => s.lebih && !s.lunas)
+    .fold(0, (sum, s) => sum + s.amount);
 
 /// Selisih kurang yang belum dilunasi kasirnya.
 ///
@@ -37,8 +56,9 @@ int cashOnHand({
 /// Yang sudah dilunasi tidak dikurangkan lagi: uangnya sudah kembali ke
 /// laci, dan mengurangkannya dua kali berarti menghukum kasir yang
 /// justru sudah membayar.
-int selisihBelumDibayar(List<CashVariance> selisih) =>
-    selisih.where((s) => !s.lunas).fold(0, (sum, s) => sum + s.amount);
+int selisihBelumDibayar(List<CashVariance> selisih) => selisih
+    .where((s) => !s.lebih && !s.lunas)
+    .fold(0, (sum, s) => sum + s.amount);
 
 /// Setoran yang sudah keluar dari laci.
 ///

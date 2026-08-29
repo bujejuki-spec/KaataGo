@@ -39,14 +39,14 @@ alter table gl_accounts add constraint gl_accounts_payment_method_check
     ('cash', 'qris', 'transfer', 'petty_cash', 'income_aggregate', 'total_balance',
      'ppn', 'service', 'suspense', 'suspense_petty', 'gateway_fee', 'discount',
      'subscription', 'subscription_discount', 'voucher', 'voucher_redeem',
-     'capital', 'cash_variance'));
+     'capital', 'cash_variance', 'other_income'));
 
 alter table gl_journal_entries drop constraint if exists gl_journal_entries_reference_type_check;
 alter table gl_journal_entries add constraint gl_journal_entries_reference_type_check
   check (
     reference_type in
     ('order', 'order_discount', 'expense', 'petty_cash', 'cash_deposit',
-     'billing', 'billing_discount', 'voucher', 'capital', 'cash_variance'));
+     'billing', 'billing_discount', 'voucher', 'capital', 'cash_variance', 'other_income'));
 
 -- Untuk resto yang sudah ada.
 insert into gl_accounts (resto_id, payment_method, gl_code, gl_name)

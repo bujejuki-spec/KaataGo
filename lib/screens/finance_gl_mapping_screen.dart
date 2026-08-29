@@ -960,22 +960,32 @@ class _GlAccountRow extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Keterangannya turun ke baris sendiri, bukan disambung di
+          // kanan namanya.
+          //
+          // Disambung, ia berbagi satu baris dengan nama akunnya dan
+          // hampir selalu terpotong di tengah kata — dan yang terpotong
+          // justru kalimat yang menjelaskan akun ini dipakai untuk apa.
+          // Nama akunnya sendiri pendek dan tidak pernah butuh dua
+          // baris; keterangannya yang butuh.
           Row(
             children: [
               Icon(icon, size: 15, color: color),
               const SizedBox(width: 7),
-              Text(label,
-                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5)),
-              if (hint != null) ...[
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text('• $hint',
-                      style: TextStyle(fontSize: 11, color: KaataTheme.mutedOf(context)),
-                      overflow: TextOverflow.ellipsis),
-                ),
-              ],
+              Expanded(
+                child: Text(label,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w600, fontSize: 13.5)),
+              ),
             ],
           ),
+          if (hint != null)
+            Padding(
+              padding: const EdgeInsets.only(left: 22, top: 2),
+              child: Text(hint!,
+                  style: TextStyle(
+                      fontSize: 11, color: KaataTheme.mutedOf(context))),
+            ),
           const SizedBox(height: 6),
           if (editing)
             Row(

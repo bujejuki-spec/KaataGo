@@ -70,6 +70,29 @@ class CashierShiftRepository {
     return CashVariance.fromMap(Map<String, dynamic>.from(row as Map));
   }
 
+  /// Menutup selisih lebih setelah ditelusuri.
+  ///
+  /// [cara] hanya `input_penjualan` atau `pendapatan`. Keduanya sama-
+  /// sama melepas titipannya di GL Selisih Kasir; yang kedua sekaligus
+  /// mengakuinya sebagai pendapatan lain-lain.
+  ///
+  /// Siapa yang boleh ditegakkan server, dan di sini lebih sempit
+  /// daripada pelunasan selisih kurang: hanya Owner dan Finance.
+  /// Memutuskan uang tak dikenal menjadi pendapatan adalah keputusan
+  /// pembukuan, bukan keputusan operasional.
+  Future<CashVariance> selesaikanSelisihLebih({
+    required String id,
+    required String cara,
+    String? catatan,
+  }) async {
+    final row = await _client.rpc('resolve_cash_overage', params: {
+      'p_id': id,
+      'p_cara': cara,
+      'p_note': catatan,
+    });
+    return CashVariance.fromMap(Map<String, dynamic>.from(row as Map));
+  }
+
   /// Berapa yang seharusnya ada di laci sebelum shift dibuka.
   ///
   /// `null` berarti belum ada pembandingnya — merchant ini belum pernah

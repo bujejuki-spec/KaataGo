@@ -45,7 +45,7 @@ alter table gl_accounts add constraint gl_accounts_payment_method_check
     ('cash', 'qris', 'transfer', 'petty_cash', 'income_aggregate', 'total_balance',
      'ppn', 'service', 'suspense', 'suspense_petty', 'gateway_fee', 'discount',
      'subscription', 'subscription_discount', 'voucher', 'voucher_redeem',
-     'capital', 'cash_variance'));
+     'capital', 'cash_variance', 'other_income'));
 
 -- Journalling a paid order now credits up to three accounts instead of
 -- one: the payment method's income GL gets the base, and PPN/service go

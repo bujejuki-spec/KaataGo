@@ -287,9 +287,17 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
   /// berhenti berjumlah sama dengan Penghasilan — dan dua angka yang
   /// tidak bertemu di layar yang sama adalah yang pertama membuat orang
   /// berhenti mempercayai seluruh halamannya.
+  ///
+  /// Setoran tunai ikut di sini, dan itu inti perpindahannya: uang yang
+  /// keluar dari laci mendarat di rekening. Sebelumnya ia dikurangkan
+  /// dari Saldo Cash tapi tidak ditambahkan ke mana pun, dan Saldo Total
+  /// menambahkannya sendiri di tingkat atas — jadi totalnya benar tapi
+  /// rinciannya berbohong: uangnya lenyap dari kedua kartu, dan yang
+  /// membaca layarnya tidak punya cara tahu ia sedang di rekening.
   int get _nonCashBalance =>
       _nonCashIncome +
-      _topupTotal -
+      _topupTotal +
+      _depositedTotal -
       _pettyCashFrom(PettyCashSource.incomeWithdrawal);
 
   /// Hanya yang sudah disetujui yang dihitung sebagai saldo petty cash.
@@ -314,9 +322,8 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
   /// subtracting expenses again (that would double-count them).
   int get _pettyCashBalance => _pettyCashToppedUp - _expenseBalance;
 
-  /// Setoran ikut dihitung: uangnya pindah ke rekening resto, bukan
-  /// keluar dari resto. Tanpa baris ini setiap setoran akan terlihat
-  /// seperti kehilangan uang.
+  /// Penghasilan + Petty Cash. Setorannya sudah ikut lewat Saldo Non
+  /// Cash, jadi tidak ditambahkan lagi di sini.
   int get _totalBalance {
     // Saldo KaataGo dihitung dari pergerakan akun GL Total Saldo —
     // sumber yang sama persis dengan layar Jurnal GL, supaya keduanya
@@ -326,7 +333,11 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
       if (kode == null) return 0;
       return saldoPlatform(_jurnal, kode) - _expenseBalance;
     }
-    return _incomeBalance + _pettyCashBalance + _depositedTotal;
+    // Setorannya tidak ditambahkan lagi di sini: sejak ia masuk ke
+    // Saldo Non Cash, menambahkannya sekali lagi berarti menghitung
+    // uang yang sama dua kali. Angka totalnya sendiri tidak berubah
+    // sedikit pun — yang berubah cuma dari mana ia datang.
+    return _incomeBalance + _pettyCashBalance;
   }
 
   /// Uang masuk ke pembukuan KaataGo: langganan yang dibayar resto.

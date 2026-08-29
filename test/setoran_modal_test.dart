@@ -86,7 +86,7 @@ void main() {
     test('setoran menambah saldo non-tunai, bukan berdiri sendiri', () {
       // Dua angka yang tidak bertemu di layar yang sama adalah yang
       // pertama membuat orang berhenti mempercayai halamannya.
-      expect(layar, contains('_nonCashIncome +\n      _topupTotal -'));
+      expect(layar, contains('_nonCashIncome +\n      _topupTotal +'));
       expect(layar, contains('int get _incomeBalance => _cashBalance + _nonCashBalance;'));
     });
 

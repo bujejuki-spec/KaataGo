@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pos_app/models/cash_deposit.dart';
 import 'package:pos_app/models/petty_cash_entry.dart';
@@ -85,6 +87,33 @@ void main() {
       );
 
       expect(tunai, 100000);
+    });
+  });
+
+  // Setoran memindahkan uang, bukan menghilangkannya. Sebelumnya ia
+  // dikurangkan dari Saldo Cash tapi tidak ditambahkan ke Saldo Non
+  // Cash — Saldo Total menambahkannya sendiri di tingkat atas, jadi
+  // totalnya benar sementara rinciannya berbohong.
+  group('setoran tunai di layar saldo', () {
+    final layar =
+        File('lib/screens/finance_balance_screen.dart').readAsStringSync();
+
+    test('mendarat di Saldo Non Cash', () {
+      final blok = layar.substring(layar.indexOf('int get _nonCashBalance'));
+      expect(blok.substring(0, blok.indexOf(';')), contains('_depositedTotal'));
+    });
+
+    test('tidak ditambahkan lagi di Saldo Total', () {
+      expect(layar, contains('return _incomeBalance + _pettyCashBalance;'));
+      expect(layar,
+          isNot(contains('_incomeBalance + _pettyCashBalance + _depositedTotal')));
+    });
+
+    // Kedua kartu harus berjumlah sama dengan Penghasilan; kalau tidak,
+    // ada uang yang tidak muncul di mana pun.
+    test('Penghasilan tetap jumlah keduanya', () {
+      expect(layar,
+          contains('int get _incomeBalance => _cashBalance + _nonCashBalance;'));
     });
   });
 }
