@@ -37,6 +37,12 @@ Formatnya dibaca `scripts/release.sh`: judul `## <versi>`, lalu
 poin-poinnya. Versi yang tidak punya bagiannya di sini tetap terbit,
 hanya pengumumannya memakai kalimat umum.
 
+## 2.24.0
+
+- QR Meja untuk banyak meja sekaligus bisa dimulai dari nomor berapa
+  pun, bukan selalu dari 1 — berguna saat menambah meja di lantai dua
+- Perbaikan bug dan penyempurnaan tampilan
+
 ## 2.23.0
 
 - Tombol lokasi merchant langsung membuka aplikasi peta di HP, tidak
