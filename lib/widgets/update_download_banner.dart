@@ -225,7 +225,11 @@ Future<void> showUpdateDownloadDialog(BuildContext context) {
               alignment: WrapAlignment.center,
               spacing: 4,
               children: [
-                if (berjalan)
+                // Tombolnya hilang saat unduhannya dipegang sistem —
+                // DownloadManager tidak bisa dijeda, dan tombol yang
+                // tidak melakukan apa pun lebih buruk daripada tombol
+                // yang tidak ada.
+                if (berjalan && updater.bisaDijeda)
                   TextButton.icon(
                     onPressed: updater.pause,
                     icon: const Icon(Icons.pause, size: 17),

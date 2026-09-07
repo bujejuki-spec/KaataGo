@@ -37,6 +37,20 @@ Formatnya dibaca `scripts/release.sh`: judul `## <versi>`, lalu
 poin-poinnya. Versi yang tidak punya bagiannya di sini tetap terbit,
 hanya pengumumannya memakai kalimat umum.
 
+## 2.27.0
+
+- Unduhan pembaruan sekarang berjalan terus meskipun aplikasinya
+  ditutup atau HP-nya dikunci, dan menyambung sendiri saat sinyal putus
+  lalu kembali. Kemajuannya terlihat di notifikasi, dan mengetuknya
+  membuka layar pemasang
+- Tombol Jeda tidak lagi ada di Android: unduhannya kini dipegang
+  sistem, yang tidak menyediakan cara menjeda — tapi juga tidak lagi
+  menghanguskan unduhan saat kamu berpindah aplikasi
+- Tunai di Laci di Setor Saldo Cash kini memakai perhitungan yang sama
+  persis dengan Saldo Cash, termasuk selisih shift kasir. Sebelumnya
+  kedua layar bisa menampilkan angka berbeda
+- Perbaikan bug dan penyempurnaan tampilan
+
 ## 2.26.0
 
 - Kasir yang masih punya selisih kurang belum bisa membuka shift baru

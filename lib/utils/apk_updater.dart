@@ -1,11 +1,14 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart' show ClientException;
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+
+import 'unduhan_sistem.dart';
 
 /// Mengunduh APK versi baru di dalam aplikasi, lalu menyerahkannya ke
 /// pemasang bawaan Android.
@@ -26,7 +29,23 @@ class ApkUpdater {
 
   ApkUpdater({this.onProgress});
 
+  /// Di Android unduhannya dititipkan ke DownloadManager milik sistem,
+  /// supaya ia bertahan saat aplikasinya ditutup atau layarnya dikunci.
+  ///
+  /// Dipakai juga di atas: selama sistem yang mengunduh, sistem pula
+  /// yang memasang notifikasinya — dan memasang notifikasi kedua berisi
+  /// angka yang sama cuma menggandakan barisnya di rana notifikasi.
+  static bool get pakaiSistem => !kIsWeb && Platform.isAndroid;
+
+  /// Menjeda hanya mungkin pada pengunduh sendiri. DownloadManager tidak
+  /// menyediakannya, dan menirunya berarti membangun ulang seluruh
+  /// isinya.
+  static bool get bisaDijeda => !pakaiSistem;
+
   http.Client? _client;
+
+  /// Id unduhan milik DownloadManager, selama masih berjalan.
+  int? _idSistem;
 
   /// Unduhannya dihentikan orangnya sendiri.
   ///
@@ -56,6 +75,15 @@ class ApkUpdater {
     _received = 0;
     _client?.close();
     _client = null;
+    final id = _idSistem;
+    if (id != null) {
+      _idSistem = null;
+      // Dibuang dari antrean sistem juga, bukan cuma dilupakan di sini.
+      // Unduhan yang ditinggalkan tanpa dihapus akan terus berjalan
+      // sampai selesai, memakai kuota orangnya untuk berkas yang sudah
+      // dia batalkan.
+      UnduhanSistem.batal(id);
+    }
   }
 
   /// Menjeda unduhan, menyisakan berkas separuhnya.
@@ -84,6 +112,8 @@ class ApkUpdater {
             'HP → Aplikasi → KaataGo.';
       }
     }
+
+    if (pakaiSistem) return _lewatSistem(url);
 
     final File file;
     try {
@@ -114,6 +144,59 @@ class ApkUpdater {
     if (result.type != ResultType.done) {
       return 'Berkasnya sudah terunduh, tapi layar pemasangnya tidak bisa '
           'dibuka. Coba buka lagi dari notifikasi unduhan.';
+    }
+    return null;
+  }
+
+  /// Menitipkan unduhannya ke DownloadManager, lalu menungguinya.
+  ///
+  /// Yang ditunggu di sini cuma tampilannya. Unduhannya sendiri berjalan
+  /// di proses sistem, jadi kalau aplikasi ini ditutup di tengah jalan,
+  /// yang berhenti adalah angka di layar — bukan unduhannya.
+  Future<String?> _lewatSistem(String url) async {
+    _cancelled = false;
+    final int id;
+    try {
+      id = await UnduhanSistem.mulai(url);
+    } catch (e) {
+      return 'Unduhan gagal dimulai. Coba lagi sebentar lagi.';
+    }
+    _idSistem = id;
+
+    while (true) {
+      await Future<void>.delayed(const Duration(milliseconds: 600));
+      if (_cancelled) return null;
+
+      final KeadaanUnduhan keadaan;
+      try {
+        keadaan = await UnduhanSistem.status(id);
+      } catch (e) {
+        return 'Unduhan gagal. Coba lagi sebentar lagi.';
+      }
+
+      // Barisnya hilang dari antrean sistem: dihapus orangnya lewat
+      // aplikasi Unduhan, atau dibersihkan sistem karena ruang habis.
+      if (keadaan.hilang) {
+        _idSistem = null;
+        return _cancelled ? null : 'Unduhannya terhapus sebelum selesai.';
+      }
+      if (keadaan.gagal) {
+        _idSistem = null;
+        return 'Unduhan gagal — server atau koneksinya sedang bermasalah.';
+      }
+
+      onProgress?.call(keadaan.kemajuan);
+      if (keadaan.selesai) break;
+    }
+
+    // Sistem sudah memasang notifikasinya sendiri, dan mengetuknya
+    // membuka layar pemasang. Jadi gagal membukanya dari sini bukan
+    // jalan buntu — orangnya tetap punya satu ketukan yang berhasil.
+    final terbuka = await UnduhanSistem.pasang(id);
+    _idSistem = null;
+    if (!terbuka) {
+      return 'Berkasnya sudah terunduh. Ketuk notifikasi unduhan untuk '
+          'memasangnya.';
     }
     return null;
   }

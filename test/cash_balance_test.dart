@@ -116,4 +116,25 @@ void main() {
           contains('int get _incomeBalance => _cashBalance + _nonCashBalance;'));
     });
   });
+
+  // Dua layar sama-sama menyebut "tunai di laci". Selama keduanya
+  // memanggil cashOnHand, keduanya berubah bersama; begitu salah satunya
+  // menyalin rumusnya, salinan itu berhenti ikut berubah — dan itulah
+  // yang terjadi saat selisih shift mulai diperhitungkan: Setor Saldo
+  // Cash tertinggal, lalu kedua layar menampilkan angka berbeda tanpa
+  // ada cara menebak yang mana yang benar.
+  group('Setor Saldo Cash memakai perhitungan yang sama', () {
+    final layar =
+        File('lib/screens/cash_deposit_screen.dart').readAsStringSync();
+
+    test('memanggil cashOnHand, bukan menghitung sendiri', () {
+      final blok = layar.substring(layar.indexOf('int get _cashOnHand'));
+      expect(blok.substring(0, blok.indexOf(';')), contains('cashOnHand('));
+    });
+
+    test('ikut menyertakan selisih shift', () {
+      final blok = layar.substring(layar.indexOf('int get _cashOnHand'));
+      expect(blok.substring(0, blok.indexOf(';')), contains('selisih:'));
+    });
+  });
 }

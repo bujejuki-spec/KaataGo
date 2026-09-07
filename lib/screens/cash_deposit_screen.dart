@@ -7,9 +7,11 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../db/cash_deposit_repository.dart';
+import '../db/cashier_shift_repository.dart';
 import '../db/order_repository.dart';
 import '../db/petty_cash_repository.dart';
 import '../models/cash_deposit.dart';
+import '../models/cash_variance.dart';
 import '../models/customer_order.dart';
 import '../models/petty_cash_entry.dart';
 import '../utils/cash_balance.dart';
@@ -44,6 +46,7 @@ class _CashDepositScreenState extends State<CashDepositScreen> {
   final _depositRepo = CashDepositRepository();
   final _orderRepo = OrderRepository();
   final _pettyCashRepo = PettyCashRepository();
+  final _shiftRepo = CashierShiftRepository();
 
   String? _bankName;
   String? _accountNumber;
@@ -52,6 +55,8 @@ class _CashDepositScreenState extends State<CashDepositScreen> {
   int _cashIncome = 0;
   int _pettyCashFromCash = 0;
   List<CashDeposit> _deposits = [];
+  List<PettyCashEntry> _pettyCash = const [];
+  List<CashVariance> _selisih = const [];
   bool _loading = true;
   String? _loadError;
 
@@ -83,7 +88,28 @@ class _CashDepositScreenState extends State<CashDepositScreen> {
   int get _pendingTotal => _deposits.where((d) => d.isPending).fold(0, (sum, d) => sum + d.amount);
 
   /// Yang seharusnya masih ada di laci.
-  int get _cashOnHand => _cashIncome - _deposited - _pettyCashFromCash;
+  ///
+  /// Dihitung [cashOnHand], bukan ditulis ulang di sini. Sebelumnya
+  /// rumusnya disalin — pemasukan dikurangi setoran dikurangi petty cash
+  /// — dan salinan itu tidak ikut berubah saat selisih shift mulai
+  /// diperhitungkan. Hasilnya dua layar yang sama-sama mengaku menyebut
+  /// "tunai di laci" menampilkan angka berbeda, dan tidak ada cara
+  /// menebak yang mana yang benar dari layarnya saja. Persis penyakit
+  /// yang dulu melahirkan berkas itu.
+  int get _cashOnHand => cashOnHand(
+        cashIncome: _cashIncome,
+        deposits: _deposits,
+        pettyCash: _pettyCash,
+        selisih: _selisih,
+      );
+
+  /// Selisih shift yang menggeser isi laci, untuk ditulis di kartunya.
+  ///
+  /// Yang kurang mengurangi, yang lebih menambah — dan keduanya perlu
+  /// terlihat, karena kasir yang menyetor isi laci membandingkan angka
+  /// di layar dengan lembaran di tangannya.
+  int get _selisihKurang => selisihBelumDibayar(_selisih);
+  int get _selisihLebih => selisihLebihDiLaci(_selisih);
 
 
   @override
@@ -104,6 +130,7 @@ class _CashDepositScreenState extends State<CashDepositScreen> {
         _depositRepo.getForResto(restoId),
         _pettyCashRepo.getForResto(restoId),
         Supabase.instance.client.from('settings').select().eq('resto_id', restoId).limit(1),
+        _shiftRepo.selisih(restoId),
       ]);
       if (!mounted) return;
       final orders = (results[0] as List<CustomerOrder>)
@@ -118,6 +145,8 @@ class _CashDepositScreenState extends State<CashDepositScreen> {
         _cashIncome =
             orders.where((o) => o.paymentMethod == 'cash').fold(0, (sum, o) => sum + o.total);
         _deposits = results[1] as List<CashDeposit>;
+        _pettyCash = pettyCash;
+        _selisih = results[4] as List<CashVariance>;
         _pettyCashFromCash = pettyCashFromDrawer(pettyCash);
         _loading = false;
       });
@@ -295,6 +324,8 @@ class _CashDepositScreenState extends State<CashDepositScreen> {
                           cashIncome: _cashIncome,
                           deposited: _deposited,
                           toPettyCash: _pettyCashFromCash,
+                          selisihKurang: _selisihKurang,
+                          selisihLebih: _selisihLebih,
                           pending: _pendingTotal,
                           currency: currency,
                         ),
@@ -367,6 +398,8 @@ class _CashOnHandCard extends StatelessWidget {
   final int cashIncome;
   final int deposited;
   final int toPettyCash;
+  final int selisihKurang;
+  final int selisihLebih;
   final int pending;
   final NumberFormat currency;
 
@@ -375,6 +408,8 @@ class _CashOnHandCard extends StatelessWidget {
     required this.cashIncome,
     required this.deposited,
     required this.toPettyCash,
+    required this.selisihKurang,
+    required this.selisihLebih,
     required this.pending,
     required this.currency,
   });
@@ -417,6 +452,14 @@ class _CashOnHandCard extends StatelessWidget {
           _row('Pemasukan tunai', currency.format(cashIncome)),
           if (deposited > 0) _row('Sudah disetor', '- ${currency.format(deposited)}'),
           if (toPettyCash > 0) _row('Dipindah ke Petty Cash', '- ${currency.format(toPettyCash)}'),
+          // Rinciannya harus berjumlah sama dengan angka besar di atas.
+          // Rincian yang tidak bertemu totalnya lebih buruk daripada
+          // total yang salah: yang membacanya tahu ada yang keliru, tapi
+          // tidak tahu di sebelah mana.
+          if (selisihKurang > 0)
+            _row('Selisih kurang shift', '- ${currency.format(selisihKurang)}'),
+          if (selisihLebih > 0)
+            _row('Selisih lebih shift', '+ ${currency.format(selisihLebih)}'),
           if (pending > 0) ...[
             const SizedBox(height: 4),
             _row('⏳ Menunggu approval Finance', currency.format(pending)),

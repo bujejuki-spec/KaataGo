@@ -60,7 +60,13 @@ class AppUpdater extends ChangeNotifier {
       final now = p == null ? null : (p * 100).round();
       if (now != _lastPercent) {
         _lastPercent = now;
-        NotificationService.instance.showDownloadProgress(now);
+        // Saat sistem yang mengunduh, sistem pula yang memasang
+        // notifikasinya. Menambah notifikasi sendiri berisi angka yang
+        // sama cuma menggandakan barisnya di rana notifikasi, dan yang
+        // kedua tidak bisa diketuk untuk memasang.
+        if (!ApkUpdater.pakaiSistem) {
+          NotificationService.instance.showDownloadProgress(now);
+        }
       }
       notifyListeners();
     });
@@ -80,7 +86,9 @@ class AppUpdater extends ChangeNotifier {
     notifyListeners();
 
     _lastPercent = percent;
-    NotificationService.instance.showDownloadProgress(_lastPercent ?? 0);
+    if (!ApkUpdater.pakaiSistem) {
+      NotificationService.instance.showDownloadProgress(_lastPercent ?? 0);
+    }
 
     final failure = await updater.downloadAndInstall(
       url,
@@ -93,6 +101,8 @@ class AppUpdater extends ChangeNotifier {
       // pemasangnya terbuka.
       onDownloaded: (path) =>
           NotificationService.instance.showDownloadReady(path),
+      // Hanya terpakai pada pengunduh sendiri. Unduhan lewat sistem
+      // sudah membawa notifikasi selesainya sendiri.
     );
 
     final dijeda = paused;
@@ -118,9 +128,13 @@ class AppUpdater extends ChangeNotifier {
     await start(url);
   }
 
+  /// Bisa dijeda atau tidak — dipakai layar untuk memutuskan menampilkan
+  /// tombolnya. Unduhan lewat DownloadManager tidak bisa dijeda.
+  bool get bisaDijeda => ApkUpdater.bisaDijeda;
+
   /// Menjeda unduhan. Berkas separuhnya tetap tersimpan.
   void pause() {
-    if (!downloading) return;
+    if (!downloading || !bisaDijeda) return;
     paused = true;
     _updater?.pause();
     notifyListeners();
