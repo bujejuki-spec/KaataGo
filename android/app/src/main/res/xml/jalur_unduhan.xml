@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Hanya folder milik aplikasi di penyimpanan luar, tempat APK
+  pembaruannya turun. Dibatasi sesempit itu dengan sengaja: sebuah
+  FileProvider yang membuka seluruh penyimpanan memberi aplikasi lain
+  jalan membaca berkas yang tidak ada hubungannya dengan pembaruan.
+-->
+<paths>
+    <external-files-path name="unduhan" path="." />
+</paths>

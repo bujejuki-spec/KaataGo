@@ -37,6 +37,17 @@ Formatnya dibaca `scripts/release.sh`: judul `## <versi>`, lalu
 poin-poinnya. Versi yang tidak punya bagiannya di sini tetap terbit,
 hanya pengumumannya memakai kalimat umum.
 
+## 2.28.0
+
+- Unduhan pembaruan kini berjalan di layanan latar: ia terus jalan saat
+  layar dikunci atau kamu pindah ke aplikasi lain, dan aplikasi yang
+  dibuka lagi menyambung kemajuannya
+- Tombol Jeda kembali ada, dan sekarang benar-benar melanjutkan dari
+  byte terakhir alih-alih mengulang dari nol
+- Notifikasi unduhan bisa diketuk untuk langsung membuka layar pemasang
+  begitu berkasnya selesai
+- Perbaikan bug dan penyempurnaan tampilan
+
 ## 2.27.0
 
 - Unduhan pembaruan sekarang berjalan terus meskipun aplikasinya

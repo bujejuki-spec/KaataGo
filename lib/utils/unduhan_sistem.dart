@@ -1,75 +1,101 @@
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-/// Pembungkus DownloadManager milik Android.
+/// Pembungkus layanan latar yang mengunduh APK pembaruan.
 ///
-/// Alasan memakainya ada di MainActivity.kt: unduhan yang berjalan di
-/// dalam proses aplikasi ini mati bersama prosesnya, dan itu berarti
-/// menutup aplikasi atau mengunci layar membatalkan 86 MB tanpa satu pun
-/// pesan yang menjelaskannya.
+/// Alasannya ada di UnduhanService.kt: unduhan yang berjalan di dalam
+/// isolate Dart mati begitu Android membekukan aplikasinya — layar
+/// dikunci, atau orangnya pindah ke aplikasi lain — dan yang dialami
+/// orangnya selalu sama: 86 MB yang batal tanpa satu pun pesan.
+///
+/// Batasnya juga perlu diingat: force-stop membunuh seluruh milik
+/// aplikasi, layanan ini termasuk. Tidak ada yang bisa dilakukan dari
+/// sini terhadap itu.
 class UnduhanSistem {
   static const _saluran = MethodChannel('kaatago/unduhan');
 
-  /// Menitipkan unduhannya ke sistem. Mengembalikan id untuk ditanyakan
-  /// kemajuannya nanti.
-  static Future<int> mulai(String url, {String nama = 'KaataGo-update.apk'}) async {
-    final id = await _saluran.invokeMethod<Object>('mulai', {
-      'url': url,
-      'nama': nama,
-    });
-    return (id as num).toInt();
-  }
+  static Future<void> mulai(String url,
+          {String nama = 'KaataGo-update.apk'}) =>
+      _saluran.invokeMethod<void>('mulai', {'url': url, 'nama': nama});
+
+  /// Melanjutkan dari byte terakhir yang sudah tersimpan.
+  static Future<void> lanjut(String url,
+          {String nama = 'KaataGo-update.apk'}) =>
+      _saluran.invokeMethod<void>('lanjut', {'url': url, 'nama': nama});
+
+  static Future<void> jeda() => _saluran.invokeMethod<void>('jeda');
+
+  static Future<void> batal() => _saluran.invokeMethod<void>('batal');
 
   /// Keadaan unduhan sekarang.
   ///
-  /// Ditanyakan berkala, bukan ditunggu: DownloadManager hanya
-  /// menyiarkan penyelesaian, tidak menyiarkan kemajuan.
-  static Future<KeadaanUnduhan> status(int id) async {
-    final map = await _saluran.invokeMapMethod<String, Object?>(
-        'status', {'id': id});
-    if (map == null) return const KeadaanUnduhan.hilang();
+  /// Ditanyakan berkala, bukan ditunggu lewat siaran: layanannya hidup
+  /// lebih lama daripada mesin Flutter yang menanyakannya, dan siaran
+  /// yang tidak ada penerimanya hilang begitu saja.
+  static Future<KeadaanUnduhan> status() async {
+    final map =
+        await _saluran.invokeMapMethod<String, Object?>('status');
+    if (map == null) return const KeadaanUnduhan.kosong();
     return KeadaanUnduhan(
-      keadaan: map['keadaan']?.toString() ?? 'hilang',
+      keadaan: map['keadaan']?.toString() ?? 'kosong',
       turun: (map['turun'] as num?)?.toInt() ?? 0,
       total: (map['total'] as num?)?.toInt() ?? -1,
-      alasan: (map['alasan'] as num?)?.toInt() ?? 0,
+      berkas: map['berkas']?.toString(),
+      galat: map['galat']?.toString(),
     );
   }
 
-  static Future<void> batal(int id) =>
-      _saluran.invokeMethod<void>('batal', {'id': id});
+  // ── Mengingat unduhan yang sedang berjalan ──────────────────────────
+  //
+  // Layanannya hidup di luar mesin Flutter, tapi tautannya cuma ada di
+  // ingatan aplikasi — dan ingatan itu hilang begitu prosesnya mati.
+  // Tanpa disimpan, aplikasi yang dibuka lagi tidak punya cara menyambung
+  // unduhan yang sebenarnya masih berjalan: tidak ada kemajuan yang
+  // ditampilkan, tidak ada pemasang yang dibuka saat selesai. Dari
+  // tempat duduk orangnya, itu terlihat persis seperti unduhan yang
+  // berhenti sendiri.
+  static const _kunciUrl = 'unduhan_apk_url';
 
-  /// Membuka layar pemasang. False berarti sistem menolak — biasanya
-  /// karena aplikasinya sedang di latar, dan notifikasi jadi jalan yang
-  /// tersisa.
-  static Future<bool> pasang(int id) async =>
-      await _saluran.invokeMethod<bool>('pasang', {'id': id}) ?? false;
+  static Future<void> ingat(String url) async =>
+      (await SharedPreferences.getInstance()).setString(_kunciUrl, url);
+
+  static Future<void> lupakan() async =>
+      (await SharedPreferences.getInstance()).remove(_kunciUrl);
+
+  static Future<String?> yangDiingat() async =>
+      (await SharedPreferences.getInstance()).getString(_kunciUrl);
 }
 
 class KeadaanUnduhan {
-  /// 'berjalan' | 'tertunda' | 'selesai' | 'gagal' | 'hilang'
+  /// 'kosong' | 'berjalan' | 'dijeda' | 'selesai' | 'gagal' | 'dibatalkan'
   final String keadaan;
   final int turun;
 
-  /// -1 saat servernya tidak memberitahu panjang berkasnya.
+  /// -1 saat panjang berkasnya belum diketahui.
   final int total;
-  final int alasan;
+  final String? berkas;
+  final String? galat;
 
   const KeadaanUnduhan({
     required this.keadaan,
     required this.turun,
     required this.total,
-    required this.alasan,
+    this.berkas,
+    this.galat,
   });
 
-  const KeadaanUnduhan.hilang()
-      : keadaan = 'hilang',
+  const KeadaanUnduhan.kosong()
+      : keadaan = 'kosong',
         turun = 0,
         total = -1,
-        alasan = 0;
+        berkas = null,
+        galat = null;
 
+  bool get berjalan => keadaan == 'berjalan';
+  bool get dijeda => keadaan == 'dijeda';
   bool get selesai => keadaan == 'selesai';
   bool get gagal => keadaan == 'gagal';
-  bool get hilang => keadaan == 'hilang';
+  bool get dibatalkan => keadaan == 'dibatalkan';
 
   /// 0..1, atau null kalau panjangnya belum diketahui.
   double? get kemajuan => total > 0 ? turun / total : null;

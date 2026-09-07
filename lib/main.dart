@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'services/notification_router.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -8,6 +10,7 @@ import 'package:open_filex/open_filex.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'providers/app_prefs_provider.dart';
+import 'services/app_updater.dart';
 import 'services/notification_service.dart';
 import 'providers/auth_provider.dart';
 import 'providers/cart_provider.dart';
@@ -56,6 +59,12 @@ Future<void> main() async {
     }
     OpenFilex.open(payload, type: 'application/vnd.android.package-archive');
   };
+
+  // Unduhan pembaruan yang masih berjalan di proses sistem disambung
+  // lagi. Tidak ditunggu: menahan layar pertama demi ini berarti
+  // aplikasinya lambat dibuka untuk sesuatu yang tidak dilihat siapa pun
+  // sampai unduhannya memang sedang berjalan.
+  unawaited(AppUpdater.instance.pulihkan());
 
   runApp(const PosApp());
 }

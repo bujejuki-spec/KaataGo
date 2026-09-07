@@ -25,6 +25,13 @@
          "Lokasi Saya" ditekan di layar Info Resto. -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <!-- Unduhan pembaruan berjalan di layanan latar supaya tidak mati
+         saat layarnya dikunci atau orangnya pindah aplikasi. Tanpa izin
+         ini layanannya ditolak dimulai, dan unduhannya berhenti persis
+         seperti sebelum layanan itu ada. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission
+        android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <application
         android:label="KaataGo"
         android:name="${applicationName}"
@@ -70,6 +77,28 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- Mengunduh APK di latar. dataSync: yang dikerjakannya memang
+             memindahkan berkas dari jaringan, dan sejak Android 14 tiap
+             layanan latar wajib menyebutkan jenisnya. -->
+        <service
+            android:name=".UnduhanService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
+        <!-- Menyerahkan APK yang sudah turun ke pemasang bawaan.
+             Sejak Android 7 melempar file:// ke aplikasi lain melempar
+             FileUriExposedException, dan yang terlihat orangnya cuma
+             aplikasi yang berhenti sendiri. Otoritasnya sendiri, bukan
+             menumpang milik paket lain yang bisa saja dicopot. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.unduhan"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/jalur_unduhan" />
+        </provider>
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

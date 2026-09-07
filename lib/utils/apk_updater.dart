@@ -29,23 +29,20 @@ class ApkUpdater {
 
   ApkUpdater({this.onProgress});
 
-  /// Di Android unduhannya dititipkan ke DownloadManager milik sistem,
-  /// supaya ia bertahan saat aplikasinya ditutup atau layarnya dikunci.
+  /// Di Android unduhannya dijalankan layanan latar milik aplikasi ini,
+  /// supaya ia bertahan saat layarnya dikunci atau orangnya pindah
+  /// aplikasi.
   ///
-  /// Dipakai juga di atas: selama sistem yang mengunduh, sistem pula
+  /// Dipakai juga di atas: selama layanan yang mengunduh, layanan pula
   /// yang memasang notifikasinya — dan memasang notifikasi kedua berisi
   /// angka yang sama cuma menggandakan barisnya di rana notifikasi.
   static bool get pakaiSistem => !kIsWeb && Platform.isAndroid;
 
-  /// Menjeda hanya mungkin pada pengunduh sendiri. DownloadManager tidak
-  /// menyediakannya, dan menirunya berarti membangun ulang seluruh
-  /// isinya.
-  static bool get bisaDijeda => !pakaiSistem;
+  /// Menjeda tersedia di mana pun sekarang. DownloadManager dulu dipakai
+  /// dan dilepas justru karena ia tidak menyediakannya.
+  static bool get bisaDijeda => true;
 
   http.Client? _client;
-
-  /// Id unduhan milik DownloadManager, selama masih berjalan.
-  int? _idSistem;
 
   /// Unduhannya dihentikan orangnya sendiri.
   ///
@@ -75,20 +72,23 @@ class ApkUpdater {
     _received = 0;
     _client?.close();
     _client = null;
-    final id = _idSistem;
-    if (id != null) {
-      _idSistem = null;
-      // Dibuang dari antrean sistem juga, bukan cuma dilupakan di sini.
-      // Unduhan yang ditinggalkan tanpa dihapus akan terus berjalan
+    if (pakaiSistem) {
+      // Layanannya dihentikan juga, bukan cuma dilupakan di sini.
+      // Unduhan yang ditinggalkan tanpa dihentikan akan terus berjalan
       // sampai selesai, memakai kuota orangnya untuk berkas yang sudah
       // dia batalkan.
-      UnduhanSistem.batal(id);
+      UnduhanSistem.lupakan();
+      UnduhanSistem.batal();
     }
   }
 
   /// Menjeda unduhan, menyisakan berkas separuhnya.
   void pause() {
     _paused = true;
+    if (pakaiSistem) {
+      UnduhanSistem.jeda();
+      return;
+    }
     _client?.close();
     _client = null;
   }
@@ -148,57 +148,85 @@ class ApkUpdater {
     return null;
   }
 
-  /// Menitipkan unduhannya ke DownloadManager, lalu menungguinya.
+  /// Menitipkan unduhannya ke layanan latar, lalu menungguinya.
   ///
   /// Yang ditunggu di sini cuma tampilannya. Unduhannya sendiri berjalan
-  /// di proses sistem, jadi kalau aplikasi ini ditutup di tengah jalan,
-  /// yang berhenti adalah angka di layar — bukan unduhannya.
-  Future<String?> _lewatSistem(String url) async {
+  /// di layanan latar, jadi kalau layarnya dikunci atau orangnya pindah
+  /// aplikasi, yang berhenti adalah angka di layar — bukan unduhannya.
+  Future<String?> _lewatSistem(String url, {bool lanjutkan = false}) async {
     _cancelled = false;
-    final int id;
+    _paused = false;
     try {
-      id = await UnduhanSistem.mulai(url);
+      if (lanjutkan) {
+        await UnduhanSistem.lanjut(url);
+      } else {
+        await UnduhanSistem.mulai(url);
+        await UnduhanSistem.ingat(url);
+      }
     } catch (e) {
       return 'Unduhan gagal dimulai. Coba lagi sebentar lagi.';
     }
-    _idSistem = id;
 
     while (true) {
-      await Future<void>.delayed(const Duration(milliseconds: 600));
+      await Future<void>.delayed(const Duration(milliseconds: 500));
       if (_cancelled) return null;
 
       final KeadaanUnduhan keadaan;
       try {
-        keadaan = await UnduhanSistem.status(id);
+        keadaan = await UnduhanSistem.status();
       } catch (e) {
         return 'Unduhan gagal. Coba lagi sebentar lagi.';
       }
 
-      // Barisnya hilang dari antrean sistem: dihapus orangnya lewat
-      // aplikasi Unduhan, atau dibersihkan sistem karena ruang habis.
-      if (keadaan.hilang) {
-        _idSistem = null;
-        return _cancelled ? null : 'Unduhannya terhapus sebelum selesai.';
+      // Menjeda bukan kegagalan, jadi tidak dijawab pesan galat.
+      // Berkas separuhnya menunggu di tempatnya.
+      if (keadaan.dijeda) {
+        _paused = true;
+        _received = keadaan.turun;
+        return null;
+      }
+      if (keadaan.dibatalkan) {
+        await UnduhanSistem.lupakan();
+        return null;
       }
       if (keadaan.gagal) {
-        _idSistem = null;
-        return 'Unduhan gagal — server atau koneksinya sedang bermasalah.';
+        await UnduhanSistem.lupakan();
+        return keadaan.galat ?? 'Unduhan gagal. Coba lagi sebentar lagi.';
       }
 
       onProgress?.call(keadaan.kemajuan);
-      if (keadaan.selesai) break;
-    }
 
-    // Sistem sudah memasang notifikasinya sendiri, dan mengetuknya
-    // membuka layar pemasang. Jadi gagal membukanya dari sini bukan
-    // jalan buntu — orangnya tetap punya satu ketukan yang berhasil.
-    final terbuka = await UnduhanSistem.pasang(id);
-    _idSistem = null;
-    if (!terbuka) {
-      return 'Berkasnya sudah terunduh. Ketuk notifikasi unduhan untuk '
-          'memasangnya.';
+      if (keadaan.selesai) {
+        await UnduhanSistem.lupakan();
+        final berkas = keadaan.berkas;
+        if (berkas == null) {
+          return 'Berkasnya sudah terunduh, tapi jalurnya tidak diketahui.';
+        }
+        // Layanannya sudah memasang notifikasi "siap dipasang", dan
+        // mengetuknya membuka pemasang. Jadi gagal membukanya dari sini
+        // bukan jalan buntu — orangnya tetap punya satu ketukan yang
+        // berhasil.
+        final hasil = await OpenFilex.open(
+          berkas,
+          type: 'application/vnd.android.package-archive',
+        );
+        if (hasil.type != ResultType.done) {
+          return 'Berkasnya sudah terunduh. Ketuk notifikasi untuk '
+              'memasangnya.';
+        }
+        return null;
+      }
     }
-    return null;
+  }
+
+  /// Menyambung unduhan latar yang masih berjalan sejak sesi lalu.
+  ///
+  /// Tidak memulai apa pun: layanannya sudah jalan, yang belum ada cuma
+  /// angka di layar.
+  Future<String?> ikutiUnduhanBerjalan(String url) async {
+    _cancelled = false;
+    _paused = false;
+    return _lewatSistem(url, lanjutkan: true);
   }
 
   Future<File> _download(String url) async {
