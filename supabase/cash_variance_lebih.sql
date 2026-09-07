@@ -219,8 +219,8 @@ begin
       v_gl.gl_code, v_gl.gl_name, 'cash_variance', v_row.id::text,
       v_row.amount, 'debit',
       case when p_cara = 'input_penjualan'
-        then 'Selisih lebih shift ' || v_nama || ' — penjualannya sudah diinput'
-        else 'Selisih lebih shift ' || v_nama || ' — diakui pendapatan'
+        then 'Selisih lebih shift ' || v_nama || ' - penjualannya sudah diinput'
+        else 'Selisih lebih shift ' || v_nama || ' - diakui pendapatan'
       end
     );
   end if;

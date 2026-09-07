@@ -81,6 +81,7 @@ FILES=(
   cash_variance_lebih.sql
   backfill_selisih_lebih.sql
   buka_shift_terkunci.sql
+  perbaiki_deskripsi_jurnal.sql
   merchant_report.sql
   shift_opening_check.sql
   support_tickets.sql
