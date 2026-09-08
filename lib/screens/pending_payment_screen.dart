@@ -1,3 +1,6 @@
+import 'payment_qris_statis_screen.dart';
+import '../db/metode_bayar_repository.dart';
+import '../models/metode_bayar.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -39,6 +42,26 @@ class _PendingPaymentScreenState extends State<PendingPaymentScreen> {
   /// satu pesanan tidak dilunasi dua kali oleh dua ketukan beruntun.
   String? _settling;
 
+  /// Metode yang dinyalakan merchant, berikut QR statisnya.
+  MetodeBayarMerchant _metode = const MetodeBayarMerchant();
+
+  @override
+  void initState() {
+    super.initState();
+    _muatMetodeBayar();
+  }
+
+  Future<void> _muatMetodeBayar() async {
+    final restoId = context.read<AuthProvider>().restoId;
+    if (restoId == null) return;
+    try {
+      final m = await MetodeBayarRepository().baca(restoId);
+      if (mounted) setState(() => _metode = m);
+    } catch (_) {
+      // Gagal membacanya bukan alasan menahan kasir menerima uang.
+    }
+  }
+
   /// Menerima pembayaran, dengan cara bayar yang boleh berubah.
   ///
   /// Pelanggan memilih tunai dari HP-nya, tapi yang menentukan
@@ -49,7 +72,8 @@ class _PendingPaymentScreenState extends State<PendingPaymentScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (_) => _MethodSheet(order: order, currency: _currency),
+      builder: (_) =>
+          _MethodSheet(order: order, currency: _currency, metode: _metode),
     );
     if (method == null || !mounted) return;
 
@@ -63,11 +87,20 @@ class _PendingPaymentScreenState extends State<PendingPaymentScreen> {
     } else {
       // QRIS dan transfer punya layarnya sendiri, dan layar itulah yang
       // menyatakan uangnya sudah masuk — bukan ketukan di sini.
+      final qrStatis = _metode.qrisStatisUrl;
+      if (method == 'qris_static' && qrStatis == null) {
+        showAppToast(context, 'QR statisnya belum dipasang di Info Pembayaran.',
+            isError: true);
+        return;
+      }
       final confirmed = await Navigator.of(context).push<bool>(
         MaterialPageRoute(
-          builder: (_) => method == 'qris'
-              ? PaymentQrisScreen(amount: order.total)
-              : PaymentTransferScreen(amount: order.total),
+          builder: (_) => switch (method) {
+            'qris' => PaymentQrisScreen(amount: order.total),
+            'qris_static' => PaymentQrisStatisScreen(
+                amount: order.total, qrUrl: qrStatis!),
+            _ => PaymentTransferScreen(amount: order.total),
+          },
         ),
       );
       if (confirmed != true || !mounted) return;
@@ -87,7 +120,7 @@ class _PendingPaymentScreenState extends State<PendingPaymentScreen> {
         context,
         method != 'cash'
             ? 'Pesanan #${refOf(order.id)} lunas lewat '
-                '${method == 'qris' ? 'QRIS' : 'transfer'}.'
+                '${MetodeBayar.labelDari(method)}.'
             : change > 0
                 ? 'Pesanan #${refOf(order.id)} lunas. Kembalian ${_currency.format(change)}.'
                 : 'Pesanan #${refOf(order.id)} lunas — uang pas.',
@@ -332,8 +365,13 @@ class _PendingCard extends StatelessWidget {
 class _MethodSheet extends StatelessWidget {
   final CustomerOrder order;
   final NumberFormat currency;
+  final MetodeBayarMerchant metode;
 
-  const _MethodSheet({required this.order, required this.currency});
+  const _MethodSheet({
+    required this.order,
+    required this.currency,
+    required this.metode,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -358,21 +396,33 @@ class _MethodSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
+          // Tunai selalu ada, apa pun saklarnya. Pelanggan sudah berdiri
+          // di depan kasir dengan uang di tangan; menolak menerimanya
+          // karena sebuah saklar adalah kehilangan penjualan yang tidak
+          // ada gunanya.
           _tile(context,
               method: 'cash',
               icon: Icons.payments_outlined,
               label: 'Tunai',
               note: 'Dipilih pelanggan saat memesan'),
-          _tile(context,
-              method: 'qris',
-              icon: Icons.qr_code_2,
-              label: 'QRIS',
-              note: 'Tampilkan QR, lunas sendiri setelah dibayar'),
-          _tile(context,
-              method: 'transfer',
-              icon: Icons.account_balance_outlined,
-              label: 'Transfer',
-              note: 'Rekening merchant, dikonfirmasi kasir'),
+          if (metode.qrisDinamis)
+            _tile(context,
+                method: 'qris',
+                icon: Icons.qr_code_2,
+                label: 'QRIS Dinamis',
+                note: 'Tampilkan QR, lunas sendiri setelah dibayar'),
+          if (metode.aktif(MetodeBayar.qrisStatis))
+            _tile(context,
+                method: 'qris_static',
+                icon: Icons.qr_code_scanner,
+                label: 'QRIS Statis',
+                note: 'QR cetak merchant — cocokkan nominalnya dulu'),
+          if (metode.transfer)
+            _tile(context,
+                method: 'transfer',
+                icon: Icons.account_balance_outlined,
+                label: 'Transfer',
+                note: 'Rekening merchant, dikonfirmasi kasir'),
           const SizedBox(height: 8),
         ],
       ),

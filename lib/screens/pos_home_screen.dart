@@ -13,6 +13,7 @@ import '../providers/auth_provider.dart';
 import '../providers/cart_provider.dart';
 import '../providers/level_group_provider.dart';
 import '../providers/product_provider.dart';
+import '../providers/settings_provider.dart';
 import '../utils/menu_meta.dart';
 import '../widgets/cart_bottom_bar.dart';
 import '../widgets/product_category_list.dart';
@@ -46,7 +47,13 @@ class _PosHomeScreenState extends State<PosHomeScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final restoId = context.read<AuthProvider>().restoId;
-      await context.read<ProductProvider>().syncWithResto(restoId);
+      // Diambil sebelum await pertama: sesudahnya pembacaan provider
+      // tidak lagi terjamin, dan penjaga `mounted` di tengah rantai
+      // panjang cuma memindahkan kegagalannya ke baris berikutnya.
+      final produk = context.read<ProductProvider>();
+      final setelan = context.read<SettingsProvider>();
+      await produk.syncWithResto(restoId);
+      await setelan.syncWithResto(restoId);
       // Kelompok level disusun tiap resto sendiri.
       if (restoId != null) await primeLevelGroups(restoId);
       await _loadRates(restoId);

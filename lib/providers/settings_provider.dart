@@ -31,6 +31,63 @@ class SettingsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Menarik info pembayaran milik resto yang sedang dibuka.
+  ///
+  /// SharedPreferences saja tidak cukup, dan itu yang membuat layar QRIS
+  /// menampilkan "Toko Kamu": nilainya tersimpan PER PERANGKAT, jadi HP
+  /// yang belum pernah membuka Info Pembayaran merchant ini memakai
+  /// nilai bawaan yang tidak ada hubungannya dengan restonya. Kasir baru,
+  /// HP baru, atau tablet kedua semuanya jatuh ke sana.
+  ///
+  /// Nama restonya jadi jaring terakhir. Merchant yang belum pernah
+  /// menyimpan Info Pembayaran tetap punya nama — dan nama restonya jauh
+  /// lebih benar daripada "Toko Kamu" milik siapa pun.
+  Future<void> syncWithResto(String? restoId) async {
+    if (restoId == null) return;
+    try {
+      final client = Supabase.instance.client;
+      final rows = await client
+          .from('settings')
+          .select()
+          .eq('resto_id', restoId)
+          .limit(1);
+      final row = rows.isEmpty ? null : rows.first;
+
+      var nama = (row?['merchant_name'] as String?)?.trim() ?? '';
+      if (nama.isEmpty || nama == 'Toko Kamu') {
+        final resto = await client
+            .from('restaurants')
+            .select('name')
+            .eq('id', restoId)
+            .limit(1);
+        if (resto.isNotEmpty) {
+          nama = (resto.first['name'] as String?)?.trim() ?? nama;
+        }
+      }
+
+      if (nama.isNotEmpty) merchantName = nama;
+      qrisId = (row?['qris_id'] as String?) ?? qrisId;
+      bankName = (row?['bank_name'] as String?) ?? bankName;
+      accountNumber = (row?['account_number'] as String?) ?? accountNumber;
+      accountHolder = (row?['account_holder'] as String?) ?? accountHolder;
+
+      // Disimpan lokal juga, supaya perangkat yang sedang offline besok
+      // tetap menyebut nama yang benar.
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_kMerchantName, merchantName);
+      await prefs.setString(_kQrisId, qrisId);
+      await prefs.setString(_kBankName, bankName);
+      await prefs.setString(_kAccountNumber, accountNumber);
+      await prefs.setString(_kAccountHolder, accountHolder);
+
+      notifyListeners();
+    } catch (_) {
+      // Tanpa jawaban server, yang lokal tetap dipakai. Layar pembayaran
+      // yang gagal terbuka karena info merchantnya tidak bisa diambil
+      // jauh lebih merepotkan daripada nama yang belum diperbarui.
+    }
+  }
+
   Future<void> save({
     required String restoId,
     required String merchantName,

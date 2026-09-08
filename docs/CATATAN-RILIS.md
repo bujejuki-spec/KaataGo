@@ -37,6 +37,15 @@ Formatnya dibaca `scripts/release.sh`: judul `## <versi>`, lalu
 poin-poinnya. Versi yang tidak punya bagiannya di sini tetap terbit,
 hanya pengumumannya memakai kalimat umum.
 
+## 2.37.0
+
+- QRIS Statis kini bisa dipilih juga saat melunasi pesanan di Pending
+  Payment, bukan hanya di kasir
+- Nama merchant, rekening, dan info pembayaran lain diambil dari data
+  merchantnya — perangkat baru tidak lagi menampilkan "Toko Kamu" di
+  layar QRIS dan Transfer
+- Perbaikan bug dan penyempurnaan tampilan
+
 ## 2.36.0
 
 - Metode pembayaran kini bisa dipilih merchant di Info Pembayaran —

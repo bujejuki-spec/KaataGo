@@ -12,6 +12,7 @@ import '../services/notification_service.dart';
 import '../providers/category_provider.dart';
 import '../providers/level_group_provider.dart';
 import '../providers/product_provider.dart';
+import '../providers/settings_provider.dart';
 import 'category_management_screen.dart';
 import 'level_management_screen.dart';
 import 'product_form_screen.dart';
@@ -52,7 +53,12 @@ class _ProductListScreenState extends State<ProductListScreen> {
       // opened without ever going there — which left this list showing
       // whatever happened to be in the local database, i.e. nothing at
       // all on a freshly installed device.
-      await context.read<ProductProvider>().syncWithResto(restoId);
+      final produk = context.read<ProductProvider>();
+      // Diambil sebelum await: sesudahnya pembacaan provider tidak lagi
+      // terjamin.
+      final setelan = context.read<SettingsProvider>();
+      await produk.syncWithResto(restoId);
+      await setelan.syncWithResto(restoId);
       if (!mounted || restoId == null) return;
       await context.read<LevelGroupProvider>().load(restoId);
     });
