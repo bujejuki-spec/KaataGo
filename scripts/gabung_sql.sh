@@ -84,6 +84,7 @@ FILES=(
   perbaiki_deskripsi_jurnal.sql
   stok_terkunci.sql
   foto_menu_storage.sql
+  saldo_cash_pembanding.sql
   merchant_report.sql
   shift_opening_check.sql
   support_tickets.sql

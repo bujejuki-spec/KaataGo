@@ -127,7 +127,7 @@ void main() {
     test('angka yang seharusnya tidak bocor sebelum uangnya dihitung', () {
       final tutup = layar.substring(layar.indexOf('Future<void> _tutup()'));
       final tanya = tutup.indexOf('_tanyaRupiah(');
-      final minta = tutup.indexOf('_repo.perkiraan(');
+      final minta = tutup.indexOf('_repo.saldoCashLaci(');
       expect(tanya, greaterThan(0));
       expect(minta, greaterThan(tanya),
           reason: 'perkiraannya diminta sebelum nominalnya ditulis');
@@ -158,8 +158,8 @@ void main() {
     test('aplikasi tidak pernah menghitung sendiri', () {
       final repo =
           File('lib/db/cashier_shift_repository.dart').readAsStringSync();
-      final fungsi = repo.substring(repo.indexOf('Future<int> perkiraan('));
-      expect(fungsi, contains("_client.rpc('shift_expected_cash'"));
+      final fungsi = repo.substring(repo.indexOf('Future<int> saldoCashLaci('));
+      expect(fungsi, contains("_client.rpc('saldo_cash_laci'"));
       // Tidak ada aritmetika sama sekali — cuma meneruskan jawaban server.
       final badan = fungsi.substring(0, fungsi.indexOf('/// Menutup shift'));
       expect(badan.contains(' - '), isFalse);
@@ -308,26 +308,92 @@ void main() {
       expect(sql, contains('returns table (ada boolean, jumlah bigint)'));
     });
 
-    test('dihitung sesudah nominalnya ditulis, bukan sebelum', () {
-      final buka = layar.substring(layar.indexOf('Future<void> _buka()'));
-      final tanya = buka.indexOf('_tanyaRupiah(');
-      final minta = buka.indexOf('_repo.perkiraanModalAwal(');
-      expect(minta, greaterThan(tanya));
-    });
-
-    // Gagal mengambil pembandingnya bukan alasan menahan kasir membuka
-    // shift di depan antrean.
-    test('tanpa pembanding, modal awalnya diterima apa adanya', () {
-      final buka = layar.substring(layar.indexOf('Future<void> _buka()'));
-      expect(buka, contains('if (perkiraan == null || perkiraan == jawab.jumlah) break;'));
-    });
-
-    test('nominalnya masih bisa diperbaiki sebelum shift dibuka', () {
+    // Buka dan tutup shift memakai pembanding yang sama, dan
+    // pembanding itu Saldo Cash.
+    //
+    // Sebelumnya keduanya berdiri di atas `opening_cash` yang diketik
+    // kasir: shift_expected_cash memulai hitungannya dari sana, dan
+    // expected_opening_cash memulai dari uang tutup shift sebelumnya.
+    // Satu ketikan keliru jadi dasar perhitungan seluruh shift
+    // sesudahnya, dan pembukuan tidak pernah bisa mengoreksinya.
+    test('buka shift membandingkan dengan Saldo Cash', () {
       final buka = layar.substring(
           layar.indexOf('Future<void> _buka()'),
           layar.indexOf('await _repo.buka('));
-      expect(buka, contains('_konfirmasiSelisih('));
-      expect(buka, contains("tombolLanjut: 'Ya, Buka Shift'"));
+      expect(buka, contains('_repo.saldoCashLaci('));
+      expect(buka, isNot(contains('perkiraanModalAwal')));
+    });
+
+    test('tutup shift membandingkan dengan Saldo Cash', () {
+      final tutup = layar.substring(
+          layar.indexOf('Future<void> _tutup()'),
+          layar.indexOf('await _repo.tutup('));
+      expect(tutup, contains('_repo.saldoCashLaci('));
+    });
+
+    // Angka yang seharusnya tidak boleh terlihat sebelum kasir selesai
+    // menghitung: yang tahu targetnya akan menghitung sampai ketemu
+    // angka itu, bukan menghitung apa adanya.
+    for (final fungsi in ['_buka', '_tutup']) {
+      test('$fungsi meminta pembandingnya sesudah nominal ditulis', () {
+        final blok = layar.substring(layar.indexOf('Future<void> $fungsi()'));
+        expect(blok.indexOf('saldoCashLaci('),
+            greaterThan(blok.indexOf('_tanyaRupiah(')));
+      });
+    }
+
+    // Menutup shift tidak bisa dibatalkan, dan salah ketik satu angka
+    // nol tercatat selamanya sebagai selisih jutaan atas nama orang yang
+    // tidak melakukan apa-apa.
+    test('nominalnya masih bisa diperbaiki sebelum disimpan', () {
+      for (final batas in [
+        ['Future<void> _buka()', 'await _repo.buka('],
+        ['Future<void> _tutup()', 'await _repo.tutup('],
+      ]) {
+        final blok =
+            layar.substring(layar.indexOf(batas[0]), layar.indexOf(batas[1]));
+        expect(blok, contains('_konfirmasiSelisih('), reason: batas[0]);
+      }
+    });
+  });
+
+  // Rumusnya ada di dua tempat: saldo_cash_laci di Postgres, dan
+  // cashOnHand di Dart. Dua tempat yang menghitung hal yang sama dengan
+  // kode masing-masing akan berpisah pada perubahan berikutnya — itu
+  // sudah terjadi dua kali di aplikasi ini, dan keduanya baru ketahuan
+  // setelah angkanya dipakai orang.
+  group('saldo_cash_laci sejalan dengan cashOnHand', () {
+    final sql =
+        File('supabase/saldo_cash_pembanding.sql').readAsStringSync();
+
+    test('pemasukan tunai, sejak awal dan tanpa batas shift', () {
+      expect(sql, contains("o.payment_method = 'cash'"));
+      expect(sql, contains("o.payment_status = 'paid'"));
+      expect(sql, isNot(contains('opened_at')));
+    });
+
+    test('setoran dan petty cash yang ditolak tidak dikurangkan', () {
+      expect(sql, contains("d.status <> 'rejected'"));
+      expect(sql, contains("p.source = 'cash_withdrawal'"));
+      expect(sql, contains("p.status <> 'rejected'"));
+    });
+
+    // Yang dibayar transfer tetap dikurangkan selamanya: uang yang
+    // hilang dari laci tidak pernah kembali ke laci.
+    test('selisih kurang yang dibayar transfer tetap dikurangkan', () {
+      expect(sql,
+          contains("(v.status <> 'settled' or v.settle_method = 'transfer')"));
+    });
+
+    // Yang diakui pendapatan TETAP dihitung — lembarannya tidak ke
+    // mana-mana, yang berubah cuma pengakuannya di pembukuan.
+    test('selisih lebih hanya berhenti dihitung kalau penjualan diinput', () {
+      expect(sql,
+          contains("v.resolution is distinct from 'input_penjualan'"));
+    });
+
+    test('close_shift memakainya, bukan shift_expected_cash', () {
+      expect(sql, contains('v_expected := saldo_cash_laci(v_shift.resto_id);'));
     });
   });
 

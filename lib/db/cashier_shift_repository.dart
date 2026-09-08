@@ -95,34 +95,19 @@ class CashierShiftRepository {
     return CashVariance.fromMap(Map<String, dynamic>.from(row as Map));
   }
 
-  /// Berapa yang seharusnya ada di laci sebelum shift dibuka.
+  /// Berapa yang seharusnya ada di laci sekarang, menurut pembukuan.
   ///
-  /// `null` berarti belum ada pembandingnya — merchant ini belum pernah
-  /// menutup shift sekali pun, jadi tidak ada yang bisa dibandingkan dan
-  /// modal awal apa pun sama benarnya.
-  Future<int?> perkiraanModalAwal(String restoId) async {
-    final rows = await _client
-        .rpc('expected_opening_cash', params: {'p_resto_id': restoId});
-    final list = rows as List? ?? const [];
-    if (list.isEmpty) return null;
-    final m = Map<String, dynamic>.from(list.first as Map);
-    if (m['ada'] != true) return null;
-    return (m['jumlah'] as num?)?.toInt() ?? 0;
-  }
-
-  /// Berapa yang seharusnya ada di laci saat ini.
+  /// Angka yang sama persis dengan Saldo Cash di layar Saldo &
+  /// Pengeluaran — dan itu inti perubahannya. Dulu buka dan tutup shift
+  /// memakai perkiraan yang dimulai dari `opening_cash` KETIKAN kasir,
+  /// jadi satu angka salah ketik jadi dasar perhitungan seluruh shift
+  /// sesudahnya dan pembukuan tidak pernah bisa mengoreksinya.
   ///
-  /// Hanya untuk ditunjukkan sebagai perkiraan sesudah kasir menuliskan
-  /// hitungannya — supaya salah ketik nominal bisa diperbaiki sebelum
-  /// shiftnya benar-benar ditutup.
-  ///
-  /// Angka ini TIDAK dipakai menyimpan apa pun. Saat ditutup, server
-  /// menghitungnya lagi dari awal di dalam `close_shift`, dan itulah
-  /// yang tersimpan — jadi perkiraan yang basi atau dipalsukan di
-  /// perjalanan tidak bisa mengubah selisih yang tercatat.
-  Future<int> perkiraan(String shiftId) async {
+  /// Dihitung server, bukan dikirim aplikasi: angka yang menilai
+  /// seseorang tidak boleh berasal dari perangkat orang itu.
+  Future<int> saldoCashLaci(String restoId) async {
     final hasil =
-        await _client.rpc('shift_expected_cash', params: {'p_shift_id': shiftId});
+        await _client.rpc('saldo_cash_laci', params: {'p_resto_id': restoId});
     return (hasil as num?)?.toInt() ?? 0;
   }
 

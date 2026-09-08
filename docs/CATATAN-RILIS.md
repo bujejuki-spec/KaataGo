@@ -37,6 +37,17 @@ Formatnya dibaca `scripts/release.sh`: judul `## <versi>`, lalu
 poin-poinnya. Versi yang tidak punya bagiannya di sini tetap terbit,
 hanya pengumumannya memakai kalimat umum.
 
+## 2.30.0
+
+- Buka dan tutup shift kini dibandingkan dengan Saldo Cash merchant,
+  bukan lagi dengan tutup shift sebelumnya. Angka yang dipakai sama
+  persis dengan yang tampil di Saldo & Pengeluaran
+- Modal awal yang diketik tidak lagi jadi dasar perhitungan shift-shift
+  berikutnya, jadi satu salah ketik tidak lagi terbawa terus
+- Angka yang seharusnya tetap tidak ditampilkan sebelum kasir selesai
+  menghitung, dan masih bisa diperbaiki sebelum shift disimpan
+- Perbaikan bug dan penyempurnaan tampilan
+
 ## 2.29.0
 
 - Stok sekarang benar-benar menahan pesanan: kalau sisa satu dan dua

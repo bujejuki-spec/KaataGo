@@ -308,12 +308,17 @@ class _CashierShiftScreenState extends State<CashierShiftScreen> {
     final restoId = _restoId;
     if (restoId == null) return;
 
-    // Sama seperti menutup: dihitung dulu, baru dibandingkan.
+    // Dihitung dulu, baru dibandingkan — dan pembandingnya Saldo Cash.
     //
-    // Tanpa pembanding, selisih bisa lahir sebelum jualan dimulai. Kasir
-    // yang salah ketik modal awal — atau menerima laci yang isinya sudah
-    // tidak sesuai sejak semalam — baru mengetahuinya delapan jam
-    // kemudian, saat selisihnya sudah jadi tanggung jawabnya sendiri.
+    // Dulu yang jadi pembanding adalah uang tutup shift sebelumnya
+    // ditambah penjualan sesudahnya. Angka itu berdiri di atas
+    // `opening_cash` yang diketik kasir, jadi ia berpisah dari pembukuan
+    // sejak ketikan pertama yang keliru dan tidak pernah bertemu lagi:
+    // tiap shift membangun perkiraannya di atas ketikan sebelumnya.
+    //
+    // Saldo Cash dihitung dari pemasukan tunai merchant, setoran, petty
+    // cash, dan selisih yang sudah tercatat. Ia tidak bisa digeser
+    // ketikan siapa pun.
     ({int jumlah, String? catatan})? jawab;
     var awal = 0;
 
@@ -331,31 +336,28 @@ class _CashierShiftScreenState extends State<CashierShiftScreen> {
       );
       if (jawab == null || !mounted) return;
 
-      int? perkiraan;
+      int? saldo;
       try {
-        perkiraan = await _repo.perkiraanModalAwal(restoId);
+        saldo = await _repo.saldoCashLaci(restoId);
       } catch (_) {
         // Gagal mengambil pembandingnya bukan alasan menahan kasir
-        // membuka shift. Tanpa pembanding, modal awalnya diterima apa
-        // adanya — persis seperti sebelum pemeriksaan ini ada.
-        perkiraan = null;
+        // membuka shift di depan antrean. Tanpa pembanding, modal
+        // awalnya diterima apa adanya.
+        saldo = null;
       }
       if (!mounted) return;
 
-      // Belum pernah ada shift yang ditutup, atau angkanya memang sudah
-      // cocok. Tidak ada yang perlu dikonfirmasi.
-      if (perkiraan == null || perkiraan == jawab.jumlah) break;
+      if (saldo == null || saldo == jawab.jumlah) break;
 
       final lanjut = await _konfirmasiSelisih(
         dihitung: jawab.jumlah,
-        seharusnya: perkiraan,
+        seharusnya: saldo,
         judul: 'Modal Awal Tidak Cocok',
         labelDihitung: 'Kamu hitung',
         tombolLanjut: 'Ya, Buka Shift',
-        catatan: 'Laci berisi jumlah yang berbeda dari yang ditinggalkan '
-            'shift sebelumnya. Periksa dulu hitungannya — kalau memang '
-            'segitu isinya, lanjutkan saja dan selisih ini tercatat '
-            'sebagai modal awal.',
+        catatan: 'Isi laci berbeda dari Saldo Cash merchant. Periksa '
+            'dulu hitungannya — kalau memang segitu isinya, lanjutkan '
+            'saja dan selisih ini tercatat sebagai modal awal.',
       );
       if (lanjut == null || !mounted) return;
       if (lanjut) break;
@@ -410,9 +412,13 @@ class _CashierShiftScreenState extends State<CashierShiftScreen> {
       );
       if (jawab == null || !mounted) return;
 
+      // Sama seperti saat membuka: Saldo Cash yang jadi pembandingnya,
+      // bukan perkiraan yang berdiri di atas modal awal ketikan kasir.
+      // Servernya memakai angka yang sama saat menghitung selisih, jadi
+      // yang ditunjukkan di sini persis yang akan tercatat.
       final int perkiraan;
       try {
-        perkiraan = await _repo.perkiraan(shift.id);
+        perkiraan = await _repo.saldoCashLaci(shift.restoId);
       } catch (e) {
         if (!mounted) return;
         showAppToast(context, pesanGalat(e), isError: true);

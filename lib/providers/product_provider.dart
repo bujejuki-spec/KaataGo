@@ -217,6 +217,30 @@ class ProductProvider extends ChangeNotifier {
     await load();
   }
 
+  /// Menyimpan tautan foto Storage, dan MENUNGGU sampai server
+  /// menerimanya.
+  ///
+  /// Tidak lewat [updateProduct], dan itu justru intinya. Di HP,
+  /// updateProduct menulis ke basis data lokal lalu mengirim salinannya
+  /// ke server tanpa ditunggu — sengaja, supaya kasir yang sedang offline
+  /// tidak tertahan. Untuk penyuntingan satu produk itu benar.
+  ///
+  /// Untuk pemindahan foto berpuluh produk berturut-turut itu keliru:
+  /// perulangannya selesai jauh sebelum kirimannya sampai, puluhan
+  /// permintaan berebut sekaligus, dan sebagian besar tidak pernah
+  /// mendarat. Yang terlihat sesudahnya adalah laporan "berhasil"
+  /// sementara di server cuma satu produk yang benar-benar punya
+  /// tautannya.
+  ///
+  /// Di sini servernya yang jadi sumber kebenaran, jadi ia ditunggu.
+  Future<void> simpanTautanFoto(Product product, String url) async {
+    final resto = restoId;
+    if (resto == null) return;
+    final baru = product.copyWith(photoUrl: url);
+    await _firestoreRepo.upsert(baru, resto);
+    if (!_tanpaSalinanLokal) await _repo.update(baru, resto);
+  }
+
   Future<void> deleteProduct(String id) async {
     if (_tanpaSalinanLokal) {
       await _firestoreRepo.delete(id);

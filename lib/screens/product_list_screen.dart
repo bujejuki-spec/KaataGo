@@ -163,7 +163,11 @@ class _ProductListScreenState extends State<ProductListScreen> {
         // Base64-nya sengaja dipertahankan. Yang mengosongkannya adalah
         // satu perintah SQL terpisah, dijalankan setelah versi barunya
         // tersebar — lihat supabase/foto_menu_storage.sql.
-        await provider.updateProduct(produk.copyWith(photoUrl: url));
+        //
+        // Ditunggu sampai server menerimanya. updateProduct biasa
+        // mengirimnya tanpa ditunggu, dan perulangan sepanjang ini
+        // selesai jauh sebelum kirimannya sampai.
+        await provider.simpanTautanFoto(produk, url);
         berhasil++;
       } catch (_) {
         // Satu foto yang gagal tidak menghentikan sisanya. Yang gagal
@@ -172,6 +176,11 @@ class _ProductListScreenState extends State<ProductListScreen> {
         gagal++;
       }
     }
+
+    // Dimuat ulang sekali di akhir, bukan tiap produk: memuat ulang
+    // seluruh katalog dua puluh kali berturut-turut membuat layarnya
+    // tersendat tanpa memberi tahu apa pun yang baru.
+    await provider.load();
 
     if (!context.mounted) return;
     showAppToast(
