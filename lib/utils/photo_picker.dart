@@ -1,5 +1,6 @@
-import 'dart:io';
+import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -22,7 +23,18 @@ import '../widgets/dialog_actions.dart';
 /// Returns null when the sheet is dismissed, the picker is cancelled, or
 /// camera permission is refused — every one of those is the user saying
 /// "not now", so the caller just carries on without a photo.
-Future<File?> pickProofPhoto(BuildContext context) async {
+///
+/// Mengembalikan BYTE, bukan `File`.
+///
+/// `File` datang dari `dart:io`, dan di konsol web ia cuma tempelan yang
+/// melempar galat begitu disentuh: `picked.path` di sana bukan jalur
+/// berkas melainkan alamat blob. Akibatnya melampirkan bukti setoran,
+/// nota, banner, atau foto pengaduan tidak pernah bisa dilakukan dari
+/// peramban — dan tidak ada pesan yang menjelaskannya.
+///
+/// Byte tidak punya masalah itu di mana pun, dan semua pemakainya toh
+/// berakhir memanggil `readAsBytes()` sendiri.
+Future<Uint8List?> pickProofPhoto(BuildContext context) async {
   final source = await showModalBottomSheet<ImageSource>(
     context: context,
     shape: const RoundedRectangleBorder(
@@ -54,7 +66,11 @@ Future<File?> pickProofPhoto(BuildContext context) async {
   // Android refuse the capture intent outright unless it's been granted
   // — and image_picker never asks for it. Finance and Kasir have no
   // reason to have opened the QR scanner that would have.
-  if (source == ImageSource.camera) {
+  //
+  // Dilewati di web: izin kamera di peramban diminta peramban itu
+  // sendiri saat kameranya benar-benar dibuka, dan permission_handler
+  // tidak punya jawaban untuk platform ini.
+  if (source == ImageSource.camera && !kIsWeb) {
     final status = await Permission.camera.request();
     if (!context.mounted) return null;
     if (!status.isGranted) {
@@ -101,7 +117,7 @@ Future<File?> pickProofPhoto(BuildContext context) async {
       maxWidth: 900,
       imageQuality: 70,
     );
-    return picked == null ? null : File(picked.path);
+    return picked == null ? null : await picked.readAsBytes();
   } catch (e) {
     if (!context.mounted) return null;
     showAppToast(context, 'Gagal mengambil gambar: $e', isError: true);

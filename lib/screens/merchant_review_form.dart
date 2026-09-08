@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -76,10 +75,8 @@ class _MerchantReviewFormState extends State<MerchantReviewForm> {
 
   Future<void> _tambahFoto() async {
     if (_foto.length >= _maksFoto) return;
-    final file = await pickProofPhoto(context);
-    if (file == null || !mounted) return;
-    final bytes = await File(file.path).readAsBytes();
-    if (!mounted) return;
+    final bytes = await pickProofPhoto(context);
+    if (bytes == null || !mounted) return;
     setState(() => _foto.add(base64Encode(bytes)));
   }
 

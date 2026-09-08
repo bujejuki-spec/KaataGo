@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 
@@ -145,10 +144,8 @@ class _AnnouncementFormState extends State<_AnnouncementForm>
   }
 
   Future<void> _pickImage() async {
-    final file = await pickProofPhoto(context);
-    if (file == null || !mounted) return;
-    final bytes = await File(file.path).readAsBytes();
-    if (!mounted) return;
+    final bytes = await pickProofPhoto(context);
+    if (bytes == null || !mounted) return;
     setState(() => _imageBase64 = base64Encode(bytes));
   }
 

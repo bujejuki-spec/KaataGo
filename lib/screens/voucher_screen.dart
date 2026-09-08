@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -527,10 +526,8 @@ class _FormBatchState extends State<_FormBatch> {
   }
 
   Future<void> _pilihBanner() async {
-    final file = await pickProofPhoto(context);
-    if (file == null || !mounted) return;
-    final bytes = await File(file.path).readAsBytes();
-    if (!mounted) return;
+    final bytes = await pickProofPhoto(context);
+    if (bytes == null || !mounted) return;
     setState(() => _banner = base64Encode(bytes));
   }
 

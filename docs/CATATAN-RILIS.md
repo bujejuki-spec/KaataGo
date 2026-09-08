@@ -37,6 +37,14 @@ Formatnya dibaca `scripts/release.sh`: judul `## <versi>`, lalu
 poin-poinnya. Versi yang tidak punya bagiannya di sini tetap terbit,
 hanya pengumumannya memakai kalimat umum.
 
+## 2.31.0
+
+- Melampirkan foto kini jalan juga dari konsol web — bukti setoran, nota
+  pengeluaran, banner promo dan voucher, foto pengaduan dan chat
+  Support, gambar pengumuman, ulasan merchant, bukti bayar tagihan, dan
+  foto menu. Sebelumnya semuanya hanya bisa dari HP
+- Perbaikan bug dan penyempurnaan tampilan
+
 ## 2.30.0
 
 - Buka dan tutup shift kini dibandingkan dengan Saldo Cash merchant,

@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -691,7 +691,7 @@ class _AddDepositDialogState extends State<_AddDepositDialog> {
   final _amountCtrl = TextEditingController();
   final _noteCtrl = TextEditingController();
   final _repo = CashDepositRepository();
-  File? _proof;
+  Uint8List? _proof;
   bool _saving = false;
 
   @override
@@ -712,7 +712,7 @@ class _AddDepositDialogState extends State<_AddDepositDialog> {
     final auth = context.read<AuthProvider>();
     setState(() => _saving = true);
     try {
-      final proofBase64 = _proof == null ? null : base64Encode(await _proof!.readAsBytes());
+      final proofBase64 = _proof == null ? null : base64Encode(_proof!);
       await _repo.create(CashDeposit(
         id: '',
         restoId: widget.restoId,
@@ -877,7 +877,7 @@ class _AddDepositDialogState extends State<_AddDepositDialog> {
                     borderRadius: BorderRadius.circular(12),
                     child: Stack(
                       children: [
-                        Image.file(_proof!, width: double.infinity, height: 150, fit: BoxFit.cover),
+                        Image.memory(_proof!, width: double.infinity, height: 150, fit: BoxFit.cover),
                         Positioned(
                           top: 6,
                           right: 6,

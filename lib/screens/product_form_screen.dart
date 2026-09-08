@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
@@ -47,7 +46,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   final _picker = ImagePicker();
   String? _selectedCategory;
   String? _existingPhotoBase64;
-  File? _pickedPhoto;
+  Uint8List? _pickedPhoto;
   bool _photoRemoved = false;
   late Set<String> _selectedLevelGroups;
 
@@ -159,8 +158,15 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
       imageQuality: 70,
     );
     if (picked == null) return;
+    // Byte, bukan `File`. `File` datang dari `dart:io` dan di konsol web
+    // cuma tempelan yang melempar galat begitu disentuh — `picked.path`
+    // di sana bukan jalur berkas melainkan alamat blob. Akibatnya
+    // mengganti foto menu dari peramban tidak pernah bisa dilakukan, dan
+    // tidak ada pesan yang menjelaskannya.
+    final bytes = await picked.readAsBytes();
+    if (!mounted) return;
     setState(() {
-      _pickedPhoto = File(picked.path);
+      _pickedPhoto = bytes;
       _photoRemoved = false;
     });
   }
@@ -217,7 +223,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     _outOfStock = _snapshot['outOfStock'] as bool? ?? false;
     _serviceExempt = _snapshot['serviceExempt'] as bool? ?? false;
     _existingPhotoBase64 = _snapshot['existingPhoto'] as String?;
-    _pickedPhoto = _snapshot['pickedPhoto'] as File?;
+    _pickedPhoto = _snapshot['pickedPhoto'] as Uint8List?;
     _photoRemoved = _snapshot['photoRemoved'] as bool? ?? false;
     final deltas = _snapshot['deltas'] as Map<String, Map<String, String>>? ?? const {};
     for (final g in _priceDeltaCtrls.entries) {
@@ -259,7 +265,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     String? photoBase64 = _existingPhotoBase64;
     String? photoUrl = widget.existing?.photoUrl;
     if (_pickedPhoto != null) {
-      final bytes = await _pickedPhoto!.readAsBytes();
+      final bytes = _pickedPhoto!;
       try {
         photoUrl = await _fotoStorage.unggah(
           restoId: provider.restoId!,
@@ -376,7 +382,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
 
     ImageProvider? photoPreview;
     if (_pickedPhoto != null) {
-      photoPreview = FileImage(_pickedPhoto!);
+      photoPreview = MemoryImage(_pickedPhoto!);
     } else if (_existingPhotoBase64 != null) {
       photoPreview = MemoryImage(base64Decode(_existingPhotoBase64!));
     } else if (!_photoRemoved &&

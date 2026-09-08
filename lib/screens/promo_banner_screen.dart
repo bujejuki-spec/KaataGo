@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -398,7 +398,7 @@ class _BannerFormDialogState extends State<_BannerFormDialog> {
   late final _titleCtrl = TextEditingController(text: widget.existing?.title ?? '');
   late final _descCtrl = TextEditingController(text: widget.existing?.description ?? '');
 
-  File? _picked;
+  Uint8List? _picked;
   late final String? _existingImage = widget.existing?.imageBase64;
   bool _saving = false;
 
@@ -438,7 +438,7 @@ class _BannerFormDialogState extends State<_BannerFormDialog> {
 
     try {
       final image =
-          _picked != null ? base64Encode(await _picked!.readAsBytes()) : _existingImage!;
+          _picked != null ? base64Encode(_picked!) : _existingImage!;
       final banner = PromoBanner(
         id: widget.existing?.id ?? '',
         restoId: widget.restoId,
@@ -470,7 +470,7 @@ class _BannerFormDialogState extends State<_BannerFormDialog> {
   @override
   Widget build(BuildContext context) {
     final preview = _picked != null
-        ? Image.file(_picked!, fit: BoxFit.cover)
+        ? Image.memory(_picked!, fit: BoxFit.cover)
         : (_existingImage != null
             ? Image.memory(base64Decode(_existingImage), fit: BoxFit.cover)
             : null);

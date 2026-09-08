@@ -6,7 +6,7 @@ import '../db/gl_account_repository.dart';
 import '../db/gl_journal_repository.dart';
 import '../utils/saldo_jurnal.dart';
 import 'dart:convert';
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
@@ -1240,7 +1240,7 @@ class _AddExpenseDialogState extends State<_AddExpenseDialog> {
   final _amountCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
   String? _glCode;
-  File? _receipt;
+  Uint8List? _receipt;
   final _repo = ExpenseRepository();
   bool _saving = false;
 
@@ -1263,7 +1263,7 @@ class _AddExpenseDialogState extends State<_AddExpenseDialog> {
     try {
       String? receiptBase64;
       if (_receipt != null) {
-        receiptBase64 = base64Encode(await _receipt!.readAsBytes());
+        receiptBase64 = base64Encode(_receipt!);
       }
       await _repo.create(Expense(
         id: '',
@@ -1417,7 +1417,7 @@ class _AddExpenseDialogState extends State<_AddExpenseDialog> {
                     borderRadius: BorderRadius.circular(12),
                     child: Stack(
                       children: [
-                        Image.file(
+                        Image.memory(
                           _receipt!,
                           width: double.infinity,
                           height: 150,
@@ -1996,10 +1996,8 @@ class _FormModalState extends State<_FormModal> {
   }
 
   Future<void> _pilihBukti() async {
-    final file = await pickProofPhoto(context);
-    if (file == null || !mounted) return;
-    final bytes = await File(file.path).readAsBytes();
-    if (!mounted) return;
+    final bytes = await pickProofPhoto(context);
+    if (bytes == null || !mounted) return;
     setState(() => _bukti = base64Encode(bytes));
   }
 

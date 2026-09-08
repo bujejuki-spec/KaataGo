@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -152,10 +151,8 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
   }
 
   Future<void> _tambahFoto() async {
-    final file = await pickProofPhoto(context);
-    if (file == null || !mounted) return;
-    final bytes = await File(file.path).readAsBytes();
-    if (!mounted) return;
+    final bytes = await pickProofPhoto(context);
+    if (bytes == null || !mounted) return;
     setState(() => _foto = base64Encode(bytes));
   }
 

@@ -1,8 +1,6 @@
 import '../db/restaurant_repository.dart';
 import '../utils/invoice_pdf.dart';
 import 'dart:convert';
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -140,7 +138,7 @@ class _BillingScreenState extends State<BillingScreen> {
         inv.id,
         proofBase64: hasil.foto == null
             ? null
-            : base64Encode(await hasil.foto!.readAsBytes()),
+            : base64Encode(hasil.foto!),
         note: hasil.catatan,
       );
       if (!mounted) return;
@@ -710,7 +708,7 @@ class _Rincian extends StatelessWidget {
 }
 
 class _Bukti {
-  final File? foto;
+  final Uint8List? foto;
   final String? catatan;
   const _Bukti(this.foto, this.catatan);
 }
@@ -725,7 +723,7 @@ class _DialogBayar extends StatefulWidget {
 
 class _DialogBayarState extends State<_DialogBayar> {
   final _catatan = TextEditingController();
-  File? _foto;
+  Uint8List? _foto;
 
   @override
   void dispose() {
@@ -767,7 +765,7 @@ class _DialogBayarState extends State<_DialogBayar> {
               const SizedBox(height: 10),
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
-                child: Image.file(_foto!, height: 150, fit: BoxFit.cover),
+                child: Image.memory(_foto!, height: 150, fit: BoxFit.cover),
               ),
             ],
             const SizedBox(height: 12),
