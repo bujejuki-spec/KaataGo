@@ -155,15 +155,21 @@ class ProductProvider extends ChangeNotifier {
     bool serviceExempt = false,
     bool outOfStock = false,
     List<String> badges = const [],
+    // Ditentukan pemanggil kalau fotonya sudah diunggah lebih dulu:
+    // berkas di Storage dinamai menurut id produknya, jadi id-nya harus
+    // sudah ada sebelum unggahannya, bukan sesudah.
+    String? id,
+    String? photoUrl,
   }) async {
     final product = Product(
-      id: _uuid.v4(),
+      id: id ?? _uuid.v4(),
       name: name,
       category: category,
       price: price,
       stock: stock,
       description: description,
       photoBase64: photoBase64,
+      photoUrl: photoUrl,
       levelGroups: levelGroups,
       levelPrices: levelPrices,
       toppings: toppings,

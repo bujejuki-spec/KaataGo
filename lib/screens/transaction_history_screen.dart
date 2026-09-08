@@ -59,8 +59,79 @@ class _DayGroup {
 /// tidak lagi cocok dengan isi laci. Tapi pesanan mandiri yang dibayar
 /// tunai di meja kasir justru sebaliknya: uangnya ada di laci, jadi
 /// meninggalkannya di luar akan membuat lacinya terlihat kelebihan.
-class TransactionHistoryScreen extends StatelessWidget {
+class TransactionHistoryScreen extends StatefulWidget {
   const TransactionHistoryScreen({super.key});
+
+  @override
+  State<TransactionHistoryScreen> createState() =>
+      _TransactionHistoryScreenState();
+}
+
+class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
+  final _repo = OrderRepository();
+
+  final _pesanan = <CustomerOrder>[];
+  int _lewati = 0;
+  bool _memuat = false;
+  bool _habis = false;
+  String? _galat;
+
+  /// Dimuat bertahap, bukan dialirkan seluruhnya.
+  ///
+  /// Layar ini dulu berlangganan SELURUH riwayat pesanan resto lewat
+  /// realtime — sejarah bertahun-tahun diunduh ulang tiap kali layarnya
+  /// dibuka, demi daftar yang ujungnya jarang digulir orang. Riwayatnya
+  /// sendiri tidak berkurang sebaris pun; yang berubah cuma kapan ia
+  /// diambil.
+  ///
+  /// Halaman dijemput berulang sampai ada yang lolos saringan kasir.
+  /// Satu halaman berisi lima puluh pesanan mandiri semua akan
+  /// menghasilkan layar kosong yang menyuruh orangnya menekan "muat
+  /// lagi" tanpa tahu kenapa yang barusan tidak menghasilkan apa-apa.
+  static const _perHalaman = 50;
+
+  @override
+  void initState() {
+    super.initState();
+    _muatLagi();
+  }
+
+  Future<void> _muatLagi() async {
+    if (_memuat || _habis) return;
+    final restoId = context.read<AuthProvider>().restoId;
+    if (restoId == null) return;
+
+    setState(() {
+      _memuat = true;
+      _galat = null;
+    });
+
+    try {
+      var ditambah = 0;
+      // Dibatasi lima putaran supaya riwayat yang seluruhnya pesanan
+      // mandiri tidak berubah jadi penjemputan tanpa ujung.
+      for (var putaran = 0; putaran < 5 && ditambah == 0 && !_habis; putaran++) {
+        final baris = await _repo.halaman(restoId,
+            lewati: _lewati, ambil: _perHalaman);
+        _lewati += baris.length;
+        if (baris.length < _perHalaman) _habis = true;
+
+        final layak = baris
+            .where((o) => o.source == OrderSource.kasir || o.settledAtCounter)
+            .toList();
+        _pesanan.addAll(layak);
+        ditambah += layak.length;
+      }
+      if (!mounted) return;
+      setState(() => _memuat = false);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _memuat = false;
+        _galat = '$e';
+      });
+    }
+  }
 
   List<_DayGroup> _groupByDay(List<CustomerOrder> orders) {
     final byDay = <DateTime, List<CustomerOrder>>{};
@@ -89,32 +160,32 @@ class TransactionHistoryScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Riwayat Kasir')),
-      body: StreamBuilder<List<CustomerOrder>>(
-        stream: OrderRepository().watchAll(restoId),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+      body: Builder(
+        builder: (context) {
+          if (_memuat && _pesanan.isEmpty) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (snapshot.hasError) {
+          if (_galat != null && _pesanan.isEmpty) {
             return Center(
-              child: Text('Gagal memuat transaksi.\n${snapshot.error}',
+              child: Text('Gagal memuat transaksi.\n$_galat',
                   textAlign: TextAlign.center),
             );
           }
-
-          final orders = (snapshot.data ?? [])
-              .where((o) => o.source == OrderSource.kasir || o.settledAtCounter)
-              .toList();
-          if (orders.isEmpty) {
+          if (_pesanan.isEmpty) {
             return const Center(child: Text('Belum ada transaksi kasir.'));
           }
 
-          final groups = _groupByDay(orders);
+          final groups = _groupByDay(_pesanan);
 
           return ListView.builder(
             padding: const EdgeInsets.symmetric(vertical: 8),
-            itemCount: groups.length,
+            // Satu baris tambahan di ujung: tombol muat lagi, atau
+            // kalimat yang menyatakan riwayatnya memang sudah habis.
+            // Daftar yang berhenti tanpa keterangan membuat orang
+            // mengira sisanya hilang.
+            itemCount: groups.length + 1,
             itemBuilder: (context, i) {
+              if (i == groups.length) return _ujungDaftar();
               final group = groups[i];
               return Card(
                 margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -183,6 +254,33 @@ class TransactionHistoryScreen extends StatelessWidget {
             },
           );
         },
+      ),
+    );
+  }
+
+  Widget _ujungDaftar() {
+    if (_habis) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
+        child: Center(
+          child: Text('Sudah sampai transaksi paling awal.',
+              style: TextStyle(
+                  fontSize: 12.5, color: KaataTheme.mutedOf(context))),
+        ),
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
+      child: Center(
+        child: _memuat
+            ? const SizedBox(
+                width: 22, height: 22,
+                child: CircularProgressIndicator(strokeWidth: 2.5))
+            : OutlinedButton.icon(
+                onPressed: _muatLagi,
+                icon: const Icon(Icons.expand_more, size: 18),
+                label: const Text('Muat transaksi lebih lama'),
+              ),
       ),
     );
   }

@@ -204,7 +204,7 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
       }
 
       final results = await Future.wait([
-        _orderRepo.watchAll(restoId).first,
+        _orderRepo.semua(restoId),
         _expenseRepo.getForResto(restoId),
         _expenseGlRepo.getForResto(restoId),
         _pettyCashRepo.getForResto(restoId),

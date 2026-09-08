@@ -82,6 +82,8 @@ FILES=(
   backfill_selisih_lebih.sql
   buka_shift_terkunci.sql
   perbaiki_deskripsi_jurnal.sql
+  stok_terkunci.sql
+  foto_menu_storage.sql
   merchant_report.sql
   shift_opening_check.sql
   support_tickets.sql

@@ -37,6 +37,26 @@ Formatnya dibaca `scripts/release.sh`: judul `## <versi>`, lalu
 poin-poinnya. Versi yang tidak punya bagiannya di sini tetap terbit,
 hanya pengumumannya memakai kalimat umum.
 
+## 2.29.0
+
+- Stok sekarang benar-benar menahan pesanan: kalau sisa satu dan dua
+  orang memesan bersamaan, yang tercepat berhasil dan yang lain ditolak
+  dengan menyebut nama barangnya. Produk yang stoknya menyentuh nol
+  otomatis ditandai habis
+- Produk yang stoknya tidak diisi tidak terpengaruh sama sekali dan
+  tidak pernah ditolak
+- Pesanan yang dibatalkan atau hangus mengembalikan stoknya
+- Aplikasi jadi jauh lebih ringan dibuka: layar Pesanan Masuk, dapur,
+  dan notifikasi tidak lagi mengunduh seluruh riwayat pesanan merchant
+  tiap kali dibuka
+- Riwayat Kasir kini dimuat bertahap dengan tombol "Muat transaksi
+  lebih lama" — tidak ada transaksi yang hilang, hanya diambil saat
+  diminta
+- Foto menu pindah ke penyimpanan berkas, lewat tombol baru
+  "Pindahkan foto menu" di Kelola Produk. Menu jadi lebih cepat terbuka
+  buat pelanggan
+- Perbaikan bug dan penyempurnaan tampilan
+
 ## 2.28.0
 
 - Unduhan pembaruan kini berjalan di layanan latar: ia terus jalan saat

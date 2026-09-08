@@ -44,7 +44,7 @@ class DatabaseHelper {
   Future<Database> _openAt(String path) {
     return openDatabase(
       path,
-      version: 15,
+      version: 16,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE products (
@@ -55,6 +55,7 @@ class DatabaseHelper {
             stock INTEGER NOT NULL,
             description TEXT,
             photo_base64 TEXT,
+            photo_url TEXT,
             level_groups TEXT,
             level_prices TEXT,
             toppings TEXT,
@@ -191,6 +192,14 @@ class DatabaseHelper {
           // di satu kolom. Menu lama tidak berlabel, dan kolom kosong
           // memang berarti itu.
           await db.execute('ALTER TABLE products ADD COLUMN badges TEXT');
+        }
+
+        if (oldVersion < 16) {
+          // Tautan foto di Supabase Storage. Menggantikan photo_base64,
+          // yang dipertahankan dulu sebagai cadangan selama masa
+          // peralihan — menu tanpa gambar lebih buruk daripada satu
+          // kolom yang belum sempat dibersihkan.
+          await db.execute('ALTER TABLE products ADD COLUMN photo_url TEXT');
         }
       },
     );

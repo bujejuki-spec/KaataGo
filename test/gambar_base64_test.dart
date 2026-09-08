@@ -60,14 +60,30 @@ void main() {
 
   group('dipakai di tiap tempat yang menggambar berulang', () {
     for (final f in [
-      'lib/widgets/product_grid_card.dart',
+      // Foto menu tidak digambar langsung lagi — kartu produk dan dialog
+      // jumlah menyerahkannya ke FotoMenu, yang memilih antara tautan
+      // Storage dan base64. Yang dijaga tetap sama: yang menggambar
+      // base64 berulang harus lewat ingatan, bukan mendekode tiap build.
+      'lib/widgets/foto_menu.dart',
       'lib/widgets/promo_banner_carousel.dart',
-      'lib/widgets/quantity_dialog.dart',
       'lib/widgets/resto_logo_avatar.dart',
     ]) {
       test(f.split('/').last, () {
         final isi = File(f).readAsStringSync();
         expect(isi, contains('byteGambar('), reason: f);
+      });
+    }
+
+    // Dan keduanya benar-benar lewat sana, bukan berhenti menggambar
+    // foto sama sekali.
+    for (final f in [
+      'lib/widgets/product_grid_card.dart',
+      'lib/widgets/quantity_dialog.dart',
+    ]) {
+      test('${f.split('/').last} menggambar lewat FotoMenu', () {
+        final isi = File(f).readAsStringSync();
+        expect(isi, contains('FotoMenu('), reason: f);
+        expect(isi, isNot(contains('base64Decode(')), reason: f);
       });
     }
 

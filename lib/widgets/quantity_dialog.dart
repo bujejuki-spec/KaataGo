@@ -1,4 +1,3 @@
-import '../utils/gambar_base64.dart';
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -8,6 +7,7 @@ import '../theme.dart';
 import '../models/level_option.dart';
 import '../models/discount.dart';
 import '../models/product.dart';
+import 'foto_menu.dart';
 import '../models/product_badge.dart';
 import '../models/product_review.dart';
 import '../utils/deskripsi_diskon.dart';
@@ -205,7 +205,7 @@ class _QuantityDialogState extends State<QuantityDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (widget.product.photoBase64 != null)
+            if (FotoMenu.punyaFoto(widget.product))
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
                 // 4:3, bukan tinggi tetap 120.
@@ -217,14 +217,13 @@ class _QuantityDialogState extends State<QuantityDialog> {
                 // layar mana pun.
                 child: AspectRatio(
                   aspectRatio: 4 / 3,
-                  child: Image.memory(
-                    byteGambar(widget.product.photoBase64!),
-                    width: double.infinity,
-                    fit: BoxFit.cover,
+                  child: FotoMenu(
+                    product: widget.product,
+                    kosong: const SizedBox.shrink(),
                   ),
                 ),
               ),
-            if (widget.product.photoBase64 != null) const SizedBox(height: 12),
+            if (FotoMenu.punyaFoto(widget.product)) const SizedBox(height: 12),
             Text(
               priceDelta == 0
                   ? '${currency.format(shownBase)} / item$_stockNote'

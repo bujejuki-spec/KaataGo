@@ -1,9 +1,9 @@
-import '../utils/gambar_base64.dart';
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../models/product.dart';
+import 'foto_menu.dart';
 import '../models/product_badge.dart';
 import '../models/product_review.dart';
 import '../theme.dart';
@@ -267,18 +267,13 @@ class _ProductPhoto extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final photo = product.photoBase64;
-
-    final Widget image = photo != null
-        ? Image.memory(
-            byteGambar(photo),
-            width: double.infinity,
-            fit: BoxFit.cover,
-            // A corrupt/truncated base64 payload would otherwise throw
-            // during paint and blank out the whole grid.
-            errorBuilder: (_, __, ___) => const _PhotoPlaceholder(),
-          )
-        : const _PhotoPlaceholder();
+    // Sumbernya diputuskan FotoMenu, bukan di sini: selama peralihan ada
+    // dua tempat foto bisa berada, dan keputusan yang disalin ke tiap
+    // penggambar akan ketinggalan di salah satunya.
+    final Widget image = FotoMenu(
+      product: product,
+      kosong: const _PhotoPlaceholder(),
+    );
 
     if (!dimmed) return image;
     return Opacity(opacity: 0.4, child: image);

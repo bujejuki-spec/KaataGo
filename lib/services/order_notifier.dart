@@ -66,7 +66,7 @@ class OrderNotifier {
   Future<void> start() async {
     await NotificationService.instance.init();
     _sub?.cancel();
-    _sub = OrderRepository().watchAll(restoId).listen(
+    _sub = OrderRepository().watchAktif(restoId).listen(
       _onOrders,
       onError: (e) => debugPrint('[Notif] stream pesanan gagal: $e'),
     );

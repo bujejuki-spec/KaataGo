@@ -7,6 +7,7 @@ import '../models/cash_variance.dart';
 import '../models/cashier_shift.dart';
 import '../providers/auth_provider.dart';
 import '../theme.dart';
+import '../utils/pesan_galat.dart';
 import '../utils/id_time.dart';
 import '../utils/rupiah_input.dart';
 import '../widgets/app_toast.dart';
@@ -226,7 +227,7 @@ class _CashierShiftScreenState extends State<CashierShiftScreen> {
       await _muat();
     } catch (e) {
       if (!mounted) return;
-      showAppToast(context, _pesan(e), isError: true);
+      showAppToast(context, pesanGalat(e), isError: true);
     } finally {
       if (mounted) setState(() => _sibuk = false);
     }
@@ -297,7 +298,7 @@ class _CashierShiftScreenState extends State<CashierShiftScreen> {
       await _muat();
     } catch (e) {
       if (!mounted) return;
-      showAppToast(context, _pesan(e), isError: true);
+      showAppToast(context, pesanGalat(e), isError: true);
     } finally {
       if (mounted) setState(() => _sibuk = false);
     }
@@ -370,7 +371,7 @@ class _CashierShiftScreenState extends State<CashierShiftScreen> {
       await _muat();
     } catch (e) {
       if (!mounted) return;
-      showAppToast(context, _pesan(e), isError: true);
+      showAppToast(context, pesanGalat(e), isError: true);
     } finally {
       if (mounted) setState(() => _sibuk = false);
     }
@@ -414,7 +415,7 @@ class _CashierShiftScreenState extends State<CashierShiftScreen> {
         perkiraan = await _repo.perkiraan(shift.id);
       } catch (e) {
         if (!mounted) return;
-        showAppToast(context, _pesan(e), isError: true);
+        showAppToast(context, pesanGalat(e), isError: true);
         return;
       }
       if (!mounted) return;
@@ -445,7 +446,7 @@ class _CashierShiftScreenState extends State<CashierShiftScreen> {
       await _tampilkanHasil(hasil);
     } catch (e) {
       if (!mounted) return;
-      showAppToast(context, _pesan(e), isError: true);
+      showAppToast(context, pesanGalat(e), isError: true);
     } finally {
       if (mounted) setState(() => _sibuk = false);
     }
@@ -512,19 +513,6 @@ class _CashierShiftScreenState extends State<CashierShiftScreen> {
         ],
       ),
     );
-  }
-
-  /// Pesan galat dari Postgres datang dengan bungkusnya. Yang dibaca
-  /// kasir harus kalimatnya, bukan nama fungsi dan kode SQLSTATE.
-  String _pesan(Object e) {
-    final teks = e.toString();
-    final i = teks.indexOf('message: ');
-    if (i >= 0) {
-      final sisa = teks.substring(i + 9);
-      final akhir = sisa.indexOf(', code:');
-      return akhir > 0 ? sisa.substring(0, akhir) : sisa;
-    }
-    return teks;
   }
 
   Future<void> _tampilkanHasil(CashierShift s) async {

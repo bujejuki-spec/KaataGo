@@ -10,6 +10,7 @@ import '../db/support_repository.dart';
 import '../services/push_service.dart';
 import '../models/support_ticket.dart';
 import '../theme.dart';
+import '../utils/pesan_galat.dart';
 import '../utils/gambar_base64.dart';
 import '../utils/id_time.dart';
 import '../utils/photo_picker.dart';
@@ -144,7 +145,7 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
       });
     } catch (e) {
       if (!mounted) return;
-      showAppToast(context, _pesanGalat(e), isError: true);
+      showAppToast(context, pesanGalat(e), isError: true);
     } finally {
       if (mounted) setState(() => _mengirim = false);
     }
@@ -158,21 +159,12 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
     setState(() => _foto = base64Encode(bytes));
   }
 
-  String _pesanGalat(Object e) {
-    final teks = e.toString();
-    final i = teks.indexOf('message: ');
-    if (i < 0) return teks;
-    final sisa = teks.substring(i + 9);
-    final akhir = sisa.indexOf(', code:');
-    return akhir > 0 ? sisa.substring(0, akhir) : sisa;
-  }
-
   Future<void> _ubahStatus(SupportStatus status) async {
     try {
       await _repo.ubahStatus(widget.ticketId, status);
     } catch (e) {
       if (!mounted) return;
-      showAppToast(context, _pesanGalat(e), isError: true);
+      showAppToast(context, pesanGalat(e), isError: true);
     }
   }
 

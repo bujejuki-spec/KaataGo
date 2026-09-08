@@ -81,7 +81,7 @@ class _FinanceIncomeScreenState extends State<FinanceIncomeScreen> {
 
   Future<void> _load() async {
     final restoId = widget.restoId ?? context.read<AuthProvider>().restoId!;
-    final all = await _orderRepo.watchAll(restoId).first;
+    final all = await _orderRepo.semua(restoId);
     if (!mounted) return;
     setState(() {
       _orders = all.where((o) => o.paymentStatus == OrderPaymentStatus.paid).toList();

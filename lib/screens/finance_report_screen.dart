@@ -73,7 +73,7 @@ class _FinanceReportScreenState extends State<FinanceReportScreen> {
     final restoId = _restoId;
     final results = await Future.wait([
       _restaurantRepo.getOnce(restoId),
-      _orderRepo.watchAll(restoId).first,
+      _orderRepo.semua(restoId),
       _expenseRepo.getForResto(restoId),
     ]);
     if (!mounted) return;

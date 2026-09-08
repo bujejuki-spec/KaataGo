@@ -14,6 +14,8 @@ import 'level_management_screen.dart';
 import 'product_form_screen.dart';
 import '../models/product_badge.dart';
 import '../utils/menu_meta.dart';
+import '../db/foto_menu_storage.dart';
+import '../widgets/app_toast.dart';
 import '../widgets/dialog_actions.dart';
 import '../widgets/product_badge_chips.dart';
 import '../widgets/responsive.dart';
@@ -71,6 +73,13 @@ class _ProductListScreenState extends State<ProductListScreen> {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Kelola Produk'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.cloud_upload_outlined),
+              tooltip: 'Pindahkan foto menu',
+              onPressed: () => _pindahkanFoto(context),
+            ),
+          ],
           bottom: const TabBar(
             tabs: [
               Tab(text: 'Produk'),
@@ -87,6 +96,90 @@ class _ProductListScreenState extends State<ProductListScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  /// Memindahkan foto menu lama dari kolom tabel ke Supabase Storage.
+  ///
+  /// Dijalankan dari tombol, bukan diam-diam saat aplikasi dibuka.
+  /// Pemindahan yang berjalan sendiri di latar akan mengunggah puluhan
+  /// megabita lewat kuota data orangnya tanpa dia tahu, dan kalau gagal
+  /// di tengah tidak ada yang bisa dia perbuat karena dia tidak tahu itu
+  /// pernah terjadi.
+  ///
+  /// Aman diulang: yang sudah punya tautan dilewati.
+  Future<void> _pindahkanFoto(BuildContext context) async {
+    final provider = context.read<ProductProvider>();
+    final restoId = provider.restoId;
+    if (restoId == null) return;
+
+    final perlu = provider.products
+        .where((p) =>
+            (p.photoUrl == null || p.photoUrl!.isEmpty) &&
+            p.photoBase64 != null &&
+            p.photoBase64!.isNotEmpty)
+        .toList();
+
+    if (perlu.isEmpty) {
+      if (!context.mounted) return;
+      showAppToast(context, 'Semua foto menu sudah ada di Storage.');
+      return;
+    }
+
+    final lanjut = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Pindahkan Foto Menu'),
+        content: Text(
+          '${perlu.length} foto akan dipindahkan ke penyimpanan berkas.\n\n'
+          'Menu tetap tampil seperti biasa selama dan sesudahnya. Foto '
+          'lamanya belum dihapus, jadi aplikasi versi lama yang masih '
+          'terpasang tidak kehilangan gambarnya.',
+        ),
+        actions: [
+          DialogActions(
+            confirmLabel: 'Pindahkan',
+            onCancel: () => Navigator.pop(dialogContext, false),
+            onConfirm: () => Navigator.pop(dialogContext, true),
+          ),
+        ],
+        actionsAlignment: MainAxisAlignment.center,
+      ),
+    );
+    if (lanjut != true || !context.mounted) return;
+
+    final storage = FotoMenuStorage();
+    var berhasil = 0;
+    var gagal = 0;
+
+    for (final produk in perlu) {
+      try {
+        final url = await storage.pindahkan(
+          restoId: restoId,
+          productId: produk.id,
+          base64: produk.photoBase64,
+        );
+        if (url == null) continue;
+        // Base64-nya sengaja dipertahankan. Yang mengosongkannya adalah
+        // satu perintah SQL terpisah, dijalankan setelah versi barunya
+        // tersebar — lihat supabase/foto_menu_storage.sql.
+        await provider.updateProduct(produk.copyWith(photoUrl: url));
+        berhasil++;
+      } catch (_) {
+        // Satu foto yang gagal tidak menghentikan sisanya. Yang gagal
+        // tetap punya base64-nya, jadi menunya tidak kehilangan apa pun
+        // — dan tombolnya bisa ditekan lagi nanti.
+        gagal++;
+      }
+    }
+
+    if (!context.mounted) return;
+    showAppToast(
+      context,
+      gagal == 0
+          ? '$berhasil foto dipindahkan.'
+          : '$berhasil dipindahkan, $gagal gagal. Coba lagi nanti.',
+      isError: gagal > 0,
     );
   }
 }

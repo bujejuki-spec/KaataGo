@@ -17,7 +17,7 @@
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 1 dari 67 — employee_surrogate_key.sql
+-- BAGIAN 1 dari 69 — employee_surrogate_key.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — email karyawan jadi bisa diubah.
@@ -68,7 +68,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 2 dari 67 — promo_banner.sql
+-- BAGIAN 2 dari 69 — promo_banner.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — banner promo per resto.
@@ -130,7 +130,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 3 dari 67 — rilis_setor_petty_inbox.sql
+-- BAGIAN 3 dari 69 — rilis_setor_petty_inbox.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — setoran & top up petty cash berjenjang, GL Suspense, dan
@@ -615,7 +615,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 4 dari 67 — customer_cash_payment.sql
+-- BAGIAN 4 dari 69 — customer_cash_payment.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pelanggan boleh memilih bayar tunai di kasir.
@@ -685,7 +685,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 5 dari 67 — push_notifications.sql
+-- BAGIAN 5 dari 69 — push_notifications.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — notifikasi yang tetap sampai walau aplikasinya tertutup.
@@ -1033,7 +1033,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 6 dari 67 — announcement_categories.sql
+-- BAGIAN 6 dari 69 — announcement_categories.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pengumuman dibagi dua jenis, dan admin resto boleh mengirim.
@@ -1122,7 +1122,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 7 dari 67 — fix_device_tokens_rls.sql
+-- BAGIAN 7 dari 69 — fix_device_tokens_rls.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pendaftaran token push lewat fungsi, bukan tulis langsung.
@@ -1241,7 +1241,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 8 dari 67 — push_trigger_pg_net.sql
+-- BAGIAN 8 dari 69 — push_trigger_pg_net.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — panggil Edge Function langsung dari database, tanpa webhook.
@@ -1354,7 +1354,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 9 dari 67 — payment_gateway.sql
+-- BAGIAN 9 dari 69 — payment_gateway.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — QRIS sungguhan lewat Xendit.
@@ -1508,7 +1508,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 10 dari 67 — gateway_settlement.sql
+-- BAGIAN 10 dari 69 — gateway_settlement.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pencairan dana dari payment gateway.
@@ -1689,7 +1689,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 11 dari 67 — resto_payment_accounts.sql
+-- BAGIAN 11 dari 69 — resto_payment_accounts.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pencairan langsung ke rekening masing-masing resto.
@@ -1782,7 +1782,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 12 dari 67 — counter_charge.sql
+-- BAGIAN 12 dari 69 — counter_charge.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — tagihan QRIS di meja kasir.
@@ -1819,7 +1819,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 13 dari 67 — announcement_push.sql
+-- BAGIAN 13 dari 69 — announcement_push.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pengumuman ikut membunyikan HP.
@@ -1876,7 +1876,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 14 dari 67 — cash_payment_expiry.sql
+-- BAGIAN 14 dari 69 — cash_payment_expiry.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pesanan tunai yang tidak dilunasi di kasir hangus sendiri.
@@ -1962,7 +1962,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 15 dari 67 — level_groups.sql
+-- BAGIAN 15 dari 69 — level_groups.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — tiap resto menyusun sendiri kelompok levelnya.
@@ -2088,7 +2088,7 @@ create trigger trg_seed_level_groups
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 16 dari 67 — resto_order_types.sql
+-- BAGIAN 16 dari 69 — resto_order_types.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — resto menentukan sendiri melayani Dine In, Take Away, atau
@@ -2126,7 +2126,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 17 dari 67 — product_out_of_stock.sql
+-- BAGIAN 17 dari 69 — product_out_of_stock.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — ketersediaan produk ditandai, bukan dihitung.
@@ -2170,7 +2170,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 18 dari 67 — discounts.sql
+-- BAGIAN 18 dari 69 — discounts.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — diskon: per menu (termasuk bundling) atau minimum belanja.
@@ -2377,7 +2377,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 19 dari 67 — promo_banner_period.sql
+-- BAGIAN 19 dari 69 — promo_banner_period.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — banner promo punya masa berlaku.
@@ -2405,7 +2405,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 20 dari 67 — default_gl_accounts.sql
+-- BAGIAN 20 dari 69 — default_gl_accounts.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — resto baru langsung punya bagan akun dan tarif pajaknya.
@@ -2571,7 +2571,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 21 dari 67 — gateway_account_super_admin.sql
+-- BAGIAN 21 dari 69 — gateway_account_super_admin.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pengenal sub-akun Xendit jadi urusan Super Admin saja.
@@ -2612,7 +2612,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 22 dari 67 — announcement_audience.sql
+-- BAGIAN 22 dari 69 — announcement_audience.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pengumuman resto memilih sasarannya: karyawan, pelanggan,
@@ -2685,7 +2685,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 23 dari 67 — kasir_journal_read.sql
+-- BAGIAN 23 dari 69 — kasir_journal_read.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — kasir boleh melihat jurnal dari catatan yang dia buat.
@@ -2721,7 +2721,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 24 dari 67 — cancel_order.sql
+-- BAGIAN 24 dari 69 — cancel_order.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pelanggan boleh membatalkan pesanannya sendiri selama
@@ -2813,7 +2813,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 25 dari 67 — settled_at_counter.sql
+-- BAGIAN 25 dari 69 — settled_at_counter.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — menandai pesanan mandiri yang uangnya diterima di meja
@@ -2855,7 +2855,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 26 dari 67 — discount_min_qty.sql
+-- BAGIAN 26 dari 69 — discount_min_qty.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — diskon dengan syarat jumlah pembelian.
@@ -2885,7 +2885,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 27 dari 67 — discount_product_rules.sql
+-- BAGIAN 27 dari 69 — discount_product_rules.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — syarat jumlah menempel di tiap menu, bukan di promonya.
@@ -2938,7 +2938,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 28 dari 67 — billing.sql
+-- BAGIAN 28 dari 69 — billing.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — langganan bulanan resto.
@@ -3354,7 +3354,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 29 dari 67 — billing_va.sql
+-- BAGIAN 29 dari 69 — billing_va.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — tagihan langganan dibayar lewat Virtual Account Xendit.
@@ -3524,7 +3524,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 30 dari 67 — platform_finance.sql
+-- BAGIAN 30 dari 69 — platform_finance.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — keuangan KaataGo sendiri, terpisah dari keuangan resto.
@@ -3881,7 +3881,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 31 dari 67 — resto_soft_delete.sql
+-- BAGIAN 31 dari 69 — resto_soft_delete.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — menghapus resto tanpa membuang datanya.
@@ -4060,7 +4060,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 32 dari 67 — billing_discount_apply.sql
+-- BAGIAN 32 dari 69 — billing_discount_apply.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — diskon ikut memotong tagihan yang sudah terbit.
@@ -4227,7 +4227,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 33 dari 67 — billing_journal_gross.sql
+-- BAGIAN 33 dari 69 — billing_journal_gross.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pendapatan langganan dicatat sebesar harga penuh.
@@ -4378,7 +4378,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 34 dari 67 — gl_discount_backfill.sql
+-- BAGIAN 34 dari 69 — gl_discount_backfill.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — GL Diskon terisi bawaannya di tiap resto.
@@ -4440,7 +4440,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 35 dari 67 — platform_gl_renumber.sql
+-- BAGIAN 35 dari 69 — platform_gl_renumber.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — nomor akun penyewa platform dipindah ke golongan 11xxxxx.
@@ -4540,7 +4540,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 36 dari 67 — product_toppings.sql
+-- BAGIAN 36 dari 69 — product_toppings.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — topping per menu, berikut harga dan batas pilihnya.
@@ -4582,7 +4582,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 37 dari 67 — vouchers.sql
+-- BAGIAN 37 dari 69 — vouchers.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — voucher untuk pelanggan, dananya benar-benar berpindah.
@@ -5068,7 +5068,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 38 dari 67 — voucher_payouts.sql
+-- BAGIAN 38 dari 69 — voucher_payouts.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — voucher yang dipakai pelanggan dibayarkan sungguhan ke resto.
@@ -5411,7 +5411,7 @@ select cron.schedule('settle-voucher-payouts', '*/15 * * * *',
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 39 dari 67 — voucher_announcement.sql
+-- BAGIAN 39 dari 69 — voucher_announcement.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — voucher yang terbit langsung mengabari pelanggan.
@@ -5539,7 +5539,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 40 dari 67 — voucher_manage.sql
+-- BAGIAN 40 dari 69 — voucher_manage.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — banner voucher, dan menghapus batch yang tidak jadi.
@@ -5727,7 +5727,7 @@ revoke all on function delete_voucher_batch(text) from public, anon;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 41 dari 67 — market_report.sql
+-- BAGIAN 41 dari 69 — market_report.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — laporan pasar untuk Super Admin.
@@ -5886,7 +5886,7 @@ revoke all on function report_idle_restos(integer) from public, anon;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 42 dari 67 — billing_due_day.sql
+-- BAGIAN 42 dari 69 — billing_due_day.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — tanggal tagih 29, 30, 31, dan jatuh tempo berikutnya.
@@ -6042,7 +6042,7 @@ $$;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 43 dari 67 — balance_topup.sql
+-- BAGIAN 43 dari 69 — balance_topup.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — setoran modal ke saldo utama.
@@ -6209,7 +6209,7 @@ create trigger trg_log_balance_topup
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 44 dari 67 — voucher_new_customer.sql
+-- BAGIAN 44 dari 69 — voucher_new_customer.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — voucher khusus pengguna baru.
@@ -6444,7 +6444,7 @@ $$;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 45 dari 67 — qris_receipt_fields.sql
+-- BAGIAN 45 dari 69 — qris_receipt_fields.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — rincian kuitansi QRIS dari Xendit, jadi kolomnya sendiri.
@@ -6581,7 +6581,7 @@ where c.id = d.id;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 46 dari 67 — order_number.sql
+-- BAGIAN 46 dari 69 — order_number.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — nomor pesanan harian per resto.
@@ -6730,7 +6730,7 @@ do update set last_no = greatest(order_counters.last_no, excluded.last_no);
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 47 dari 67 — customer_display.sql
+-- BAGIAN 47 dari 69 — customer_display.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — layar pelanggan di meja kasir.
@@ -6878,7 +6878,7 @@ end $$;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 48 dari 67 — resto_facilities.sql
+-- BAGIAN 48 dari 69 — resto_facilities.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — fasilitas merchant.
@@ -6921,7 +6921,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 49 dari 67 — merchant_reviews.sql
+-- BAGIAN 49 dari 69 — merchant_reviews.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — penilaian merchant oleh pelanggan, dan jam bukanya.
@@ -7037,7 +7037,7 @@ $$;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 50 dari 67 — review_prompt.sql
+-- BAGIAN 50 dari 69 — review_prompt.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — mengajak pelanggan menilai, sejam sesudah membayar.
@@ -7152,7 +7152,7 @@ select cron.schedule('review-prompts', '*/20 * * * *',
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 51 dari 67 — order_cancel_kitchen.sql
+-- BAGIAN 51 dari 69 — order_cancel_kitchen.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pesanan yang batal berhenti punya status dapur.
@@ -7234,7 +7234,7 @@ where payment_status in ('cancelled', 'expired')
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 52 dari 67 — product_badges_reviews.sql
+-- BAGIAN 52 dari 69 — product_badges_reviews.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — label menu, penilaian menu, dan angka terjualnya.
@@ -7392,7 +7392,7 @@ grant execute on function product_stats(text) to anon, authenticated;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 53 dari 67 — cashier_shift.sql
+-- BAGIAN 53 dari 69 — cashier_shift.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — buka dan tutup shift kasir.
@@ -7672,7 +7672,7 @@ grant execute on function shift_expected_cash(uuid, timestamptz) to authenticate
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 54 dari 67 — product_review_per_order.sql
+-- BAGIAN 54 dari 69 — product_review_per_order.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — penilaian menu menempel pada pesanannya, bukan pada menunya.
@@ -7771,7 +7771,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 55 dari 67 — cash_variance.sql
+-- BAGIAN 55 dari 69 — cash_variance.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — GL Selisih Kasir, dan pelunasannya.
@@ -8075,7 +8075,7 @@ grant execute on function settle_cash_variance(uuid, text) to authenticated;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 56 dari 67 — cash_variance_lebih.sql
+-- BAGIAN 56 dari 69 — cash_variance_lebih.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — selisih lebih shift kasir jadi titipan yang ditelusuri.
@@ -8436,7 +8436,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 57 dari 67 — backfill_selisih_lebih.sql
+-- BAGIAN 57 dari 69 — backfill_selisih_lebih.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — melahirkan baris kerja untuk selisih lebih yang terlanjur
@@ -8484,7 +8484,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 58 dari 67 — buka_shift_terkunci.sql
+-- BAGIAN 58 dari 69 — buka_shift_terkunci.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — siapa yang boleh membuka shift, dan kapan dia belum boleh.
@@ -8581,7 +8581,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 59 dari 67 — perbaiki_deskripsi_jurnal.sql
+-- BAGIAN 59 dari 69 — perbaiki_deskripsi_jurnal.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - membetulkan deskripsi jurnal yang huruf pisahnya rusak.
@@ -8726,7 +8726,414 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 60 dari 67 — merchant_report.sql
+-- BAGIAN 60 dari 69 — stok_terkunci.sql
+-- ═══════════════════════════════════════════════════════════════════
+
+-- KaataGo - stok yang benar-benar menahan pesanan.
+--
+-- Jalankan SETELAH product_out_of_stock.sql. Aman diulang.
+--
+-- Sampai sekarang angka stok tidak menahan apa pun. Tiga orang yang
+-- memesan barang terakhir secara bersamaan ketiganya berhasil, dan
+-- `greatest(stock - qty, 0)` di decrement_stock justru menyembunyikan
+-- kelebihannya: angkanya berhenti di 0, bukan turun ke -2, jadi tidak
+-- ada satu pun jejak bahwa kelebihan pesanan pernah terjadi. Dapur baru
+-- mengetahuinya saat menyiapkan pesanan kedua.
+--
+-- Dua hal yang diperbaiki di sini, dan keduanya harus ada bersamaan:
+--
+--   1. Stok diambil SEBELUM pesanannya dibuat, dan pengambilannya bisa
+--      GAGAL. Yang tercepat menang; sisanya ditolak dengan menyebut
+--      nama barangnya.
+--
+--   2. Produk yang stoknya menyentuh nol otomatis ditandai habis, jadi
+--      ia langsung hilang dari menu tanpa menunggu resto menandainya.
+--
+-- Yang sengaja TIDAK berubah: produk yang stoknya `null` tidak dihitung
+-- sama sekali dan tidak pernah ditolak. Itu seluruh alasan angka stok
+-- dilepas dulu — nasi goreng tidak punya "sisa 7 porsi", dan resto yang
+-- tidak menghitung tidak boleh kehilangan penjualan karenanya.
+
+begin;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- 1. Mengambil stok, dan boleh menolak
+-- ─────────────────────────────────────────────────────────────────────
+--
+-- p_items: jsonb array berisi {"productId": "...", "quantity": n}.
+-- Bentuknya sengaja sama persis dengan `orders.items`, supaya
+-- pengembaliannya nanti bisa membaca baris pesanannya apa adanya.
+--
+-- Semua atau tidak sama sekali. Pesanan berisi lima barang yang satu di
+-- antaranya habis tidak boleh masuk separuh: yang lain sudah dipotong
+-- stoknya untuk pesanan yang tidak pernah ada.
+create or replace function ambil_stok(p_resto_id text, p_items jsonb)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_item record;
+  v_kena int;
+  v_nama text;
+begin
+  -- Diurutkan menurut id, dan itu bukan kerapian.
+  --
+  -- Dua pesanan yang memuat barang yang sama dalam urutan berbeda saling
+  -- mengunci baris yang sedang ditunggu lawannya, dan Postgres memutus
+  -- salah satunya sebagai deadlock. Urutan yang sama untuk semua orang
+  -- membuat keadaan itu tidak bisa terbentuk.
+  for v_item in
+    select (e ->> 'productId') as id,
+           sum((e ->> 'quantity')::int) as qty
+    from jsonb_array_elements(p_items) e
+    group by 1
+    order by 1
+  loop
+    -- Dijumlahkan lebih dulu lewat group by: satu produk kini boleh
+    -- menempati beberapa baris pesanan (pedas dan tidak pedas), dan
+    -- memeriksanya baris per baris meloloskan dua kali satu porsi
+    -- terakhir.
+    update products
+       set stock = case when stock is null then null else stock - v_item.qty end,
+           -- Menyentuh nol berarti habis, tanpa menunggu resto
+           -- menandainya. Yang stoknya null tidak tersentuh.
+           out_of_stock = case
+             when stock is not null and stock - v_item.qty <= 0 then true
+             else out_of_stock
+           end
+     where id = v_item.id
+       and resto_id = p_resto_id
+       and out_of_stock = false
+       and (stock is null or stock >= v_item.qty);
+
+    get diagnostics v_kena = row_count;
+
+    if v_kena = 0 then
+      -- Namanya dicari terpisah supaya pesannya bisa dibaca orang yang
+      -- sedang memegang HP-nya, bukan berisi id yang tidak berarti
+      -- apa-apa baginya.
+      select name into v_nama from products where id = v_item.id;
+      raise exception '% sudah habis. Hapus dari keranjang lalu pesan lagi.',
+        coalesce(v_nama, 'Salah satu barang');
+    end if;
+  end loop;
+end;
+$$;
+
+grant execute on function ambil_stok(text, jsonb) to anon, authenticated;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- 2. Mengembalikan stok
+-- ─────────────────────────────────────────────────────────────────────
+--
+-- Tanpa ini fiturnya justru merugikan: pesanan yang dibatalkan atau
+-- hangus membawa stoknya ikut hilang, dan setelah beberapa hari resto
+-- tidak bisa menjual barang yang sebenarnya ada di rak. Menahan
+-- pesanan hanya benar kalau yang ditahan bisa dilepas lagi.
+--
+-- Penandaan habis ikut dicabut kalau stoknya kembali di atas nol —
+-- karena penandaan itu tadi dipasang mesin, bukan orang.
+create or replace function kembalikan_stok(p_resto_id text, p_items jsonb)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_item record;
+begin
+  for v_item in
+    select (e ->> 'productId') as id,
+           sum((e ->> 'quantity')::int) as qty
+    from jsonb_array_elements(p_items) e
+    group by 1
+    order by 1
+  loop
+    update products
+       set stock = case when stock is null then null else stock + v_item.qty end,
+           out_of_stock = case
+             when stock is not null and stock + v_item.qty > 0 then false
+             else out_of_stock
+           end
+     where id = v_item.id
+       and resto_id = p_resto_id;
+  end loop;
+end;
+$$;
+
+grant execute on function kembalikan_stok(text, jsonb) to anon, authenticated;
+
+commit;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- 3. Yang batal dan yang hangus mengembalikan stoknya
+-- ─────────────────────────────────────────────────────────────────────
+--
+-- Badan kedua fungsi ini disalin apa adanya dari berkas aslinya, dan
+-- yang ditambahkan cuma satu baris pengembalian stok. Ditulis ulang dari
+-- ingatan, pemeriksaan kepemilikan di cancel_my_order nyaris ikut hilang
+-- — dan tanpa pemeriksaan itu, nomor pesanan yang terbaca dari struk
+-- orang lain sudah cukup untuk membatalkan pesanannya.
+--
+-- Tanda tangannya juga harus persis sama. `create or replace` dengan
+-- daftar parameter yang berbeda tidak mengganti apa pun: ia membuat
+-- fungsi KEDUA, dan yang dipanggil aplikasi tetap yang lama.
+
+begin;
+
+create or replace function cancel_my_order(
+  p_order_id uuid,
+  p_session_id text default null,
+  p_email text default null
+)
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_order orders%rowtype;
+begin
+  select * into v_order from orders where id = p_order_id;
+  if not found then
+    return 'Pesanan tidak ditemukan.';
+  end if;
+
+  -- Miliknya sendiri. Pelanggan yang login dikenali dari emailnya, tamu
+  -- dari session id yang tersimpan di HP-nya. Tanpa pemeriksaan ini,
+  -- nomor pesanan yang terbaca dari struk orang lain sudah cukup untuk
+  -- membatalkan pesanannya.
+  if not (
+    (p_email is not null and v_order.customer_label = p_email)
+    or (p_session_id is not null and v_order.session_id = p_session_id)
+  ) then
+    return 'Pesanan ini bukan milikmu.';
+  end if;
+
+  if v_order.source <> 'customer' then
+    return 'Pesanan yang diinput kasir dibatalkan lewat kasir.';
+  end if;
+
+  if v_order.payment_status = 'paid' then
+    return 'Pesanan sudah dibayar. Hubungi kasir untuk pembatalan.';
+  end if;
+
+  if v_order.payment_status <> 'pending' then
+    return 'Pesanan ini sudah tidak aktif.';
+  end if;
+
+  -- Dapur sudah mulai memasak berarti bahannya sudah terpakai.
+  -- Membatalkannya sepihak dari HP memindahkan kerugiannya ke resto,
+  -- dan yang menanggungnya bukan pihak yang membuat keputusannya.
+  if v_order.kitchen_status <> 'waiting' then
+    return 'Pesanan sudah mulai dimasak. Hubungi kasir kalau mau batal.';
+  end if;
+
+  update orders set payment_status = 'cancelled' where id = p_order_id;
+
+  -- Stoknya kembali ke rak, di dalam transaksi yang sama dengan
+  -- pembatalannya. Pesanan yang batal tapi stoknya tidak kembali adalah
+  -- barang yang hilang dari penjualan tanpa pernah terjual.
+  perform kembalikan_stok(v_order.resto_id, v_order.items);
+
+  return null;
+end;
+$$;
+
+grant execute on function cancel_my_order(uuid, text, text) to anon, authenticated;
+
+-- Pesanan tunai yang lewat tenggang 30 menit. Alasannya sama persis
+-- dengan pembatalan: yang tidak jadi terjual harus kembali bisa dijual.
+create or replace function expire_unpaid_cash_orders()
+returns integer
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_count integer;
+  v_baris record;
+begin
+  v_count := 0;
+  for v_baris in
+    update orders
+    set payment_status = 'expired'
+    where payment_status = 'pending'
+      and source = 'customer'
+      -- Hanya yang tunai. Pesanan QRIS punya tenggangnya sendiri di sisi
+      -- penyedia pembayaran, dan membatalkannya dari sini berarti
+      -- membatalkan pesanan yang uangnya mungkin sedang dalam perjalanan.
+      and _normalize_payment_method(source, payment_method) = 'cash'
+      and created_at <= now() - interval '30 minutes'
+    returning resto_id, items
+  loop
+    perform kembalikan_stok(v_baris.resto_id, v_baris.items);
+    v_count := v_count + 1;
+  end loop;
+  return v_count;
+end;
+$$;
+
+commit;
+
+
+-- ═══════════════════════════════════════════════════════════════════
+-- BAGIAN 61 dari 69 — foto_menu_storage.sql
+-- ═══════════════════════════════════════════════════════════════════
+
+-- KaataGo - foto menu pindah dari kolom tabel ke Storage.
+--
+-- Aman dijalankan berulang kali.
+--
+-- Sekarang foto menu tersimpan sebagai `products.photo_base64`, dan itu
+-- menempati dua kuota termahal sekaligus:
+--
+--   1. Ukuran database. Di paket Free jatahnya 500 MB - yang paling
+--      sempit dari semua kuota yang ada - sementara file storage
+--      jatahnya 1 GB. Foto adalah hal yang paling tidak pantas
+--      menempati ruang termahal yang dimiliki proyek ini.
+--
+--   2. Egress, berulang-ulang. Dan ini yang menentukan: aliran realtime
+--      Supabase tidak bisa memilih kolom - `.stream()` selalu mengambil
+--      seluruh baris, dan payload perubahannya juga baris utuh. Jadi
+--      selama base64 masih ada di sana, tiap foto terkirim ulang tiap
+--      kali seorang pelanggan membuka menu, DAN tiap kali satu produk
+--      berubah. Menandai satu barang habis mengirim ulang seluruh album
+--      ke setiap orang yang sedang membuka menu.
+--
+-- Foto di Storage disajikan lewat CDN dan masuk hitungan "cached
+-- egress" - jatah terpisah, dan tarif kelebihannya sepertiga dari
+-- egress biasa.
+--
+-- Yang TIDAK dikerjakan berkas ini: memindahkan fotonya. Isi berkas
+-- tidak bisa diunggah lewat SQL. Pemindahannya dijalankan dari aplikasi,
+-- lewat tombol di Kelola Produk, supaya kemajuannya terlihat dan
+-- kegagalannya bisa diulang per produk.
+
+begin;
+
+-- Tautan foto di Storage. Null berarti produk ini belum dipindahkan -
+-- dan selama itu, `photo_base64`-nya yang dipakai.
+alter table products
+  add column if not exists photo_url text;
+
+commit;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- Ember penyimpanannya
+-- ─────────────────────────────────────────────────────────────────────
+--
+-- Publik dibaca siapa saja, dan itu memang yang diinginkan: menu dibuka
+-- pelanggan yang belum tentu punya akun, termasuk lewat pemindaian QR
+-- meja tanpa memasang aplikasi. Yang publik hanya membacanya - menulis
+-- tetap dijaga policy di bawah.
+
+insert into storage.buckets (id, name, public)
+values ('menu-foto', 'menu-foto', true)
+on conflict (id) do update set public = true;
+
+-- Nama berkasnya berbentuk `<resto_id>/<product_id>.jpg`, dan segmen
+-- pertama itu yang dipakai policy untuk menentukan siapa boleh menulis.
+-- Tanpa itu, karyawan resto mana pun bisa menimpa foto menu resto lain.
+
+-- Policy SELECT yang terbuka untuk semua sengaja TIDAK dipasang.
+--
+-- Ember ini publik, dan gambarnya dibaca lewat URL publiknya — jalur itu
+-- tidak melewati RLS sama sekali, jadi pelanggan tetap melihat menunya
+-- tanpa policy apa pun di sini.
+--
+-- Yang diberikan policy SELECT justru hal lain: kemampuan MENDAFTAR isi
+-- ember. Dengan itu siapa pun bisa meminta daftar seluruh berkas, dan
+-- karena namanya `<resto_id>/<product_id>.jpg`, daftar itu membocorkan
+-- seluruh id resto dan id produk yang pernah punya foto. Tidak ada yang
+-- membutuhkannya: aplikasi ini hanya mengunggah, menyusun URL, dan
+-- menghapus — tidak pernah mendaftar.
+--
+-- Yang tersisa dibatasi ke karyawan restonya sendiri. Layanan Storage
+-- membaca baris objeknya saat menimpa berkas yang sudah ada, jadi
+-- mencabut SELECT sepenuhnya bisa mematahkan penggantian foto.
+drop policy if exists "menu-foto: baca publik" on storage.objects;
+
+drop policy if exists "menu-foto: baca karyawan" on storage.objects;
+create policy "menu-foto: baca karyawan" on storage.objects
+  for select using (
+    bucket_id = 'menu-foto'
+    and public.is_resto_employee((storage.foldername(name))[1],
+                                 array['owner', 'admin'])
+  );
+
+drop policy if exists "menu-foto: tulis karyawan" on storage.objects;
+create policy "menu-foto: tulis karyawan" on storage.objects
+  for insert with check (
+    bucket_id = 'menu-foto'
+    -- Disebut lengkap dengan skemanya. Policy pada storage.objects
+    -- tidak dijalankan PostgREST melainkan layanan Storage, yang
+    -- menyambung dengan search_path-nya sendiri — dan nama tanpa skema
+    -- di sana bisa tidak ditemukan. Galatnya baru muncul saat seseorang
+    -- benar-benar mengunggah, bukan saat policy-nya dibuat.
+    and public.is_resto_employee((storage.foldername(name))[1],
+                                 array['owner', 'admin'])
+  );
+
+drop policy if exists "menu-foto: ubah karyawan" on storage.objects;
+create policy "menu-foto: ubah karyawan" on storage.objects
+  for update using (
+    bucket_id = 'menu-foto'
+    -- Disebut lengkap dengan skemanya. Policy pada storage.objects
+    -- tidak dijalankan PostgREST melainkan layanan Storage, yang
+    -- menyambung dengan search_path-nya sendiri — dan nama tanpa skema
+    -- di sana bisa tidak ditemukan. Galatnya baru muncul saat seseorang
+    -- benar-benar mengunggah, bukan saat policy-nya dibuat.
+    and public.is_resto_employee((storage.foldername(name))[1],
+                                 array['owner', 'admin'])
+  );
+
+drop policy if exists "menu-foto: hapus karyawan" on storage.objects;
+create policy "menu-foto: hapus karyawan" on storage.objects
+  for delete using (
+    bucket_id = 'menu-foto'
+    -- Disebut lengkap dengan skemanya. Policy pada storage.objects
+    -- tidak dijalankan PostgREST melainkan layanan Storage, yang
+    -- menyambung dengan search_path-nya sendiri — dan nama tanpa skema
+    -- di sana bisa tidak ditemukan. Galatnya baru muncul saat seseorang
+    -- benar-benar mengunggah, bukan saat policy-nya dibuat.
+    and public.is_resto_employee((storage.foldername(name))[1],
+                                 array['owner', 'admin'])
+  );
+
+-- ─────────────────────────────────────────────────────────────────────
+-- Sesudah semua foto pindah
+-- ─────────────────────────────────────────────────────────────────────
+--
+-- Kolom base64-nya sengaja TIDAK dikosongkan di sini.
+--
+-- Aplikasi versi lama yang masih terpasang di HP orang membaca
+-- `photo_base64`, dan tidak tahu apa-apa tentang `photo_url`. Mengosongkan
+-- kolomnya hari ini membuat menu mereka kehilangan seluruh gambarnya
+-- sampai mereka memperbarui aplikasinya - dan sebagian tidak akan
+-- memperbarui selama berminggu-minggu.
+--
+-- Jalankan perintah di bawah HANYA setelah pemindahannya selesai dan
+-- versi barunya sudah tersebar. Sebelum itu dijalankan, ukuran database
+-- dan beban egress-nya belum berkurang: yang mengurangi bukan adanya
+-- photo_url, melainkan hilangnya base64 dari barisnya.
+--
+--   update products set photo_base64 = null
+--    where photo_url is not null and photo_base64 is not null;
+--
+-- Periksa dulu berapa yang belum pindah, dan jangan kosongkan kalau
+-- angkanya belum nol:
+--
+--   select count(*) filter (where photo_url is null and photo_base64 is not null)
+--            as belum_pindah,
+--          count(*) filter (where photo_url is not null) as sudah_pindah
+--     from products;
+
+
+-- ═══════════════════════════════════════════════════════════════════
+-- BAGIAN 62 dari 69 — merchant_report.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — laporan penjualan untuk merchant sendiri.
@@ -8947,7 +9354,7 @@ grant execute on function report_sales_summary(text, date, date) to authenticate
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 61 dari 67 — shift_opening_check.sql
+-- BAGIAN 63 dari 69 — shift_opening_check.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — perkiraan modal awal saat shift dibuka.
@@ -9042,7 +9449,7 @@ grant execute on function expected_opening_cash(text) to authenticated;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 62 dari 67 — support_tickets.sql
+-- BAGIAN 64 dari 69 — support_tickets.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pengaduan, tiket, dan percakapannya.
@@ -9470,7 +9877,7 @@ grant execute on function mark_support_read(uuid) to authenticated;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 63 dari 67 — support_push.sql
+-- BAGIAN 65 dari 69 — support_push.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — notifikasi untuk KaataGo Support.
@@ -9584,7 +9991,7 @@ create trigger trg_queue_push_support
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 64 dari 67 — support_auto_reply.sql
+-- BAGIAN 66 dari 69 — support_auto_reply.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — sapaan otomatis, dan penanda belum dibaca yang tahan
@@ -9825,7 +10232,7 @@ $$;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 65 dari 67 — support_chat_rules.sql
+-- BAGIAN 67 dari 69 — support_chat_rules.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — chat bebas bukan pengaduan, dan tiket kembar tidak lahir
@@ -10017,7 +10424,7 @@ where id in (select id from kembar where urutan > 1);
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 66 dari 67 — support_pesan_kembar.sql
+-- BAGIAN 68 dari 69 — support_pesan_kembar.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pesan kembar di dalam satu percakapan.
@@ -10107,7 +10514,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 67 dari 67 — support_push_wording.sql
+-- BAGIAN 69 dari 69 — support_push_wording.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — judul notifikasi chat tidak menyebut "pengaduan".

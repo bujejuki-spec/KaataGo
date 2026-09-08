@@ -23,7 +23,7 @@ class EmployeeOrdersScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Pesanan Masuk')),
       body: StreamBuilder<List<CustomerOrder>>(
-        stream: repo.watchAll(restoId),
+        stream: repo.watchAktif(restoId),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());

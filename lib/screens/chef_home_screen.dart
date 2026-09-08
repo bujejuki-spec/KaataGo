@@ -123,7 +123,7 @@ class _ChefHomeScreenState extends State<ChefHomeScreen> {
           ],
         ),
         body: StreamBuilder<List<CustomerOrder>>(
-          stream: _repo.watchAll(restoId),
+          stream: _repo.watchAktif(restoId),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());

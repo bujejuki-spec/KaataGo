@@ -55,7 +55,20 @@ class Product {
   /// no-separate-storage-service pattern used for customer profile
   /// photos. Kept small via resize/compress before encoding (see
   /// ProductFormScreen).
+  ///
+  /// Cara lama, dan sedang ditinggalkan. Aliran realtime Supabase tidak
+  /// bisa memilih kolom, jadi selama isinya ada di baris ini ia terkirim
+  /// ulang tiap kali menu dibuka dan tiap kali satu produk berubah.
+  /// Dipertahankan sebagai cadangan sampai seluruh foto pindah dan
+  /// aplikasi versi lama tidak lagi terpasang di mana pun.
   final String? photoBase64;
+
+  /// Tautan foto di Supabase Storage — cara yang sekarang.
+  ///
+  /// Disajikan lewat CDN, jadi ia tidak melewati Postgres sama sekali,
+  /// tidak menempati ukuran database, dan pembacanya yang kedua kali
+  /// tidak mengunduhnya lagi.
+  final String? photoUrl;
 
   /// Names of the [kLevelGroups] this product offers (e.g. "Level Pedas",
   /// "Level Gula") — empty if it has no variant options. Shown as
@@ -103,6 +116,7 @@ class Product {
     this.outOfStock = false,
     this.description,
     this.photoBase64,
+    this.photoUrl,
     this.levelGroups = const [],
     this.toppings = const [],
     this.maxToppings = 0,
@@ -145,6 +159,7 @@ class Product {
       'stock': stock,
       'description': description,
       'photo_base64': photoBase64,
+      'photo_url': photoUrl,
       'level_groups': levelGroups.isEmpty ? null : levelGroups.join(','),
       'level_prices': levelPrices.isEmpty ? null : jsonEncode(levelPrices),
       'toppings': toppings.isEmpty
@@ -173,6 +188,7 @@ class Product {
       stock: (map['stock'] as num?)?.toInt() ?? 0,
       description: map['description'] as String?,
       photoBase64: map['photo_base64'] as String?,
+      photoUrl: map['photo_url'] as String?,
       levelGroups: (rawLevels == null || rawLevels.isEmpty)
           ? const []
           : rawLevels.split(','),
@@ -236,6 +252,7 @@ class Product {
     bool? outOfStock,
     Object? description = _unset,
     Object? photoBase64 = _unset,
+    Object? photoUrl = _unset,
     List<String>? levelGroups,
     List<Topping>? toppings,
     int? maxToppings,
@@ -255,6 +272,7 @@ class Product {
           identical(description, _unset) ? this.description : description as String?,
       photoBase64:
           identical(photoBase64, _unset) ? this.photoBase64 : photoBase64 as String?,
+      photoUrl: identical(photoUrl, _unset) ? this.photoUrl : photoUrl as String?,
       levelGroups: levelGroups ?? this.levelGroups,
       toppings: toppings ?? this.toppings,
       maxToppings: maxToppings ?? this.maxToppings,

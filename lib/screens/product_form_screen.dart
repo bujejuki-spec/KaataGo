@@ -2,6 +2,10 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:uuid/uuid.dart';
+
+import '../db/foto_menu_storage.dart';
+import '../utils/pesan_galat.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
@@ -34,6 +38,7 @@ class ProductFormScreen extends StatefulWidget {
 }
 
 class _ProductFormScreenState extends State<ProductFormScreen> {
+  final _fotoStorage = FotoMenuStorage();
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameCtrl;
   late final TextEditingController _descriptionCtrl;
@@ -237,12 +242,51 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     // kehabisan — cuma resto yang tidak menghitung, dan itu mayoritas.
     final stock = int.tryParse(_stockCtrl.text.trim()) ?? 0;
 
+    // Id-nya ditentukan di sini untuk produk baru, bukan di provider.
+    // Berkas di Storage dinamai menurut id produknya, jadi id itu harus
+    // sudah ada sebelum fotonya diunggah — bukan sesudah barisnya
+    // tersimpan.
+    final productId = widget.existing?.id ?? const Uuid().v4();
+
+    // Foto baru naik ke Storage, dan base64-nya TIDAK ditulis lagi.
+    //
+    // Aliran realtime Supabase tidak bisa memilih kolom, jadi selama
+    // base64 ada di baris produk ia terkirim ulang tiap kali menu dibuka
+    // dan tiap kali satu produk berubah. Yang lama dibiarkan apa adanya
+    // di barisnya sampai dipindahkan lewat tombol di Kelola Produk —
+    // mengosongkannya sekarang membuat menu di aplikasi versi lama
+    // kehilangan gambarnya.
     String? photoBase64 = _existingPhotoBase64;
+    String? photoUrl = widget.existing?.photoUrl;
     if (_pickedPhoto != null) {
       final bytes = await _pickedPhoto!.readAsBytes();
-      photoBase64 = base64Encode(bytes);
+      try {
+        photoUrl = await _fotoStorage.unggah(
+          restoId: provider.restoId!,
+          productId: productId,
+          bytes: bytes,
+        );
+        // Fotonya sekarang di Storage. Base64 lamanya dilepas supaya
+        // barisnya tidak menyimpan dua salinan gambar yang sama.
+        photoBase64 = null;
+      } catch (e) {
+        if (!mounted) return;
+        setState(() => _saving = false);
+        showAppToast(context, 'Foto gagal diunggah: ${pesanGalat(e)}',
+            isError: true);
+        return;
+      }
     } else if (_photoRemoved) {
       photoBase64 = null;
+      photoUrl = null;
+      if (widget.existing != null) {
+        // Kegagalannya diabaikan: barisnya sudah tidak menunjuk ke sana,
+        // dan berkas yatim di Storage jauh lebih ringan daripada
+        // penyimpanan produk yang gagal gara-gara pembersihan.
+        try {
+          await _fotoStorage.hapus(provider.restoId!, productId);
+        } catch (_) {}
+      }
     }
 
     final levelPrices = <String, Map<String, int>>{
@@ -269,6 +313,8 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
 
     if (widget.existing == null) {
       await provider.addProduct(
+        id: productId,
+        photoUrl: photoUrl,
         name: name,
         category: category,
         price: price,
@@ -292,6 +338,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
         stock: stock,
         description: description.isEmpty ? null : description,
         photoBase64: photoBase64,
+        photoUrl: photoUrl,
         levelGroups: _selectedLevelGroups.toList(),
         levelPrices: levelPrices,
         toppings: toppings,
@@ -332,6 +379,14 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
       photoPreview = FileImage(_pickedPhoto!);
     } else if (_existingPhotoBase64 != null) {
       photoPreview = MemoryImage(base64Decode(_existingPhotoBase64!));
+    } else if (!_photoRemoved &&
+        widget.existing?.photoUrl != null &&
+        widget.existing!.photoUrl!.isNotEmpty) {
+      // Produk yang fotonya sudah pindah ke Storage tidak punya base64
+      // lagi. Tanpa cabang ini formulirnya tampak seperti produk tanpa
+      // foto, dan yang membukanya akan mengunggah ulang gambar yang
+      // sebenarnya sudah ada.
+      photoPreview = NetworkImage(widget.existing!.photoUrl!);
     }
 
     return Scaffold(

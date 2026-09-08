@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../models/customer_order.dart';
 import '../models/product.dart';
 import '../utils/foto_menu_bertahan.dart';
 
@@ -96,9 +97,48 @@ class FirestoreProductRepository {
     return rows.map((r) => Product.fromMap(r)).toList();
   }
 
-  /// Atomically decrements stock for each item in a customer order (via
-  /// the `decrement_stock` Postgres function — see supabase/functions.sql)
-  /// so two simultaneous orders can't oversell the same product.
+  /// Mengambil stok untuk sebuah pesanan, dan boleh menolak.
+  ///
+  /// Menggantikan `decrement_stock`, yang tidak pernah menolak apa pun:
+  /// ia memakai `greatest(stock - qty, 0)`, jadi tiga orang yang memesan
+  /// barang terakhir bersamaan ketiganya berhasil dan angkanya cuma
+  /// berhenti di nol — tanpa satu pun jejak bahwa kelebihannya terjadi.
+  ///
+  /// Yang di sini memeriksa dan mengambil dalam satu perintah, di server,
+  /// jadi yang tercepat menang dan sisanya dilempar galat berisi nama
+  /// barangnya. Semua atau tidak sama sekali: pesanan berisi lima barang
+  /// yang satu di antaranya habis tidak boleh masuk separuh.
+  ///
+  /// Produk yang stoknya `null` tidak dihitung dan tidak pernah ditolak —
+  /// itu seluruh alasan angka stok dulu dilepas.
+  Future<void> ambilStok(String restoId, List<CustomerOrderItem> items) async {
+    if (items.isEmpty) return;
+    await _client.rpc('ambil_stok', params: {
+      'p_resto_id': restoId,
+      'p_items': [for (final i in items) i.toMap()],
+    });
+  }
+
+  /// Mengembalikan stok pesanan yang batal di tengah jalan.
+  ///
+  /// Dipakai saat pesanannya sudah mengambil stok tapi barisnya gagal
+  /// dibuat. Tanpa ini, kegagalan menyimpan pesanan menelan stoknya dan
+  /// barang yang ada di rak berhenti bisa dijual.
+  Future<void> kembalikanStok(
+      String restoId, List<CustomerOrderItem> items) async {
+    if (items.isEmpty) return;
+    await _client.rpc('kembalikan_stok', params: {
+      'p_resto_id': restoId,
+      'p_items': [for (final i in items) i.toMap()],
+    });
+  }
+
+  /// Pengurangan lama yang tidak pernah menolak.
+  ///
+  /// Disisakan untuk kasir: yang berdiri di meja kasir memegang
+  /// barangnya di tangan, dan menolak penjualan karena angka di basis
+  /// data memindahkan masalah pencatatan menjadi pelanggan yang tidak
+  /// jadi dilayani.
   Future<void> decrementStockForOrder(Map<String, int> productIdToQuantity) async {
     for (final entry in productIdToQuantity.entries) {
       await _client.rpc('decrement_stock', params: {'p_id': entry.key, 'qty': entry.value});

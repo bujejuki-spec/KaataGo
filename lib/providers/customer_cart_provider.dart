@@ -311,19 +311,32 @@ class CustomerCartProvider extends ChangeNotifier {
       discountId: applied?.discount.id,
       discountName: applied?.discount.name,
     );
-    final id = await _orderRepo.create(order);
+    // Stoknya diambil SEBELUM pesanannya dibuat, dan pengambilannya boleh
+    // gagal.
+    //
+    // Urutannya yang menentukan. Dulu pesanannya dibuat lebih dulu lalu
+    // stoknya dikurangi menyusul, jadi tiga orang yang memesan barang
+    // terakhir bersamaan ketiganya berhasil — pemeriksaannya terjadi
+    // setelah keputusannya diambil. Sekarang yang tercepat menang, dan
+    // yang kalah tidak pernah punya pesanan.
+    //
+    // Galatnya sengaja dibiarkan naik: layar checkout yang menampilkan
+    // kalimatnya, dan kalimat itu datang dari server berisi nama
+    // barangnya.
+    await _firestoreProductRepo.ambilStok(restoId, order.items);
 
-    // Reserve stock immediately (same behavior as the cashier checkout) so
-    // two customers can't both order the last unit of something.
-    final stockDeltas = <String, int>{};
-    for (final item in _items) {
-      // Accumulated, not assigned: the same product can now occupy
-      // several lines (pedas and tidak pedas), and overwriting would
-      // deduct only the last line's quantity from stock.
-      stockDeltas.update(item.product.id, (q) => q + item.quantity,
-          ifAbsent: () => item.quantity);
+    final String id;
+    try {
+      id = await _orderRepo.create(order);
+    } catch (e) {
+      // Stoknya sudah diambil tapi pesanannya gagal disimpan. Tanpa
+      // dikembalikan, barang yang ada di rak berhenti bisa dijual karena
+      // pesanan yang tidak pernah ada.
+      await _firestoreProductRepo
+          .kembalikanStok(restoId, order.items)
+          .catchError((_) {});
+      rethrow;
     }
-    await _firestoreProductRepo.decrementStockForOrder(stockDeltas);
 
     // Reset the backend's "5 minutes idle" clock for this session so the
     // Cloud Function doesn't end it while a fresh order is still cooking.

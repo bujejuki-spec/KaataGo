@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme.dart';
+import '../utils/pesan_galat.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -371,22 +372,34 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
     // Sesudah potongan: inilah yang ditagihkan di layar QRIS dan yang
     // disebutkan ke kasir untuk pembayaran tunai.
     final amount = _dibayar(cart);
-    final orderId = await cart.placeOrder(
-      label,
-      tableNumber: tableNumber,
-      sessionId: session.sessionId!,
-      restoId: session.restoId!,
-      orderType: _orderType,
-      // Dipakai juga untuk Dine In sekarang: nomor meja memberi tahu
-      // dapur ke mana mengantar, tapi tidak memberi tahu siapa yang
-      // dipanggil kalau mejanya berisi beberapa orang yang memesan
-      // sendiri-sendiri.
-      customerName: _nameCtrl.text.trim(),
-      paymentMethod: _paymentMethod,
-      voucherClaimId: _voucher?.id,
-      voucherCode: _voucher?.code,
-      voucherAmount: _voucher?.amount ?? 0,
-    );
+    final String orderId;
+    try {
+      orderId = await cart.placeOrder(
+        label,
+        tableNumber: tableNumber,
+        sessionId: session.sessionId!,
+        restoId: session.restoId!,
+        orderType: _orderType,
+        // Dipakai juga untuk Dine In sekarang: nomor meja memberi tahu
+        // dapur ke mana mengantar, tapi tidak memberi tahu siapa yang
+        // dipanggil kalau mejanya berisi beberapa orang yang memesan
+        // sendiri-sendiri.
+        customerName: _nameCtrl.text.trim(),
+        paymentMethod: _paymentMethod,
+        voucherClaimId: _voucher?.id,
+        voucherCode: _voucher?.code,
+        voucherAmount: _voucher?.amount ?? 0,
+      );
+    } catch (e) {
+      // Paling sering: barangnya keburu diambil orang lain sedetik
+      // sebelumnya. Pesannya datang dari server dan sudah menyebut nama
+      // barangnya, jadi yang perlu dilakukan di sini cuma menampilkannya
+      // dan mengembalikan tombolnya — bukan menerjemahkannya lagi.
+      if (!mounted) return;
+      setState(() => _placing = false);
+      showAppToast(context, pesanGalat(e), isError: true);
+      return;
+    }
     // A logged-in customer's history comes from their email, so this is
     // only needed for guests — it's the only record they'd otherwise have.
     if (auth.user?.email == null) {

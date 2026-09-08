@@ -126,7 +126,7 @@ class _CashDepositScreenState extends State<CashDepositScreen> {
     try {
       final restoId = _restoId;
       final results = await Future.wait([
-        _orderRepo.watchAll(restoId).first,
+        _orderRepo.semua(restoId),
         _depositRepo.getForResto(restoId),
         _pettyCashRepo.getForResto(restoId),
         Supabase.instance.client.from('settings').select().eq('resto_id', restoId).limit(1),

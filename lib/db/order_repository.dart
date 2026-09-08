@@ -47,6 +47,7 @@ class OrderRepository {
         .stream(primaryKey: ['id'])
         .eq('resto_id', restoId)
         .order('created_at', ascending: false)
+        .limit(batasAliran)
         .map((rows) => rows
             .map((r) => CustomerOrder.fromMap(r))
             .where((o) => o.isPendingCashPayment)
@@ -170,15 +171,76 @@ class OrderRepository {
     }).eq('id', orderId);
   }
 
-  /// Live stream of all orders for one restaurant, newest first. Used by
-  /// the Admin/Chef "Pesanan Masuk" screens.
-  Stream<List<CustomerOrder>> watchAll(String restoId) {
+  /// Berapa pesanan terakhir yang dipegang aliran langsung.
+  ///
+  /// Bukan angka keramat, tapi bukan juga asal: layar Pesanan Masuk dan
+  /// dapur menampilkan antrean hari ini, dan resto tersibuk pun tidak
+  /// melewati angka ini dalam sehari. Yang lebih lama dari itu dibuka
+  /// lewat Riwayat Transaksi, yang memuatnya bertahap.
+  static const batasAliran = 300;
+
+  /// Pesanan terbaru, hidup. Untuk layar Pesanan Masuk, dapur, dan
+  /// notifikasi.
+  ///
+  /// Dibatasi, dan itu inti perubahannya. Sebelumnya aliran ini
+  /// berlangganan SELURUH riwayat pesanan resto — tanpa batas jumlah
+  /// maupun tanggal — sehingga tiap perangkat kasir dan dapur mengunduh
+  /// ulang seluruh sejarahnya tiap kali aplikasinya dibuka. Beratnya
+  /// tumbuh tiap hari selamanya, dan tidak seorang pun bisa menunjuk
+  /// kapan ia mulai berat.
+  ///
+  /// Yang ditampilkan layar-layar itu cuma antrean hari ini. Berhenti
+  /// mengunduh yang tidak ditampilkan tidak mengubah satu piksel pun.
+  Stream<List<CustomerOrder>> watchAktif(String restoId) {
     return _client
         .from('orders')
         .stream(primaryKey: ['id'])
         .eq('resto_id', restoId)
         .order('created_at', ascending: false)
+        .limit(batasAliran)
         .map((rows) => rows.map((r) => CustomerOrder.fromMap(r)).toList());
+  }
+
+  /// Seluruh pesanan resto, sekali baca, tanpa batas.
+  ///
+  /// Dipakai layar Finance yang menjumlahkan sejak awal: Saldo Cash,
+  /// Penghasilan, laporan, dan pemasukan tunai di Setor Saldo Cash.
+  /// Angka-angka itu HARUS melihat semuanya — Saldo Cash yang cuma
+  /// menghitung sebulan terakhir tetap muncul, tetap terlihat wajar, dan
+  /// salah tanpa satu pun pesan galat. Itu jenis kerusakan yang paling
+  /// mahal.
+  ///
+  /// Bukan stream, dan itu disengaja: pemakainya dulu memanggil
+  /// `watchAll(...).first` — membuka langganan realtime lalu langsung
+  /// membuangnya setelah satu nilai. Sekali baca mengerjakan hal yang
+  /// sama tanpa memakai satu pun kuota koneksi realtime.
+  ///
+  /// Catatan untuk nanti: menarik seluruh pesanan ke HP demi satu angka
+  /// juga tidak akan bertahan selamanya. Jawaban akhirnya menjumlahkannya
+  /// di server dan mengembalikan totalnya saja.
+  Future<List<CustomerOrder>> semua(String restoId) async {
+    final rows = await _client
+        .from('orders')
+        .select()
+        .eq('resto_id', restoId)
+        .order('created_at', ascending: false);
+    return rows.map((r) => CustomerOrder.fromMap(r)).toList();
+  }
+
+  /// Satu halaman riwayat pesanan, terbaru lebih dulu.
+  ///
+  /// Riwayat dipotong per halaman, bukan per tanggal. Riwayat yang tidak
+  /// bisa digulir ke belakang adalah data yang hilang dari sudut pandang
+  /// yang memakainya, meskipun barisnya masih utuh di basis data.
+  Future<List<CustomerOrder>> halaman(String restoId,
+      {int lewati = 0, int ambil = 50}) async {
+    final rows = await _client
+        .from('orders')
+        .select()
+        .eq('resto_id', restoId)
+        .order('created_at', ascending: false)
+        .range(lewati, lewati + ambil - 1);
+    return rows.map((r) => CustomerOrder.fromMap(r)).toList();
   }
 
   /// Live stream of orders belonging to one customer session (the "parent"
@@ -190,6 +252,10 @@ class OrderRepository {
         .stream(primaryKey: ['id'])
         .eq('session_id', sessionId)
         .order('created_at', ascending: false)
+        // Satu sesi meja jarang melewati puluhan pesanan, tapi batasnya
+        // tetap dipasang: yang tidak berbatas selalu jadi tidak berbatas
+        // di tempat yang tidak diduga.
+        .limit(100)
         .map((rows) => rows.map((r) => CustomerOrder.fromMap(r)).toList());
   }
 
@@ -234,6 +300,9 @@ class OrderRepository {
         .stream(primaryKey: ['id'])
         .eq('customer_label', email)
         .order('created_at', ascending: false)
+        // Riwayat pelanggan lama bisa ratusan pesanan lintas resto, dan
+        // yang dilihatnya di layar cuma yang teratas.
+        .limit(100)
         .map((rows) => rows.map((r) => CustomerOrder.fromMap(r)).toList());
   }
 }
