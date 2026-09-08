@@ -8,6 +8,7 @@ import '../db/order_repository.dart';
 import '../models/customer_order.dart';
 import '../services/payment_gateway_service.dart';
 import '../theme.dart';
+import '../widgets/hitung_mundur_bayar.dart';
 import '../utils/qris_image.dart';
 import '../widgets/app_toast.dart';
 import '../widgets/kaata_qr_card.dart';
@@ -33,11 +34,20 @@ class CustomerQrisScreen extends StatefulWidget {
   final int amount;
   final String restoId;
 
+  /// Kapan pesanannya dibuat — titik nol tenggang membayar.
+  ///
+  /// Dikirim pemanggilnya supaya hitungannya sama persis dengan yang
+  /// ditegakkan server, bukan dimulai dari saat layar ini kebetulan
+  /// terbuka. Null saat layarnya dibuka dari riwayat; hitungannya lalu
+  /// diambil dari baris pesanannya.
+  final DateTime? createdAt;
+
   const CustomerQrisScreen({
     super.key,
     required this.orderId,
     required this.amount,
     required this.restoId,
+    this.createdAt,
   });
 
   @override
@@ -67,6 +77,14 @@ class _CustomerQrisScreenState extends State<CustomerQrisScreen> {
   bool _navigated = false;
   Duration _remaining = Duration.zero;
 
+  /// Tenggang membayar sebelum pesanannya hangus sendiri.
+  ///
+  /// Berbeda dari [_remaining], dan bedanya penting: yang itu masa
+  /// berlaku QR-nya di sisi penyedia pembayaran, yang ini batas hidup
+  /// PESANANNYA di server kita. QR yang kedaluwarsa masih bisa dibuat
+  /// ulang; tenggang ini tidak.
+  DateTime? _tenggangBayar;
+
   /// Nominal yang ditampilkan. Angka dari server dipakai begitu ada —
   /// itu yang sama dengan yang dituntut QR-nya.
   int get _amount => _charge?.amount ?? widget.amount;
@@ -76,6 +94,9 @@ class _CustomerQrisScreenState extends State<CustomerQrisScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.createdAt != null) {
+      _tenggangBayar = widget.createdAt!.add(CustomerOrder.paymentWindow);
+    }
     _createCharge();
     _watchOrder();
   }
@@ -116,6 +137,11 @@ class _CustomerQrisScreenState extends State<CustomerQrisScreen> {
   void _watchOrder() {
     _orderSub = _orderRepo.watchOne(widget.orderId).listen((order) {
       if (!mounted || order == null) return;
+      // Diambil dari barisnya sendiri saat pemanggilnya tidak
+      // mengirimkan — layar ini juga dibuka dari riwayat pesanan.
+      if (_tenggangBayar == null) {
+        setState(() => _tenggangBayar = order.paymentDeadline);
+      }
       if (order.paymentStatus == OrderPaymentStatus.paid) _goToSuccess();
     });
 
@@ -265,6 +291,17 @@ class _CustomerQrisScreenState extends State<CustomerQrisScreen> {
                       '(QR simulasi — payment gateway belum dipasang di merchant ini)',
                       textAlign: TextAlign.center,
                       style: TextStyle(color: Colors.grey, fontSize: 12),
+                    ),
+                  const SizedBox(height: 14),
+                  // Tenggang pesanannya, bukan masa berlaku QR-nya.
+                  // Keduanya berbeda dan keduanya perlu terbaca: QR yang
+                  // kedaluwarsa bisa dibuat ulang, pesanan yang hangus
+                  // tidak.
+                  if (_tenggangBayar != null)
+                    HitungMundurBayar(
+                      deadline: _tenggangBayar!,
+                      pesanHabis: 'Batas waktu pembayaran sudah lewat.\n'
+                          'Pesanan ini dibatalkan — silakan pesan ulang.',
                     ),
                   const SizedBox(height: 22),
                   if (expired)

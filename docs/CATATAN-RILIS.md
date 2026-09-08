@@ -37,6 +37,18 @@ Formatnya dibaca `scripts/release.sh`: judul `## <versi>`, lalu
 poin-poinnya. Versi yang tidak punya bagiannya di sini tetap terbit,
 hanya pengumumannya memakai kalimat umum.
 
+## 2.32.0
+
+- Pesanan QRIS yang tidak dibayar dalam 30 menit kini ikut dibatalkan
+  sendiri, sama seperti pesanan bayar-di-kasir. Stoknya kembali bisa
+  dijual
+- Pelanggan diberi tahu sisa waktunya di layar pembayaran — baik QRIS
+  maupun bayar di kasir — berikut keterangan bahwa pesanannya akan
+  dibatalkan kalau lewat
+- Pembayaran yang terlanjur masuk setelah pesanannya hangus tidak lagi
+  hilang begitu saja; pesanannya dibangkitkan kembali jadi lunas
+- Perbaikan bug dan penyempurnaan tampilan
+
 ## 2.31.0
 
 - Melampirkan foto kini jalan juga dari konsol web — bukti setoran, nota

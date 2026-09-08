@@ -12,8 +12,11 @@ import '../providers/product_provider.dart';
 import 'category_management_screen.dart';
 import 'level_management_screen.dart';
 import 'product_form_screen.dart';
+import '../models/product.dart';
 import '../models/product_badge.dart';
 import '../utils/menu_meta.dart';
+import '../utils/pesan_galat.dart';
+import '../db/firestore_product_repository.dart';
 import '../db/foto_menu_storage.dart';
 import '../widgets/app_toast.dart';
 import '../widgets/dialog_actions.dart';
@@ -113,7 +116,29 @@ class _ProductListScreenState extends State<ProductListScreen> {
     final restoId = provider.restoId;
     if (restoId == null) return;
 
-    final perlu = provider.products
+    // Yang menentukan siapa perlu dipindah adalah SERVER, bukan salinan
+    // lokal di HP ini.
+    //
+    // Pemindahan yang gagal sebelumnya sempat menulis tautannya ke basis
+    // data lokal sementara kirimannya ke server hilang di jalan. Sesudah
+    // itu salinan lokalnya mengaku semua produk sudah punya tautan, jadi
+    // tombol ini menjawab "semua sudah ada di Storage" dan tidak pernah
+    // mau mencoba lagi — padahal di server cuma satu yang punya.
+    //
+    // Salinan yang mengaku lebih maju daripada server adalah cara paling
+    // rapi untuk membuat perbaikan berhenti bekerja tanpa ada yang tahu.
+    final List<Product> diServer;
+    try {
+      diServer = await FirestoreProductRepository().getAllOnce(restoId);
+    } catch (e) {
+      if (!context.mounted) return;
+      showAppToast(context, 'Gagal memeriksa foto di server: ${pesanGalat(e)}',
+          isError: true);
+      return;
+    }
+    if (!context.mounted) return;
+
+    final perlu = diServer
         .where((p) =>
             (p.photoUrl == null || p.photoUrl!.isEmpty) &&
             p.photoBase64 != null &&

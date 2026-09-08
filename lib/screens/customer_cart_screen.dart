@@ -413,11 +413,16 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
             // kasir, dan pesanannya sudah tercatat lengkap sejak baris
             // di atas. Yang tersisa cuma memberi tahu ke mana harus
             // melangkah.
-            ? CustomerCashPendingScreen(orderId: orderId, amount: amount)
+            ? CustomerCashPendingScreen(
+                orderId: orderId,
+                amount: amount,
+                createdAt: DateTime.now(),
+              )
             : CustomerQrisScreen(
                 orderId: orderId,
                 amount: amount,
                 restoId: session.restoId!,
+                createdAt: DateTime.now(),
               ),
       ),
     );
