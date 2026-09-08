@@ -37,6 +37,15 @@ Formatnya dibaca `scripts/release.sh`: judul `## <versi>`, lalu
 poin-poinnya. Versi yang tidak punya bagiannya di sini tetap terbit,
 hanya pengumumannya memakai kalimat umum.
 
+## 2.35.0
+
+- Email merchant kini bisa diisi Owner dan Admin lewat Info Merchant,
+  tidak lagi hanya oleh KaataGo Admin
+- Nomor HP wajib juga di Info Merchant, sama seperti di sisi KaataGo
+  Admin
+- List Merchant dirapikan: nama, alamat, dan ikon WhatsApp saja
+- Perbaikan bug dan penyempurnaan tampilan
+
 ## 2.34.0
 
 - Owner dan Admin merchant kini bisa menambah, mengubah, dan

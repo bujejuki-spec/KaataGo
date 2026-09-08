@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../db/restaurant_repository.dart';
 import '../models/restaurant.dart';
-import '../theme.dart';
 import '../utils/kontak_merchant.dart';
 import '../widgets/app_toast.dart';
 import '../widgets/resto_logo_avatar.dart';
@@ -206,49 +205,31 @@ class _RestaurantManageListScreenState extends State<RestaurantManageListScreen>
                             active: resto.active,
                           ),
                           title: Text(resto.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                [
-                                  if (resto.category != null) resto.category!,
-                                  resto.address.isEmpty
-                                      ? 'Alamat belum diisi'
-                                      : resto.address,
-                                  if (resto.isDeleted)
-                                    'Dihapus'
-                                  else if (!resto.active)
-                                    'Nonaktif',
-                                ].join(' • '),
-                                style: resto.active && !resto.isDeleted
-                                    ? null
-                                    : TextStyle(color: Colors.red.shade400),
-                              ),
-                              // Kontaknya ditulis apa adanya, termasuk
-                              // saat kosong. "Email belum diisi" adalah
-                              // keterangan yang bisa ditindaklanjuti;
-                              // baris yang hilang cuma terlihat seperti
-                              // tampilan yang tidak rapi.
-                              const SizedBox(height: 2),
-                              Text(
-                                [
-                                  if (punyaWhatsApp(resto.phone))
-                                    resto.phone!
-                                  else
-                                    'Nomor HP belum diisi',
-                                  if (punyaSurel(resto.email))
-                                    resto.email!
-                                  else
-                                    'Email belum diisi',
-                                ].join(' • '),
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: KaataTheme.mutedOf(context),
-                                ),
-                              ),
-                            ],
+                          // Kontaknya tidak ditulis di sini.
+                          //
+                          // Yang dicari orang di daftar ini adalah
+                          // merchantnya, bukan nomornya — dan dua baris
+                          // tambahan berisi "belum diisi" membuat
+                          // daftarnya dua kali lebih panjang tanpa satu
+                          // pun keputusan yang jadi lebih mudah. Yang
+                          // benar-benar berguna cuma bisa-tidaknya
+                          // dihubungi, dan itu sudah dijawab ada
+                          // tidaknya ikon WhatsApp di sebelah kanan.
+                          subtitle: Text(
+                            [
+                              if (resto.category != null) resto.category!,
+                              resto.address.isEmpty
+                                  ? 'Alamat belum diisi'
+                                  : resto.address,
+                              if (resto.isDeleted)
+                                'Dihapus'
+                              else if (!resto.active)
+                                'Nonaktif',
+                            ].join(' • '),
+                            style: resto.active && !resto.isDeleted
+                                ? null
+                                : TextStyle(color: Colors.red.shade400),
                           ),
-                          isThreeLine: true,
                           // Yang sudah dihapus hanya menawarkan satu
                           // tindakan. Menyisakan saklar aktif dan tombol
                           // ubah di sampingnya berarti tiga tombol yang

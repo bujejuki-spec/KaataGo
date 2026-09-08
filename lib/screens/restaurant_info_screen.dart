@@ -40,6 +40,7 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
   final _nameCtrl = TextEditingController();
   final _addressCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
+  final _emailCtrl = TextEditingController();
 
   /// Fasilitas yang tersedia di tempat ini.
   final List<String> _fasilitas = [];
@@ -130,6 +131,7 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
       _ppnPercent = resto.ppnPercent;
       _servicePercent = resto.servicePercent;
       _phoneCtrl.text = resto.phone ?? '';
+      _emailCtrl.text = resto.email ?? '';
       _fasilitas
         ..clear()
         ..addAll(resto.facilities);
@@ -150,6 +152,7 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
     _nameCtrl.dispose();
     _addressCtrl.dispose();
     _phoneCtrl.dispose();
+    _emailCtrl.dispose();
     _fasilitasBaru.dispose();
     super.dispose();
   }
@@ -160,6 +163,7 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
       'lat': _latitude,
       'lng': _longitude,
       'phone': _phoneCtrl.text,
+      'email': _emailCtrl.text,
       'category': _selectedCategory,
     };
     _snapshotDineIn = _dineIn;
@@ -175,6 +179,7 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
     _latitude = _snapshot['lat'] as double?;
     _longitude = _snapshot['lng'] as double?;
     _phoneCtrl.text = _snapshot['phone'] as String? ?? '';
+    _emailCtrl.text = _snapshot['email'] as String? ?? '';
     _selectedCategory = _snapshot['category'] as String?;
     _dineIn = _snapshotDineIn;
     _takeAway = _snapshotTakeAway;
@@ -390,6 +395,7 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
         name: _nameCtrl.text.trim(),
         address: _addressCtrl.text.trim(),
         phone: _phoneCtrl.text.trim().isEmpty ? null : _phoneCtrl.text.trim(),
+        email: _emailCtrl.text.trim().isEmpty ? null : _emailCtrl.text.trim(),
         latitude: _latitude,
         longitude: _longitude,
         ppnPercent: _ppnPercent,
@@ -523,14 +529,36 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
                       controller: _phoneCtrl,
                       enabled: _editing,
                       decoration: InputDecoration(
-                        labelText: 'Nomor HP (opsional)',
-                        helperText: 'Ditampilkan di struk',
+                        // Wajib, dan bukan demi kelengkapan data: nomor
+                        // ini satu-satunya jalan KaataGo menghubungi
+                        // merchant saat tagihannya jatuh tempo atau ada
+                        // kendala — merchant tanpa nomor cuma bisa
+                        // dihubungi lewat aplikasi yang mungkin justru
+                        // sedang bermasalah.
+                        label: requiredLabel('Nomor HP'),
+                        helperText: 'Ditampilkan di struk, dan dipakai '
+                            'KaataGo untuk menghubungi merchant',
                         filled: !_editing,
                         fillColor: _editing ? null : KaataTheme.disabledFillOf(context),
                       ),
                       keyboardType: TextInputType.phone,
                       inputFormatters: phoneFormatters,
-                      validator: (v) => validatePhone(v, required: false),
+                      validator: (v) => validatePhone(v),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _emailCtrl,
+                      enabled: _editing,
+                      decoration: InputDecoration(
+                        labelText: 'Email Merchant (opsional)',
+                        helperText: 'Dipakai KaataGo mengirim tagihan '
+                            'langganan',
+                        filled: !_editing,
+                        fillColor: _editing ? null : KaataTheme.disabledFillOf(context),
+                      ),
+                      keyboardType: TextInputType.emailAddress,
+                      inputFormatters: emailFormatters,
+                      validator: (v) => validateEmailKontak(v),
                     ),
                     const SizedBox(height: 16),
                     RestoLocationField(
