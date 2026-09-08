@@ -9,6 +9,7 @@ import '../db/restaurant_repository.dart';
 import '../models/billing.dart';
 import '../models/restaurant.dart';
 import '../theme.dart';
+import '../utils/kontak_merchant.dart';
 import '../utils/rupiah_input.dart';
 import '../widgets/app_toast.dart';
 import '../widgets/required_label.dart';
@@ -37,6 +38,15 @@ class _SuperAdminBillingScreenState extends State<SuperAdminBillingScreen> {
   final _restoRepo = RestaurantRepository();
 
   List<Restaurant> _resto = const [];
+
+  /// Resto pemilik sebuah tagihan, atau null kalau restonya sudah tidak
+  /// ada di daftar — dihapus, atau belum termuat.
+  Restaurant? _restoDari(String restoId) {
+    for (final r in _resto) {
+      if (r.id == restoId) return r;
+    }
+    return null;
+  }
   Map<String, RestoBilling> _setelan = const {};
   List<BillingInvoice> _tagihan = const [];
   bool _memuat = true;
@@ -241,6 +251,11 @@ class _SuperAdminBillingScreenState extends State<SuperAdminBillingScreen> {
           itemCount: _tagihan.length,
           itemBuilder: (_, i) => _KartuTagihanAdmin(
             invoice: _tagihan[i],
+            // Kontak merchantnya diambil dari daftar resto yang sudah
+            // dimuat layar ini. Null berarti restonya tidak ada lagi —
+            // tagihannya tetap tampil, cuma tidak bisa dikirim ke mana
+            // pun, dan kartunya mengatakan itu.
+            resto: _restoDari(_tagihan[i].restoId),
             onTerima: () => _putuskan(_tagihan[i], true),
             onTolak: () => _putuskan(_tagihan[i], false),
             onSegarkan: () => _segarkan(_tagihan[i]),
@@ -253,16 +268,46 @@ class _SuperAdminBillingScreenState extends State<SuperAdminBillingScreen> {
 
 class _KartuTagihanAdmin extends StatelessWidget {
   final BillingInvoice invoice;
+  final Restaurant? resto;
   final VoidCallback onTerima;
   final VoidCallback onTolak;
   final VoidCallback onSegarkan;
 
   const _KartuTagihanAdmin({
     required this.invoice,
+    required this.resto,
     required this.onTerima,
     required this.onTolak,
     required this.onSegarkan,
   });
+
+  /// Isi tagihan yang dikirim ke merchant.
+  ///
+  /// Ditulis sekali dan dipakai WhatsApp maupun surel. Dua salinan yang
+  /// menyebut nominal yang sama akan berpisah pada perubahan berikutnya,
+  /// dan yang berpisah pada pesan tagihan berarti dua angka beredar
+  /// untuk satu tagihan.
+  String _pesan() {
+    final nama = invoice.restoName ?? resto?.name ?? invoice.restoId;
+    final periode =
+        '${_tanggal.format(invoice.periodStart)} – ${_tanggal.format(invoice.periodEnd)}';
+    return 'Halo $nama,\n\n'
+        'Berikut tagihan langganan KaataGo yang belum dibayar:\n\n'
+        'Merchant : $nama\n'
+        'Periode  : $periode\n'
+        'Nominal  : ${_rupiah.format(invoice.amount)}\n'
+        'Jatuh tempo : ${_tanggal.format(invoice.dueDate)}\n'
+        'No. tagihan : ${invoice.id}\n\n'
+        'Pembayaran bisa dilakukan lewat menu Tagihan Langganan di '
+        'aplikasi KaataGo. Terima kasih.';
+  }
+
+  String _subjek() {
+    final nama = invoice.restoName ?? resto?.name ?? invoice.restoId;
+    return 'Tagihan Langganan KaataGo — $nama '
+        '(${_tanggal.format(invoice.periodStart)} – '
+        '${_tanggal.format(invoice.periodEnd)})';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -378,6 +423,45 @@ class _KartuTagihanAdmin extends StatelessWidget {
                 ),
               ),
             ),
+          ],
+          // Hanya untuk yang belum dibayar. Mengirimkan tagihan yang
+          // sudah lunas adalah cara tercepat membuat merchant berhenti
+          // mempercayai pesan tagihan berikutnya.
+          if (invoice.status == InvoiceStatus.unpaid) ...[
+            const SizedBox(height: 11),
+            if (!punyaWhatsApp(resto?.phone) && !punyaSurel(resto?.email))
+              Text(
+                'Nomor HP dan email merchant belum diisi — tagihannya '
+                'belum bisa dikirim. Lengkapi di List Merchant.',
+                style: TextStyle(
+                    fontSize: 11.5, color: KaataTheme.mutedOf(context)),
+              )
+            else
+              Row(
+                children: [
+                  if (punyaWhatsApp(resto?.phone))
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => bukaWhatsApp(context, resto!.phone,
+                            pesan: _pesan()),
+                        icon: const Icon(Icons.chat_outlined,
+                            size: 17, color: Color(0xFF25D366)),
+                        label: const Text('Kirim WA'),
+                      ),
+                    ),
+                  if (punyaWhatsApp(resto?.phone) && punyaSurel(resto?.email))
+                    const SizedBox(width: 9),
+                  if (punyaSurel(resto?.email))
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => bukaSurel(context, resto!.email,
+                            subjek: _subjek(), isi: _pesan()),
+                        icon: const Icon(Icons.mail_outline, size: 17),
+                        label: const Text('Kirim Email'),
+                      ),
+                    ),
+                ],
+              ),
           ],
           if (invoice.status == InvoiceStatus.review) ...[
             const SizedBox(height: 11),

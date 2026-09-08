@@ -212,6 +212,10 @@ class NotificationService {
   /// notifikasi untuk satu unduhan.
   static const _downloadId = 424242;
 
+  /// Terpisah dari unduhan pembaruan supaya keduanya bisa berjalan
+  /// bersamaan tanpa saling menimpa barisnya.
+  static const _pindahFotoId = 424243;
+
   /// Baris kemajuan unduhan di bar notifikasi.
   ///
   /// Ada karena unduhan 83 MB bukan sesuatu yang ditunggui orang sambil
@@ -290,6 +294,74 @@ class NotificationService {
       );
     } catch (_) {
       // Diabaikan — pemasangnya tetap bisa dibuka dari dalam aplikasi.
+    }
+  }
+
+  /// Kemajuan pemindahan foto menu ke Storage.
+  ///
+  /// Bentuknya sengaja sama dengan unduhan pembaruan: pekerjaannya juga
+  /// panjang, juga berjalan sambil orangnya mengerjakan hal lain, dan
+  /// juga tidak punya layar sendiri untuk ditunggui. Yang membedakan
+  /// cuma isinya.
+  Future<void> showPindahFotoProgress(int selesai, int total) async {
+    await init();
+    try {
+      final persen = total == 0 ? 0 : ((selesai * 100) / total).round();
+      await _plugin.show(
+        _pindahFotoId,
+        'Memindahkan foto menu',
+        '$selesai dari $total',
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            'kaata_pindah_foto',
+            'Pemindahan Foto Menu',
+            channelDescription: 'Kemajuan pemindahan foto menu ke penyimpanan',
+            icon: 'ic_notification',
+            // Menemani, bukan memanggil — sama seperti baris unduhan.
+            importance: Importance.low,
+            priority: Priority.low,
+            playSound: false,
+            enableVibration: false,
+            onlyAlertOnce: true,
+            ongoing: true,
+            autoCancel: false,
+            showProgress: true,
+            maxProgress: 100,
+            progress: persen,
+          ),
+        ),
+      );
+    } catch (_) {
+      // Notifikasi tidak pernah cukup penting untuk menjatuhkan
+      // pemindahannya sendiri.
+    }
+  }
+
+  /// Pemindahannya selesai. Berbunyi sekali, lalu bisa disapu hilang.
+  Future<void> showPindahFotoSelesai(int berhasil, int gagal) async {
+    await init();
+    try {
+      await _plugin.show(
+        _pindahFotoId,
+        gagal == 0 ? 'Foto menu selesai dipindahkan' : 'Sebagian foto gagal',
+        gagal == 0
+            ? '$berhasil foto sudah ada di penyimpanan'
+            : '$berhasil berhasil, $gagal gagal — buka Kelola Produk',
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'kaata_pindah_foto',
+            'Pemindahan Foto Menu',
+            icon: 'ic_notification',
+            importance: Importance.defaultImportance,
+            priority: Priority.defaultPriority,
+            ongoing: false,
+            autoCancel: true,
+          ),
+          iOS: DarwinNotificationDetails(),
+        ),
+      );
+    } catch (_) {
+      // Diabaikan — hasilnya juga sudah ditulis di layarnya.
     }
   }
 

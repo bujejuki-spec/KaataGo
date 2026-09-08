@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../db/restaurant_repository.dart';
 import '../models/restaurant.dart';
+import '../theme.dart';
+import '../utils/kontak_merchant.dart';
 import '../widgets/app_toast.dart';
 import '../widgets/resto_logo_avatar.dart';
 import 'restaurant_create_screen.dart';
@@ -204,19 +206,49 @@ class _RestaurantManageListScreenState extends State<RestaurantManageListScreen>
                             active: resto.active,
                           ),
                           title: Text(resto.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                          subtitle: Text(
-                            [
-                              if (resto.category != null) resto.category!,
-                              resto.address.isEmpty ? 'Alamat belum diisi' : resto.address,
-                              if (resto.isDeleted)
-                                'Dihapus'
-                              else if (!resto.active)
-                                'Nonaktif',
-                            ].join(' • '),
-                            style: resto.active && !resto.isDeleted
-                                ? null
-                                : TextStyle(color: Colors.red.shade400),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                [
+                                  if (resto.category != null) resto.category!,
+                                  resto.address.isEmpty
+                                      ? 'Alamat belum diisi'
+                                      : resto.address,
+                                  if (resto.isDeleted)
+                                    'Dihapus'
+                                  else if (!resto.active)
+                                    'Nonaktif',
+                                ].join(' • '),
+                                style: resto.active && !resto.isDeleted
+                                    ? null
+                                    : TextStyle(color: Colors.red.shade400),
+                              ),
+                              // Kontaknya ditulis apa adanya, termasuk
+                              // saat kosong. "Email belum diisi" adalah
+                              // keterangan yang bisa ditindaklanjuti;
+                              // baris yang hilang cuma terlihat seperti
+                              // tampilan yang tidak rapi.
+                              const SizedBox(height: 2),
+                              Text(
+                                [
+                                  if (punyaWhatsApp(resto.phone))
+                                    resto.phone!
+                                  else
+                                    'Nomor HP belum diisi',
+                                  if (punyaSurel(resto.email))
+                                    resto.email!
+                                  else
+                                    'Email belum diisi',
+                                ].join(' • '),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: KaataTheme.mutedOf(context),
+                                ),
+                              ),
+                            ],
                           ),
+                          isThreeLine: true,
                           // Yang sudah dihapus hanya menawarkan satu
                           // tindakan. Menyisakan saklar aktif dan tombol
                           // ubah di sampingnya berarti tiga tombol yang
@@ -231,6 +263,24 @@ class _RestaurantManageListScreenState extends State<RestaurantManageListScreen>
                               : Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
+                                    // Hanya muncul kalau nomornya benar-
+                                    // benar bisa dihubungi. Tombol yang
+                                    // membuka WhatsApp lalu berhenti di
+                                    // "nomor tidak valid" terlihat
+                                    // seperti WhatsApp-nya yang rusak,
+                                    // bukan datanya yang kosong.
+                                    if (punyaWhatsApp(resto.phone))
+                                      IconButton(
+                                        tooltip: 'Chat WhatsApp',
+                                        icon: const Icon(Icons.chat_outlined,
+                                            color: Color(0xFF25D366)),
+                                        onPressed: () => bukaWhatsApp(
+                                          context,
+                                          resto.phone,
+                                          pesan: 'Halo ${resto.name}, '
+                                              'saya dari KaataGo.',
+                                        ),
+                                      ),
                                     Switch(
                                       value: resto.active,
                                       onChanged: (v) => _toggleActive(resto, v),

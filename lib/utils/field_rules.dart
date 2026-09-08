@@ -108,6 +108,26 @@ String? validateGmail(String? value, {bool required = true}) {
   return null;
 }
 
+/// Alamat surel untuk dihubungi — bukan untuk masuk aplikasi.
+///
+/// Berbeda dari [validateGmail], dan bedanya disengaja. Yang itu menjaga
+/// akun karyawan, yang satu-satunya cara masuknya Login dengan Google,
+/// jadi selain Gmail pasti gagal. Yang ini cuma alamat kirim: resto yang
+/// memakai surel domain sendiri tidak punya alasan ditolak, dan
+/// menolaknya berarti tagihannya tidak bisa dikirim ke mana pun.
+String? validateEmailKontak(String? value, {bool required = false}) {
+  final text = (value ?? '').trim();
+  if (text.isEmpty) return required ? 'Email wajib diisi' : null;
+  if (text.length > kEmailMaxLength) {
+    return 'Email maksimal $kEmailMaxLength karakter';
+  }
+  if (!RegExp(r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')
+      .hasMatch(text)) {
+    return 'Alamat emailnya belum benar';
+  }
+  return null;
+}
+
 /// Tarif persen (PPN, biaya service).
 ///
 /// Menerima "11", "11.1", "12.50" — dan menolak bentuk setengah jadi

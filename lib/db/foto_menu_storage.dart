@@ -39,14 +39,39 @@ class FotoMenuStorage {
     required Uint8List bytes,
   }) async {
     final nama = jalur(restoId, productId);
-    await _client.storage.from(ember).uploadBinary(
-          nama,
-          bytes,
-          fileOptions: const FileOptions(
-            contentType: 'image/jpeg',
-            upsert: true,
-          ),
-        );
+    try {
+      await _client.storage.from(ember).uploadBinary(
+            nama,
+            bytes,
+            fileOptions: const FileOptions(
+              contentType: 'image/jpeg',
+              upsert: true,
+            ),
+          );
+    } catch (e) {
+      // Berkasnya sudah ada dan penimpaan ditolak.
+      //
+      // `upsert` seharusnya sudah cukup, tapi tidak semua penolakan
+      // berbunyi sama: penimpaan bisa gagal karena aturan pada baris
+      // objek yang lama, bukan karena unggahannya sendiri. Kalau itu
+      // yang terjadi, yang lama dibuang dulu lalu ditulis sebagai
+      // berkas baru — hasil akhirnya sama, dan yang diminta memang
+      // menggantinya.
+      //
+      // Dicoba SEKALI. Yang gagal dua kali berarti sebabnya bukan
+      // berkas lamanya, dan mengulanginya cuma menunda pesan galat yang
+      // memang harus dibaca orang.
+      if (!_karenaSudahAda(e)) rethrow;
+      await _client.storage.from(ember).remove([nama]);
+      await _client.storage.from(ember).uploadBinary(
+            nama,
+            bytes,
+            fileOptions: const FileOptions(
+              contentType: 'image/jpeg',
+              upsert: true,
+            ),
+          );
+    }
 
     // Penanda versi di belakang tautannya.
     //
@@ -77,6 +102,19 @@ class FotoMenuStorage {
       return null;
     }
     return unggah(restoId: restoId, productId: productId, bytes: bytes);
+  }
+
+  /// Penolakan yang artinya "berkasnya sudah ada di sana".
+  ///
+  /// Diperiksa dari teksnya karena itulah yang tersedia: Storage
+  /// mengembalikan pesan, bukan kode yang bisa dibandingkan. Sengaja
+  /// sempit — yang tidak cocok dilempar apa adanya, supaya galat lain
+  /// tidak diam-diam berubah jadi hapus-lalu-tulis-ulang.
+  bool _karenaSudahAda(Object e) {
+    final teks = e.toString().toLowerCase();
+    return teks.contains('already exists') ||
+        teks.contains('duplicate') ||
+        teks.contains('resource already');
   }
 
   Future<void> hapus(String restoId, String productId) async {

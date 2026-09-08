@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
@@ -6,6 +8,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
+import '../services/notification_service.dart';
 import '../providers/category_provider.dart';
 import '../providers/level_group_provider.dart';
 import '../providers/product_provider.dart';
@@ -173,9 +176,51 @@ class _ProductListScreenState extends State<ProductListScreen> {
     );
     if (lanjut != true || !context.mounted) return;
 
+    // Kemajuannya diperlihatkan di dua tempat sekaligus, dan itu
+    // disengaja. Dialognya untuk yang menunggui layarnya; notifikasinya
+    // untuk yang menekan tombol lalu pergi mengerjakan hal lain —
+    // pekerjaan yang lamanya bergantung jumlah menu dan kecepatan
+    // jaringan tidak pantas menuntut orang menatapnya sampai selesai.
+    final kemajuan = ValueNotifier<int>(0);
+    unawaited(showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => PopScope(
+        canPop: false,
+        child: AlertDialog(
+          content: ValueListenableBuilder<int>(
+            valueListenable: kemajuan,
+            builder: (_, n, __) => Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                LinearProgressIndicator(
+                  value: perlu.isEmpty ? null : n / perlu.length,
+                ),
+                const SizedBox(height: 14),
+                Text('Memindahkan foto menu… $n dari ${perlu.length}'),
+                const SizedBox(height: 6),
+                Text(
+                  'Jangan tutup aplikasinya dulu.',
+                  style: TextStyle(
+                      fontSize: 12, color: KaataTheme.mutedOf(context)),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ));
+
     final storage = FotoMenuStorage();
     var berhasil = 0;
     var gagal = 0;
+    // Alasan kegagalan pertama, apa adanya.
+    //
+    // Sebelumnya yang gagal cuma dihitung dan alasannya dibuang, jadi
+    // yang menekan tombolnya cuma tahu "M gagal" tanpa satu pun petunjuk
+    // apakah itu izin, jaringan, atau berkasnya. Angka tanpa sebab tidak
+    // bisa ditindaklanjuti siapa pun.
+    String? sebab;
 
     for (final produk in perlu) {
       try {
@@ -194,26 +239,74 @@ class _ProductListScreenState extends State<ProductListScreen> {
         // selesai jauh sebelum kirimannya sampai.
         await provider.simpanTautanFoto(produk, url);
         berhasil++;
-      } catch (_) {
+      } catch (e) {
         // Satu foto yang gagal tidak menghentikan sisanya. Yang gagal
         // tetap punya base64-nya, jadi menunya tidak kehilangan apa pun
         // — dan tombolnya bisa ditekan lagi nanti.
         gagal++;
+        sebab ??= pesanGalat(e);
       }
+      kemajuan.value = berhasil + gagal;
+      unawaited(NotificationService.instance
+          .showPindahFotoProgress(kemajuan.value, perlu.length));
     }
+
+    unawaited(
+        NotificationService.instance.showPindahFotoSelesai(berhasil, gagal));
 
     // Dimuat ulang sekali di akhir, bukan tiap produk: memuat ulang
     // seluruh katalog dua puluh kali berturut-turut membuat layarnya
     // tersendat tanpa memberi tahu apa pun yang baru.
     await provider.load();
+    kemajuan.dispose();
 
     if (!context.mounted) return;
-    showAppToast(
-      context,
-      gagal == 0
-          ? '$berhasil foto dipindahkan.'
-          : '$berhasil dipindahkan, $gagal gagal. Coba lagi nanti.',
-      isError: gagal > 0,
+    // Dialog kemajuannya ditutup sebelum hasilnya ditampilkan.
+    Navigator.of(context, rootNavigator: true).pop();
+    if (!context.mounted) return;
+    if (gagal == 0) {
+      showAppToast(context, '$berhasil foto dipindahkan.');
+      return;
+    }
+
+    // Dialog, bukan pesan singkat: alasannya datang dari server dan bisa
+    // panjang, dan yang perlu membacanya justru sedang mencari tahu
+    // kenapa — pesan yang hilang sendiri dalam empat detik tidak
+    // menolong.
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Sebagian Foto Gagal Dipindahkan'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('$berhasil berhasil, $gagal gagal dari ${perlu.length}.'),
+              const SizedBox(height: 10),
+              Text('Kenapa gagal:',
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: KaataTheme.mutedOf(dialogContext))),
+              const SizedBox(height: 4),
+              Text(sebab ?? 'Tidak diketahui.'),
+              const SizedBox(height: 12),
+              Text(
+                'Foto lamanya tidak hilang — yang gagal masih tersimpan '
+                'seperti semula, dan tombolnya bisa ditekan lagi.',
+                style: TextStyle(
+                    fontSize: 12.5, color: KaataTheme.mutedOf(dialogContext)),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Tutup'),
+          ),
+        ],
+      ),
     );
   }
 }

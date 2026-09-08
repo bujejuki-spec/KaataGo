@@ -50,6 +50,10 @@ class Restaurant {
   /// Contact number printed on the receipt. Optional.
   final String? phone;
 
+  /// Surel merchant. Sama seperti [phone]: dipakai menghubungi dan
+  /// mengirimkan tagihan, dan boleh kosong.
+  final String? email;
+
   /// Tax and service rates as percentages — 11 means 11%. Menu prices
   /// are shown tax-inclusive, so these are what the receipt unwinds the
   /// displayed price with. Zero means the charge doesn't apply.
@@ -106,6 +110,7 @@ class Restaurant {
     this.deletedAt,
     this.logoBase64,
     this.phone,
+    this.email,
     this.latitude,
     this.longitude,
     this.ppnPercent = 0,
@@ -124,6 +129,7 @@ class Restaurant {
         'logo_base64': logoBase64,
         // Always sent so clearing it actually clears it.
         'phone': phone,
+        'email': email,
         // Selalu dikirim supaya menghapus titik lokasi benar-benar
         // menghapusnya — kunci yang dilewatkan pada upsert akan
         // mempertahankan nilai lama.
@@ -174,6 +180,7 @@ class Restaurant {
           : DateTime.parse(map['deleted_at'].toString()).toLocal(),
       logoBase64: map['logo_base64'] as String?,
       phone: map['phone'] as String?,
+      email: map['email'] as String?,
       latitude: (map['latitude'] as num?)?.toDouble(),
       longitude: (map['longitude'] as num?)?.toDouble(),
       ppnPercent: (map['ppn_percent'] as num?)?.toDouble() ?? 0,

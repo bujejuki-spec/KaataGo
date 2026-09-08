@@ -37,6 +37,20 @@ Formatnya dibaca `scripts/release.sh`: judul `## <versi>`, lalu
 poin-poinnya. Versi yang tidak punya bagiannya di sini tetap terbit,
 hanya pengumumannya memakai kalimat umum.
 
+## 2.33.0
+
+- KaataGo Admin bisa menghubungi merchant lewat WhatsApp langsung dari
+  List Merchant — tombolnya muncul kalau nomornya sudah diisi
+- Email merchant kini bisa disimpan dan tampil di List Merchant, di
+  sebelah nomor HP-nya
+- Tagihan langganan yang belum dibayar bisa dikirim ke merchant lewat
+  WhatsApp atau email, lengkap dengan nama resto, periode, nominal, dan
+  jatuh temponya
+- Pemindahan foto menu kini menampilkan kemajuannya sambil berjalan,
+  berikut notifikasi seperti unduhan pembaruan — jadi tidak perlu
+  ditunggui di layar
+- Perbaikan bug dan penyempurnaan tampilan
+
 ## 2.32.0
 
 - Pesanan QRIS yang tidak dibayar dalam 30 menit kini ikut dibatalkan

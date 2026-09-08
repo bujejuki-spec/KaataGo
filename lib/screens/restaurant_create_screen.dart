@@ -45,6 +45,7 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
   late final TextEditingController _nameCtrl;
   late final TextEditingController _addressCtrl;
   late final TextEditingController _phoneCtrl;
+  late final TextEditingController _emailCtrl;
   late final TextEditingController _ppnCtrl;
   late final TextEditingController _serviceCtrl;
   final _gatewayAccountCtrl = TextEditingController();
@@ -77,6 +78,7 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
     _nameCtrl = TextEditingController(text: r?.name ?? '');
     _addressCtrl = TextEditingController(text: r?.address ?? '');
     _phoneCtrl = TextEditingController(text: r?.phone ?? '');
+    _emailCtrl = TextEditingController(text: r?.email ?? '');
     // Resto baru berangkat dari tarif yang paling lazim dipakai
     // restoran di Indonesia, sama dengan bawaan kolomnya di database.
     // Nol terlihat aman, tapi artinya menjual tanpa memuat pajak sampai
@@ -139,6 +141,7 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
     _nameCtrl.dispose();
     _addressCtrl.dispose();
     _phoneCtrl.dispose();
+    _emailCtrl.dispose();
     _ppnCtrl.dispose();
     _serviceCtrl.dispose();
     _gatewayAccountCtrl.dispose();
@@ -167,6 +170,7 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
       'name': _nameCtrl.text,
       'address': _addressCtrl.text,
       'phone': _phoneCtrl.text,
+      'email': _emailCtrl.text,
       'ppn': _ppnCtrl.text,
       'service': _serviceCtrl.text,
       'category': _category,
@@ -189,6 +193,7 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
     _nameCtrl.text = _snapshot['name'] ?? '';
     _addressCtrl.text = _snapshot['address'] ?? '';
     _phoneCtrl.text = _snapshot['phone'] ?? '';
+    _emailCtrl.text = _snapshot['email'] ?? '';
     _ppnCtrl.text = _snapshot['ppn'] ?? '';
     _serviceCtrl.text = _snapshot['service'] ?? '';
     _category = _snapshot['category'];
@@ -313,6 +318,7 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
         name: _nameCtrl.text.trim(),
         address: _addressCtrl.text.trim(),
         phone: _phoneCtrl.text.trim().isEmpty ? null : _phoneCtrl.text.trim(),
+        email: _emailCtrl.text.trim().isEmpty ? null : _emailCtrl.text.trim(),
         ppnPercent: double.tryParse(_ppnCtrl.text.trim().replaceAll(',', '.')) ?? 0,
         servicePercent: double.tryParse(_serviceCtrl.text.trim().replaceAll(',', '.')) ?? 0,
         category: _category,
@@ -434,6 +440,20 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
                 keyboardType: TextInputType.phone,
                 inputFormatters: phoneFormatters,
                 validator: (v) => validatePhone(v, required: false),
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _emailCtrl,
+                enabled: _editing,
+                decoration: InputDecoration(
+                  labelText: 'Email Merchant (opsional)',
+                  helperText: 'Untuk mengirim tagihan langganan',
+                  filled: !_editing,
+                  fillColor: _editing ? null : KaataTheme.disabledFillOf(context),
+                ),
+                keyboardType: TextInputType.emailAddress,
+                inputFormatters: emailFormatters,
+                validator: (v) => validateEmailKontak(v),
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
