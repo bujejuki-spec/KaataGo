@@ -87,6 +87,7 @@ FILES=(
   saldo_cash_pembanding.sql
   qris_hangus.sql
   merchant_email.sql
+  tagihan_ikut_tanggal.sql
   merchant_report.sql
   shift_opening_check.sql
   support_tickets.sql

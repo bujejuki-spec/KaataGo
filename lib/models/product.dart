@@ -162,9 +162,21 @@ class Product {
       'photo_url': photoUrl,
       'level_groups': levelGroups.isEmpty ? null : levelGroups.join(','),
       'level_prices': levelPrices.isEmpty ? null : jsonEncode(levelPrices),
-      'toppings': toppings.isEmpty
-          ? null
-          : jsonEncode([for (final t in toppings) t.toMap()]),
+      // Daftar kosong ditulis sebagai '[]', BUKAN null.
+      //
+      // Kolomnya di Postgres `jsonb not null default '[]'`, dan nilai
+      // bawaan hanya berlaku saat kolomnya tidak disebut sama sekali —
+      // null yang dikirim tegas tetap melanggar not-null. Jadi tiap
+      // produk tanpa topping ditolak server dengan:
+      //
+      //   null value in column "toppings" of relation "products"
+      //   violates not-null constraint
+      //
+      // Penolakan itu tidak pernah terlihat karena penyalinan ke server
+      // dikirim tanpa ditunggu dan galatnya ditelan. Yang terlihat cuma
+      // akibatnya: perubahan produk tersimpan di HP dan tidak pernah
+      // sampai ke server.
+      'toppings': jsonEncode([for (final t in toppings) t.toMap()]),
       'max_toppings': maxToppings,
       // SQLite has no bool — 0/1 round-trips through both it and Postgres.
       'ppn_exempt': ppnExempt ? 1 : 0,

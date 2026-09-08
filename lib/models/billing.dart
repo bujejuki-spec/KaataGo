@@ -20,6 +20,15 @@ enum InvoiceStatus {
 
   /// Dibebaskan — masa percobaan, atau kompensasi gangguan.
   waived,
+
+  /// Dibatalkan karena jadwal tagihnya berubah sebelum jatuh tempo.
+  ///
+  /// Dibatalkan, bukan dihapus: nomornya sudah terlanjur ada di luar
+  /// sana — di layar merchant, dan di penyedia pembayaran. Baris yang
+  /// lenyap meninggalkan nomor yang statusnya menggantung terbuka di
+  /// sana selamanya, tanpa satu pun catatan di sisi kita yang
+  /// menjelaskan ke mana perginya.
+  cancelled,
 }
 
 const _statusDb = {
@@ -27,6 +36,7 @@ const _statusDb = {
   InvoiceStatus.review: 'review',
   InvoiceStatus.paid: 'paid',
   InvoiceStatus.waived: 'waived',
+  InvoiceStatus.cancelled: 'cancelled',
 };
 
 /// Bank yang menyediakan Virtual Account. Daftarnya sama persis dengan
@@ -39,6 +49,7 @@ const kInvoiceStatusLabels = {
   InvoiceStatus.review: 'Menunggu Verifikasi',
   InvoiceStatus.paid: 'Lunas',
   InvoiceStatus.waived: 'Dibebaskan',
+  InvoiceStatus.cancelled: 'Dibatalkan',
 };
 
 InvoiceStatus _statusOf(Object? v) => _statusDb.entries

@@ -21,6 +21,7 @@ import 'employee_orders_screen.dart';
 import 'pending_payment_screen.dart';
 import 'pos_home_screen.dart';
 import 'publish_announcement_screen.dart';
+import 'employee_management_screen.dart';
 import 'product_list_screen.dart';
 import 'settings_menu_screen.dart';
 import 'merchant_report_screen.dart';
@@ -197,6 +198,16 @@ class AdminHomeScreen extends StatelessWidget {
                       color: const Color(0xFF6366F1),
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(builder: (_) => const ProductListScreen()),
+                      ),
+                    ),
+                    HubMenuTile(
+                      icon: Icons.badge_outlined,
+                      title: 'Kelola Karyawan',
+                      subtitle: 'Tambah, ubah, dan nonaktifkan akun karyawan',
+                      color: const Color(0xFF0EA5E9),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                            builder: (_) => const EmployeeManagementScreen()),
                       ),
                     ),
                     HubMenuTile(

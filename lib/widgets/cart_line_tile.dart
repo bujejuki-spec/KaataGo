@@ -56,8 +56,17 @@ class CartLineTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Topping ikut jadi keping pilihan, sama seperti level.
+    //
+    // Sebelumnya hanya level yang tampil. Topping tetap terhitung di
+    // harganya dan tetap ikut ke struk maupun layar dapur — tapi tidak
+    // terlihat di keranjang, di lembar varian, maupun di checkout. Yang
+    // memesan melihat dua baris "Ayam Geprek" berharga berbeda tanpa
+    // satu pun keterangan kenapa berbeda, dan satu-satunya cara
+    // memastikannya adalah membuka penyuntingnya satu per satu.
     final options = [
       for (final e in item.selectedLevels.entries) '${e.key}: ${e.value}',
+      for (final t in item.selectedToppings) '+ $t',
     ];
     final note = item.notes?.trim() ?? '';
 

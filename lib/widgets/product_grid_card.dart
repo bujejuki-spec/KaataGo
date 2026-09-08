@@ -101,7 +101,17 @@ class ProductGridCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
+              // Perbandingan sisi tetap, bukan Expanded.
+              //
+              // Dengan Expanded, foto mengambil sisa tinggi kartu — jadi
+              // kartu yang teksnya lebih panjang (yang punya baris
+              // "sekian terjual") mendapat foto lebih pendek daripada
+              // tetangganya. Tinggi kartunya sama, fotonya tidak, dan
+              // daftar menu jadi terlihat seperti susunan yang gagal.
+              //
+              // Sekarang fotonya yang tetap dan teksnya yang menyesuaikan.
+              AspectRatio(
+                aspectRatio: 1,
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
@@ -190,12 +200,17 @@ class ProductGridCard extends StatelessWidget {
                   ],
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+              // Teksnya yang menyerap sisa tingginya, dan boleh kurang
+              // lega pada kartu yang isinya lebih banyak. Yang tidak
+              // boleh kurang adalah fotonya — itu yang dibaca mata lebih
+              // dulu saat menggulir menu.
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                     Text(
                       product.name,
                       style: TextStyle(
@@ -243,12 +258,13 @@ class ProductGridCard extends StatelessWidget {
                           ),
                       ],
                     ),
-                    if (stats != null &&
-                        (stats!.adaNilai || stats!.terjual > 0)) ...[
-                      const SizedBox(height: 3),
-                      ProductStatsLine(stats: stats),
+                      if (stats != null &&
+                          (stats!.adaNilai || stats!.terjual > 0)) ...[
+                        const SizedBox(height: 3),
+                        ProductStatsLine(stats: stats),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ),
             ],

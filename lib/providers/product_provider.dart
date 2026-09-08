@@ -91,7 +91,18 @@ class ProductProvider extends ChangeNotifier {
   /// already succeeded, and this sync is simply skipped.
   void _mirrorToFirestore(Product product) {
     if (restoId == null) return;
-    _firestoreRepo.upsert(product, restoId!).catchError((_) {});
+    _firestoreRepo.upsert(product, restoId!).catchError((Object e) {
+      // Tetap tidak menjatuhkan pemanggilnya — penulisan lokalnya sudah
+      // berhasil, dan kasir yang sedang offline tidak boleh tertahan.
+      //
+      // Tapi tidak lagi ditelan diam-diam. Selama bertahun-tahun tiap
+      // produk tanpa topping ditolak server karena kolomnya not-null,
+      // dan penolakan itu hilang tanpa jejak di sini: perubahannya
+      // tersimpan di HP, tidak pernah sampai ke server, dan tidak ada
+      // satu pun tempat yang menyebutkannya. Satu baris catatan sudah
+      // cukup untuk membuatnya bisa ditemukan.
+      debugPrint('[Produk] gagal menyalin ke server: $e');
+    });
   }
 
   /// Pulls current stock numbers and availability down from Firestore

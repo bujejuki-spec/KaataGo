@@ -316,6 +316,10 @@ class _KartuTagihanAdmin extends StatelessWidget {
       InvoiceStatus.waived => (Colors.blueGrey, 'Dibebaskan'),
       InvoiceStatus.review => (Colors.orange, 'Perlu Diperiksa'),
       InvoiceStatus.unpaid => (Colors.red, 'Belum Dibayar'),
+      // Jadwal tagihnya berubah sebelum jatuh tempo. Nomornya
+      // tetap ada supaya statusnya tidak menggantung terbuka di
+      // penyedia pembayaran.
+      InvoiceStatus.cancelled => (Colors.grey, 'Dibatalkan'),
     };
 
     return Container(

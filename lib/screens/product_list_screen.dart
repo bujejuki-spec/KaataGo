@@ -326,6 +326,44 @@ class _ProductTabState extends State<_ProductTab> {
   /// orangnya sedang memutuskan menu mana yang mau diganti.
   MenuMeta _meta = MenuMeta.kosong;
 
+  final _cariCtrl = TextEditingController();
+  String _cari = '';
+
+  @override
+  void dispose() {
+    _cariCtrl.dispose();
+    super.dispose();
+  }
+
+  /// Daftar yang sudah disaring dan dikelompokkan menurut kategori.
+  ///
+  /// Isinya campuran: String berarti judul kelompok, Product berarti
+  /// barisnya. Satu daftar datar begini membuat ListView tetap membangun
+  /// seperlunya — daftar bersarang memaksa seluruh kelompok dibangun
+  /// sekaligus meskipun yang terlihat cuma dua baris teratas.
+  List<Object> _susun(List<Product> semua) {
+    final kata = _cari.trim().toLowerCase();
+    final cocok = kata.isEmpty
+        ? semua
+        : [
+            for (final p in semua)
+              if (p.name.toLowerCase().contains(kata) ||
+                  p.category.toLowerCase().contains(kata))
+                p
+          ];
+
+    final perKategori = <String, List<Product>>{};
+    for (final p in cocok) {
+      perKategori.putIfAbsent(p.category, () => []).add(p);
+    }
+    final kategori = perKategori.keys.toList()
+      ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+
+    return [
+      for (final k in kategori) ...[k, ...perKategori[k]!],
+    ];
+  }
+
   @override
   void initState() {
     super.initState();
@@ -352,14 +390,81 @@ class _ProductTabState extends State<_ProductTab> {
           if (products.isEmpty) {
             return const Center(child: Text('Belum ada produk. Tambah dulu yuk.'));
           }
+          final isi = _susun(products);
           // Kartu, sama seperti Level. Lihat catatan di
           // category_management_screen.dart.
           return ResponsiveCenter(
-            child: ListView.builder(
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                  child: TextField(
+                    controller: _cariCtrl,
+                    onChanged: (v) => setState(() => _cari = v),
+                    decoration: InputDecoration(
+                      hintText: 'Cari nama produk atau kategori',
+                      prefixIcon: const Icon(Icons.search),
+                      isDense: true,
+                      suffixIcon: _cari.isEmpty
+                          ? null
+                          : IconButton(
+                              icon: const Icon(Icons.close),
+                              onPressed: () {
+                                _cariCtrl.clear();
+                                setState(() => _cari = '');
+                              },
+                            ),
+                    ),
+                  ),
+                ),
+                if (isi.isEmpty)
+                  Expanded(
+                    child: Center(
+                      child: Text(
+                        'Tidak ada produk yang cocok dengan "$_cari".',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: KaataTheme.mutedOf(context)),
+                      ),
+                    ),
+                  )
+                else
+                  Expanded(
+                    child: ListView.builder(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, kFabSafeBottom),
-            itemCount: products.length,
+            itemCount: isi.length,
             itemBuilder: (context, index) {
-              final p = products[index];
+              final baris = isi[index];
+              if (baris is String) {
+                final jumlah = provider.products
+                    .where((x) => x.category == baris)
+                    .length;
+                return Padding(
+                  padding: EdgeInsets.only(
+                      top: index == 0 ? 0 : 14, bottom: 6, left: 2),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 3,
+                        height: 15,
+                        decoration: BoxDecoration(
+                          color: KaataTheme.brand,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(baris,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 14)),
+                      const SizedBox(width: 6),
+                      Text('$jumlah',
+                          style: TextStyle(
+                              fontSize: 12,
+                              color: KaataTheme.mutedOf(context))),
+                    ],
+                  ),
+                );
+              }
+              final p = baris as Product;
               final stats = _meta.stats[p.id];
               final badges = [
                 ...badgeDariKodeList(p.badges),
@@ -478,7 +583,10 @@ class _ProductTabState extends State<_ProductTab> {
               ),
               );
             },
-          ),
+                    ),
+                  ),
+              ],
+            ),
           );
         },
       ),

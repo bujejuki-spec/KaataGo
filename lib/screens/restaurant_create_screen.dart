@@ -432,14 +432,20 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
                 controller: _phoneCtrl,
                 enabled: _editing,
                 decoration: InputDecoration(
-                  labelText: 'Nomor HP (opsional)',
-                  helperText: 'Ditampilkan di struk',
+                  // Wajib sekarang, dan bukan demi kelengkapan data.
+                  // Nomor inilah satu-satunya jalan KaataGo menghubungi
+                  // merchant saat tagihannya jatuh tempo atau ada
+                  // kendala — merchant tanpa nomor cuma bisa dihubungi
+                  // lewat aplikasi yang mungkin justru sedang bermasalah.
+                  label: requiredLabel('Nomor HP'),
+                  helperText: 'Ditampilkan di struk, dan dipakai KaataGo '
+                      'untuk menghubungi merchant',
                   filled: !_editing,
                   fillColor: _editing ? null : KaataTheme.disabledFillOf(context),
                 ),
                 keyboardType: TextInputType.phone,
                 inputFormatters: phoneFormatters,
-                validator: (v) => validatePhone(v, required: false),
+                validator: (v) => validatePhone(v),
               ),
               const SizedBox(height: 12),
               TextFormField(

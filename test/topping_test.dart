@@ -121,8 +121,18 @@ void main() {
       expect(lagi.maxToppings, 2);
     });
 
-    test('menu tanpa topping tidak menulis kolomnya', () {
-      expect(_p().toMap()['toppings'], isNull);
+    // Dulu tes ini menuntut null, dan justru itu penyebabnya.
+    //
+    // Kolomnya di Postgres `jsonb not null default '[]'`, dan nilai
+    // bawaan hanya berlaku saat kolomnya tidak disebut sama sekali —
+    // null yang dikirim tegas tetap melanggar not-null. Jadi SETIAP
+    // produk tanpa topping ditolak server, dan penolakannya hilang tanpa
+    // jejak karena kirimannya tidak ditunggu dan galatnya ditelan.
+    //
+    // Yang terlihat cuma akibatnya, berbulan-bulan kemudian: perubahan
+    // produk tersimpan di HP dan tidak pernah sampai ke server.
+    test('menu tanpa topping menulis daftar kosong, bukan null', () {
+      expect(_p().toMap()['toppings'], '[]');
     });
 
     test('bentuk daftar dari Postgres ikut terbaca', () {

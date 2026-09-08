@@ -323,13 +323,19 @@ void main() {
       expect(blok('_admin'), contains('layar: PaymentInfoScreen.new'));
     });
 
-    // Di HP hanya KaataGo Admin yang punya jalan ke sana sama sekali.
-    test('kelola karyawan hanya untuk KaataGo Admin', () {
-      expect(blok('_superAdmin'), contains('EmployeeManagementScreen'));
-      for (final peran in ['_owner', '_admin', '_finance']) {
-        expect(blok(peran), isNot(contains('EmployeeManagementScreen')),
+    // Owner dan Admin mengelola karyawan RESTONYA SENDIRI — layarnya
+    // menyaring menurut resto yang dipetakan, dan RLS menegakkan hal
+    // yang sama lewat is_resto_employee.
+    //
+    // Finance tidak: memegang uang dan memegang daftar orang yang berhak
+    // menyentuh uang itu adalah dua hal yang tidak boleh dipegang satu
+    // tangan.
+    test('kelola karyawan untuk KaataGo Admin, Owner, dan Admin', () {
+      for (final peran in ['_superAdmin', '_owner', '_admin']) {
+        expect(blok(peran), contains('EmployeeManagementScreen'),
             reason: peran);
       }
+      expect(blok('_finance'), isNot(contains('EmployeeManagementScreen')));
     });
   });
 

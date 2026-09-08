@@ -37,6 +37,25 @@ Formatnya dibaca `scripts/release.sh`: judul `## <versi>`, lalu
 poin-poinnya. Versi yang tidak punya bagiannya di sini tetap terbit,
 hanya pengumumannya memakai kalimat umum.
 
+## 2.34.0
+
+- Owner dan Admin merchant kini bisa menambah, mengubah, dan
+  menonaktifkan karyawan sendiri — terbatas pada merchant yang dipetakan
+  ke mereka, dan tidak bisa mengangkat KaataGo Admin
+- Kelola Produk punya kotak pencarian dan dikelompokkan per kategori
+- Ukuran foto di daftar menu kini seragam, tidak lagi ikut memendek pada
+  menu yang keterangannya lebih panjang
+- Nomor HP jadi wajib di Info Merchant — dipakai KaataGo untuk
+  menghubungi merchant soal tagihan dan kendala
+- Analisa Pasar: merchant yang belum ada penghasilan bisa langsung
+  dihubungi lewat WhatsApp
+- Tagihan yang belum jatuh tempo otomatis dibatalkan kalau tanggal
+  tagihnya diubah, jadi nomornya tidak menggantung terbuka. Tunggakan
+  yang sudah lewat jatuh tempo tidak ikut dibatalkan
+- Topping yang dipilih kini terlihat di keranjang, lembar varian, dan
+  checkout — bukan cuma ikut terhitung di harganya
+- Perbaikan bug dan penyempurnaan tampilan
+
 ## 2.33.0
 
 - KaataGo Admin bisa menghubungi merchant lewat WhatsApp langsung dari

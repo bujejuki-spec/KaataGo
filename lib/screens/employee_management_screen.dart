@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../theme.dart';
 
@@ -6,6 +7,7 @@ import '../db/employee_repository.dart';
 import '../db/restaurant_repository.dart';
 import '../models/employee.dart';
 import '../models/restaurant.dart';
+import '../providers/auth_provider.dart';
 import '../widgets/dialog_actions.dart';
 import '../utils/field_rules.dart';
 import '../widgets/app_toast.dart';
@@ -54,16 +56,53 @@ class _EmployeeManagementScreenState extends State<EmployeeManagementScreen> {
     _load();
   }
 
+  /// Merchant yang boleh dikelola orang yang sedang masuk.
+  ///
+  /// KaataGo Admin memegang semuanya. Owner dan Admin merchant hanya
+  /// yang dipetakan ke mereka — dan itu bukan sekadar tampilan: RLS
+  /// menegakkan hal yang sama lewat is_resto_employee, jadi menambah
+  /// karyawan di resto orang lain ditolak server meskipun layarnya
+  /// dipaksa menampilkannya.
+  ///
+  /// Disaring di sini juga supaya yang tidak berhak tidak pernah melihat
+  /// pilihan yang pasti gagal. Menawarkan tombol yang selalu ditolak
+  /// adalah cara memberi tahu orang bahwa aplikasinya rusak.
+  bool _semuaMerchant = false;
+  Set<String> _restoSaya = const {};
+
   Future<void> _load() async {
     setState(() => _loading = true);
+
+    final auth = context.read<AuthProvider>();
+    _semuaMerchant = auth.isSuperAdmin;
+    _restoSaya = {
+      ...auth.restoIds,
+      if (auth.restoId != null) auth.restoId!,
+    };
+
     final results = await Future.wait([
       _employeeRepo.getAll(),
       _restaurantRepo.getAll(),
     ]);
     if (!mounted) return;
+
+    final semuaResto = results[1] as List<Restaurant>;
+    final semuaKaryawan = results[0] as List<Employee>;
+
     setState(() {
-      _employees = results[0] as List<Employee>;
-      _restaurants = results[1] as List<Restaurant>;
+      _restaurants = _semuaMerchant
+          ? semuaResto
+          : [for (final r in semuaResto) if (_restoSaya.contains(r.id)) r];
+      _employees = _semuaMerchant
+          ? semuaKaryawan
+          : [
+              for (final e in semuaKaryawan)
+                // KaataGo Admin (restoId null) tidak pernah tampil di
+                // sisi merchant: ia bukan karyawan resto mana pun, dan
+                // tidak ada satu pun tindakan di sini yang berlaku
+                // padanya.
+                if (e.restoId != null && _restoSaya.contains(e.restoId)) e
+            ];
       _loading = false;
     });
   }
@@ -80,6 +119,7 @@ class _EmployeeManagementScreenState extends State<EmployeeManagementScreen> {
       builder: (_) => _EmployeeFormDialog(
         existing: existing,
         restaurants: _restaurants,
+        bolehSuperAdmin: _semuaMerchant,
       ),
     );
     if (saved == true) _load();
@@ -243,7 +283,18 @@ class _EmployeeFormDialog extends StatefulWidget {
   final Employee? existing;
   final List<Restaurant> restaurants;
 
-  const _EmployeeFormDialog({this.existing, required this.restaurants});
+  /// Hanya KaataGo Admin yang boleh mengangkat KaataGo Admin baru.
+  ///
+  /// Peran itu tidak terikat merchant mana pun, jadi memberikannya
+  /// berarti memberi akses ke seluruh merchant — dan tidak ada Owner
+  /// yang berhak memutuskan itu untuk merchant orang lain.
+  final bool bolehSuperAdmin;
+
+  const _EmployeeFormDialog({
+    this.existing,
+    required this.restaurants,
+    required this.bolehSuperAdmin,
+  });
 
   @override
   State<_EmployeeFormDialog> createState() => _EmployeeFormDialogState();
@@ -269,6 +320,12 @@ class _EmployeeFormDialogState extends State<_EmployeeFormDialog> {
     _nipCtrl = TextEditingController(text: e?.nip ?? '');
     _role = e?.role ?? 'kasir';
     _restoId = e?.restoId;
+    // Satu merchant berarti tidak ada yang perlu dipilih. Dropdown
+    // berisi satu pilihan yang wajib diisi cuma satu ketukan tambahan
+    // yang jawabannya sudah pasti.
+    if (_restoId == null && widget.restaurants.length == 1) {
+      _restoId = widget.restaurants.first.id;
+    }
     _active = e?.active ?? true;
   }
 
@@ -354,6 +411,8 @@ class _EmployeeFormDialogState extends State<_EmployeeFormDialog> {
                 value: _role,
                 decoration: InputDecoration(label: requiredLabel('Role')),
                 items: _roleLabels.entries
+                    .where((e) =>
+                        widget.bolehSuperAdmin || e.key != 'super_admin')
                     .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value)))
                     .toList(),
                 onChanged: (v) => setState(() => _role = v!),

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../db/market_report_repository.dart';
+import '../db/restaurant_repository.dart';
 import '../theme.dart';
+import '../utils/kontak_merchant.dart';
 import '../widgets/app_toast.dart';
 import '../widgets/responsive.dart';
 
@@ -30,6 +32,14 @@ class _MarketReportScreenState extends State<MarketReportScreen> {
   List<ReportRow> _pelangganDiam = const [];
   List<ReportRow> _topResto = const [];
   List<ReportRow> _restoDiam = const [];
+
+  /// Nomor WhatsApp tiap merchant, dikunci menurut id-nya.
+  ///
+  /// Laporannya cuma mengembalikan id dan nama; nomornya ada di tabel
+  /// resto. Dimuat sekali di sini supaya tiap baris tidak perlu
+  /// menanyakannya sendiri.
+  Map<String, String?> _teleponResto = const {};
+
   bool _memuat = true;
 
   @override
@@ -46,12 +56,24 @@ class _MarketReportScreenState extends State<MarketReportScreen> {
         _repo.topRestos(),
         _repo.idleRestos(),
       ]);
+      // Dipisah dari Future.wait di atas karena tipenya berbeda, dan
+      // kegagalannya tidak boleh menjatuhkan seluruh laporan: nomor
+      // telepon cuma menambah satu tombol, bukan isi halamannya.
+      var telepon = <String, String?>{};
+      try {
+        telepon = {
+          for (final r in await RestaurantRepository().getAll()) r.id: r.phone
+        };
+      } catch (_) {
+        // Tombol WhatsApp-nya tidak muncul. Laporannya tetap terbaca.
+      }
       if (!mounted) return;
       setState(() {
         _topPelanggan = hasil[0];
         _pelangganDiam = hasil[1];
         _topResto = hasil[2];
         _restoDiam = hasil[3];
+        _teleponResto = telepon;
         _memuat = false;
       });
     } catch (e) {
@@ -129,6 +151,29 @@ class _MarketReportScreenState extends State<MarketReportScreen> {
                       bawah: (r) =>
                           r.count == 0 ? 'Belum ada pesanan' : '${r.count} pesanan terbayar',
                       berperingkat: false,
+                      // Inilah bagian yang paling menuntut tindakan di
+                      // seluruh halaman ini: merchant yang sudah
+                      // memasang aplikasinya lalu berhenti. Menemukannya
+                      // lalu harus mencari nomornya di layar lain adalah
+                      // dua langkah yang cukup untuk membuat orang tidak
+                      // jadi menghubunginya.
+                      aksi: (r) {
+                        final telepon = _teleponResto[r.id];
+                        if (!punyaWhatsApp(telepon)) return null;
+                        return IconButton(
+                          tooltip: 'Chat WhatsApp',
+                          visualDensity: VisualDensity.compact,
+                          icon: const Icon(Icons.chat_outlined,
+                              size: 19, color: Color(0xFF25D366)),
+                          onPressed: () => bukaWhatsApp(
+                            context,
+                            telepon,
+                            pesan: 'Halo ${r.label}, saya dari KaataGo. '
+                                'Boleh dibantu kalau ada kendala memakai '
+                                'aplikasinya?',
+                          ),
+                        );
+                      },
                     ),
                     ]),
                   ],
@@ -150,6 +195,10 @@ class _Bagian extends StatelessWidget {
   final String Function(ReportRow) bawah;
   final bool berperingkat;
 
+  /// Tombol di ujung tiap baris, atau null kalau barisnya tidak punya
+  /// tindakan — misalnya merchant yang nomornya belum diisi.
+  final Widget? Function(ReportRow)? aksi;
+
   const _Bagian({
     required this.icon,
     required this.warna,
@@ -160,6 +209,7 @@ class _Bagian extends StatelessWidget {
     required this.nilai,
     required this.bawah,
     required this.berperingkat,
+    this.aksi,
   });
 
   @override
@@ -250,6 +300,10 @@ class _Bagian extends StatelessWidget {
                             fontSize: 13,
                             fontWeight: FontWeight.bold,
                             color: warna)),
+                  ],
+                  if (aksi != null) ...[
+                    const SizedBox(width: 4),
+                    aksi!(baris[i]) ?? const SizedBox(width: 40),
                   ],
                 ],
               ),

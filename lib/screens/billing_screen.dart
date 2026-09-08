@@ -375,6 +375,8 @@ class _KartuTagihan extends StatelessWidget {
       InvoiceStatus.waived => (Colors.blueGrey, Icons.card_giftcard_outlined),
       InvoiceStatus.review => (Colors.orange, Icons.hourglass_top_outlined),
       InvoiceStatus.unpaid => (Colors.red, Icons.error_outline),
+      // Jadwal tagihnya berubah sebelum jatuh tempo.
+      InvoiceStatus.cancelled => (Colors.grey, Icons.block_outlined),
     };
     final sisa = invoice.dueDate.difference(DateTime.now()).inDays;
 

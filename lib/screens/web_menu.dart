@@ -366,6 +366,11 @@ const _owner = <MenuWeb>[
     layar: RestaurantInfoScreen.new,
   ),
   MenuWeb(
+    ikon: Icons.badge_outlined,
+    judul: 'Kelola Karyawan',
+    layar: EmployeeManagementScreen.new,
+  ),
+  MenuWeb(
     ikon: Icons.qr_code_2,
     judul: 'QR Meja',
     layar: TableQrGeneratorScreen.new,
@@ -458,6 +463,11 @@ const _admin = <MenuWeb>[
     ikon: Icons.storefront_outlined,
     judul: 'Info Merchant',
     layar: RestaurantInfoScreen.new,
+  ),
+  MenuWeb(
+    ikon: Icons.badge_outlined,
+    judul: 'Kelola Karyawan',
+    layar: EmployeeManagementScreen.new,
   ),
   MenuWeb(
     ikon: Icons.qr_code_2,
