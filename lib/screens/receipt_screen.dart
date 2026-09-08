@@ -73,7 +73,9 @@ class _ReceiptScreenState extends State<ReceiptScreen> with SingleTickerProvider
       case PaymentMethod.cash:
         return 'Tunai';
       case PaymentMethod.qris:
-        return 'QRIS';
+        return 'QRIS Dinamis';
+      case PaymentMethod.qrisStatic:
+        return 'QRIS Statis';
       case PaymentMethod.transfer:
         return 'Transfer';
     }

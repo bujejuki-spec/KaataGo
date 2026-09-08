@@ -208,10 +208,21 @@ class CustomerOrder {
   /// Pesanan yang dipesan sendiri dari HP, dipilih bayar tunai, dan
   /// belum dilunasi di kasir — inilah yang mengisi layar Pending Payment
   /// dan menyalakan penanda merahnya.
+  /// Menunggu dibayar DI KASIR — tunai maupun QRIS Statis.
+  ///
+  /// QRIS Statis ikut ke sini, dan itu keputusan yang disengaja: QR-nya
+  /// statis, jadi nominalnya tidak tertanam di dalamnya dan pelanggan
+  /// bisa saja memindai lalu mengirim jumlah yang berbeda. Yang
+  /// memastikan nominalnya benar adalah kasir yang melihat bukti
+  /// transfernya — sama seperti uang tunai yang dihitung di depan
+  /// mejanya.
+  ///
+  /// Namanya masih menyebut "cash" karena dipakai di banyak tempat;
+  /// yang berubah artinya, bukan pemakainya.
   bool get isPendingCashPayment =>
       source == OrderSource.customer &&
       paymentStatus == OrderPaymentStatus.pending &&
-      paymentMethod == 'cash';
+      (paymentMethod == 'cash' || paymentMethod == 'qris_static');
 
   /// Pesanan mandiri yang uangnya belum diterima — apa pun cara
   /// bayarnya.

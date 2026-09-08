@@ -42,7 +42,13 @@ class TransactionItem {
   }
 }
 
-enum PaymentMethod { cash, qris, transfer }
+/// Cara bayar sebuah transaksi kasir.
+///
+/// `qris` adalah QRIS lewat penyedia pembayaran — namanya di layar
+/// "QRIS Dinamis" sejak QRIS Statis ada. Nilainya tidak diganti: ia
+/// tersimpan di ribuan baris transaksi, dan mengganti nilai lama berarti
+/// menulis ulang sejarah.
+enum PaymentMethod { cash, qris, qrisStatic, transfer }
 
 class PosTransaction {
   final String id;

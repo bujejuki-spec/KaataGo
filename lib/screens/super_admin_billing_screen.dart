@@ -9,6 +9,7 @@ import '../db/restaurant_repository.dart';
 import '../models/billing.dart';
 import '../models/restaurant.dart';
 import '../theme.dart';
+import '../widgets/kotak_cari.dart';
 import '../utils/kontak_merchant.dart';
 import '../utils/rupiah_input.dart';
 import '../widgets/app_toast.dart';
@@ -198,14 +199,75 @@ class _SuperAdminBillingScreenState extends State<SuperAdminBillingScreen> {
     );
   }
 
-  Widget _tabPaket() => RefreshIndicator(
+  final _cariPaket = TextEditingController();
+  final _cariTagihan = TextEditingController();
+  String _kataPaket = '';
+  String _kataTagihan = '';
+
+  @override
+  void dispose() {
+    _cariPaket.dispose();
+    _cariTagihan.dispose();
+    super.dispose();
+  }
+
+  List<Restaurant> get _restoTersaring => [
+        for (final r in _resto)
+          if (cocokCari(_kataPaket, [r.name, r.address, r.category])) r
+      ];
+
+  /// Tagihan dikelompokkan per merchant, terbanyak menunggu di atas.
+  ///
+  /// Satu daftar panjang berisi tagihan dari puluhan merchant menuntut
+  /// yang membacanya menyusun sendiri di kepalanya siapa punya apa —
+  /// dan yang dikerjakan orang di layar ini justru per merchant:
+  /// memeriksa, menerima, lalu menagih yang belum bayar.
+  Map<String, List<BillingInvoice>> get _tagihanPerMerchant {
+    final hasil = <String, List<BillingInvoice>>{};
+    for (final t in _tagihan) {
+      final resto = _restoDari(t.restoId);
+      final nama = t.restoName ?? resto?.name ?? t.restoId;
+      if (!cocokCari(_kataTagihan, [nama, t.id, resto?.address])) continue;
+      hasil.putIfAbsent(nama, () => []).add(t);
+    }
+    final urut = hasil.keys.toList()
+      ..sort((a, b) {
+        // Yang punya tagihan menunggu diperiksa naik ke atas: itu
+        // pekerjaan yang benar-benar menunggu seseorang.
+        int menunggu(String k) => hasil[k]!
+            .where((t) => t.status == InvoiceStatus.review)
+            .length;
+        final selisih = menunggu(b).compareTo(menunggu(a));
+        return selisih != 0 ? selisih : a.toLowerCase().compareTo(b.toLowerCase());
+      });
+    return {for (final k in urut) k: hasil[k]!};
+  }
+
+  Widget _tabPaket() => Column(
+        children: [
+          KotakCari(
+            controller: _cariPaket,
+            petunjuk: 'Cari merchant',
+            onUbah: (v) => setState(() => _kataPaket = v),
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
+          ),
+          if (_restoTersaring.isEmpty)
+            Expanded(
+              child: Center(
+                child: Text('Tidak ada merchant yang cocok dengan '
+                    '"$_kataPaket".'),
+              ),
+            )
+          else
+            Expanded(
+              child: RefreshIndicator(
         onRefresh: _muat,
         child: ResponsiveCenter(
           child: ListView.builder(
             padding: const EdgeInsets.fromLTRB(14, 14, 14, 28),
-            itemCount: _resto.length,
+            itemCount: _restoTersaring.length,
             itemBuilder: (_, i) {
-              final r = _resto[i];
+              final r = _restoTersaring[i];
               final s = _setelan[r.id] ?? RestoBilling(restoId: r.id);
               return Container(
                 margin: const EdgeInsets.only(bottom: 9),
@@ -234,6 +296,9 @@ class _SuperAdminBillingScreenState extends State<SuperAdminBillingScreen> {
             },
           ),
         ),
+      ),
+            ),
+        ],
       );
 
   Widget _tabTagihan() {
@@ -243,24 +308,125 @@ class _SuperAdminBillingScreenState extends State<SuperAdminBillingScreen> {
             style: TextStyle(color: KaataTheme.mutedOf(context))),
       );
     }
-    return RefreshIndicator(
-      onRefresh: _muat,
-      child: ResponsiveCenter(
-        child: ListView.builder(
-          padding: const EdgeInsets.fromLTRB(14, 14, 14, 28),
-          itemCount: _tagihan.length,
-          itemBuilder: (_, i) => _KartuTagihanAdmin(
-            invoice: _tagihan[i],
-            // Kontak merchantnya diambil dari daftar resto yang sudah
-            // dimuat layar ini. Null berarti restonya tidak ada lagi —
-            // tagihannya tetap tampil, cuma tidak bisa dikirim ke mana
-            // pun, dan kartunya mengatakan itu.
-            resto: _restoDari(_tagihan[i].restoId),
-            onTerima: () => _putuskan(_tagihan[i], true),
-            onTolak: () => _putuskan(_tagihan[i], false),
-            onSegarkan: () => _segarkan(_tagihan[i]),
-          ),
+    final kelompok = _tagihanPerMerchant;
+    return Column(
+      children: [
+        KotakCari(
+          controller: _cariTagihan,
+          petunjuk: 'Cari merchant atau nomor tagihan',
+          onUbah: (v) => setState(() => _kataTagihan = v),
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
         ),
+        if (kelompok.isEmpty)
+          Expanded(
+            child: Center(
+              child: Text('Tidak ada tagihan yang cocok dengan '
+                  '"$_kataTagihan".'),
+            ),
+          )
+        else
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: _muat,
+              child: ResponsiveCenter(
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(14, 14, 14, 28),
+                  children: [
+                    for (final e in kelompok.entries)
+                      _KelompokTagihan(
+                        nama: e.key,
+                        tagihan: e.value,
+                        // Dibuka sendiri saat sedang mencari, dan saat
+                        // ada yang menunggu diperiksa — keduanya berarti
+                        // isinya memang yang dicari orang.
+                        awalTerbuka: _kataTagihan.isNotEmpty ||
+                            e.value.any(
+                                (t) => t.status == InvoiceStatus.review),
+                        resto: _restoDari(e.value.first.restoId),
+                        onTerima: (t) => _putuskan(t, true),
+                        onTolak: (t) => _putuskan(t, false),
+                        onSegarkan: _segarkan,
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// Satu merchant dan tagihannya, ditumpuk di balik satu baris.
+class _KelompokTagihan extends StatelessWidget {
+  final String nama;
+  final List<BillingInvoice> tagihan;
+  final bool awalTerbuka;
+  final Restaurant? resto;
+  final void Function(BillingInvoice) onTerima;
+  final void Function(BillingInvoice) onTolak;
+  final void Function(BillingInvoice) onSegarkan;
+
+  const _KelompokTagihan({
+    required this.nama,
+    required this.tagihan,
+    required this.awalTerbuka,
+    required this.resto,
+    required this.onTerima,
+    required this.onTolak,
+    required this.onSegarkan,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final menunggu =
+        tagihan.where((t) => t.status == InvoiceStatus.review).length;
+    final belum =
+        tagihan.where((t) => t.status == InvoiceStatus.unpaid).length;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      clipBehavior: Clip.antiAlias,
+      child: ExpansionTile(
+        key: PageStorageKey('tagihan-$nama-$awalTerbuka'),
+        initiallyExpanded: awalTerbuka,
+        leading: const Icon(Icons.storefront_outlined),
+        title: Text(nama,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+        subtitle: Text(
+          [
+            '${tagihan.length} tagihan',
+            if (menunggu > 0) '$menunggu perlu diperiksa',
+            if (belum > 0) '$belum belum dibayar',
+          ].join(' · '),
+          style: TextStyle(fontSize: 11.5, color: KaataTheme.mutedOf(context)),
+        ),
+        trailing: menunggu > 0
+            ? Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text('$menunggu',
+                    style: const TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.orange)),
+              )
+            : const Icon(Icons.expand_more),
+        childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+        children: [
+          for (final t in tagihan)
+            _KartuTagihanAdmin(
+              invoice: t,
+              resto: resto,
+              onTerima: () => onTerima(t),
+              onTolak: () => onTolak(t),
+              onSegarkan: () => onSegarkan(t),
+            ),
+        ],
       ),
     );
   }

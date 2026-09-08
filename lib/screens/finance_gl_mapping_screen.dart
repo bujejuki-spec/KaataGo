@@ -16,11 +16,23 @@ import '../utils/field_rules.dart';
 import '../widgets/app_toast.dart';
 import '../widgets/required_label.dart';
 
-const _paymentMethods = ['cash', 'qris', 'transfer'];
-const _paymentLabels = {'cash': 'Tunai', 'qris': 'QRIS', 'transfer': 'Transfer'};
+// Dua rupa QRIS, dan akunnya wajib terpisah.
+//
+// Yang dinamis lewat penyedia pembayaran: uangnya menginap di sana dan
+// dicairkan menyusul dikurangi biayanya. Yang statis mendarat langsung
+// di rekening merchant. Menyatukan keduanya di satu akun membuat angka
+// yang menunggu dicairkan ikut menghitung uang yang sudah sampai.
+const _paymentMethods = ['cash', 'qris', 'qris_static', 'transfer'];
+const _paymentLabels = {
+  'cash': 'Tunai',
+  'qris': 'QRIS Dinamis',
+  'qris_static': 'QRIS Statis',
+  'transfer': 'Transfer',
+};
 const _paymentIcons = {
   'cash': Icons.payments_outlined,
   'qris': Icons.qr_code_2,
+  'qris_static': Icons.qr_code_scanner,
   'transfer': Icons.account_balance_outlined,
 };
 

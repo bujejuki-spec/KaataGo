@@ -51,8 +51,11 @@ begin
       -- Tunai DAN QRIS. Yang menentukan bukan cara bayarnya melainkan
       -- kenyataan yang sama pada keduanya: pesanan yang tidak pernah
       -- dilunasi tetap menempati layar kasir dan dapur.
+      -- QRIS Statis ikut: alurnya sama dengan tunai — pesanannya
+      -- menunggu dibayar di kasir, dan yang ditinggalkan menempati
+      -- layar Pending Payment persis seperti yang lain.
       and _normalize_payment_method(source, payment_method)
-            in ('cash', 'qris')
+            in ('cash', 'qris', 'qris_static')
       and created_at <= now() - interval '30 minutes'
     returning resto_id, items
   loop

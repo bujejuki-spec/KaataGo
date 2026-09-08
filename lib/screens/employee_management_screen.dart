@@ -9,6 +9,7 @@ import '../models/employee.dart';
 import '../models/restaurant.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/dialog_actions.dart';
+import '../widgets/kotak_cari.dart';
 import '../utils/field_rules.dart';
 import '../widgets/app_toast.dart';
 import '../widgets/responsive.dart';
@@ -159,16 +160,37 @@ class _EmployeeManagementScreenState extends State<EmployeeManagementScreen> {
           ? const Center(child: CircularProgressIndicator())
           : _employees.isEmpty
               ? const Center(child: Text('Belum ada karyawan.'))
-              : RefreshIndicator(
+              : Column(
+                children: [
+                  KotakCari(
+                    controller: _cariCtrl,
+                    petunjuk: 'Cari nama, email, NIP, peran, atau merchant',
+                    onUbah: (v) => setState(() => _cari = v),
+                  ),
+                  if (_groupByResto().isEmpty)
+                    Expanded(
+                      child: Center(
+                        child: Text(
+                            'Tidak ada karyawan yang cocok dengan "$_cari".'),
+                      ),
+                    )
+                  else
+                  Expanded(
+                  child: RefreshIndicator(
                   onRefresh: _load,
                   child: ListView(
                     padding: const EdgeInsets.fromLTRB(0, 8, 0, kFabSafeBottom),
                     children: _groupByResto().entries.map((group) {
+                      // Dibuka sendiri saat sedang mencari: yang
+                      // mengetikkan sebuah nama ingin melihat orangnya,
+                      // bukan nama kelompok yang harus diketuk dulu.
                       return Card(
                         margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         clipBehavior: Clip.antiAlias,
                         child: ExpansionTile(
-                          initiallyExpanded: false,
+                          key: PageStorageKey(
+                              '${group.key}|${_cari.isEmpty}'),
+                          initiallyExpanded: _cari.isNotEmpty,
                           leading: const Icon(Icons.storefront_outlined),
                           title: Text(group.key,
                               style: const TextStyle(fontWeight: FontWeight.bold)),
@@ -183,16 +205,40 @@ class _EmployeeManagementScreenState extends State<EmployeeManagementScreen> {
                       );
                     }).toList(),
                   ),
-                ),
+                  ),
+                  ),
+                ],
+              ),
     );
   }
 
   /// Groups employees by restaurant name (Super Admins — no resto — get
   /// their own "Super Admin" group), each group sorted alphabetically by
   /// resto name with "Super Admin" pinned first.
+  final _cariCtrl = TextEditingController();
+  String _cari = '';
+
+  @override
+  void dispose() {
+    _cariCtrl.dispose();
+    super.dispose();
+  }
+
   Map<String, List<Employee>> _groupByResto() {
     final byResto = <String, List<Employee>>{};
     for (final e in _employees) {
+      // Nama, email, NIP, peran, dan nama restonya sekaligus. Yang
+      // mencari seorang karyawan kadang cuma ingat emailnya, kadang cuma
+      // ingat dia kasir di cabang mana.
+      if (!cocokCari(_cari, [
+        e.name,
+        e.email,
+        e.nip,
+        _roleLabels[e.role] ?? e.role,
+        _restoName(e.restoId),
+      ])) {
+        continue;
+      }
       final key = e.restoId == null ? 'KaataGo Admin' : _restoName(e.restoId);
       byResto.putIfAbsent(key, () => []).add(e);
     }

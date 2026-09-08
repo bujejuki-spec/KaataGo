@@ -1,3 +1,4 @@
+import '../widgets/bagian_metode_bayar.dart';
 import 'package:flutter/material.dart';
 
 import '../theme.dart';
@@ -230,6 +231,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 textCapitalization: TextCapitalization.words,
                 validator: (v) =>
                     _editing ? validateName(v, label: 'Nama pemilik rekening') : null,
+              ),
+              const SizedBox(height: 28),
+              // Berdiri sendiri dari formulir di atasnya: yang di sini
+              // disimpan begitu saklarnya digeser. Menyatukannya dengan
+              // formulir yang punya tombol Batal membuat "batal" berarti
+              // dua hal berbeda pada satu layar.
+              const Divider(height: 1),
+              const SizedBox(height: 20),
+              BagianMetodeBayar(
+                restoId: context.read<AuthProvider>().restoId ?? '',
+                bisaUbah: true,
               ),
               const SizedBox(height: 24),
               if (_editing)

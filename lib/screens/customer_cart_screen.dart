@@ -1,3 +1,5 @@
+import '../db/metode_bayar_repository.dart';
+import '../models/metode_bayar.dart';
 import 'package:flutter/material.dart';
 
 import '../theme.dart';
@@ -70,7 +72,20 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
   /// dari HP sendiri.
   String _paymentMethod = 'qris';
 
-  bool get _payAtCashier => _paymentMethod == 'cash';
+  /// Metode yang dinyalakan merchant ini. Dibaca sekali saat layar
+  /// dibuka; yang tidak dinyalakan tidak pernah ditawarkan.
+  MetodeBayarMerchant _metode = const MetodeBayarMerchant();
+
+  /// Dibayar di kasir, bukan lewat aplikasi.
+  ///
+  /// QRIS Statis ikut ke sini bersama tunai, dan itu bukan
+  /// penyederhanaan: QR statis tidak membawa nominal di dalamnya, jadi
+  /// pelanggan bisa memindai lalu mengirim jumlah yang berbeda dari
+  /// tagihannya. Yang memastikan angkanya benar adalah kasir yang
+  /// melihat bukti transfernya — persis seperti uang tunai yang dihitung
+  /// di depan mejanya.
+  bool get _payAtCashier =>
+      _paymentMethod == 'cash' || _paymentMethod == 'qris_static';
 
   bool _placing = false;
 
@@ -239,6 +254,32 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
     _prefillNameFromProfile();
     _loadResto();
     _loadDiscounts();
+    _muatMetodeBayar();
+  }
+
+  Future<void> _muatMetodeBayar() async {
+    final restoId = context.read<TableSessionProvider>().restoId;
+    if (restoId == null) return;
+    try {
+      final metode = await MetodeBayarRepository().baca(restoId);
+      if (!mounted) return;
+      setState(() {
+        _metode = metode;
+        // Pilihan bawaannya harus salah satu yang benar-benar aktif.
+        // Merchant yang mematikan QRIS Dinamis akan membuat layarnya
+        // terbuka dengan pilihan yang tidak ada tombolnya — terlihat
+        // seperti tidak ada yang terpilih, dan tombol pesannya menolak
+        // tanpa alasan.
+        final aktif = metode.yangAktif;
+        if (aktif.isNotEmpty &&
+            !aktif.any((m) => m.kode == _paymentMethod)) {
+          _paymentMethod = aktif.first.kode;
+        }
+      });
+    } catch (_) {
+      // Gagal membacanya bukan alasan menahan orang memesan. Tanpa
+      // jawaban, yang ditawarkan tetap bawaannya.
+    }
   }
 
   /// If logged in, use their saved profile name as a starting point —
@@ -618,18 +659,25 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
                             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                       ),
                       const SizedBox(height: 8),
+                      // Pilihannya mengikuti yang dinyalakan merchant.
+                      // Menawarkan metode yang tidak dilayani resto
+                      // berarti mengirim pelanggan ke layar yang tidak
+                      // bisa dibayar.
                       SegmentedButton<String>(
-                        segments: const [
-                          ButtonSegment(
-                            value: 'qris',
-                            label: Text('QRIS'),
-                            icon: Icon(Icons.qr_code_2),
-                          ),
-                          ButtonSegment(
-                            value: 'cash',
-                            label: Text('Tunai'),
-                            icon: Icon(Icons.payments_outlined),
-                          ),
+                        segments: [
+                          for (final m in _metode.yangAktif)
+                            ButtonSegment(
+                              value: m.kode,
+                              label: Text(m.label),
+                              icon: Icon(switch (m) {
+                                MetodeBayar.tunai => Icons.payments_outlined,
+                                MetodeBayar.qrisDinamis => Icons.qr_code_2,
+                                MetodeBayar.qrisStatis =>
+                                  Icons.qr_code_scanner,
+                                MetodeBayar.transfer =>
+                                  Icons.account_balance_outlined,
+                              }),
+                            ),
                         ],
                         selected: {_paymentMethod},
                         onSelectionChanged: _placing
@@ -638,11 +686,20 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        _payAtCashier
-                            ? 'Pesanan langsung masuk ke dapur. Pembayaran '
-                                'diselesaikan di kasir — statusnya menunggu '
-                                'pembayaran sampai kasir menerima uangnya.'
-                            : 'Bayar sekarang lewat QRIS, tanpa perlu ke kasir.',
+                        switch (_paymentMethod) {
+                          'qris_static' =>
+                            'Pesanan langsung masuk ke dapur. QR-nya '
+                                'ditunjukkan kasir, dan pembayarannya '
+                                'dipastikan di sana — QR statis tidak '
+                                'membawa nominal, jadi jumlahnya perlu '
+                                'dicocokkan.',
+                          'cash' => 'Pesanan langsung masuk ke dapur. '
+                              'Pembayaran diselesaikan di kasir — statusnya '
+                              'menunggu pembayaran sampai kasir menerima '
+                              'uangnya.',
+                          _ => 'Bayar sekarang lewat QRIS, tanpa perlu ke '
+                              'kasir.',
+                        },
                         style: const TextStyle(color: Colors.grey, fontSize: 12),
                       ),
                       const SizedBox(height: 16),

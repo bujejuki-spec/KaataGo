@@ -1,3 +1,6 @@
+import '../widgets/app_toast.dart';
+import '../db/metode_bayar_repository.dart';
+import '../models/metode_bayar.dart';
 import 'package:flutter/material.dart';
 
 import '../theme.dart';
@@ -10,6 +13,7 @@ import '../providers/auth_provider.dart';
 import '../providers/cart_provider.dart';
 import '../providers/product_provider.dart';
 import 'payment_qris_screen.dart';
+import 'payment_qris_statis_screen.dart';
 import 'payment_transfer_screen.dart';
 import 'receipt_screen.dart';
 import '../widgets/cash_payment_dialog.dart';
@@ -39,6 +43,22 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     super.initState();
     _loadResto();
     _loadDiscounts();
+    _muatMetodeBayar();
+  }
+
+  /// Metode yang dinyalakan merchant ini.
+  MetodeBayarMerchant _metode = const MetodeBayarMerchant();
+
+  Future<void> _muatMetodeBayar() async {
+    final restoId = context.read<AuthProvider>().restoId;
+    if (restoId == null) return;
+    try {
+      final m = await MetodeBayarRepository().baca(restoId);
+      if (mounted) setState(() => _metode = m);
+    } catch (_) {
+      // Gagal membacanya bukan alasan menahan kasir menerima uang. Tanpa
+      // jawaban, yang ditawarkan tetap bawaannya.
+    }
   }
 
   @override
@@ -116,6 +136,18 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   /// Dine In needs a table number; Take Away needs a customer name
   /// instead (there's no table to deliver it to).
+  /// Metode di model bersama, jadi enum transaksi kasir.
+  ///
+  /// Dua daftar untuk hal yang sama memang tidak ideal, tapi enum
+  /// transaksi sudah tersimpan bertahun-tahun di basis data lokal tiap
+  /// kasir — menggantinya berarti menulis ulang riwayat di ratusan HP.
+  PaymentMethod _enumDari(MetodeBayar m) => switch (m) {
+        MetodeBayar.tunai => PaymentMethod.cash,
+        MetodeBayar.qrisDinamis => PaymentMethod.qris,
+        MetodeBayar.qrisStatis => PaymentMethod.qrisStatic,
+        MetodeBayar.transfer => PaymentMethod.transfer,
+      };
+
   bool get _canPay => _isDineIn ? _tableNumber != null : _customerName.isNotEmpty;
 
   /// Reopens the options popup on an existing line, so a wrong spice
@@ -295,34 +327,26 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       ),
                     ],
                     const SizedBox(height: 16),
-                    Row(
+                    // Tombolnya mengikuti yang dinyalakan merchant di
+                    // Info Pembayaran. Menawarkan metode yang tidak
+                    // dilayani resto berarti kasir menjanjikan cara bayar
+                    // yang tidak ada di depan pelanggan yang sudah
+                    // mengeluarkan HP-nya.
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
                       children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: !_canPay
-                                ? null
-                                : () => _handlePayment(context, cart, PaymentMethod.cash),
-                            child: const Text('Tunai'),
+                        for (final m in _metode.yangAktif)
+                          SizedBox(
+                            width: _metode.yangAktif.length > 2 ? 150 : null,
+                            child: OutlinedButton(
+                              onPressed: !_canPay
+                                  ? null
+                                  : () => _handlePayment(
+                                      context, cart, _enumDari(m)),
+                              child: Text(m.label),
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: !_canPay
-                                ? null
-                                : () => _handlePayment(context, cart, PaymentMethod.qris),
-                            child: const Text('QRIS'),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: !_canPay
-                                ? null
-                                : () => _handlePayment(context, cart, PaymentMethod.transfer),
-                            child: const Text('Transfer'),
-                          ),
-                        ),
                       ],
                     ),
                     if (!_canPay) ...[
@@ -436,11 +460,23 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     // QRIS/Transfer show a dummy "simulate payment" screen first, and
     // only proceed if the cashier confirms it went through.
     if (method != PaymentMethod.cash) {
+      // QRIS Statis punya layarnya sendiri: QR-nya milik merchant, tidak
+      // membawa nominal, dan tidak ada webhook yang menyatakan lunas —
+      // yang bersaksi kasirnya, setelah melihat bukti transfer.
+      final qrStatis = _metode.qrisStatisUrl;
+      if (method == PaymentMethod.qrisStatic && qrStatis == null) {
+        showAppToast(context, 'QR statisnya belum dipasang di Info Pembayaran.',
+            isError: true);
+        return;
+      }
       final confirmed = await Navigator.of(context).push<bool>(
         MaterialPageRoute(
-          builder: (_) => method == PaymentMethod.qris
-              ? PaymentQrisScreen(amount: amount)
-              : PaymentTransferScreen(amount: amount),
+          builder: (_) => switch (method) {
+            PaymentMethod.qris => PaymentQrisScreen(amount: amount),
+            PaymentMethod.qrisStatic =>
+              PaymentQrisStatisScreen(amount: amount, qrUrl: qrStatis!),
+            _ => PaymentTransferScreen(amount: amount),
+          },
         ),
       );
       if (confirmed != true) return;

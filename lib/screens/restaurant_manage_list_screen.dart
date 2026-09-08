@@ -4,6 +4,7 @@ import '../db/restaurant_repository.dart';
 import '../models/restaurant.dart';
 import '../utils/kontak_merchant.dart';
 import '../widgets/app_toast.dart';
+import '../widgets/kotak_cari.dart';
 import '../widgets/resto_logo_avatar.dart';
 import 'restaurant_create_screen.dart';
 import '../widgets/dialog_actions.dart';
@@ -25,6 +26,17 @@ class RestaurantManageListScreen extends StatefulWidget {
 class _RestaurantManageListScreenState extends State<RestaurantManageListScreen> {
   final _repo = RestaurantRepository();
   List<Restaurant> _restaurants = [];
+
+  final _cariCtrl = TextEditingController();
+  String _cari = '';
+
+  /// Merchant yang cocok dengan yang dicari. Nama dan alamat sekaligus:
+  /// yang mencari sebuah cabang lebih sering ingat jalannya daripada
+  /// nama resminya.
+  List<Restaurant> get _tersaring => [
+        for (final r in _restaurants)
+          if (cocokCari(_cari, [r.name, r.address, r.category])) r
+      ];
   bool _loading = true;
 
   /// Menampilkan yang sudah dihapus.
@@ -189,14 +201,31 @@ class _RestaurantManageListScreenState extends State<RestaurantManageListScreen>
           ? const Center(child: CircularProgressIndicator())
           : _restaurants.isEmpty
               ? const Center(child: Text('Belum ada merchant terdaftar.'))
-              : RefreshIndicator(
+              : Column(
+                children: [
+                  KotakCari(
+                    controller: _cariCtrl,
+                    petunjuk: 'Cari nama, alamat, atau kategori merchant',
+                    onUbah: (v) => setState(() => _cari = v),
+                    padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+                  ),
+                  if (_tersaring.isEmpty)
+                    Expanded(
+                      child: Center(
+                        child: Text('Tidak ada merchant yang cocok dengan '
+                            '"$_cari".'),
+                      ),
+                    )
+                  else
+                  Expanded(
+                  child: RefreshIndicator(
                   onRefresh: _load,
                   child: ListView.separated(
                     padding: const EdgeInsets.fromLTRB(12, 12, 12, kFabSafeBottom),
-                    itemCount: _restaurants.length,
+                    itemCount: _tersaring.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 8),
                     itemBuilder: (context, i) {
-                      final resto = _restaurants[i];
+                      final resto = _tersaring[i];
                       return Card(
                         clipBehavior: Clip.antiAlias,
                         child: ListTile(
@@ -282,7 +311,16 @@ class _RestaurantManageListScreenState extends State<RestaurantManageListScreen>
                       );
                     },
                   ),
-                ),
+                  ),
+                  ),
+                ],
+              ),
     );
+  }
+
+  @override
+  void dispose() {
+    _cariCtrl.dispose();
+    super.dispose();
   }
 }

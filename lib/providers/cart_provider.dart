@@ -251,6 +251,7 @@ class CartProvider extends ChangeNotifier {
   static const _glPaymentKeys = {
     PaymentMethod.cash: 'cash',
     PaymentMethod.qris: 'qris',
+    PaymentMethod.qrisStatic: 'qris_static',
     PaymentMethod.transfer: 'transfer',
   };
 

@@ -37,6 +37,27 @@ Formatnya dibaca `scripts/release.sh`: judul `## <versi>`, lalu
 poin-poinnya. Versi yang tidak punya bagiannya di sini tetap terbit,
 hanya pengumumannya memakai kalimat umum.
 
+## 2.36.0
+
+- Metode pembayaran kini bisa dipilih merchant di Info Pembayaran —
+  Tunai, QRIS Dinamis, QRIS Statis, dan Transfer. Yang dimatikan tidak
+  lagi ditawarkan, baik di kasir maupun di HP pelanggan
+- QRIS Statis: unggah QR cetak milik merchant sendiri, dan kasir
+  menunjukkannya ke pelanggan. Gambarnya diperiksa dulu — yang bukan
+  QRIS ditolak, dan nama merchant di dalamnya ditunjukkan sebelum
+  dipasang
+- Pesanan pelanggan yang memilih QRIS Statis masuk ke Pending Payment
+  dan dilunasi di kasir, sama seperti tunai — QR statis tidak membawa
+  nominal, jadi jumlahnya perlu dicocokkan
+- QRIS lama kini bernama QRIS Dinamis, dan punya akun GL sendiri
+  terpisah dari QRIS Statis. Yang statis tidak pernah masuk hitungan
+  pencairan gateway karena uangnya langsung ke rekening merchant
+- Kotak pencarian di List Merchant, Kelola Karyawan, dan kedua tab
+  Billing
+- Tab Tagihan dikelompokkan per merchant; yang punya tagihan menunggu
+  diperiksa berada di atas
+- Perbaikan bug dan penyempurnaan tampilan
+
 ## 2.35.0
 
 - Email merchant kini bisa diisi Owner dan Admin lewat Info Merchant,
