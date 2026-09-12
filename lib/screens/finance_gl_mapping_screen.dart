@@ -130,6 +130,10 @@ const _cashPickupMethod = 'cash_pickup';
 // perusahaan.
 const _companyCashMethod = 'company_cash';
 
+// Uang perusahaan yang ada di rekening: penjualan non-tunai, setoran
+// kasir yang sudah disetujui, dan setoran dari kas perusahaan sendiri.
+const _companyBankMethod = 'company_bank';
+
 // PPN and service charge collected are money owed onward, not revenue,
 // so they're journaled to their own accounts instead of being folded
 // into the payment-method income mapping.
@@ -159,6 +163,7 @@ const _allMethods = [
   _cashVarianceMethod,
   _cashPickupMethod,
   _companyCashMethod,
+  _companyBankMethod,
 ];
 
 /// Akun yang hanya ada di pembukuan KaataGo sendiri.
@@ -648,8 +653,8 @@ class _FinanceGlMappingScreenState extends State<FinanceGlMappingScreen> {
                       _GlSectionCard(
                         icon: Icons.local_shipping_outlined,
                         color: const Color(0xFF0EA5E9),
-                        title: 'GL Cash Pickup',
-                        subtitle: 'Uang laci yang dijemput petugas',
+                        title: 'GL Saldo Perusahaan',
+                        subtitle: 'Uang yang dipegang perusahaan, tunai dan bank',
                         children: [
                           _GlAccountRow(
                             icon: Icons.local_shipping_outlined,
@@ -669,6 +674,16 @@ class _FinanceGlMappingScreenState extends State<FinanceGlMappingScreen> {
                             color: const Color(0xFF0EA5E9),
                             codeCtrl: _codeCtrls[_companyCashMethod]!,
                             nameCtrl: _nameCtrls[_companyCashMethod]!,
+                            editing: _editing,
+                          ),
+                          _GlAccountRow(
+                            icon: Icons.account_balance_outlined,
+                            label: 'GL Saldo Bank Perusahaan',
+                            hint: 'Uang di rekening — penjualan non-tunai, '
+                                'setoran kasir, dan setoran dari kas',
+                            color: const Color(0xFF0EA5E9),
+                            codeCtrl: _codeCtrls[_companyBankMethod]!,
+                            nameCtrl: _nameCtrls[_companyBankMethod]!,
                             editing: _editing,
                           ),
                         ],

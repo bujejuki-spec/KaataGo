@@ -32,12 +32,26 @@ class GlJournalRepository {
     return rows.map((r) => GlJournalEntry.fromMap(r)).toList();
   }
 
-  Future<List<GlJournalEntry>> getForResto(String restoId) async {
-    final rows = await _client
-        .from('gl_journal_entries')
-        .select()
-        .eq('resto_id', restoId)
-        .order('created_at', ascending: false);
+  /// Jurnal sebuah resto, disaring periodenya di server.
+  ///
+  /// Penyaringan di sini, bukan sesudah barisnya sampai di perangkat:
+  /// merchant yang sudah setahun berjalan punya puluhan ribu baris, dan
+  /// menariknya seluruhnya demi menampilkan sebulan berarti menunggu
+  /// lama untuk data yang langsung dibuang.
+  Future<List<GlJournalEntry>> getForResto(
+    String restoId, {
+    DateTime? mulai,
+    DateTime? akhir,
+  }) async {
+    var q = _client.from('gl_journal_entries').select().eq('resto_id', restoId);
+    if (mulai != null) q = q.gte('entry_date', _tanggal(mulai));
+    if (akhir != null) q = q.lte('entry_date', _tanggal(akhir));
+    final rows = await q.order('created_at', ascending: false);
     return rows.map((r) => GlJournalEntry.fromMap(r)).toList();
   }
+
+  static String _tanggal(DateTime t) =>
+      '${t.year.toString().padLeft(4, '0')}-'
+      '${t.month.toString().padLeft(2, '0')}-'
+      '${t.day.toString().padLeft(2, '0')}';
 }

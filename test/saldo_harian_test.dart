@@ -25,13 +25,19 @@ void main() {
   String blok(String dari, String sampai) =>
       layar.substring(layar.indexOf(dari), layar.indexOf(sampai));
 
-  test('yang dipotong per hari cuma untuk kasir dan admin', () {
+  // Semua peran merchant, bukan cuma kasir dan admin.
+  //
+  // Mulanya Finance dan Owner dikecualikan, dengan anggapan mereka
+  // membutuhkan angka sejak hari pertama di layar ini. Ternyata yang
+  // mereka butuhkan adalah saldo perusahaan — dan itu sekarang punya
+  // layarnya sendiri, yang menyebut uang tunai dan uang rekening secara
+  // terpisah.
+  test('dipotong per hari untuk seluruh peran merchant', () {
     final b = blok('bool get _harianSaja', 'bool get _needsApproval');
-    expect(b, contains('auth.isKasir'));
-    expect(b, contains('auth.isAdmin'));
-    // Pembukuan KaataGo sendiri tidak punya kasir, dan memotongnya per
-    // hari membuat layarnya berbunyi nol.
-    expect(b, contains('if (_untukPlatform) return false;'));
+    expect(b, contains('!_untukPlatform'));
+    // Pembukuan KaataGo sendiri tidak punya laci kasir, dan memotongnya
+    // per hari membuat layarnya berbunyi nol.
+    expect(b, isNot(contains('auth.isKasir')));
   });
 
   test('penghasilan non-tunai dan pengeluaran ikut terpotong', () {

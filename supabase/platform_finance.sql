@@ -224,7 +224,8 @@ alter table gl_journal_entries add constraint gl_journal_entries_reference_type_
   check (
     reference_type in
     ('order', 'order_discount', 'expense', 'petty_cash', 'cash_deposit',
-     'billing', 'billing_discount', 'voucher', 'capital', 'cash_variance', 'other_income'));
+     'billing', 'billing_discount', 'voucher', 'capital', 'cash_variance',
+     'other_income', 'company_deposit'));
 
 create or replace function log_billing_journal()
 returns trigger

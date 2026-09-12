@@ -37,6 +37,24 @@ Formatnya dibaca `scripts/release.sh`: judul `## <versi>`, lalu
 poin-poinnya. Versi yang tidak punya bagiannya di sini tetap terbit,
 hanya pengumumannya memakai kalimat umum.
 
+## 3.2.0
+
+- Menu baru Saldo Perusahaan untuk Finance dan Owner: uang tunai yang
+  dipegang dan uang di rekening, masing-masing dengan saldonya sendiri,
+  berikut tombol setor dari kas ke bank
+- Pengeluaran kini menyebut sumber dananya — Petty Cash, Saldo Cash, atau
+  Saldo Bank — dan kantong yang dipilih itu yang berkurang
+- Saldo & Pengeluaran kini menampilkan hari ini untuk semua peran; angka
+  perusahaan seluruhnya pindah ke menu Saldo Perusahaan
+- Jurnal GL kini punya pilihan periode, dan yang dicetak mengikuti
+  periode yang sedang dilihat
+- Periode Jurnal GL dan Laporan Transaksi dibatasi satu bulan sekali
+  ambil, supaya datanya tidak keberatan
+- Di Billing Merchant, merchant yang punya tagihan belum dibayar ditandai
+  angka merah
+- GL Saldo Bank Perusahaan bisa dipetakan sendiri di Mapping GL Account
+- Perbaikan bug dan penyempurnaan tampilan
+
 ## 3.1.0
 
 - Rekening KaataGo kini punya menunya sendiri di KaataGo Admin — rekening

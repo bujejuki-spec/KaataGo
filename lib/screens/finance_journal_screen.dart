@@ -1,4 +1,5 @@
 import '../models/billing.dart';
+import '../utils/periode_laporan.dart';
 import '../utils/saldo_jurnal.dart';
 import 'package:flutter/material.dart';
 
@@ -53,6 +54,16 @@ class _FinanceJournalScreenState extends State<FinanceJournalScreen> {
   List<GlJournalEntry> _entries = [];
   GlAccount? _totalBalanceGl;
   String _restoName = '';
+
+  /// Periode yang sedang dilihat, dan yang ikut tercetak.
+  ///
+  /// Sebelumnya layar ini menarik SELURUH jurnal resto sejak hari
+  /// pertama. Pada merchant yang sudah setahun berjalan itu puluhan ribu
+  /// baris — berat di jaringan, berat di memori, dan tidak terbaca
+  /// siapa pun.
+  DateTime _mulai = DateTime.now().subtract(const Duration(days: 29));
+  DateTime _akhir = DateTime.now();
+
   bool _loading = true;
   String? _loadError;
 
@@ -70,7 +81,7 @@ class _FinanceJournalScreenState extends State<FinanceJournalScreen> {
     try {
       final restoId = widget.restoId ?? context.read<AuthProvider>().restoId!;
       final results = await Future.wait([
-        _repo.getForResto(restoId),
+        _repo.getForResto(restoId, mulai: _mulai, akhir: _akhir),
         _glRepo.getForResto(restoId),
         _restoRepo.getOnce(restoId),
       ]);
@@ -92,6 +103,20 @@ class _FinanceJournalScreenState extends State<FinanceJournalScreen> {
         _loading = false;
       });
     }
+  }
+
+  Future<void> _pilihPeriode() async {
+    final dipilih = await pilihPeriodeLaporan(
+      context,
+      mulai: _mulai,
+      akhir: _akhir,
+    );
+    if (dipilih == null) return;
+    setState(() {
+      _mulai = dipilih.start;
+      _akhir = dipilih.end;
+    });
+    _load();
   }
 
   /// A reversal is written with the same (reference_type, reference_id,
@@ -238,6 +263,10 @@ class _FinanceJournalScreenState extends State<FinanceJournalScreen> {
                 style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
             pw.SizedBox(height: 2),
             pw.Text(_restoName, style: const pw.TextStyle(fontSize: 13)),
+            pw.Text(
+                'Periode: ${DateFormat('dd MMM yyyy', 'id_ID').format(_mulai)}'
+                ' — ${DateFormat('dd MMM yyyy', 'id_ID').format(_akhir)}',
+                style: const pw.TextStyle(fontSize: 11)),
             if (_totalBalanceGl != null)
               pw.Text('GL Total Saldo: ${_totalBalanceGl!.glCode} — ${_totalBalanceGl!.glName}',
                   style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey700)),
@@ -369,7 +398,16 @@ class _FinanceJournalScreenState extends State<FinanceJournalScreen> {
     final cancelledKeys = _cancelledKeys;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Jurnal GL')),
+      appBar: AppBar(
+        title: const Text('Jurnal GL'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.date_range),
+            tooltip: 'Pilih periode',
+            onPressed: _loading ? null : _pilihPeriode,
+          ),
+        ],
+      ),
       floatingActionButton: (_loading || _loadError != null || _entries.isEmpty)
           ? null
           : FloatingActionButton.extended(
@@ -402,6 +440,37 @@ class _FinanceJournalScreenState extends State<FinanceJournalScreen> {
                     // top of the last journal row.
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, kFabSafeBottom),
                     children: [
+                      // Periodenya disebut di layar, bukan cuma di
+                      // pemilihnya. Angka ringkasan di bawah menjumlah
+                      // rentang ini saja, dan ringkasan yang tidak
+                      // menyebut rentangnya akan dibaca sebagai
+                      // sepanjang masa.
+                      InkWell(
+                        onTap: _pilihPeriode,
+                        borderRadius: BorderRadius.circular(10),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 4, vertical: 8),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.date_range, size: 16),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  '${DateFormat('dd MMM yyyy', 'id_ID').format(_mulai)}'
+                                  ' — ${DateFormat('dd MMM yyyy', 'id_ID').format(_akhir)}',
+                                  style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600),
+                                ),
+                              ),
+                              const Text('Ubah',
+                                  style: TextStyle(fontSize: 12.5)),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
                       _TotalBalanceCard(
                         glAccount: _totalBalanceGl,
                         saldoTotal: _saldoTotal,

@@ -20,6 +20,7 @@ import '../widgets/responsive.dart';
 import '../widgets/resto_switcher.dart';
 import '../widgets/kaata_logo.dart';
 import 'cash_deposit_screen.dart';
+import 'saldo_perusahaan_screen.dart';
 import 'terima_pickup_screen.dart';
 import 'cashier_shift_screen.dart';
 import 'finance_balance_screen.dart';
@@ -136,6 +137,19 @@ class FinanceHomeScreen extends StatelessWidget {
                           ? Future.value(0)
                           : CashDepositRepository().pickupBelumDiterima(restoId),
                       destination: () => const TerimaPickupScreen(),
+                    ),
+                    // Uang perusahaan, dan di mana ia berada. Berbeda
+                    // dari Saldo & Pengeluaran, yang menjawab
+                    // pertanyaan hari ini.
+                    HubMenuTile(
+                      icon: Icons.account_balance_wallet_outlined,
+                      title: 'Saldo Perusahaan',
+                      subtitle: 'Saldo cash & bank, dan setor ke rekening',
+                      color: const Color(0xFF14B8A6),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                            builder: (_) => const SaldoPerusahaanScreen()),
+                      ),
                     ),
                   ],
                 ),

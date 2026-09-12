@@ -26,14 +26,15 @@ alter table gl_accounts add constraint gl_accounts_payment_method_check
      'ppn', 'service', 'suspense', 'suspense_petty', 'gateway_fee', 'discount',
      'subscription', 'subscription_discount', 'voucher', 'voucher_redeem',
      'capital', 'cash_variance', 'other_income',
-     'cash_pickup', 'company_cash'));
+     'cash_pickup', 'company_cash', 'company_bank'));
 
 alter table gl_journal_entries drop constraint if exists gl_journal_entries_reference_type_check;
 alter table gl_journal_entries add constraint gl_journal_entries_reference_type_check
   check (
     reference_type in
     ('order', 'order_discount', 'expense', 'petty_cash', 'cash_deposit',
-     'billing', 'billing_discount', 'voucher', 'capital', 'cash_variance', 'other_income'));
+     'billing', 'billing_discount', 'voucher', 'capital', 'cash_variance',
+     'other_income', 'company_deposit'));
 
 create or replace function log_petty_cash_journal()
 returns trigger

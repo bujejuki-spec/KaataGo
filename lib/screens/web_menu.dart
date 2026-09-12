@@ -13,6 +13,7 @@ import 'cashier_shift_screen.dart';
 import 'category_management_screen.dart';
 import 'discount_screen.dart';
 import 'bank_account_screen.dart';
+import 'saldo_perusahaan_screen.dart';
 import 'super_admin_uam_screen.dart';
 import 'terima_pickup_screen.dart';
 import 'rekonsiliasi_screen.dart';
@@ -451,6 +452,11 @@ const _owner = <MenuWeb>[
     layar: TerimaPickupScreen.new,
   ),
   MenuWeb(
+    ikon: Icons.account_balance_wallet_outlined,
+    judul: 'Saldo Perusahaan',
+    layar: SaldoPerusahaanScreen.new,
+  ),
+  MenuWeb(
     ikon: Icons.qr_code_2,
     judul: 'QR Meja',
     layar: TableQrGeneratorScreen.new,
@@ -664,5 +670,10 @@ const _finance = <MenuWeb>[
     ikon: Icons.local_shipping_outlined,
     judul: 'Terima Cash Pickup',
     layar: TerimaPickupScreen.new,
+  ),
+  MenuWeb(
+    ikon: Icons.account_balance_wallet_outlined,
+    judul: 'Saldo Perusahaan',
+    layar: SaldoPerusahaanScreen.new,
   ),
 ];

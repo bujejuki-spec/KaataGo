@@ -242,7 +242,7 @@ alter table gl_accounts add constraint gl_accounts_payment_method_check
      'ppn', 'service', 'suspense', 'suspense_petty', 'gateway_fee', 'discount',
      'subscription', 'subscription_discount', 'voucher', 'voucher_redeem',
      'capital', 'cash_variance', 'other_income',
-     'cash_pickup', 'company_cash'));
+     'cash_pickup', 'company_cash', 'company_bank'));
 
 -- ─────────────────────────────────────────────────────────────────────
 -- 4. Jurnal petty cash mengikuti statusnya

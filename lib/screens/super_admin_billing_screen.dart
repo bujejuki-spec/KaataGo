@@ -420,19 +420,27 @@ class _KelompokTagihan extends StatelessWidget {
           ].join(' · '),
           style: TextStyle(fontSize: 11.5, color: KaataTheme.mutedOf(context)),
         ),
-        trailing: menunggu > 0
-            ? Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: Colors.orange.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text('$menunggu',
-                    style: const TextStyle(
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.orange)),
+        // Dua penanda, dan keduanya menjawab pertanyaan berbeda.
+        //
+        // Merah: tagihan yang belum dibayar sama sekali — itu uang yang
+        // belum masuk, dan itulah yang dicari saat membuka layar ini.
+        // Oranye: yang sudah dibayar dan menunggu diperiksa — pekerjaan
+        // yang ada di tangan KaataGo, bukan di tangan merchant.
+        //
+        // Kalau keduanya ada, merah yang dipajang: yang menunggu
+        // diperiksa akan terlihat sendiri begitu kelompoknya dibuka,
+        // sedangkan tunggakan adalah alasan membukanya.
+        trailing: (belum > 0 || menunggu > 0)
+            ? Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (belum > 0) _Penanda(jumlah: belum, warna: Colors.red),
+                  if (belum > 0 && menunggu > 0) const SizedBox(width: 6),
+                  if (menunggu > 0)
+                    _Penanda(jumlah: menunggu, warna: Colors.orange),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.expand_more, size: 20),
+                ],
               )
             : const Icon(Icons.expand_more),
         childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
@@ -449,6 +457,28 @@ class _KelompokTagihan extends StatelessWidget {
             ),
         ],
       ),
+    );
+  }
+}
+
+/// Bulatan berisi angka di ujung baris merchant.
+class _Penanda extends StatelessWidget {
+  final int jumlah;
+  final Color warna;
+
+  const _Penanda({required this.jumlah, required this.warna});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: warna.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text('$jumlah',
+          style: TextStyle(
+              fontSize: 11.5, fontWeight: FontWeight.bold, color: warna)),
     );
   }
 }

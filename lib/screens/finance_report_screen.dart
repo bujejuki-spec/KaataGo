@@ -6,6 +6,7 @@ import 'package:printing/printing.dart';
 import 'package:provider/provider.dart';
 
 import '../db/expense_repository.dart';
+import '../utils/periode_laporan.dart';
 import '../db/order_repository.dart';
 import '../db/restaurant_repository.dart';
 import '../models/customer_order.dart';
@@ -142,11 +143,14 @@ class _FinanceReportScreenState extends State<FinanceReportScreen> {
   int get _totalDebit => _entries.fold(0, (sum, e) => sum + e.debit);
 
   Future<void> _pickRange() async {
-    final range = await showDateRangePicker(
-      context: context,
-      firstDate: DateTime(2020),
-      lastDate: DateTime.now(),
-      initialDateRange: DateTimeRange(start: _start, end: _end),
+    // Batas sebulannya ditegakkan di satu tempat, dipakai layar ini dan
+    // Jurnal GL. Dua pemeriksaan terpisah akan berpisah, dan yang
+    // terlihat adalah dua layar dengan aturan periode berbeda untuk
+    // alasan yang sama.
+    final range = await pilihPeriodeLaporan(
+      context,
+      mulai: _start,
+      akhir: _end,
     );
     if (range == null) return;
     setState(() {

@@ -18,6 +18,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../db/expense_gl_account_repository.dart';
 import '../db/cash_deposit_repository.dart';
+import '../db/company_balance_repository.dart';
 import '../db/cashier_shift_repository.dart';
 import '../db/expense_repository.dart';
 import '../db/order_repository.dart';
@@ -126,6 +127,23 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
   /// Setoran modal — uang masuk yang bukan hasil penjualan.
   List<BalanceTopup> _topups = const [];
 
+  /// Saldo perusahaan, dipakai sebagai batas saat pengeluaran dibayar
+  /// dari kas atau rekening perusahaan — bukan dari petty cash.
+  ///
+  /// Angkanya sendiri tidak ditampilkan di sini: layar Saldo Perusahaan
+  /// yang menyebutnya, dan dua layar yang memajang angka sama akan
+  /// berpisah begitu salah satunya diubah.
+  int _saldoCashPerusahaan = 0;
+  int _saldoBankPerusahaan = 0;
+
+  /// Finance dan Owner memutuskan dari kantong mana sebuah pengeluaran
+  /// dibayar. Kasir dan Admin tidak: yang mereka pegang cuma petty cash.
+  bool get _bolehPilihSumber {
+    if (_untukPlatform) return false;
+    final auth = context.read<AuthProvider>();
+    return auth.isOwner || auth.isFinance;
+  }
+
   int get _topupTotal => _topups.fold(0, (jumlah, t) => jumlah + t.amount);
 
   /// Kasir gets this screen too, but only to see the balances and write
@@ -143,22 +161,25 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
     return !auth.isKasir && !auth.isAdmin;
   }
 
-  /// Kasir dan Admin cuma melihat hari ini — kecuali tunai.
+  /// Layar ini menjawab pertanyaan harian, untuk semua peran.
   ///
-  /// Layar ini menjumlahkan sejak hari pertama. Untuk Finance dan Owner
-  /// itu memang gunanya; untuk yang menjaga kasir, angka itu adalah
-  /// saldo perusahaan, dan tidak ada pekerjaan di meja kasir yang
-  /// membutuhkannya. Yang dibutuhkan cuma hari yang sedang berjalan.
+  /// Mulanya hanya Kasir dan Admin yang dipotong per hari, dengan
+  /// anggapan Finance dan Owner memang membutuhkan angka sejak hari
+  /// pertama di sini. Ternyata tidak: yang mereka butuhkan adalah saldo
+  /// perusahaan, dan itu sekarang punya layarnya sendiri — Saldo
+  /// Perusahaan, yang menyebut uang tunai dan uang rekening secara
+  /// terpisah.
+  ///
+  /// Yang tersisa di sini adalah pertanyaan hari ini: berapa yang
+  /// masuk, berapa yang dibelanjakan, berapa isi laci. Angka kumulatif
+  /// di layar yang sama cuma membuat dua pertanyaan berbeda dijawab
+  /// satu kolom. Yang dibutuhkan cuma hari yang sedang berjalan.
   ///
   /// Tunai dikecualikan dan harus dikecualikan: Saldo Cash adalah isi
   /// laci, dan laci tidak ikut berganti hari. Memotongnya per hari
   /// membuat uang kemarin yang belum disetor lenyap dari layar — lalu
   /// selisih tutup shift yang sebenarnya benar terbaca sebagai kurang.
-  bool get _harianSaja {
-    if (_untukPlatform) return false;
-    final auth = context.read<AuthProvider>();
-    return auth.isKasir || auth.isAdmin;
-  }
+  bool get _harianSaja => !_untukPlatform;
 
   /// Kasir memegang uang lacinya dan sering kehabisan kembalian di tengah
   /// shift; memintanya menunggu Finance datang hanya membuat pencatatan
@@ -258,6 +279,17 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
       bool sekarang(DateTime t) {
         final w = t.toWib();
         return !DateTime(w.year, w.month, w.day).isBefore(hariIni);
+      }
+
+      // Gagalnya tidak menggagalkan halaman: angkanya cuma dipakai
+      // sebagai batas, dan yang tidak memilih sumber selain petty cash
+      // tidak terpengaruh sama sekali.
+      if (_bolehPilihSumber) {
+        try {
+          final saldo = await CompanyBalanceRepository().saldo(restoId);
+          _saldoCashPerusahaan = saldo.cash;
+          _saldoBankPerusahaan = saldo.bank;
+        } catch (_) {}
       }
 
       final semuaSetoran = results[5] as List<CashDeposit>;
@@ -448,6 +480,9 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
         restoId: _restoId,
         glAccounts: _expenseGlAccounts,
         availablePettyCash: _pettyCashBalance,
+        saldoCash: _saldoCashPerusahaan,
+        saldoBank: _saldoBankPerusahaan,
+        bolehPilihSumber: _bolehPilihSumber,
       ),
     );
     if (saved == true) _load();
@@ -1017,6 +1052,14 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
                                         title: Text(e.description),
                                         subtitle: Text(
                                           '${DateFormat('HH:mm').format(e.createdAt.toWib())} • ${e.createdBy}'
+                                          // Kantong yang dipotong ikut
+                                          // disebut. Tanpa itu, dua
+                                          // pengeluaran yang terlihat
+                                          // sama persis bisa berasal
+                                          // dari uang yang berbeda, dan
+                                          // yang mencarinya nanti tidak
+                                          // punya cara tahu yang mana.
+                                          '${e.fundSource != 'petty' ? ' • ${e.labelSumberDana}' : ''}'
                                           '${e.glCode != null ? ' • GL ${e.glCode}' : ''}'
                                           '${e.receiptBase64 != null ? ' • ada bukti' : ''}',
                                         ),
@@ -1293,11 +1336,17 @@ class _AddExpenseDialog extends StatefulWidget {
   final String restoId;
   final List<ExpenseGlAccount> glAccounts;
   final int availablePettyCash;
+  final int saldoCash;
+  final int saldoBank;
+  final bool bolehPilihSumber;
 
   const _AddExpenseDialog({
     required this.restoId,
     required this.glAccounts,
     required this.availablePettyCash,
+    this.saldoCash = 0,
+    this.saldoBank = 0,
+    this.bolehPilihSumber = false,
   });
 
   @override
@@ -1309,6 +1358,12 @@ class _AddExpenseDialogState extends State<_AddExpenseDialog> {
   final _amountCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
   String? _glCode;
+
+  /// 'petty' | 'cash' | 'bank'. Bawaannya petty cash: itu yang berlaku
+  /// selama ini, dan yang tidak memilih apa pun tidak boleh diam-diam
+  /// memotong rekening perusahaan.
+  String _sumber = 'petty';
+
   Uint8List? _receipt;
   final _repo = ExpenseRepository();
   bool _saving = false;
@@ -1341,6 +1396,7 @@ class _AddExpenseDialogState extends State<_AddExpenseDialog> {
         description: _descCtrl.text.trim(),
         glCode: _glCode,
         receiptBase64: receiptBase64,
+        fundSource: _sumber,
         createdBy: auth.user?.email ?? 'Finance',
         createdAt: DateTime.now(),
       ));
@@ -1357,7 +1413,21 @@ class _AddExpenseDialogState extends State<_AddExpenseDialog> {
   Widget build(BuildContext context) {
     final currency = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
     const accentColor = Color(0xFF6366F1); // Petty Cash's colour throughout the app
-    final noFunds = widget.availablePettyCash <= 0;
+    // Batasnya mengikuti kantong yang dipilih. Batas yang selalu
+    // memakai petty cash membuat pengeluaran dari rekening ditolak
+    // karena kas kecil kasir sedang kosong — penolakan yang tidak ada
+    // hubungannya dengan uang yang sedang dipakai.
+    final tersedia = switch (_sumber) {
+      'cash' => widget.saldoCash,
+      'bank' => widget.saldoBank,
+      _ => widget.availablePettyCash,
+    };
+    final namaSumber = switch (_sumber) {
+      'cash' => 'Saldo Cash Perusahaan',
+      'bank' => 'Saldo Bank Perusahaan',
+      _ => 'Petty Cash',
+    };
+    final noFunds = tersedia <= 0;
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -1417,8 +1487,8 @@ class _AddExpenseDialogState extends State<_AddExpenseDialog> {
                       Expanded(
                         child: Text(
                           noFunds
-                              ? 'Saldo Petty Cash kosong — top up dulu sebelum mencatat pengeluaran.'
-                              : 'Dipotong dari Petty Cash • tersedia ${currency.format(widget.availablePettyCash)}',
+                              ? '$namaSumber kosong — pilih sumber lain atau isi dulu.'
+                              : 'Dipotong dari $namaSumber • tersedia ${currency.format(tersedia)}',
                           style: TextStyle(
                             fontSize: 12.5,
                             color: noFunds ? Colors.orange.shade800 : accentColor,
@@ -1429,6 +1499,42 @@ class _AddExpenseDialogState extends State<_AddExpenseDialog> {
                     ],
                   ),
                 ),
+                // Sumber dananya dipilih lebih dulu, sebelum nominalnya:
+                // batas nominal mengikuti kantongnya, dan kotak yang
+                // berubah aturannya sesudah diisi memaksa orang
+                // mengetik ulang.
+                if (widget.bolehPilihSumber) ...[
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    value: _sumber,
+                    isExpanded: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Sumber Dana',
+                      isDense: true,
+                    ),
+                    items: [
+                      DropdownMenuItem(
+                          value: 'petty',
+                          child: Text('Petty Cash — '
+                              '${currency.format(widget.availablePettyCash)}')),
+                      DropdownMenuItem(
+                          value: 'cash',
+                          child: Text('Saldo Cash Perusahaan — '
+                              '${currency.format(widget.saldoCash)}')),
+                      DropdownMenuItem(
+                          value: 'bank',
+                          child: Text('Saldo Bank Perusahaan — '
+                              '${currency.format(widget.saldoBank)}')),
+                    ],
+                    onChanged: (v) => setState(() {
+                      _sumber = v ?? 'petty';
+                      // Nominalnya diperiksa ulang terhadap batas yang
+                      // baru, bukan dibiarkan lolos dari pemeriksaan
+                      // kantong sebelumnya.
+                      _formKey.currentState?.validate();
+                    }),
+                  ),
+                ],
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _amountCtrl,
@@ -1439,9 +1545,9 @@ class _AddExpenseDialogState extends State<_AddExpenseDialog> {
                   validator: (v) {
                     final n = parseRupiah(v ?? '');
                     if (n == null || n <= 0) return 'Wajib diisi, angka > 0';
-                    if (n > widget.availablePettyCash) {
-                      return 'Melebihi Petty Cash '
-                          '(maks ${currency.format(widget.availablePettyCash)})';
+                    if (n > tersedia) {
+                      return 'Melebihi $namaSumber '
+                          '(maks ${currency.format(tersedia)})';
                     }
                     return null;
                   },
