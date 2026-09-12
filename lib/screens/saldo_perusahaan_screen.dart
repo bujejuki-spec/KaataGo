@@ -5,6 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../db/balance_topup_repository.dart';
+import '../models/balance_topup.dart';
+import '../db/expense_repository.dart';
+import '../db/expense_gl_account_repository.dart';
+import '../models/expense.dart';
+import '../models/expense_gl_account.dart';
 import '../db/bank_account_repository.dart';
 import '../db/company_balance_repository.dart';
 import '../models/bank_account.dart';
@@ -49,6 +55,12 @@ class _SaldoPerusahaanScreenState extends State<SaldoPerusahaanScreen> {
   int _cash = 0;
   int _bank = 0;
   List<CompanyDeposit> _setoran = const [];
+  List<BalanceTopup> _modal = const [];
+
+  /// Pengeluaran yang dibayar dari uang perusahaan — bukan dari petty
+  /// cash kasir, yang punya layarnya sendiri.
+  List<Expense> _pengeluaran = const [];
+  List<ExpenseGlAccount> _akunBiaya = const [];
   List<BankAccount> _rekening = const [];
   bool _memuat = true;
   String? _galat;
@@ -74,6 +86,10 @@ class _SaldoPerusahaanScreenState extends State<SaldoPerusahaanScreen> {
     try {
       final saldo = await _repo.saldo(restoId);
       final setoran = await _repo.setoran(restoId);
+      final modal = await BalanceTopupRepository().getForResto(restoId);
+      final biaya = await ExpenseRepository().getForResto(restoId);
+      final akunBiaya =
+          await ExpenseGlAccountRepository().getForResto(restoId);
       // Rekeningnya pelengkap: setoran tetap bisa dicatat tanpa daftar
       // rekening, cuma tujuannya jadi tidak disebut.
       List<BankAccount> rekening = const [];
@@ -85,6 +101,15 @@ class _SaldoPerusahaanScreenState extends State<SaldoPerusahaanScreen> {
         _cash = saldo.cash;
         _bank = saldo.bank;
         _setoran = setoran;
+        _modal = modal;
+        // Yang dibayar dari petty cash tidak ikut: itu urusan layar
+        // Saldo & Pengeluaran, dan menampilkannya di sini membuat satu
+        // pengeluaran terbaca dua kali.
+        _pengeluaran = [
+          for (final e in biaya)
+            if (e.fundSource == 'cash' || e.fundSource == 'bank') e,
+        ];
+        _akunBiaya = akunBiaya;
         _rekening = rekening;
         _memuat = false;
       });
@@ -94,6 +119,39 @@ class _SaldoPerusahaanScreenState extends State<SaldoPerusahaanScreen> {
         _galat = pesanGalat(e);
         _memuat = false;
       });
+    }
+  }
+
+  Future<void> _topUpModal() async {
+    final restoId = _restoId;
+    if (restoId == null) return;
+    final tersimpan = await showDialog<bool>(
+      context: context,
+      builder: (_) => _FormModal(restoId: restoId),
+    );
+    if (tersimpan == true) {
+      if (!mounted) return;
+      showAppToast(context, 'Setoran modal tercatat.');
+      _muat();
+    }
+  }
+
+  Future<void> _catatPengeluaran() async {
+    final restoId = _restoId;
+    if (restoId == null) return;
+    final tersimpan = await showDialog<bool>(
+      context: context,
+      builder: (_) => _DialogPengeluaran(
+        restoId: restoId,
+        akunBiaya: _akunBiaya,
+        saldoCash: _cash,
+        saldoBank: _bank,
+      ),
+    );
+    if (tersimpan == true) {
+      if (!mounted) return;
+      showAppToast(context, 'Pengeluaran tercatat.');
+      _muat();
     }
   }
 
@@ -125,10 +183,35 @@ class _SaldoPerusahaanScreenState extends State<SaldoPerusahaanScreen> {
         appBar: AppBar(title: const Text('Saldo Perusahaan')),
         floatingActionButton: !bolehUbahDiSini(context) || _memuat
             ? null
-            : FloatingActionButton.extended(
-                onPressed: _setor,
-                icon: const Icon(Icons.account_balance_outlined),
-                label: const Text('Setor ke Bank'),
+            : Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  FloatingActionButton.extended(
+                    heroTag: 'biaya',
+                    onPressed: _catatPengeluaran,
+                    icon: const Icon(Icons.receipt_long_outlined),
+                    label: const Text('Catat Pengeluaran'),
+                    backgroundColor: const Color(0xFFEF4444),
+                    foregroundColor: Colors.white,
+                  ),
+                  const SizedBox(height: 10),
+                  FloatingActionButton.extended(
+                    heroTag: 'modal',
+                    onPressed: _topUpModal,
+                    icon: const Icon(Icons.savings_outlined),
+                    label: const Text('Top Up Modal'),
+                    backgroundColor: const Color(0xFF14B8A6),
+                    foregroundColor: Colors.white,
+                  ),
+                  const SizedBox(height: 10),
+                  FloatingActionButton.extended(
+                    heroTag: 'setor',
+                    onPressed: _setor,
+                    icon: const Icon(Icons.account_balance_outlined),
+                    label: const Text('Setor ke Bank'),
+                  ),
+                ],
               ),
         body: _memuat
             ? const Center(child: CircularProgressIndicator())
@@ -205,6 +288,93 @@ class _SaldoPerusahaanScreenState extends State<SaldoPerusahaanScreen> {
                             for (final s in _setoran)
                               _BarisSetoran(
                                   setoran: s, rp: _rp, waktu: _waktu),
+                          const SizedBox(height: 20),
+                          const Text('Pengeluaran Perusahaan',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 14)),
+                          const SizedBox(height: 8),
+                          if (_pengeluaran.isEmpty)
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 20),
+                              child: Center(
+                                child: Text(
+                                  'Belum ada pengeluaran dari uang perusahaan.',
+                                  style: TextStyle(
+                                      color: KaataTheme.mutedOf(context)),
+                                ),
+                              ),
+                            )
+                          else
+                            for (final e in _pengeluaran)
+                              Card(
+                                margin: const EdgeInsets.only(bottom: 8),
+                                child: ListTile(
+                                  leading: CircleAvatar(
+                                    backgroundColor: const Color(0xFFEF4444)
+                                        .withOpacity(0.12),
+                                    child: const Icon(
+                                        Icons.receipt_long_outlined,
+                                        color: Color(0xFFEF4444),
+                                        size: 20),
+                                  ),
+                                  title: Text(e.description,
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14)),
+                                  subtitle: Text(
+                                    'Dari ${e.labelSumberDana}'
+                                    '${e.glCode != null ? ' · GL ${e.glCode}' : ''}'
+                                    '\n${_waktu.format(e.createdAt.toLocal())} · ${e.createdBy}',
+                                    style: const TextStyle(fontSize: 11.5),
+                                  ),
+                                  trailing: Text('- ${_rp.format(e.amount)}',
+                                      style: const TextStyle(
+                                          color: Color(0xFFEF4444),
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 13)),
+                                  isThreeLine: true,
+                                ),
+                              ),
+                          const SizedBox(height: 20),
+                          const Text('Setoran Modal',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 14)),
+                          const SizedBox(height: 8),
+                          if (_modal.isEmpty)
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 20),
+                              child: Center(
+                                child: Text('Belum ada setoran modal.',
+                                    style: TextStyle(
+                                        color: KaataTheme.mutedOf(context))),
+                              ),
+                            )
+                          else
+                            for (final m in _modal)
+                              Card(
+                                margin: const EdgeInsets.only(bottom: 8),
+                                child: ListTile(
+                                  leading: CircleAvatar(
+                                    backgroundColor: const Color(0xFF14B8A6)
+                                        .withOpacity(0.12),
+                                    child: const Icon(Icons.savings_outlined,
+                                        color: Color(0xFF14B8A6), size: 20),
+                                  ),
+                                  title: Text(_rp.format(m.amount),
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14)),
+                                  subtitle: Text(
+                                    'Dari ${m.source} · masuk ${m.labelTujuan}'
+                                    '${m.note != null && m.note!.isNotEmpty ? ' · ${m.note}' : ''}'
+                                    '\n${_waktu.format(m.createdAt.toLocal())}',
+                                    style: const TextStyle(fontSize: 11.5),
+                                  ),
+                                  isThreeLine: true,
+                                ),
+                              ),
                         ],
                       ),
                     ),
@@ -232,9 +402,10 @@ class _Keterangan extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Saldo Cash bertambah dari serah terima cash pickup, dan '
-              'berkurang saat disetor ke bank atau dipakai membayar '
-              'pengeluaran bersumber tunai.',
+          Text('Saldo Cash bertambah dari serah terima cash pickup dan dari '
+              'top up modal yang diserahkan tunai, dan berkurang saat '
+              'disetor ke bank atau dipakai membayar pengeluaran bersumber '
+              'tunai.',
               style: TextStyle(fontSize: 12.5, color: muted)),
           const SizedBox(height: 8),
           Text('Saldo Bank bertambah dari penjualan QRIS Dinamis, QRIS '
@@ -587,6 +758,435 @@ class _DialogSetorState extends State<_DialogSetor> {
               const SizedBox(height: 18),
               DialogActions(
                 confirmLabel: 'Setor',
+                busy: _menyimpan,
+                onConfirm: _simpan,
+                onCancel: () => Navigator.of(context).pop(false),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FormModal extends StatefulWidget {
+  final String restoId;
+
+  const _FormModal({required this.restoId});
+
+  @override
+  State<_FormModal> createState() => _FormModalState();
+}
+
+
+/// Formulir setoran modal.
+///
+/// Nominal, dari siapa, keterangan, bukti kalau ada — dan kantong
+/// tujuannya. Modal masuk ke perusahaan, bukan ke penjualan hari ini:
+/// ia menambah Saldo Cash atau Saldo Bank Perusahaan, dan tidak
+/// menyentuh Saldo Cash maupun Saldo Non Cash merchant sama sekali.
+class _FormModalState extends State<_FormModal> {
+  final _repo = BalanceTopupRepository();
+  final _formKey = GlobalKey<FormState>();
+  final _nominal = TextEditingController();
+  final _dari = TextEditingController();
+  final _catatan = TextEditingController();
+  String? _bukti;
+
+  /// Mendarat di mana uangnya. Bawaannya rekening: setoran modal yang
+  /// besar hampir selalu ditransfer, dan yang menyerahkannya tunai akan
+  /// menyadarinya justru karena harus memilih.
+  String _tujuan = 'bank';
+
+  bool _menyimpan = false;
+
+  @override
+  void dispose() {
+    for (final c in [_nominal, _dari, _catatan]) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  Future<void> _pilihBukti() async {
+    final bytes = await pickProofPhoto(context);
+    if (bytes == null || !mounted) return;
+    setState(() => _bukti = base64Encode(bytes));
+  }
+
+  Future<void> _simpan() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _menyimpan = true);
+    try {
+      await _repo.add(
+        restoId: widget.restoId,
+        amount: parseRupiah(_nominal.text) ?? 0,
+        source: _dari.text.trim(),
+        destination: _tujuan,
+        note: _catatan.text.trim(),
+        proofBase64: _bukti,
+      );
+      if (!mounted) return;
+      Navigator.pop(context, true);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _menyimpan = false);
+      AppToast.show(context, 'Gagal menyimpan: $e', isError: true);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Top Up Saldo'),
+      content: SingleChildScrollView(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Uang masuk dari luar penjualan — setoran investor atau '
+                'modal awal. Menambah Saldo Perusahaan di kantong yang '
+                'dipilih, terpisah dari pendapatan penjualan.',
+                style: TextStyle(
+                    fontSize: 12, color: KaataTheme.mutedOf(context)),
+              ),
+              const SizedBox(height: 14),
+              // Kantongnya disebut penyetornya. Uang yang ditransfer
+              // dan uang yang diserahkan tunai mendarat di tempat yang
+              // berbeda, dan menebaknya berarti salah satu dari dua
+              // saldo selalu meleset.
+              DropdownButtonFormField<String>(
+                value: _tujuan,
+                isExpanded: true,
+                decoration: const InputDecoration(
+                  labelText: 'Masuk ke',
+                  isDense: true,
+                ),
+                items: const [
+                  DropdownMenuItem(
+                      value: 'bank',
+                      child: Text('Saldo Bank — masuk rekening')),
+                  DropdownMenuItem(
+                      value: 'cash',
+                      child: Text('Saldo Cash — diserahkan tunai')),
+                ],
+                onChanged: (v) => setState(() => _tujuan = v ?? 'bank'),
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _nominal,
+                keyboardType: TextInputType.number,
+                inputFormatters: [ThousandsInputFormatter()],
+                decoration: InputDecoration(
+                  label: requiredLabel('Nominal'),
+                  prefixText: 'Rp ',
+                ),
+                validator: (v) =>
+                    (parseRupiah(v ?? '') ?? 0) > 0 ? null : 'Isi nominalnya',
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _dari,
+                textCapitalization: TextCapitalization.words,
+                decoration: InputDecoration(
+                  label: requiredLabel('Dari'),
+                  hintText: 'Nama investor atau penyetor',
+                ),
+                validator: (v) =>
+                    (v ?? '').trim().isEmpty ? 'Sebutkan penyetornya' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _catatan,
+                decoration: const InputDecoration(
+                  labelText: 'Keterangan (opsional)',
+                ),
+              ),
+              const SizedBox(height: 14),
+              if (_bukti == null)
+                OutlinedButton.icon(
+                  onPressed: _pilihBukti,
+                  icon: const Icon(Icons.attach_file, size: 17),
+                  label: const Text('Lampirkan Bukti (opsional)'),
+                )
+              else
+                Row(
+                  children: [
+                    const Icon(Icons.check_circle, color: Colors.green, size: 18),
+                    const SizedBox(width: 6),
+                    const Expanded(child: Text('Bukti terlampir')),
+                    TextButton(
+                      onPressed: () => setState(() => _bukti = null),
+                      child: const Text('Hapus'),
+                    ),
+                  ],
+                ),
+            ],
+          ),
+        ),
+      ),
+      actionsAlignment: MainAxisAlignment.center,
+      actions: [
+        DialogActions(
+          confirmLabel: 'Simpan',
+          busy: _menyimpan,
+          onConfirm: _simpan,
+          onCancel: () => Navigator.pop(context, false),
+        ),
+      ],
+    );
+  }
+}
+
+/// Mencatat pengeluaran yang dibayar dari uang perusahaan.
+///
+/// Kantongnya dipilih lebih dulu, sebelum nominalnya: batas nominal
+/// mengikuti kantongnya, dan kotak yang berubah aturannya sesudah diisi
+/// memaksa orang mengetik ulang.
+///
+/// Akun biayanya diambil dari daftar GL Pengeluaran milik restonya —
+/// daftar yang sama dengan yang dipakai pengeluaran petty cash, supaya
+/// laporan per akun tidak terbelah menurut dari kantong mana uangnya
+/// diambil.
+class _DialogPengeluaran extends StatefulWidget {
+  final String restoId;
+  final List<ExpenseGlAccount> akunBiaya;
+  final int saldoCash;
+  final int saldoBank;
+
+  const _DialogPengeluaran({
+    required this.restoId,
+    required this.akunBiaya,
+    required this.saldoCash,
+    required this.saldoBank,
+  });
+
+  @override
+  State<_DialogPengeluaran> createState() => _DialogPengeluaranState();
+}
+
+class _DialogPengeluaranState extends State<_DialogPengeluaran> {
+  final _formKey = GlobalKey<FormState>();
+  final _nominal = TextEditingController();
+  final _keterangan = TextEditingController();
+  final _repo = ExpenseRepository();
+
+  /// 'cash' atau 'bank'. Tidak ada 'petty' di sini: kas kecil kasir
+  /// dibelanjakan dari layar Saldo & Pengeluaran.
+  String _sumber = 'bank';
+  String? _glCode;
+  Uint8List? _nota;
+  bool _menyimpan = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _glCode = widget.akunBiaya.isEmpty ? null : widget.akunBiaya.first.glCode;
+  }
+
+  @override
+  void dispose() {
+    _nominal.dispose();
+    _keterangan.dispose();
+    super.dispose();
+  }
+
+  int get _tersedia => _sumber == 'cash' ? widget.saldoCash : widget.saldoBank;
+
+  String get _namaSumber => _sumber == 'cash'
+      ? 'Saldo Cash Perusahaan'
+      : 'Saldo Bank Perusahaan';
+
+  Future<void> _simpan() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _menyimpan = true);
+    try {
+      await _repo.create(Expense(
+        id: '',
+        restoId: widget.restoId,
+        amount: parseRupiah(_nominal.text)!,
+        description: _keterangan.text.trim(),
+        glCode: _glCode,
+        receiptBase64: _nota == null ? null : base64Encode(_nota!),
+        fundSource: _sumber,
+        createdBy: context.read<AuthProvider>().user?.email ?? 'Finance',
+        createdAt: DateTime.now(),
+      ));
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+    } catch (e) {
+      if (!mounted) return;
+      showAppToast(context, 'Gagal menyimpan: ${pesanGalat(e)}', isError: true);
+      setState(() => _menyimpan = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final rp =
+        NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+    final muted = KaataTheme.mutedOf(context);
+
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      insetPadding: insetDialogWeb(context),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Flexible(
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Catat Pengeluaran Perusahaan',
+                          style: TextStyle(
+                              fontSize: 17, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Dipotong dari kantong yang dipilih, dan tercatat di '
+                        'akun GL Pengeluaran yang disebut.',
+                        style: TextStyle(fontSize: 12.5, color: muted),
+                      ),
+                      const SizedBox(height: 14),
+                      DropdownButtonFormField<String>(
+                        value: _sumber,
+                        isExpanded: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Sumber Dana',
+                          isDense: true,
+                        ),
+                        items: [
+                          DropdownMenuItem(
+                            value: 'bank',
+                            child: Text('Saldo Bank Perusahaan — '
+                                '${rp.format(widget.saldoBank)}'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'cash',
+                            child: Text('Saldo Cash Perusahaan — '
+                                '${rp.format(widget.saldoCash)}'),
+                          ),
+                        ],
+                        onChanged: (v) => setState(() {
+                          _sumber = v ?? 'bank';
+                          // Nominalnya diperiksa ulang terhadap batas
+                          // yang baru, bukan dibiarkan lolos dari
+                          // pemeriksaan kantong sebelumnya.
+                          _formKey.currentState?.validate();
+                        }),
+                      ),
+                      const SizedBox(height: 12),
+                      if (widget.akunBiaya.isEmpty)
+                        const Text(
+                          'Belum ada akun GL Pengeluaran. Tambahkan dulu di '
+                          'Mapping GL Account.',
+                          style: TextStyle(
+                              fontSize: 12.5, color: Color(0xFFDC2626)),
+                        )
+                      else
+                        DropdownButtonFormField<String>(
+                          value: _glCode,
+                          isExpanded: true,
+                          decoration: InputDecoration(
+                            label: requiredLabel('Akun Pengeluaran'),
+                            isDense: true,
+                          ),
+                          items: [
+                            for (final a in widget.akunBiaya)
+                              DropdownMenuItem(
+                                value: a.glCode,
+                                child: Text('${a.glCode} — ${a.glName}',
+                                    overflow: TextOverflow.ellipsis),
+                              ),
+                          ],
+                          onChanged: (v) => setState(() => _glCode = v),
+                          validator: (v) =>
+                              v == null ? 'Pilih akun pengeluarannya' : null,
+                        ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _nominal,
+                        decoration: InputDecoration(
+                          label: requiredLabel('Jumlah'),
+                          prefixText: 'Rp ',
+                        ),
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [ThousandsInputFormatter()],
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                        validator: (v) {
+                          final n = parseRupiah(v ?? '');
+                          if (n == null || n <= 0) {
+                            return 'Wajib diisi, angka > 0';
+                          }
+                          // Membelanjakan lebih dari yang dipegang
+                          // membuat saldonya minus — angka yang tidak
+                          // berarti apa-apa.
+                          if (n > _tersedia) {
+                            return 'Melebihi $_namaSumber '
+                                '(maks ${rp.format(_tersedia)})';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _keterangan,
+                        decoration:
+                            InputDecoration(label: requiredLabel('Keterangan')),
+                        textCapitalization: TextCapitalization.sentences,
+                        validator: (v) => (v ?? '').trim().isEmpty
+                            ? 'Sebutkan pengeluarannya'
+                            : null,
+                      ),
+                      const SizedBox(height: 14),
+                      Text('Nota (opsional)',
+                          style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: muted)),
+                      const SizedBox(height: 8),
+                      if (_nota == null)
+                        OutlinedButton.icon(
+                          onPressed: () async {
+                            final dipilih = await pickProofPhoto(context);
+                            if (dipilih != null && mounted) {
+                              setState(() => _nota = dipilih);
+                            }
+                          },
+                          icon: const Icon(Icons.add_a_photo_outlined, size: 18),
+                          label: const Text('Ambil Foto Nota'),
+                        )
+                      else
+                        Row(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.memory(_nota!,
+                                  width: 58, height: 58, fit: BoxFit.cover),
+                            ),
+                            const SizedBox(width: 10),
+                            TextButton(
+                              onPressed: () => setState(() => _nota = null),
+                              child: const Text('Ganti'),
+                            ),
+                          ],
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              DialogActions(
+                confirmLabel: 'Simpan',
                 busy: _menyimpan,
                 onConfirm: _simpan,
                 onCancel: () => Navigator.of(context).pop(false),

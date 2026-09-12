@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../db/gl_account_repository.dart';
+import '../db/gl_journal_repository.dart';
+import '../models/gl_journal_entry.dart';
+import '../utils/saldo_jurnal.dart';
 import '../db/order_repository.dart';
 import '../models/customer_order.dart';
 import '../providers/auth_provider.dart';
@@ -30,15 +34,29 @@ class FinanceIncomeScreen extends StatefulWidget {
 class _DayIncome {
   final DateTime day;
   final List<CustomerOrder> orders;
+
+  /// Pendapatan lain-lain hari itu — selisih lebih kasir yang sudah
+  /// ditelusuri dan diakui sebagai pendapatan.
+  ///
+  /// Uangnya masuk, tapi tidak lewat satu pesanan pun: tidak ada yang
+  /// dijual. Karena itu ia tidak bisa dibaca dari `orders`, dan sebelum
+  /// ini layar Pemasukan tidak pernah menyebutnya sama sekali —
+  /// pendapatan yang sudah diakui di jurnal tapi tidak terlihat di
+  /// layar yang justru bernama Pemasukan.
+  final List<GlJournalEntry> lainLain;
+
   final int total;
   final Map<String, int> byMethod; // 'cash' | 'qris' | 'transfer'
 
-  _DayIncome(this.day, this.orders)
-      : total = orders.fold(0, (sum, o) => sum + o.total),
+  _DayIncome(this.day, this.orders, this.lainLain)
+      : total = orders.fold(0, (sum, o) => sum + o.total) +
+            lainLain.fold(0, (sum, e) => sum + e.amount),
         byMethod = {
           for (final m in ['cash', 'qris', 'transfer'])
             m: orders.where((o) => _methodKey(o) == m).fold(0, (s, o) => s + o.total),
         };
+
+  int get totalLainLain => lainLain.fold(0, (sum, e) => sum + e.amount);
 }
 
 /// Normalizes an order's payment into one of 'cash' | 'qris' | 'transfer'
@@ -71,6 +89,7 @@ String _methodKey(CustomerOrder o) {
 class _FinanceIncomeScreenState extends State<FinanceIncomeScreen> {
   final _orderRepo = OrderRepository();
   List<CustomerOrder> _orders = [];
+  List<GlJournalEntry> _lainLain = const [];
   bool _loading = true;
 
   @override
@@ -82,9 +101,35 @@ class _FinanceIncomeScreenState extends State<FinanceIncomeScreen> {
   Future<void> _load() async {
     final restoId = widget.restoId ?? context.read<AuthProvider>().restoId!;
     final all = await _orderRepo.semua(restoId);
+
+    // Pendapatan lain-lain dibaca dari jurnalnya, bukan dari baris
+    // pesanan palsu. Membuatkannya pesanan supaya muncul di sini berarti
+    // laporan menu terlaris ikut memuat penjualan yang tidak pernah
+    // terjadi.
+    var lain = <GlJournalEntry>[];
+    try {
+      final akun = await GlAccountRepository().getForResto(restoId);
+      final kode = akun
+          .where((a) => a.paymentMethod == 'other_income' && a.glCode.isNotEmpty)
+          .firstOrNull
+          ?.glCode;
+      if (kode != null) {
+        final jurnal = await GlJournalRepository().getForResto(restoId);
+        lain = [
+          for (final e in barisBerlaku(jurnal))
+            if (e.glCode == kode && e.entryType == JournalEntryType.credit) e,
+        ];
+      }
+    } catch (_) {
+      // Jurnalnya gagal dibaca: pemasukan penjualan tetap tampil. Layar
+      // yang kosong seluruhnya lebih buruk daripada layar yang kurang
+      // satu baris.
+    }
+
     if (!mounted) return;
     setState(() {
       _orders = all.where((o) => o.paymentStatus == OrderPaymentStatus.paid).toList();
+      _lainLain = lain;
       _loading = false;
     });
   }
@@ -96,8 +141,22 @@ class _FinanceIncomeScreenState extends State<FinanceIncomeScreen> {
       final day = DateTime(wib.year, wib.month, wib.day);
       byDay.putIfAbsent(day, () => []).add(o);
     }
+
+    // Tanggalnya diambil dari entry_date jurnalnya — tanggal saat
+    // selisihnya diakui sebagai pendapatan, bukan tanggal shift yang
+    // melahirkannya. Itu tanggal keputusannya, dan itu yang dicari orang
+    // saat menelusuri kenapa pemasukan hari itu naik.
+    final lainByDay = <DateTime, List<GlJournalEntry>>{};
+    for (final e in _lainLain) {
+      final d = DateTime(e.entryDate.year, e.entryDate.month, e.entryDate.day);
+      lainByDay.putIfAbsent(d, () => []).add(e);
+      byDay.putIfAbsent(d, () => []);
+    }
+
     final days = byDay.keys.toList()..sort((a, b) => b.compareTo(a));
-    return days.map((d) => _DayIncome(d, byDay[d]!)).toList();
+    return days
+        .map((d) => _DayIncome(d, byDay[d]!, lainByDay[d] ?? const []))
+        .toList();
   }
 
   static const _methodLabels = {'cash': 'Tunai', 'qris': 'QRIS', 'transfer': 'Transfer'};
@@ -107,13 +166,14 @@ class _FinanceIncomeScreenState extends State<FinanceIncomeScreen> {
     final currency = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
     final dayFmt = DateFormat('EEEE, dd MMM yyyy', 'id_ID');
     final groups = _groupByDay();
-    final grandTotal = _orders.fold(0, (sum, o) => sum + o.total);
+    final grandTotal = _orders.fold(0, (sum, o) => sum + o.total) +
+        _lainLain.fold(0, (sum, e) => sum + e.amount);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Pemasukan')),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : _orders.isEmpty
+          : _orders.isEmpty && _lainLain.isEmpty
               ? const Center(child: Text('Belum ada pemasukan.'))
               : Column(
                   children: [
@@ -169,7 +229,19 @@ class _FinanceIncomeScreenState extends State<FinanceIncomeScreen> {
                                     Wrap(
                                       spacing: 6,
                                       runSpacing: 6,
-                                      children: _methodLabels.keys
+                                      children: [
+                                        if (g.totalLainLain > 0)
+                                          Chip(
+                                            visualDensity:
+                                                VisualDensity.compact,
+                                            label: Text(
+                                              'Lain-lain: '
+                                              '${currency.format(g.totalLainLain)}',
+                                              style: const TextStyle(
+                                                  fontSize: 12),
+                                            ),
+                                          ),
+                                        ..._methodLabels.keys
                                           .where((m) => g.byMethod[m]! > 0)
                                           .map((m) => Chip(
                                                 visualDensity: VisualDensity.compact,
@@ -177,24 +249,41 @@ class _FinanceIncomeScreenState extends State<FinanceIncomeScreen> {
                                                   '${_methodLabels[m]}: ${currency.format(g.byMethod[m])}',
                                                   style: const TextStyle(fontSize: 12),
                                                 ),
-                                              ))
-                                          .toList(),
+                                              )),
+                                      ],
                                     ),
                                   ],
                                 ),
                               ),
                               childrenPadding: const EdgeInsets.only(bottom: 8),
-                              children: g.orders.map((o) {
-                                return ListTile(
-                                  dense: true,
-                                  title: Text(currency.format(o.total)),
-                                  subtitle: Text(
-                                    '${DateFormat('HH:mm').format(o.createdAt.toWib())} • '
-                                    '${_methodLabels[_methodKey(o)]} • #${o.id.substring(0, 8).toUpperCase()}',
+                              children: [
+                                for (final e in g.lainLain)
+                                  ListTile(
+                                    dense: true,
+                                    leading: const Icon(
+                                        Icons.savings_outlined,
+                                        size: 20,
+                                        color: Color(0xFFF59E0B)),
+                                    title: Text(currency.format(e.amount)),
+                                    subtitle: Text(
+                                      e.description?.isNotEmpty == true
+                                          ? e.description!
+                                          : 'Pendapatan lain-lain',
+                                    ),
+                                    trailing: const Text('lain-lain',
+                                        style: TextStyle(fontSize: 12)),
                                   ),
-                                  trailing: Text('${o.items.length} item'),
-                                );
-                              }).toList(),
+                                for (final o in g.orders)
+                                  ListTile(
+                                    dense: true,
+                                    title: Text(currency.format(o.total)),
+                                    subtitle: Text(
+                                      '${DateFormat('HH:mm').format(o.createdAt.toWib())} • '
+                                      '${_methodLabels[_methodKey(o)]} • #${o.id.substring(0, 8).toUpperCase()}',
+                                    ),
+                                    trailing: Text('${o.items.length} item'),
+                                  ),
+                              ],
                             ),
                           );
                         },

@@ -37,6 +37,24 @@ Formatnya dibaca `scripts/release.sh`: judul `## <versi>`, lalu
 poin-poinnya. Versi yang tidak punya bagiannya di sini tetap terbit,
 hanya pengumumannya memakai kalimat umum.
 
+## 3.4.0
+
+- Setor tunai yang disetujui kini mendarat di Saldo Bank Perusahaan, dan
+  cash pickup di Saldo Cash Perusahaan — keduanya berhenti dihitung
+  sebagai Saldo Non Cash merchant, supaya uang yang sama tidak muncul di
+  dua layar
+- Selisih kasir yang dilunasi lewat transfer ikut masuk Saldo Bank
+- Top Up Modal pindah ke menu Saldo Perusahaan, tetap memilih masuk ke
+  Saldo Cash atau Saldo Bank
+- Menu Saldo Perusahaan bisa mencatat pengeluaran yang dibayar dari uang
+  perusahaan, dengan akun GL Pengeluaran yang dipilih sendiri; pencatatan
+  di Saldo & Pengeluaran kembali khusus Petty Cash
+- Selisih lebih yang diakui sebagai pendapatan kini muncul di menu
+  Pemasukan, pada tanggal saat diakuinya
+- Kartu Penghasilan di Saldo & Pengeluaran dilepas — angkanya sudah
+  terbaca dari Saldo Cash dan Saldo Non Cash di atasnya
+- Perbaikan bug dan penyempurnaan tampilan
+
 ## 3.3.0
 
 - Penjualan QRIS, QRIS Statis, dan Transfer kini masuk ke Saldo Bank

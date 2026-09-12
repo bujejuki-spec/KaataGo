@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pos_app/models/cash_deposit.dart';
+import 'package:pos_app/utils/cash_balance.dart';
 
 void main() {
   CashDeposit buat({
@@ -92,5 +93,43 @@ void main() {
         File('lib/screens/cash_deposit_screen.dart').readAsStringSync();
     expect(layar, contains('bool get _siap => _accountReady && _proof != null;'));
     expect(layar, contains('bool get _siap => _bukti != null;'));
+  });
+
+  group('pickup tidak mendarat di rekening', () {
+    // Uang yang dijemput petugas tidak pernah menyentuh rekening
+    // merchant — ia berpindah ke tangan perusahaan. Menghitungnya
+    // sebagai setoran membuat Saldo Non Cash naik sebesar uang yang
+    // tidak ada di rekening mana pun.
+    test('setoranKeRekening melewatkan pickup', () {
+      final daftar = [
+        buat(method: 'setor'),
+        buat(method: 'pickup', pickedUpBy: 'Budi'),
+      ];
+      expect(setoranKeRekening(daftar), 500000);
+    });
+
+    // Tapi isi laci tetap dikurangi keduanya: lembarannya sama-sama
+    // sudah keluar dari laci.
+    test('isi laci tetap dikurangi keduanya', () {
+      final daftar = [
+        buat(method: 'setor'),
+        buat(method: 'pickup', pickedUpBy: 'Budi'),
+      ];
+      expect(depositedFromDrawer(daftar), 1000000);
+    });
+
+    // Keduanya sama-sama meninggalkan Saldo Non Cash: setoran mendarat
+    // di Saldo Bank Perusahaan, pickup di Saldo Cash Perusahaan.
+    // Menghitungnya juga di layar harian membuat uang yang sama muncul
+    // dua kali.
+    test('tak satu pun dihitung di Saldo Non Cash', () {
+      final layar =
+          File('lib/screens/finance_balance_screen.dart').readAsStringSync();
+      final blok = layar.substring(
+          layar.indexOf('int get _nonCashBalance'),
+          layar.indexOf('int get _pettyCashToppedUp'));
+      expect(blok, isNot(contains('_setoranKeRekening +')));
+      expect(blok, isNot(contains('_depositedTotal')));
+    });
   });
 }

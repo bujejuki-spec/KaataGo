@@ -98,13 +98,26 @@ void main() {
     final layar =
         File('lib/screens/finance_balance_screen.dart').readAsStringSync();
 
-    test('mendarat di Saldo Non Cash', () {
+    // Setoran TIDAK lagi mendarat di Saldo Non Cash.
+    //
+    // Begitu disetujui, uangnya berhenti jadi uang merchant dan jadi
+    // uang perusahaan — tempatnya di layar Saldo Perusahaan. Menghitung
+    // di kedua layar membuat uang yang sama muncul dua kali.
+    test('setoran pindah ke Saldo Perusahaan, bukan ke Saldo Non Cash', () {
       final blok = layar.substring(layar.indexOf('int get _nonCashBalance'));
-      expect(blok.substring(0, blok.indexOf(';')), contains('_depositedTotal'));
+      final rumus = blok.substring(0, blok.indexOf(';'));
+      expect(rumus, isNot(contains('_setoranKeRekening')));
+      expect(rumus, isNot(contains('_depositedTotal')));
+      // Yang tersisa: penjualan non-tunai, setoran modal, dan pelunasan
+      // selisih lewat transfer.
+      expect(rumus, contains('_nonCashIncome'));
+      expect(rumus, contains('selisihDibayarTransfer'));
     });
 
     test('tidak ditambahkan lagi di Saldo Total', () {
       expect(layar, contains('return _incomeBalance + _pettyCashBalance;'));
+      expect(layar,
+          isNot(contains('_incomeBalance + _pettyCashBalance + _setoranKeRekening')));
       expect(layar,
           isNot(contains('_incomeBalance + _pettyCashBalance + _depositedTotal')));
     });

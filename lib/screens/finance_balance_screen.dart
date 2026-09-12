@@ -1,6 +1,4 @@
-import '../db/balance_topup_repository.dart';
 import '../utils/akses_menu.dart';
-import '../models/balance_topup.dart';
 import '../models/billing.dart';
 import '../models/gl_journal_entry.dart';
 import '../db/gl_account_repository.dart';
@@ -18,7 +16,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../db/expense_gl_account_repository.dart';
 import '../db/cash_deposit_repository.dart';
-import '../db/company_balance_repository.dart';
 import '../db/cashier_shift_repository.dart';
 import '../db/expense_repository.dart';
 import '../db/order_repository.dart';
@@ -75,7 +72,6 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
   final _expenseGlRepo = ExpenseGlAccountRepository();
   final _pettyCashRepo = PettyCashRepository();
   final _depositRepo = CashDepositRepository();
-  final _topupRepo = BalanceTopupRepository();
 
   /// Terbuka atau tertutupnya seluruh bagian, bukan cuma satu harinya.
   ///
@@ -85,7 +81,6 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
   /// bawah layar — padahal itu yang dicari orang saat membuka layar ini.
   /// Melipat bagiannya sekali ketuk mengembalikannya ke satu layar.
   bool _pettyCashOpen = true;
-  bool _topupOpen = true;
   bool _expensesOpen = true;
 
   int _cashIncome = 0;
@@ -133,26 +128,7 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
   String? _kodeTotalSaldo;
 
   /// Setoran modal — uang masuk yang bukan hasil penjualan.
-  List<BalanceTopup> _topups = const [];
 
-  /// Saldo perusahaan, dipakai sebagai batas saat pengeluaran dibayar
-  /// dari kas atau rekening perusahaan — bukan dari petty cash.
-  ///
-  /// Angkanya sendiri tidak ditampilkan di sini: layar Saldo Perusahaan
-  /// yang menyebutnya, dan dua layar yang memajang angka sama akan
-  /// berpisah begitu salah satunya diubah.
-  int _saldoCashPerusahaan = 0;
-  int _saldoBankPerusahaan = 0;
-
-  /// Finance dan Owner memutuskan dari kantong mana sebuah pengeluaran
-  /// dibayar. Kasir dan Admin tidak: yang mereka pegang cuma petty cash.
-  bool get _bolehPilihSumber {
-    if (_untukPlatform) return false;
-    final auth = context.read<AuthProvider>();
-    return auth.isOwner || auth.isFinance;
-  }
-
-  int get _topupTotal => _topups.fold(0, (jumlah, t) => jumlah + t.amount);
 
   /// Kasir gets this screen too, but only to see the balances and write
   /// down what they spent out of the float. Topping Petty Cash up moves
@@ -203,18 +179,6 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
     _load();
   }
 
-  /// Mencatat setoran modal.
-  ///
-  /// Nama penyetor wajib. Setoran tanpa penyetor adalah uang yang tidak
-  /// bisa dipertanggungjawabkan ke siapa pun — dan yang menanyakannya
-  /// setahun kemudian tidak akan menemukan jawabannya di mana pun.
-  Future<void> _tambahModal() async {
-    final tersimpan = await showDialog<bool>(
-      context: context,
-      builder: (_) => _FormModal(restoId: _restoId),
-    );
-    if (tersimpan == true) _load();
-  }
 
   Future<void> _load() async {
     setState(() {
@@ -246,13 +210,11 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
         final biaya = await _expenseRepo.getForResto(restoId);
         final akunBiaya = await _expenseGlRepo.getForResto(restoId);
         final petty = await _pettyCashRepo.getForResto(restoId);
-        final setoran = await _topupRepo.getForResto(restoId);
         if (!mounted) return;
         setState(() {
           _expenses = biaya;
           _expenseGlAccounts = akunBiaya;
           _pettyCashEntries = petty;
-          _topups = setoran;
         });
         return;
       }
@@ -264,7 +226,6 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
         _pettyCashRepo.getForResto(restoId),
         Supabase.instance.client.from('settings').select().eq('resto_id', restoId).limit(1),
         _depositRepo.getForResto(restoId),
-        _topupRepo.getForResto(restoId),
         // Selisih kasir yang belum dilunasi. Uangnya tidak ada di laci,
         // jadi Saldo Cash tidak boleh menghitungnya sebagai ada.
         CashierShiftRepository().selisih(restoId).catchError(
@@ -289,16 +250,6 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
         return !DateTime(w.year, w.month, w.day).isBefore(hariIni);
       }
 
-      // Gagalnya tidak menggagalkan halaman: angkanya cuma dipakai
-      // sebagai batas, dan yang tidak memilih sumber selain petty cash
-      // tidak terpengaruh sama sekali.
-      if (_bolehPilihSumber) {
-        try {
-          final saldo = await CompanyBalanceRepository().saldo(restoId);
-          _saldoCashPerusahaan = saldo.cash;
-          _saldoBankPerusahaan = saldo.bank;
-        } catch (_) {}
-      }
 
       final semuaSetoran = results[5] as List<CashDeposit>;
       final semuaPetty = results[3] as List<PettyCashEntry>;
@@ -318,11 +269,7 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
         _deposits = harian
             ? semuaSetoran.where((d) => sekarang(d.createdAt)).toList()
             : semuaSetoran;
-        _topups = [
-          for (final t in results[6] as List<BalanceTopup>)
-            if (!harian || sekarang(t.createdAt)) t,
-        ];
-        _selisih = results[7] as List<CashVariance>;
+        _selisih = results[6] as List<CashVariance>;
         // Yang dilunasi lewat transfer disaring menurut TANGGAL
         // PELUNASANNYA, bukan tanggal selisihnya terjadi: yang
         // menambah rekening hari ini adalah uang yang diserahkan hari
@@ -377,7 +324,11 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
   /// Setoran yang ditolak tidak dihitung: uangnya dikembalikan menjadi
   /// tanggung jawab laci kasir. Yang masih menunggu persetujuan tetap
   /// dihitung, karena fisiknya memang sudah tidak ada di laci.
-  int get _depositedTotal => depositedFromDrawer(_deposits);
+  /// Yang menuju rekening merchant — pickup tidak ikut.
+  ///
+  /// Isi laci tetap dikurangi keduanya, lewat cashOnHand: lembarannya
+  /// sama-sama sudah keluar. Yang berbeda cuma ke mana perginya.
+  int get _setoranKeRekening => setoranKeRekening(_deposits);
 
   /// Bagian dari setoran yang masih mengendap di GL Suspense.
   int get _pendingDeposits =>
@@ -393,11 +344,12 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
         selisih: _selisih,
       );
 
-  /// Setoran modal ikut di sini: uangnya mendarat di rekening, bukan di
-  /// laci. Menaruhnya di luar Cash/Non Cash membuat kedua kartu itu
-  /// berhenti berjumlah sama dengan Penghasilan — dan dua angka yang
-  /// tidak bertemu di layar yang sama adalah yang pertama membuat orang
-  /// berhenti mempercayai seluruh halamannya.
+  /// Setoran modal TIDAK ikut di sini.
+  ///
+  /// Modal masuk ke perusahaan, bukan ke hari ini: penyetornya memilih
+  /// mendarat di Saldo Cash atau Saldo Bank Perusahaan, dan layar
+  /// inilah yang menyebutkannya. Menghitungnya juga di sini membuat
+  /// satu setoran muncul di dua layar sekaligus.
   ///
   /// Setoran tunai ikut di sini, dan itu inti perpindahannya: uang yang
   /// keluar dari laci mendarat di rekening. Sebelumnya ia dikurangkan
@@ -405,10 +357,22 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
   /// menambahkannya sendiri di tingkat atas — jadi totalnya benar tapi
   /// rinciannya berbohong: uangnya lenyap dari kedua kartu, dan yang
   /// membaca layarnya tidak punya cara tahu ia sedang di rekening.
+  /// Setoran ke bank TIDAK ikut di sini lagi.
+  ///
+  /// Begitu disetujui, uangnya berhenti jadi uang merchant dan jadi uang
+  /// perusahaan — tempatnya di layar Saldo Perusahaan, kantong Saldo
+  /// Bank. Menghitungnya di kedua layar berarti uang yang sama muncul
+  /// dua kali, dan yang menjumlahkan keduanya mendapat angka yang tidak
+  /// pernah ada.
+  ///
+  /// Cash pickup sama: keluar laci, lalu masuk Saldo Cash Perusahaan
+  /// begitu serah terimanya selesai.
+  ///
+  /// Jadi yang tersisa di sini adalah uang yang masih milik hari ini:
+  /// penjualan non-tunai, setoran modal, dan pelunasan selisih lewat
+  /// transfer.
   int get _nonCashBalance =>
       _nonCashIncome +
-      _topupTotal +
-      _depositedTotal +
       selisihDibayarTransfer(_selisihTransferHarian) -
       _pettyCashFrom(PettyCashSource.incomeWithdrawal);
 
@@ -502,9 +466,6 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
         restoId: _restoId,
         glAccounts: _expenseGlAccounts,
         availablePettyCash: _pettyCashBalance,
-        saldoCash: _saldoCashPerusahaan,
-        saldoBank: _saldoBankPerusahaan,
-        bolehPilihSumber: _bolehPilihSumber,
       ),
     );
     if (saved == true) _load();
@@ -758,7 +719,7 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
                         _IncomeSplitCard(
                           cashBalance: _cashBalance,
                           nonCashBalance: _nonCashBalance,
-                          deposited: _depositedTotal,
+                          deposited: _setoranKeRekening,
                           pending: _pendingDeposits,
                           currency: currency,
                         ),
@@ -766,17 +727,29 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
                       ],
                       Row(
                         children: [
-                          Expanded(
-                            child: _BalanceMiniCard(
-                              icon: Icons.trending_up,
-                              label: _untukPlatform ? 'Uang Masuk' : 'Penghasilan',
-                              value: currency.format(_untukPlatform
-                                  ? _pemasukanPlatform
-                                  : _incomeBalance),
-                              color: const Color(0xFF10B981),
+                          // Kartu Penghasilan dilepas untuk merchant.
+                          //
+                          // Ia menjumlahkan Saldo Cash dan Saldo Non
+                          // Cash yang sudah berdiri sendiri tepat di
+                          // atasnya — angka ketiga yang tidak menjawab
+                          // pertanyaan baru, dan tiap kali salah satu
+                          // komponennya berubah, ia jadi tempat pertama
+                          // orang mencurigai ada yang salah.
+                          //
+                          // Pembukuan KaataGo tetap memakainya: di sana
+                          // tidak ada pecahan Cash/Non Cash, jadi ini
+                          // satu-satunya angka uang masuknya.
+                          if (_untukPlatform) ...[
+                            Expanded(
+                              child: _BalanceMiniCard(
+                                icon: Icons.trending_up,
+                                label: 'Uang Masuk',
+                                value: currency.format(_pemasukanPlatform),
+                                color: const Color(0xFF10B981),
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
+                            const SizedBox(width: 8),
+                          ],
                           Expanded(
                             child: _BalanceMiniCard(
                               icon: Icons.savings_outlined,
@@ -826,58 +799,6 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
                           ),
                         ),
                       ],
-                      const SizedBox(height: 24),
-                      // Modal berdiri sendiri di atas Petty Cash. Uang
-                      // yang masuk dari luar tidak berhubungan dengan
-                      // kas kecil, dan menyelipkannya ke sana membuat
-                      // dua alur yang berbeda tampak seperti satu.
-                      _SectionHeader(
-                        title: 'Setoran Modal',
-                        open: _topupOpen,
-                        count: _topups.length,
-                        onToggle: () => setState(() => _topupOpen = !_topupOpen),
-                        action: _canManageFunds
-                            ? _PillButton(
-                                icon: Icons.savings_outlined,
-                                label: 'Top Up Saldo',
-                                color: const Color(0xFF14B8A6),
-                                onTap: _tambahModal,
-                              )
-                            : const SizedBox.shrink(),
-                      ),
-                      const SizedBox(height: 8),
-                      if (!_topupOpen)
-                        const SizedBox.shrink()
-                      else if (_topups.isEmpty)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          child: Text(
-                            'Belum ada setoran modal.',
-                            style: TextStyle(color: KaataTheme.mutedOf(context)),
-                          ),
-                        )
-                      else
-                        for (final t in _topups)
-                          Card(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            child: ListTile(
-                              leading: CircleAvatar(
-                                backgroundColor:
-                                    const Color(0xFF14B8A6).withOpacity(0.12),
-                                child: const Icon(Icons.savings_outlined,
-                                    color: Color(0xFF14B8A6)),
-                              ),
-                              title: Text(currency.format(t.amount),
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.bold)),
-                              subtitle: Text(
-                                'Dari ${t.source}'
-                                '${t.note != null && t.note!.isNotEmpty ? ' · ${t.note}' : ''}'
-                                '\n${DateFormat('d MMM yyyy, HH:mm', 'id_ID').format(t.createdAt.toWib())}',
-                              ),
-                              isThreeLine: true,
-                            ),
-                          ),
                       const SizedBox(height: 24),
                       _SectionHeader(
                         title: 'Petty Cash',
@@ -1358,17 +1279,11 @@ class _AddExpenseDialog extends StatefulWidget {
   final String restoId;
   final List<ExpenseGlAccount> glAccounts;
   final int availablePettyCash;
-  final int saldoCash;
-  final int saldoBank;
-  final bool bolehPilihSumber;
 
   const _AddExpenseDialog({
     required this.restoId,
     required this.glAccounts,
     required this.availablePettyCash,
-    this.saldoCash = 0,
-    this.saldoBank = 0,
-    this.bolehPilihSumber = false,
   });
 
   @override
@@ -1380,12 +1295,6 @@ class _AddExpenseDialogState extends State<_AddExpenseDialog> {
   final _amountCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
   String? _glCode;
-
-  /// 'petty' | 'cash' | 'bank'. Bawaannya petty cash: itu yang berlaku
-  /// selama ini, dan yang tidak memilih apa pun tidak boleh diam-diam
-  /// memotong rekening perusahaan.
-  String _sumber = 'petty';
-
   Uint8List? _receipt;
   final _repo = ExpenseRepository();
   bool _saving = false;
@@ -1418,7 +1327,6 @@ class _AddExpenseDialogState extends State<_AddExpenseDialog> {
         description: _descCtrl.text.trim(),
         glCode: _glCode,
         receiptBase64: receiptBase64,
-        fundSource: _sumber,
         createdBy: auth.user?.email ?? 'Finance',
         createdAt: DateTime.now(),
       ));
@@ -1435,20 +1343,15 @@ class _AddExpenseDialogState extends State<_AddExpenseDialog> {
   Widget build(BuildContext context) {
     final currency = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
     const accentColor = Color(0xFF6366F1); // Petty Cash's colour throughout the app
-    // Batasnya mengikuti kantong yang dipilih. Batas yang selalu
-    // memakai petty cash membuat pengeluaran dari rekening ditolak
-    // karena kas kecil kasir sedang kosong — penolakan yang tidak ada
-    // hubungannya dengan uang yang sedang dipakai.
-    final tersedia = switch (_sumber) {
-      'cash' => widget.saldoCash,
-      'bank' => widget.saldoBank,
-      _ => widget.availablePettyCash,
-    };
-    final namaSumber = switch (_sumber) {
-      'cash' => 'Saldo Cash Perusahaan',
-      'bank' => 'Saldo Bank Perusahaan',
-      _ => 'Petty Cash',
-    };
+    // Layar ini membelanjakan petty cash, titik.
+    //
+    // Sempat menawarkan Saldo Cash dan Saldo Bank Perusahaan juga, dan
+    // itu keliru tempatnya: uang perusahaan dibelanjakan dari layar
+    // Saldo Perusahaan, tempat saldonya berdiri. Dua pintu ke kantong
+    // yang sama membuat yang satu pasti ketinggalan saat aturannya
+    // berubah.
+    final tersedia = widget.availablePettyCash;
+    const namaSumber = 'Petty Cash';
     final noFunds = tersedia <= 0;
 
     return Dialog(
@@ -1521,42 +1424,6 @@ class _AddExpenseDialogState extends State<_AddExpenseDialog> {
                     ],
                   ),
                 ),
-                // Sumber dananya dipilih lebih dulu, sebelum nominalnya:
-                // batas nominal mengikuti kantongnya, dan kotak yang
-                // berubah aturannya sesudah diisi memaksa orang
-                // mengetik ulang.
-                if (widget.bolehPilihSumber) ...[
-                  const SizedBox(height: 16),
-                  DropdownButtonFormField<String>(
-                    value: _sumber,
-                    isExpanded: true,
-                    decoration: const InputDecoration(
-                      labelText: 'Sumber Dana',
-                      isDense: true,
-                    ),
-                    items: [
-                      DropdownMenuItem(
-                          value: 'petty',
-                          child: Text('Petty Cash — '
-                              '${currency.format(widget.availablePettyCash)}')),
-                      DropdownMenuItem(
-                          value: 'cash',
-                          child: Text('Saldo Cash Perusahaan — '
-                              '${currency.format(widget.saldoCash)}')),
-                      DropdownMenuItem(
-                          value: 'bank',
-                          child: Text('Saldo Bank Perusahaan — '
-                              '${currency.format(widget.saldoBank)}')),
-                    ],
-                    onChanged: (v) => setState(() {
-                      _sumber = v ?? 'petty';
-                      // Nominalnya diperiksa ulang terhadap batas yang
-                      // baru, bukan dibiarkan lolos dari pemeriksaan
-                      // kantong sebelumnya.
-                      _formKey.currentState?.validate();
-                    }),
-                  ),
-                ],
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _amountCtrl,
@@ -2056,7 +1923,11 @@ class _IncomeSplitCard extends StatelessWidget {
                 const SizedBox(width: 7),
                 Expanded(
                   child: Text(
-                    'Sudah disetor ke rekening',
+                    // Keterangan, bukan bagian dari kedua saldo di
+                    // atasnya: uangnya sudah pindah ke Saldo Perusahaan.
+                    // Tanpa baris ini, uang yang keluar laci hari ini
+                    // lenyap dari layar tanpa penjelasan.
+                    'Disetor ke rekening — masuk Saldo Perusahaan',
                     style: TextStyle(fontSize: 12, color: KaataTheme.mutedOf(context)),
                   ),
                 ),
@@ -2156,176 +2027,6 @@ class _StatusChip extends StatelessWidget {
         kPettyCashStatusLabels[status]!,
         style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: color),
       ),
-    );
-  }
-}
-
-/// Formulir setoran modal.
-///
-/// Sengaja sederhana: nominal, dari siapa, keterangan, dan bukti kalau
-/// ada. Yang tidak ada di sini adalah pilihan "masuk ke mana" — modal
-/// selalu menambah saldo utama, dan menawarkan pilihan lain cuma
-/// membuka jalan mencatatnya di tempat yang salah.
-class _FormModal extends StatefulWidget {
-  final String restoId;
-
-  const _FormModal({required this.restoId});
-
-  @override
-  State<_FormModal> createState() => _FormModalState();
-}
-
-class _FormModalState extends State<_FormModal> {
-  final _repo = BalanceTopupRepository();
-  final _formKey = GlobalKey<FormState>();
-  final _nominal = TextEditingController();
-  final _dari = TextEditingController();
-  final _catatan = TextEditingController();
-  String? _bukti;
-
-  /// Mendarat di mana uangnya. Bawaannya rekening: setoran modal yang
-  /// besar hampir selalu ditransfer, dan yang menyerahkannya tunai akan
-  /// menyadarinya justru karena harus memilih.
-  String _tujuan = 'bank';
-
-  bool _menyimpan = false;
-
-  @override
-  void dispose() {
-    for (final c in [_nominal, _dari, _catatan]) {
-      c.dispose();
-    }
-    super.dispose();
-  }
-
-  Future<void> _pilihBukti() async {
-    final bytes = await pickProofPhoto(context);
-    if (bytes == null || !mounted) return;
-    setState(() => _bukti = base64Encode(bytes));
-  }
-
-  Future<void> _simpan() async {
-    if (!_formKey.currentState!.validate()) return;
-    setState(() => _menyimpan = true);
-    try {
-      await _repo.add(
-        restoId: widget.restoId,
-        amount: parseRupiah(_nominal.text) ?? 0,
-        source: _dari.text.trim(),
-        destination: _tujuan,
-        note: _catatan.text.trim(),
-        proofBase64: _bukti,
-      );
-      if (!mounted) return;
-      Navigator.pop(context, true);
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _menyimpan = false);
-      AppToast.show(context, 'Gagal menyimpan: $e', isError: true);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Top Up Saldo'),
-      content: SingleChildScrollView(
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Uang masuk dari luar penjualan — setoran investor atau '
-                'modal awal. Menambah Saldo Perusahaan di kantong yang '
-                'dipilih, terpisah dari pendapatan penjualan.',
-                style: TextStyle(
-                    fontSize: 12, color: KaataTheme.mutedOf(context)),
-              ),
-              const SizedBox(height: 14),
-              // Kantongnya disebut penyetornya. Uang yang ditransfer
-              // dan uang yang diserahkan tunai mendarat di tempat yang
-              // berbeda, dan menebaknya berarti salah satu dari dua
-              // saldo selalu meleset.
-              DropdownButtonFormField<String>(
-                value: _tujuan,
-                isExpanded: true,
-                decoration: const InputDecoration(
-                  labelText: 'Masuk ke',
-                  isDense: true,
-                ),
-                items: const [
-                  DropdownMenuItem(
-                      value: 'bank',
-                      child: Text('Saldo Bank — masuk rekening')),
-                  DropdownMenuItem(
-                      value: 'cash',
-                      child: Text('Saldo Cash — diserahkan tunai')),
-                ],
-                onChanged: (v) => setState(() => _tujuan = v ?? 'bank'),
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _nominal,
-                keyboardType: TextInputType.number,
-                inputFormatters: [ThousandsInputFormatter()],
-                decoration: InputDecoration(
-                  label: requiredLabel('Nominal'),
-                  prefixText: 'Rp ',
-                ),
-                validator: (v) =>
-                    (parseRupiah(v ?? '') ?? 0) > 0 ? null : 'Isi nominalnya',
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _dari,
-                textCapitalization: TextCapitalization.words,
-                decoration: InputDecoration(
-                  label: requiredLabel('Dari'),
-                  hintText: 'Nama investor atau penyetor',
-                ),
-                validator: (v) =>
-                    (v ?? '').trim().isEmpty ? 'Sebutkan penyetornya' : null,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _catatan,
-                decoration: const InputDecoration(
-                  labelText: 'Keterangan (opsional)',
-                ),
-              ),
-              const SizedBox(height: 14),
-              if (_bukti == null)
-                OutlinedButton.icon(
-                  onPressed: _pilihBukti,
-                  icon: const Icon(Icons.attach_file, size: 17),
-                  label: const Text('Lampirkan Bukti (opsional)'),
-                )
-              else
-                Row(
-                  children: [
-                    const Icon(Icons.check_circle, color: Colors.green, size: 18),
-                    const SizedBox(width: 6),
-                    const Expanded(child: Text('Bukti terlampir')),
-                    TextButton(
-                      onPressed: () => setState(() => _bukti = null),
-                      child: const Text('Hapus'),
-                    ),
-                  ],
-                ),
-            ],
-          ),
-        ),
-      ),
-      actionsAlignment: MainAxisAlignment.center,
-      actions: [
-        DialogActions(
-          confirmLabel: 'Simpan',
-          busy: _menyimpan,
-          onConfirm: _simpan,
-          onCancel: () => Navigator.pop(context, false),
-        ),
-      ],
     );
   }
 }

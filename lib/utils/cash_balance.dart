@@ -92,6 +92,19 @@ int depositedFromDrawer(List<CashDeposit> deposits) => deposits
     .where((d) => d.status != DepositStatus.rejected)
     .fold(0, (sum, d) => sum + d.amount);
 
+/// Bagian yang benar-benar menuju REKENING merchant.
+///
+/// Pickup tidak termasuk, dan perbedaannya bukan tata istilah: uang
+/// yang dijemput petugas tidak mendarat di rekening merchant sama
+/// sekali. Ia berpindah ke tangan perusahaan, dan tempatnya di layar
+/// Saldo Perusahaan — bukan di Saldo Non Cash.
+///
+/// Keduanya tetap mengurangi isi laci lewat [depositedFromDrawer]:
+/// lembarannya sama-sama sudah keluar.
+int setoranKeRekening(List<CashDeposit> deposits) => deposits
+    .where((d) => d.status != DepositStatus.rejected && !d.isPickup)
+    .fold(0, (sum, d) => sum + d.amount);
+
 /// Tunai yang berpindah dari laci ke petty cash.
 ///
 /// Aturan statusnya sama persis dengan setoran, dan karena alasan yang

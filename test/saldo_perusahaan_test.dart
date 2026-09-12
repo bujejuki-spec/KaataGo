@@ -73,8 +73,25 @@ void main() {
           contains("(o.created_at at time zone 'Asia/Jakarta')::date"));
     });
 
-    test('setoran kasir yang disetujui ikut masuk rekening', () {
-      expect(sql, contains('Setoran kasir masuk rekening #'));
+    test('setoran kasir yang disetujui mendarat di Saldo Bank', () {
+      // laci → GL Suspense Setor Tunai → (disetujui) → Saldo Bank.
+      // Sebelumnya tujuannya GL Total Saldo, akun payung yang menampung
+      // segalanya — benar selama Saldo Perusahaan belum ada.
+      final setoran =
+          File('supabase/setoran_ke_saldo_bank.sql').readAsStringSync();
+      expect(setoran,
+          contains("case when v_pickup then 'company_cash' else 'company_bank' end"));
+      expect(setoran, isNot(contains("'total_balance'")));
+      // Titipannya tetap lewat GL Suspense lebih dulu.
+      expect(setoran,
+          contains("case when v_pickup then 'cash_pickup' else 'suspense' end"));
+    });
+
+    test('setoran lama yang sudah disetujui ikut dilengkapi', () {
+      final setoran =
+          File('supabase/setoran_ke_saldo_bank.sql').readAsStringSync();
+      expect(setoran, contains("where d.status = 'approved'"));
+      expect(setoran, contains('not exists ('));
     });
 
     test('serah terima cash pickup masuk ke saldo cash', () {
@@ -104,6 +121,46 @@ void main() {
 
     test('tidak bisa menyetor lebih dari yang dipegang', () {
       expect(layar, contains('n > widget.saldoCash'));
+    });
+  });
+
+  group('pengeluaran perusahaan dicatat di layarnya sendiri', () {
+    final harian =
+        File('lib/screens/finance_balance_screen.dart').readAsStringSync();
+
+    // Dua pintu ke kantong yang sama membuat yang satu pasti
+    // ketinggalan saat aturannya berubah.
+    test('layar harian kembali murni petty cash', () {
+      expect(harian, contains("const namaSumber = 'Petty Cash';"));
+      expect(harian, isNot(contains('bolehPilihSumber')));
+      expect(harian, isNot(contains("'cash' => widget.saldoCash")));
+    });
+
+    test('layar perusahaan memilih cash atau bank saja', () {
+      expect(layar, contains('class _DialogPengeluaran'));
+      expect(layar, contains("_sumber == 'cash' ? widget.saldoCash"));
+      // Tidak ada petty cash di sini: kas kecil kasir punya layarnya.
+      final blok = layar.substring(layar.indexOf('class _DialogPengeluaran'));
+      expect(blok, isNot(contains("value: 'petty'")));
+      expect(blok, isNot(contains("fundSource: 'petty'")));
+    });
+
+    // Daftar yang sama dengan pengeluaran petty cash, supaya laporan per
+    // akun tidak terbelah menurut dari kantong mana uangnya diambil.
+    test('akun biayanya diambil dari daftar GL Pengeluaran', () {
+      expect(layar, contains('ExpenseGlAccountRepository().getForResto'));
+      expect(layar, contains("label: requiredLabel('Akun Pengeluaran')"));
+    });
+
+    test('tidak bisa membelanjakan lebih dari yang dipegang', () {
+      expect(layar, contains('if (n > _tersedia)'));
+    });
+
+    // Menampilkan pengeluaran petty cash di sini membuat satu
+    // pengeluaran terbaca dua kali.
+    test('daftarnya cuma yang bersumber uang perusahaan', () {
+      expect(layar,
+          contains("if (e.fundSource == 'cash' || e.fundSource == 'bank') e,"));
     });
   });
 
@@ -138,11 +195,36 @@ void main() {
     });
 
     test('batas nominalnya ikut kantong yang dipilih', () {
-      final balance =
-          File('lib/screens/finance_balance_screen.dart').readAsStringSync();
-      expect(balance, contains("'cash' => widget.saldoCash"));
-      expect(balance, contains("'bank' => widget.saldoBank"));
-      expect(balance, contains('Melebihi \$namaSumber'));
+      expect(layar, contains('Melebihi \$_namaSumber'));
+    });
+  });
+
+  group('selisih kasir yang dilunasi transfer', () {
+    final sqlSelisih =
+        File('supabase/jurnal_selisih_ke_bank.sql').readAsStringSync();
+
+    // Uangnya mendarat di rekening merchant, persis seperti penjualan
+    // QRIS dan transfer pelanggan. Sebelumnya jurnalnya berhenti di GL
+    // Selisih Kasir, jadi Saldo Bank tidak pernah tahu uang itu ada.
+    test('ikut dikreditkan ke Saldo Bank', () {
+      expect(sqlSelisih, contains("if v_cara = 'transfer' then"));
+      expect(sqlSelisih,
+          contains("_gl_account_for(v_row.resto_id, 'company_bank')"));
+    });
+
+    // Lembarannya kembali ke laci, dan laci sudah menghitungnya lewat
+    // jalurnya sendiri.
+    test('yang dibayar tunai tidak ikut', () {
+      final blok = sqlSelisih.substring(
+          sqlSelisih.indexOf("if v_cara = 'transfer' then"),
+          sqlSelisih.indexOf('return v_hasil;'));
+      expect(blok, contains('company_bank'));
+      expect(blok.split("if v_cara = 'transfer' then").length, 2);
+    });
+
+    test('yang sudah terlanjur tercatat ikut dilengkapi', () {
+      expect(sqlSelisih, contains("v.settle_method = 'transfer'"));
+      expect(sqlSelisih, contains('not exists ('));
     });
   });
 

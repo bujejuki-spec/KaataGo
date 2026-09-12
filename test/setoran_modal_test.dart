@@ -5,7 +5,11 @@ import 'package:pos_app/models/balance_topup.dart';
 
 void main() {
   final sql = File('supabase/balance_topup.sql').readAsStringSync();
+  // Top up modal pindah ke layar Saldo Perusahaan: modal masuk ke
+  // perusahaan, bukan ke penjualan hari ini.
   final layar =
+      File('lib/screens/saldo_perusahaan_screen.dart').readAsStringSync();
+  final harian =
       File('lib/screens/finance_balance_screen.dart').readAsStringSync();
   final pemetaan =
       File('lib/screens/finance_gl_mapping_screen.dart').readAsStringSync();
@@ -41,6 +45,25 @@ void main() {
           pemetaan.indexOf('const _platformOnlyMethods'),
           pemetaan.indexOf('};', pemetaan.indexOf('const _platformOnlyMethods')));
       expect(blok, contains('_capitalMethod'));
+    });
+  });
+
+  group('tempatnya', () {
+    test('formulirnya ada di Saldo Perusahaan', () {
+      expect(layar, contains('class _FormModal'));
+      expect(layar, contains("const Text('Top Up Modal')"));
+    });
+
+    // Menghitungnya juga di layar harian membuat satu setoran muncul di
+    // dua tempat, dan yang menjumlahkan keduanya mendapat angka yang
+    // tidak pernah ada.
+    test('tidak lagi menyentuh saldo harian merchant', () {
+      expect(harian, isNot(contains('_topupTotal')));
+      expect(harian, isNot(contains('class _FormModal')));
+      final rumus = harian.substring(
+          harian.indexOf('int get _nonCashBalance'),
+          harian.indexOf('int get _pettyCashToppedUp'));
+      expect(rumus, isNot(contains('_topup')));
     });
   });
 
@@ -89,19 +112,22 @@ void main() {
   });
 
   group('di layar', () {
-    test('setoran menambah saldo non-tunai, bukan berdiri sendiri', () {
-      // Dua angka yang tidak bertemu di layar yang sama adalah yang
-      // pertama membuat orang berhenti mempercayai halamannya.
-      expect(layar, contains('_nonCashIncome +\n      _topupTotal +'));
-      expect(layar, contains('int get _incomeBalance => _cashBalance + _nonCashBalance;'));
+    // Modal mendarat di kantong perusahaan, dan daftarnya berdiri di
+    // layar yang sama dengan saldonya — bukan di layar harian merchant,
+    // yang menjawab pertanyaan lain sama sekali.
+    test('daftarnya berdiri di Saldo Perusahaan', () {
+      expect(layar, contains("const Text('Setoran Modal'"));
+      expect(layar, contains('masuk \${m.labelTujuan}'));
     });
 
     test('penyetornya wajib disebut', () {
       expect(layar, contains("'Sebutkan penyetornya'"));
     });
 
-    test('kasir tidak melihat tombolnya', () {
-      expect(layar, contains('action: _canManageFunds'));
+    // Layarnya sendiri cuma untuk Owner dan Finance, dan tombolnya ikut
+    // mati kalau menunya dibuka dalam mode Lihat.
+    test('tombolnya mengikuti hak mengubah', () {
+      expect(layar, contains('!bolehUbahDiSini(context)'));
     });
 
     // Uang yang ditransfer dan uang yang diserahkan tunai mendarat di
