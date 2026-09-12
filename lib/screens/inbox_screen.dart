@@ -9,6 +9,7 @@ import '../models/announcement.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/update_download_button.dart';
 import '../theme.dart';
+import '../widgets/teks_pengumuman.dart';
 import '../utils/id_time.dart';
 import '../widgets/dialog_actions.dart';
 import '../widgets/responsive.dart';
@@ -121,7 +122,7 @@ class _InboxScreenState extends State<InboxScreen> {
                 ),
               ],
               const SizedBox(height: 10),
-              Text(item.body, style: const TextStyle(fontSize: 14, height: 1.45)),
+              TeksPengumuman(item.body),
             ],
           ),
         ),
@@ -514,7 +515,7 @@ class _InboxScreenState extends State<InboxScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 2),
-            Text(item.body,
+            Text(ringkasPengumuman(item.body),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(fontSize: 12.5, color: KaataTheme.mutedOf(context))),

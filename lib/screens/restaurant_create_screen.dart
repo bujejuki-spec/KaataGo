@@ -64,6 +64,14 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
   bool _saving = false;
   late bool _editing;
 
+  /// Aktif atau tidaknya merchant ini.
+  ///
+  /// Dulu berupa saklar di kartu List Merchant. Dipindah ke sini karena
+  /// mematikan merchant bukan tindakan sekali sentuh: karyawannya tidak
+  /// bisa masuk dan pelanggannya tidak bisa memesan. Di antara tombol
+  /// ubah dan hapus, saklar itu terlalu mudah tersenggol.
+  late bool _aktif;
+
   /// What Batal restores. Unused when creating — cancelling a brand-new
   /// resto just leaves the form.
   Map<String, String?> _snapshot = const {};
@@ -93,6 +101,7 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
     _takeAway = r?.takeAwayEnabled ?? true;
     _existingLogo = r?.logoBase64;
     _editing = !_isEditing;
+    _aktif = widget.existing?.active ?? true;
     if (_isEditing) _loadGatewayAccount(r!.id);
   }
 
@@ -290,6 +299,39 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
     setState(() => _addressCtrl.text = address);
   }
 
+  /// Mematikan merchant ditanya dulu.
+  ///
+  /// Akibatnya tidak terlihat dari layar ini: karyawannya berhenti bisa
+  /// masuk, dan merchantnya hilang dari daftar pilihan pelanggan.
+  /// Menyalakannya kembali tidak perlu ditanya — tidak ada yang rusak
+  /// karena sebuah merchant kembali bisa berjualan.
+  Future<void> _ubahAktif(bool nyala) async {
+    if (nyala) {
+      setState(() => _aktif = true);
+      return;
+    }
+    final lanjut = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Nonaktifkan merchant?'),
+        content: Text(
+          '${_nameCtrl.text.trim().isEmpty ? 'Merchant ini' : _nameCtrl.text.trim()} '
+          'akan hilang dari daftar "Pilih Merchant" customer, dan karyawan '
+          'merchant ini tidak akan bisa login sampai diaktifkan lagi.',
+        ),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          DialogActions(
+            confirmLabel: 'Nonaktifkan',
+            destructive: true,
+            onConfirm: () => Navigator.pop(context, true),
+          ),
+        ],
+      ),
+    );
+    if (lanjut == true) setState(() => _aktif = false);
+  }
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     final id = _idCtrl.text.trim();
@@ -327,10 +369,7 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
         dineInEnabled: _dineIn,
         takeAwayEnabled: _takeAway,
         logoBase64: logoBase64,
-        // Preserve the existing active/inactive status when editing —
-        // that's managed separately via the switch on List Resto, not
-        // this form.
-        active: widget.existing?.active ?? true,
+        active: _aktif,
       ));
 
       // Sesudah restonya tersimpan, bukan sebelum: barisnya menunjuk
@@ -566,6 +605,22 @@ class _RestaurantCreateScreenState extends State<RestaurantCreateScreen> {
                 onChanged: !_editing || !_dineIn
                     ? null
                     : (v) => setState(() => _takeAway = v),
+              ),
+              const SizedBox(height: 20),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+                title: const Text('Merchant Aktif'),
+                subtitle: Text(
+                  _aktif
+                      ? 'Muncul di daftar pilihan pelanggan, karyawannya bisa masuk'
+                      : 'Hilang dari daftar pelanggan, karyawannya tidak bisa masuk',
+                  style: TextStyle(
+                      fontSize: 11.5,
+                      color: _aktif ? KaataTheme.mutedOf(context) : Colors.red.shade400),
+                ),
+                value: _aktif,
+                onChanged: !_editing ? null : _ubahAktif,
               ),
               const SizedBox(height: 20),
               TextFormField(

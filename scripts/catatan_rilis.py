@@ -13,7 +13,17 @@ import sys
 
 
 def poin_untuk(isi: str, versi: str) -> list[str]:
-    """Baris-baris di bawah judul `## <versi>`, sampai judul berikutnya."""
+    """Butir-butir di bawah judul `## <versi>`, satu butir satu baris.
+
+    Catatannya ditulis terbungkus pada lebar berkas supaya enak dibaca di
+    editor. Pembungkusan itu tidak boleh ikut terkirim: di layar ponsel
+    teksnya dibungkus ulang oleh lebar layar, sementara patahan baris
+    dari berkasnya tetap tinggal di tengah kalimat — dan yang terbaca
+    adalah paragraf yang patah di tempat acak.
+
+    Jadi sambungan barisnya disatukan kembali di sini, dan tiap butir
+    keluar sebagai satu baris utuh.
+    """
     poin: list[str] = []
     kutip = False
     for baris in isi.splitlines():
@@ -24,8 +34,17 @@ def poin_untuk(isi: str, versi: str) -> list[str]:
                 break
             kutip = baris[3:].strip() == versi
             continue
-        if kutip and baris.strip():
-            poin.append(baris.rstrip())
+        if not kutip or not baris.strip():
+            continue
+
+        bersih = baris.strip()
+        if bersih.startswith(("- ", "* ")):
+            poin.append(bersih)
+        elif poin:
+            # Sambungan butir sebelumnya, bukan butir baru.
+            poin[-1] = f"{poin[-1]} {bersih}"
+        else:
+            poin.append(bersih)
     return poin
 
 

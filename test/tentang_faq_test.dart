@@ -133,4 +133,27 @@ void main() {
       expect(auth, contains("EmployeeRole.superAdmin: 'super_admin'"));
     });
   });
+
+  // Halaman ini satu-satunya yang bisa dibuka sebelum login, dan yang
+  // membacanya sering justru orang yang belum punya akun dan sedang
+  // menimbang. Daftar fitur yang tertinggal jauh di belakang aplikasinya
+  // membuat yang menimbang itu menilai produk yang sudah tidak ada.
+  group('daftar fiturnya menyusul aplikasinya', () {
+    test('yang terbit belakangan ikut disebut', () {
+      for (final fitur in [
+        'Shift kasir',
+        'Setor & cash pickup',
+        'Kelola karyawan',
+        'Saldo Perusahaan',
+        'Tutup buku harian',
+        'Rekonsiliasi bank',
+        'Terima cash pickup',
+        'Rekening perusahaan',
+        'QRIS Dinamis & Statis',
+        'Penilaian pelanggan',
+      ]) {
+        expect(tentang, contains(fitur), reason: '"\$fitur" belum disebut');
+      }
+    });
+  });
 }

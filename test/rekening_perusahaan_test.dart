@@ -139,4 +139,30 @@ void main() {
       expect(bankTerpilih('', kDaftarBank), isNull);
     });
   });
+
+  // Yang berdiri di depan kasir adalah pelanggan yang menunggu nomor
+  // untuk ditransfer, bukan orang yang sedang memutuskan rekening mana
+  // yang dipakai merchant. Pilihan di sana cuma memperlambat, dan
+  // membuka jalan bagi uang mendarat di rekening yang tidak dipantau.
+  group('layar transfer menyebut satu rekening saja', () {
+    final layar =
+        File('lib/screens/payment_transfer_screen.dart').readAsStringSync();
+
+    test('yang dipakai rekening utama', () {
+      expect(layar, contains('BankAccountRepository().utama('));
+      expect(layar, isNot(contains('untukResto')));
+    });
+
+    test('tidak ada pemilih rekening di sana', () {
+      expect(layar, isNot(contains('DropdownButtonFormField')));
+    });
+
+    // Layar pelanggan mengikuti yang sama: rekeningnya disalin ke baris
+    // tampilannya dari rekening utama.
+    test('layar pelanggan juga memakai yang utama', () {
+      final checkout =
+          File('lib/screens/checkout_screen.dart').readAsStringSync();
+      expect(checkout, contains('BankAccountRepository().utama(restoId)'));
+    });
+  });
 }

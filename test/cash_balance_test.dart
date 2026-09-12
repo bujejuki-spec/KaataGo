@@ -150,4 +150,24 @@ void main() {
       expect(blok.substring(0, blok.indexOf(';')), contains('selisih:'));
     });
   });
+
+  // Kartu Rekening Bank sempat membaca kolom lama di `settings` —
+  // salinan yang ditinggalkan apa adanya saat rekening dipindah jadi
+  // entitas sendiri. Akibatnya layar ini memajang nomor rekening yang
+  // sudah tidak ada di Info Pembayaran, dan yang membacanya tidak punya
+  // cara tahu mana yang sebenarnya dipakai.
+  group('kartu Rekening Bank', () {
+    final layar =
+        File('lib/screens/finance_balance_screen.dart').readAsStringSync();
+
+    test('dibaca dari bank_accounts, bukan dari settings', () {
+      expect(layar, contains('BankAccountRepository().untukResto'));
+      expect(layar, isNot(contains("settings?['bank_name']")));
+      expect(layar, isNot(contains("from('settings')")));
+    });
+
+    test('menampilkan semua rekening, bukan satu saja', () {
+      expect(layar, contains('for (final r in _rekening)'));
+    });
+  });
 }

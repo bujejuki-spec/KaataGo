@@ -26,8 +26,16 @@ class PaymentTransferScreen extends StatefulWidget {
 }
 
 class _PaymentTransferScreenState extends State<PaymentTransferScreen> {
-  List<BankAccount> _rekening = const [];
-  BankAccount? _dipilih;
+  /// Rekening utama saja, meski merchantnya punya beberapa.
+  ///
+  /// Sempat menawarkan pilihan, dan itu keliru tempatnya: yang berdiri
+  /// di depan kasir adalah pelanggan yang sedang menunggu nomor untuk
+  /// ditransfer, bukan orang yang sedang memutuskan rekening mana yang
+  /// dipakai merchant. Pilihan di sana cuma memperlambat, dan membuka
+  /// jalan bagi uang mendarat di rekening yang tidak dipantau siapa pun.
+  ///
+  /// Rekening mana yang utama diatur di Rekening Perusahaan.
+  BankAccount? _utama;
   bool _memuat = true;
 
   @override
@@ -43,11 +51,10 @@ class _PaymentTransferScreenState extends State<PaymentTransferScreen> {
       return;
     }
     try {
-      final r = await BankAccountRepository().untukResto(restoId);
+      final r = await BankAccountRepository().utama(restoId);
       if (!mounted) return;
       setState(() {
-        _rekening = r;
-        _dipilih = r.isEmpty ? null : r.first;
+        _utama = r;
         _memuat = false;
       });
     } catch (_) {
@@ -62,7 +69,7 @@ class _PaymentTransferScreenState extends State<PaymentTransferScreen> {
       symbol: 'Rp ',
       decimalDigits: 0,
     );
-    final r = _dipilih;
+    final r = _utama;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Bayar dengan Transfer')),
@@ -85,38 +92,6 @@ class _PaymentTransferScreenState extends State<PaymentTransferScreen> {
                 textAlign: TextAlign.center,
               )
             else ...[
-              // Merchant yang punya lebih dari satu rekening memilih
-              // sendiri tujuannya. Sebelumnya cuma satu nomor yang bisa
-              // ditampilkan, dan cabang yang menyetor ke rekening
-              // berbeda tidak punya cara menyebutkannya.
-              if (_rekening.length > 1)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 14),
-                  child: DropdownButtonFormField<String>(
-                    value: r.id,
-                    isExpanded: true,
-                    decoration: const InputDecoration(
-                      labelText: 'Rekening Tujuan',
-                      isDense: true,
-                    ),
-                    items: [
-                      for (final b in _rekening)
-                        DropdownMenuItem(
-                          value: b.id,
-                          child: Text(
-                            '${b.bankName} · ${b.accountNumber}'
-                            '${b.isPrimary ? '  (utama)' : ''}',
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                    ],
-                    onChanged: (v) => setState(() {
-                      for (final b in _rekening) {
-                        if (b.id == v) _dipilih = b;
-                      }
-                    }),
-                  ),
-                ),
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(20),

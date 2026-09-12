@@ -25,6 +25,7 @@ import '../utils/photo_picker.dart';
 import '../utils/rupiah_input.dart';
 import '../widgets/app_toast.dart';
 import '../widgets/dialog_actions.dart';
+import '../widgets/judul_bagian.dart';
 import '../widgets/required_label.dart';
 import '../widgets/responsive.dart';
 
@@ -64,6 +65,15 @@ class _SaldoPerusahaanScreenState extends State<SaldoPerusahaanScreen> {
   List<BankAccount> _rekening = const [];
   bool _memuat = true;
   String? _galat;
+
+  /// Terbuka atau tertutupnya tiap bagian.
+  ///
+  /// Ketiganya tumbuh terus dan tidak pernah menyusut; yang dicari orang
+  /// saat membuka layar ini adalah kedua saldo di atas, bukan daftar
+  /// panjang di bawahnya.
+  bool _setoranTerbuka = true;
+  bool _biayaTerbuka = true;
+  bool _modalTerbuka = true;
 
   @override
   void initState() {
@@ -181,38 +191,6 @@ class _SaldoPerusahaanScreenState extends State<SaldoPerusahaanScreen> {
       Scaffold(
         backgroundColor: KaataTheme.backgroundOf(context),
         appBar: AppBar(title: const Text('Saldo Perusahaan')),
-        floatingActionButton: !bolehUbahDiSini(context) || _memuat
-            ? null
-            : Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  FloatingActionButton.extended(
-                    heroTag: 'biaya',
-                    onPressed: _catatPengeluaran,
-                    icon: const Icon(Icons.receipt_long_outlined),
-                    label: const Text('Catat Pengeluaran'),
-                    backgroundColor: const Color(0xFFEF4444),
-                    foregroundColor: Colors.white,
-                  ),
-                  const SizedBox(height: 10),
-                  FloatingActionButton.extended(
-                    heroTag: 'modal',
-                    onPressed: _topUpModal,
-                    icon: const Icon(Icons.savings_outlined),
-                    label: const Text('Top Up Modal'),
-                    backgroundColor: const Color(0xFF14B8A6),
-                    foregroundColor: Colors.white,
-                  ),
-                  const SizedBox(height: 10),
-                  FloatingActionButton.extended(
-                    heroTag: 'setor',
-                    onPressed: _setor,
-                    icon: const Icon(Icons.account_balance_outlined),
-                    label: const Text('Setor ke Bank'),
-                  ),
-                ],
-              ),
         body: _memuat
             ? const Center(child: CircularProgressIndicator())
             : _galat != null
@@ -238,7 +216,7 @@ class _SaldoPerusahaanScreenState extends State<SaldoPerusahaanScreen> {
                     onRefresh: _muat,
                     child: ResponsiveCenter(
                       child: ListView(
-                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
                         children: [
                           _KartuTotal(total: _cash + _bank, rp: _rp),
                           const SizedBox(height: 10),
@@ -268,11 +246,25 @@ class _SaldoPerusahaanScreenState extends State<SaldoPerusahaanScreen> {
                           const SizedBox(height: 18),
                           _Keterangan(),
                           const SizedBox(height: 20),
-                          const Text('Setoran ke Bank',
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 14)),
+                          JudulBagian(
+                            title: 'Setoran ke Bank',
+                            open: _setoranTerbuka,
+                            count: _setoran.length,
+                            onToggle: () => setState(
+                                () => _setoranTerbuka = !_setoranTerbuka),
+                            action: bolehUbahDiSini(context)
+                                ? TombolPil(
+                                    icon: Icons.account_balance_outlined,
+                                    label: 'Setor',
+                                    color: const Color(0xFF6366F1),
+                                    onTap: _setor,
+                                  )
+                                : const SizedBox.shrink(),
+                          ),
                           const SizedBox(height: 8),
-                          if (_setoran.isEmpty)
+                          if (!_setoranTerbuka)
+                            const SizedBox.shrink()
+                          else if (_setoran.isEmpty)
                             Padding(
                               padding:
                                   const EdgeInsets.symmetric(vertical: 20),
@@ -289,11 +281,25 @@ class _SaldoPerusahaanScreenState extends State<SaldoPerusahaanScreen> {
                               _BarisSetoran(
                                   setoran: s, rp: _rp, waktu: _waktu),
                           const SizedBox(height: 20),
-                          const Text('Pengeluaran Perusahaan',
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 14)),
+                          JudulBagian(
+                            title: 'Pengeluaran Perusahaan',
+                            open: _biayaTerbuka,
+                            count: _pengeluaran.length,
+                            onToggle: () => setState(
+                                () => _biayaTerbuka = !_biayaTerbuka),
+                            action: bolehUbahDiSini(context)
+                                ? TombolPil(
+                                    icon: Icons.remove_circle_outline,
+                                    label: 'Catat',
+                                    color: const Color(0xFFEF4444),
+                                    onTap: _catatPengeluaran,
+                                  )
+                                : const SizedBox.shrink(),
+                          ),
                           const SizedBox(height: 8),
-                          if (_pengeluaran.isEmpty)
+                          if (!_biayaTerbuka)
+                            const SizedBox.shrink()
+                          else if (_pengeluaran.isEmpty)
                             Padding(
                               padding:
                                   const EdgeInsets.symmetric(vertical: 20),
@@ -337,11 +343,25 @@ class _SaldoPerusahaanScreenState extends State<SaldoPerusahaanScreen> {
                                 ),
                               ),
                           const SizedBox(height: 20),
-                          const Text('Setoran Modal',
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 14)),
+                          JudulBagian(
+                            title: 'Setoran Modal',
+                            open: _modalTerbuka,
+                            count: _modal.length,
+                            onToggle: () =>
+                                setState(() => _modalTerbuka = !_modalTerbuka),
+                            action: bolehUbahDiSini(context)
+                                ? TombolPil(
+                                    icon: Icons.add_circle_outline,
+                                    label: 'Top Up',
+                                    color: const Color(0xFF14B8A6),
+                                    onTap: _topUpModal,
+                                  )
+                                : const SizedBox.shrink(),
+                          ),
                           const SizedBox(height: 8),
-                          if (_modal.isEmpty)
+                          if (!_modalTerbuka)
+                            const SizedBox.shrink()
+                          else if (_modal.isEmpty)
                             Padding(
                               padding:
                                   const EdgeInsets.symmetric(vertical: 20),

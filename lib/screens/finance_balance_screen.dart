@@ -12,9 +12,10 @@ import 'package:flutter/material.dart';
 import '../theme.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../db/expense_gl_account_repository.dart';
+import '../db/bank_account_repository.dart';
+import '../models/bank_account.dart';
 import '../db/cash_deposit_repository.dart';
 import '../db/cashier_shift_repository.dart';
 import '../db/expense_repository.dart';
@@ -32,6 +33,7 @@ import '../utils/id_time.dart';
 import '../utils/photo_picker.dart';
 import '../widgets/dialog_actions.dart';
 import '../widgets/journal_detail_dialog.dart';
+import '../widgets/judul_bagian.dart';
 import '../utils/rupiah_input.dart';
 import '../widgets/app_toast.dart';
 import '../widgets/count_badge.dart';
@@ -105,9 +107,14 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
   List<Expense> _expenses = [];
   List<ExpenseGlAccount> _expenseGlAccounts = [];
   List<PettyCashEntry> _pettyCashEntries = [];
-  String? _bankName;
-  String? _accountNumber;
-  String? _accountHolder;
+  /// Rekening perusahaan resto ini, dibaca dari `bank_accounts`.
+  ///
+  /// Sebelumnya kartu di bawah membaca kolom lama di `settings` — salinan
+  /// yang ditinggalkan apa adanya saat rekening dipindah jadi entitas
+  /// sendiri. Akibatnya layar ini memajang nomor rekening yang sudah
+  /// tidak ada di Info Pembayaran, dan tidak ada satu pun cara bagi yang
+  /// membacanya untuk tahu mana yang sebenarnya dipakai.
+  List<BankAccount> _rekening = const [];
   bool _loading = true;
   String? _loadError;
 
@@ -224,7 +231,6 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
         _expenseRepo.getForResto(restoId),
         _expenseGlRepo.getForResto(restoId),
         _pettyCashRepo.getForResto(restoId),
-        Supabase.instance.client.from('settings').select().eq('resto_id', restoId).limit(1),
         _depositRepo.getForResto(restoId),
         // Selisih kasir yang belum dilunasi. Uangnya tidak ada di laci,
         // jadi Saldo Cash tidak boleh menghitungnya sebagai ada.
@@ -234,8 +240,6 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
       if (!mounted) return;
       final orders = (results[0] as List<CustomerOrder>)
           .where((o) => o.paymentStatus == OrderPaymentStatus.paid);
-      final settingsRows = results[4] as List<Map<String, dynamic>>;
-      final settings = settingsRows.isNotEmpty ? settingsRows.first : null;
       // Tunai dipisah dari yang lain karena sifatnya beda: uangnya ada
       // di laci dan harus disetor, sementara QRIS/transfer sudah masuk
       // rekening. Pesanan lama tanpa payment_method dianggap non-tunai —
@@ -251,7 +255,13 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
       }
 
 
-      final semuaSetoran = results[5] as List<CashDeposit>;
+      // Rekeningnya pelengkap: gagal memuatnya tidak boleh
+      // menggagalkan seluruh layar.
+      try {
+        _rekening = await BankAccountRepository().untukResto(restoId);
+      } catch (_) {}
+
+      final semuaSetoran = results[4] as List<CashDeposit>;
       final semuaPetty = results[3] as List<PettyCashEntry>;
 
       setState(() {
@@ -269,7 +279,7 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
         _deposits = harian
             ? semuaSetoran.where((d) => sekarang(d.createdAt)).toList()
             : semuaSetoran;
-        _selisih = results[6] as List<CashVariance>;
+        _selisih = results[5] as List<CashVariance>;
         // Yang dilunasi lewat transfer disaring menurut TANGGAL
         // PELUNASANNYA, bukan tanggal selisihnya terjadi: yang
         // menambah rekening hari ini adalah uang yang diserahkan hari
@@ -293,9 +303,6 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
         _pettyCashEntries = harian
             ? semuaPetty.where((e) => sekarang(e.createdAt)).toList()
             : semuaPetty;
-        _bankName = settings?['bank_name'] as String?;
-        _accountNumber = settings?['account_number'] as String?;
-        _accountHolder = settings?['account_holder'] as String?;
         _loading = false;
       });
     } catch (e) {
@@ -777,36 +784,39 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
                           ),
                         ],
                       ),
-                      if (_bankName != null &&
-                          _bankName!.isNotEmpty &&
-                          _accountNumber != null &&
-                          _accountNumber!.isNotEmpty) ...[
+                      if (_rekening.isNotEmpty) ...[
                         const SizedBox(height: 20),
                         const Text('Rekening Bank', style: TextStyle(fontWeight: FontWeight.bold)),
                         const SizedBox(height: 8),
-                        Card(
-                          child: ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor: const Color(0xFFEC4899).withOpacity(0.12),
-                              child: const Icon(Icons.account_balance_outlined, color: Color(0xFFEC4899)),
+                        // Semuanya, bukan satu yang kebetulan tersimpan
+                        // duluan: merchant yang punya dua rekening
+                        // sebelumnya cuma melihat satu, tanpa tanda
+                        // bahwa ada yang lain.
+                        for (final r in _rekening)
+                          Card(
+                            child: ListTile(
+                              leading: CircleAvatar(
+                                backgroundColor: const Color(0xFFEC4899).withOpacity(0.12),
+                                child: const Icon(Icons.account_balance_outlined, color: Color(0xFFEC4899)),
+                              ),
+                              title: Text(
+                                r.isPrimary ? '${r.bankName} (utama)' : r.bankName,
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              subtitle: Text(
+                                  '${r.accountNumber}\na.n. ${r.accountHolder}'),
+                              isThreeLine: true,
                             ),
-                            title: Text(_bankName!, style: const TextStyle(fontWeight: FontWeight.bold)),
-                            subtitle: Text(
-                              '$_accountNumber'
-                              '${_accountHolder != null && _accountHolder!.isNotEmpty ? '\na.n. $_accountHolder' : ''}',
-                            ),
-                            isThreeLine: _accountHolder != null && _accountHolder!.isNotEmpty,
                           ),
-                        ),
                       ],
                       const SizedBox(height: 24),
-                      _SectionHeader(
+                      JudulBagian(
                         title: 'Petty Cash',
                         open: _pettyCashOpen,
                         count: _pettyCashEntries.length,
                         onToggle: () =>
                             setState(() => _pettyCashOpen = !_pettyCashOpen),
-                        action: _PillButton(
+                        action: TombolPil(
                             icon: Icons.add_circle_outline,
                             // Kasir mengajukan, Finance menambahkan
                             // langsung — labelnya menyebutkan bedanya
@@ -943,13 +953,13 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
                           );
                         }),
                       const SizedBox(height: 20),
-                      _SectionHeader(
+                      JudulBagian(
                         title: 'Riwayat Pengeluaran',
                         open: _expensesOpen,
                         count: _expenses.length,
                         onToggle: () =>
                             setState(() => _expensesOpen = !_expensesOpen),
-                        action: _PillButton(
+                        action: TombolPil(
                           icon: Icons.remove_circle_outline,
                           label: 'Catat',
                           color: const Color(0xFFEF4444),
@@ -1045,100 +1055,6 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
 /// tidak daftar yang lama, dan menyembunyikannya berarti memaksa satu
 /// ketukan tambahan hanya untuk sampai ke tombol yang sudah ada di
 /// tempatnya.
-class _SectionHeader extends StatelessWidget {
-  final String title;
-  final bool open;
-  final int count;
-  final VoidCallback onToggle;
-  final Widget action;
-
-  const _SectionHeader({
-    required this.title,
-    required this.open,
-    required this.count,
-    required this.onToggle,
-    required this.action,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: InkWell(
-            borderRadius: BorderRadius.circular(8),
-            onTap: onToggle,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6),
-              child: Row(
-                children: [
-                  AnimatedRotation(
-                    turns: open ? 0 : -0.25,
-                    duration: const Duration(milliseconds: 150),
-                    child: const Icon(Icons.expand_more, size: 20),
-                  ),
-                  const SizedBox(width: 4),
-                  Text(title,
-                      style: const TextStyle(fontWeight: FontWeight.bold)),
-                  // Jumlahnya disebut justru saat tertutup: bagian yang
-                  // dilipat tidak boleh terlihat sama dengan bagian yang
-                  // memang kosong.
-                  if (!open && count > 0) ...[
-                    const SizedBox(width: 6),
-                    Text('($count)',
-                        style: TextStyle(
-                            fontSize: 12, color: KaataTheme.mutedOf(context))),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        ),
-        action,
-      ],
-    );
-  }
-}
-
-class _PillButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _PillButton({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: color,
-      borderRadius: BorderRadius.circular(20),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 16, color: Colors.white),
-              const SizedBox(width: 6),
-              Text(label,
-                  style: const TextStyle(
-                      color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _BalanceMiniCard extends StatelessWidget {
   final IconData icon;
   final String label;

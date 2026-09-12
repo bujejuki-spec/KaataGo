@@ -269,4 +269,35 @@ void main() {
     expect(mapping, contains('GL Saldo Bank Perusahaan'));
     expect(mapping, contains('  _companyBankMethod,\n'));
   });
+
+  // Bentuknya mengikuti Saldo & Pengeluaran: judul yang bisa dilipat
+  // dengan satu tombol di ujung kanannya. Dua layar yang menyusun
+  // daftar dengan cara yang sama tapi memakai widget berbeda akan
+  // berpisah bentuknya pada perubahan berikutnya.
+  group('bagiannya bisa dilipat', () {
+    test('ketiganya memakai judul bagian bersama', () {
+      expect(layar, contains("title: 'Setoran ke Bank',"));
+      expect(layar, contains("title: 'Pengeluaran Perusahaan',"));
+      expect(layar, contains("title: 'Setoran Modal',"));
+      expect(layar, contains('JudulBagian('));
+      expect(layar, contains('TombolPil('));
+    });
+
+    test('tombol mengambangnya dilepas', () {
+      expect(layar, isNot(contains('FloatingActionButton')));
+    });
+
+    test('tiap bagian punya keadaan terbuka sendiri', () {
+      for (final k in ['_setoranTerbuka', '_biayaTerbuka', '_modalTerbuka']) {
+        expect(layar, contains(k));
+      }
+    });
+
+    test('widget judulnya dipakai kedua layar', () {
+      final harian =
+          File('lib/screens/finance_balance_screen.dart').readAsStringSync();
+      expect(harian, contains("import '../widgets/judul_bagian.dart';"));
+      expect(harian, contains('JudulBagian('));
+    });
+  });
 }

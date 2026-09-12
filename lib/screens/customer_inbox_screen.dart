@@ -11,6 +11,7 @@ import '../models/announcement.dart';
 import '../providers/auth_provider.dart';
 import '../providers/table_session_provider.dart';
 import '../theme.dart';
+import '../widgets/teks_pengumuman.dart';
 import '../utils/id_time.dart';
 import '../widgets/app_toast.dart';
 import '../widgets/dialog_actions.dart';
@@ -181,8 +182,7 @@ class _CustomerInboxScreenState extends State<CustomerInboxScreen> {
                 ),
               ],
               const SizedBox(height: 10),
-              Text(item.body,
-                  style: const TextStyle(fontSize: 14, height: 1.45)),
+              TeksPengumuman(item.body),
             ],
           ),
         ),
@@ -524,7 +524,7 @@ class _CustomerInboxScreenState extends State<CustomerInboxScreen> {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      item.body,
+                      ringkasPengumuman(item.body),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(

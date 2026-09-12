@@ -51,7 +51,7 @@ void main() {
   group('tempatnya', () {
     test('formulirnya ada di Saldo Perusahaan', () {
       expect(layar, contains('class _FormModal'));
-      expect(layar, contains("const Text('Top Up Modal')"));
+      expect(layar, contains("label: 'Top Up',"));
     });
 
     // Menghitungnya juga di layar harian membuat satu setoran muncul di
@@ -116,7 +116,7 @@ void main() {
     // layar yang sama dengan saldonya — bukan di layar harian merchant,
     // yang menjawab pertanyaan lain sama sekali.
     test('daftarnya berdiri di Saldo Perusahaan', () {
-      expect(layar, contains("const Text('Setoran Modal'"));
+      expect(layar, contains("title: 'Setoran Modal',"));
       expect(layar, contains('masuk \${m.labelTujuan}'));
     });
 
@@ -125,9 +125,9 @@ void main() {
     });
 
     // Layarnya sendiri cuma untuk Owner dan Finance, dan tombolnya ikut
-    // mati kalau menunya dibuka dalam mode Lihat.
+    // hilang kalau menunya dibuka dalam mode Lihat.
     test('tombolnya mengikuti hak mengubah', () {
-      expect(layar, contains('!bolehUbahDiSini(context)'));
+      expect(layar, contains('action: bolehUbahDiSini(context)'));
     });
 
     // Uang yang ditransfer dan uang yang diserahkan tunai mendarat di

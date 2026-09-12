@@ -1,0 +1,119 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>KaataGo — Promo Feed 1080×1350</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { width:1080px; height:1350px; overflow:hidden;
+         font-family:'Plus Jakarta Sans', system-ui, sans-serif; }
+
+  .kanvas {
+    width:1080px; height:1350px; position:relative; color:#fff;
+    display:flex; flex-direction:column;
+    background:
+      radial-gradient(62% 42% at 84% 6%, rgba(245,158,11,.28), transparent 60%),
+      radial-gradient(55% 40% at 8% 96%, rgba(16,185,129,.22), transparent 62%),
+      linear-gradient(158deg, #4F46E5 0%, #3730A3 54%, #241C6B 100%);
+    overflow:hidden;
+  }
+  .kanvas::after{
+    content:""; position:absolute; inset:0; opacity:.06; pointer-events:none;
+    background:repeating-linear-gradient(115deg, #fff 0 2px, transparent 2px 48px);
+  }
+
+  /* ── Atas: yang dibaca ──────────────────────────────────────────── */
+  .atas { position:relative; z-index:2; padding:70px 74px 0; }
+
+  .merek { display:flex; align-items:center; gap:18px; }
+  .merek img { width:76px; height:76px; border-radius:20px;
+               box-shadow:0 14px 34px rgba(0,0,0,.32); }
+  .merek b { font-size:36px; font-weight:800; letter-spacing:-.5px; }
+  .merek span { display:block; font-size:16px; font-weight:600;
+                color:rgba(255,255,255,.70); letter-spacing:1.2px; }
+
+  .label { display:inline-block; margin-top:34px; padding:10px 22px;
+           border-radius:999px; font-size:18px; font-weight:700;
+           letter-spacing:.8px; text-transform:uppercase;
+           background:rgba(252,211,77,.16); color:#FCD34D;
+           border:1px solid rgba(252,211,77,.42); }
+
+  h1 { margin-top:20px; font-size:72px; line-height:1.06; font-weight:800;
+       letter-spacing:-2px; }
+  h1 em { font-style:normal; color:#FCD34D; }
+
+  .sub { margin-top:20px; font-size:25px; line-height:1.45; font-weight:500;
+         color:rgba(255,255,255,.80); max-width:720px; }
+
+  .poin { margin-top:28px; display:flex; gap:12px; flex-wrap:wrap; }
+  .poin div { display:flex; align-items:center; gap:10px;
+              padding:12px 20px; border-radius:14px; font-size:20px;
+              font-weight:600; background:rgba(255,255,255,.10);
+              border:1px solid rgba(255,255,255,.16); }
+  .poin i { font-style:normal; color:#FCD34D; font-size:17px; }
+
+  /* ── Bawah: layarnya ───────────────────────────────────────────── */
+  .layar { position:relative; z-index:2; flex:1; margin-top:26px; }
+
+  .hp { position:absolute; border-radius:36px; overflow:hidden;
+        border:8px solid #14152A; background:#14152A;
+        box-shadow:0 34px 70px rgba(0,0,0,.46); }
+  .hp img { display:block; width:100%; height:100%;
+            object-fit:cover; object-position:top; }
+
+  .hp-kiri   { width:272px; height:560px; left:96px;  top:56px;
+               transform:rotate(-6deg); }
+  .hp-tengah { width:312px; height:640px; left:384px; top:8px; z-index:3; }
+  .hp-kanan  { width:272px; height:560px; left:712px; top:56px;
+               transform:rotate(6deg); }
+
+  /* ── Kaki ──────────────────────────────────────────────────────── */
+  .kaki { position:absolute; left:0; right:0; bottom:0; z-index:5;
+          padding:30px 74px 38px;
+          background:linear-gradient(to top, rgba(20,21,42,.94) 40%, transparent);
+          display:flex; align-items:center; justify-content:space-between; }
+  .kaki .kiri { font-size:23px; font-weight:700; letter-spacing:-.2px; }
+  .kaki .kiri small { display:block; font-size:17px; font-weight:500;
+                      color:rgba(255,255,255,.66); margin-top:5px; }
+  .tombol { padding:19px 34px; border-radius:16px; background:#FCD34D;
+            color:#241C6B; font-size:23px; font-weight:800;
+            box-shadow:0 16px 34px rgba(252,211,77,.28); }
+</style>
+
+<div class="kanvas">
+  <div class="atas">
+    <div class="merek">
+      <img src="kaata-icon.png" alt="">
+      <div>
+        <b>KaataGo</b>
+        <span>ORDER CEPAT, MERCHANT HEBAT</span>
+      </div>
+    </div>
+
+    <div class="label">Gratis dicoba hari ini</div>
+
+    <h1>Kasir beres,<br><em>pembukuan ikut beres.</em></h1>
+
+    <p class="sub">Pelanggan pesan sendiri dari QR meja, kasir tinggal
+      terima uangnya, dan jurnalnya jalan sendiri.</p>
+
+    <div class="poin">
+      <div><i>✓</i> Self-order tanpa install</div>
+      <div><i>✓</i> Shift &amp; selisih laci</div>
+      <div><i>✓</i> Saldo cash &amp; bank terpisah</div>
+    </div>
+  </div>
+
+  <div class="layar">
+    <div class="hp hp-kiri"><img src="hp-customer.jpg" alt=""></div>
+    <div class="hp hp-tengah"><img src="hp-kasir.jpg" alt=""></div>
+    <div class="hp hp-kanan"><img src="hp-struk.jpg" alt=""></div>
+  </div>
+
+  <div class="kaki">
+    <div class="kiri">
+      WhatsApp 0813-1609-0867
+      <small>Instagram @kaatago</small>
+    </div>
+    <div class="tombol">Coba Sekarang</div>
+  </div>
+</div>

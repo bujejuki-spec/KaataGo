@@ -134,39 +134,6 @@ class _RestaurantManageListScreenState extends State<RestaurantManageListScreen>
     _load();
   }
 
-  Future<void> _toggleActive(Restaurant resto, bool value) async {
-    if (!value) {
-      final confirm = await showDialog<bool>(
-        context: context,
-        builder: (_) => AlertDialog(
-          title: const Text('Nonaktifkan merchant?'),
-          content: Text(
-            '${resto.name} akan hilang dari daftar "Pilih Merchant" customer, dan '
-            'karyawan merchant ini tidak akan bisa login sampai diaktifkan lagi.',
-          ),
-          actionsAlignment: MainAxisAlignment.center,
-          actions: [
-            DialogActions(
-              confirmLabel: 'Nonaktifkan',
-              destructive: true,
-              onConfirm: () => Navigator.pop(context, true),
-            ),
-          ],
-        ),
-      );
-      if (confirm != true) return;
-    }
-
-    setState(() {
-      _restaurants = _restaurants
-          .map((r) => r.id == resto.id
-              ? Restaurant(id: r.id, name: r.name, address: r.address, category: r.category, active: value)
-              : r)
-          .toList();
-    });
-    await _repo.setActive(resto.id, value);
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -259,20 +226,41 @@ class _RestaurantManageListScreenState extends State<RestaurantManageListScreen>
                                 ? null
                                 : TextStyle(color: Colors.red.shade400),
                           ),
-                          // Yang sudah dihapus hanya menawarkan satu
-                          // tindakan. Menyisakan saklar aktif dan tombol
-                          // ubah di sampingnya berarti tiga tombol yang
-                          // dua di antaranya tidak akan berpengaruh apa
-                          // pun sampai restonya dikembalikan.
+                          // Semua tindakan berkumpul di satu tombol.
+                          //
+                          // Sebelumnya ada empat kontrol berjejer di tiap
+                          // baris — chat, saklar aktif, ubah, hapus — dan
+                          // pada nama merchant yang panjang keempatnya
+                          // berdesakan sampai teksnya terpotong. Yang
+                          // lebih berbahaya: saklar aktif dan tombol
+                          // hapus bersebelahan, dua tindakan yang
+                          // akibatnya jauh berbeda dalam jarak satu ibu
+                          // jari.
                           trailing: resto.isDeleted
                               ? TextButton.icon(
                                   onPressed: () => _kembalikan(resto),
                                   icon: const Icon(Icons.restore, size: 18),
                                   label: const Text('Kembalikan'),
                                 )
-                              : Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
+                              : PopupMenuButton<String>(
+                                  tooltip: 'Tindakan',
+                                  icon: const Icon(Icons.more_vert),
+                                  onSelected: (pilihan) {
+                                    switch (pilihan) {
+                                      case 'wa':
+                                        bukaWhatsApp(
+                                          context,
+                                          resto.phone,
+                                          pesan: 'Halo ${resto.name}, '
+                                              'saya dari KaataGo.',
+                                        );
+                                      case 'ubah':
+                                        _edit(resto);
+                                      case 'hapus':
+                                        _hapus(resto);
+                                    }
+                                  },
+                                  itemBuilder: (context) => [
                                     // Hanya muncul kalau nomornya benar-
                                     // benar bisa dihubungi. Tombol yang
                                     // membuka WhatsApp lalu berhenti di
@@ -280,30 +268,43 @@ class _RestaurantManageListScreenState extends State<RestaurantManageListScreen>
                                     // seperti WhatsApp-nya yang rusak,
                                     // bukan datanya yang kosong.
                                     if (punyaWhatsApp(resto.phone))
-                                      IconButton(
-                                        tooltip: 'Chat WhatsApp',
-                                        icon: const Icon(Icons.chat_outlined,
-                                            color: Color(0xFF25D366)),
-                                        onPressed: () => bukaWhatsApp(
-                                          context,
-                                          resto.phone,
-                                          pesan: 'Halo ${resto.name}, '
-                                              'saya dari KaataGo.',
+                                      const PopupMenuItem(
+                                        value: 'wa',
+                                        child: ListTile(
+                                          contentPadding: EdgeInsets.zero,
+                                          dense: true,
+                                          leading: Icon(Icons.chat_outlined,
+                                              color: Color(0xFF25D366)),
+                                          title: Text('Chat WhatsApp'),
                                         ),
                                       ),
-                                    Switch(
-                                      value: resto.active,
-                                      onChanged: (v) => _toggleActive(resto, v),
+                                    // Aktif/nonaktif ada di dalam sini:
+                                    // mematikan merchant membuat
+                                    // karyawannya tidak bisa masuk dan
+                                    // pelanggannya tidak bisa memesan,
+                                    // dan itu bukan tindakan sekali
+                                    // sentuh dari daftar.
+                                    const PopupMenuItem(
+                                      value: 'ubah',
+                                      child: ListTile(
+                                        contentPadding: EdgeInsets.zero,
+                                        dense: true,
+                                        leading: Icon(Icons.edit_outlined),
+                                        title: Text('Ubah'),
+                                        subtitle: Text('Termasuk aktif/nonaktif',
+                                            style: TextStyle(fontSize: 11)),
+                                      ),
                                     ),
-                                    IconButton(
-                                      icon: const Icon(Icons.edit_outlined),
-                                      onPressed: () => _edit(resto),
-                                    ),
-                                    IconButton(
-                                      tooltip: 'Hapus',
-                                      icon: const Icon(Icons.delete_outline,
-                                          color: Colors.red),
-                                      onPressed: () => _hapus(resto),
+                                    const PopupMenuItem(
+                                      value: 'hapus',
+                                      child: ListTile(
+                                        contentPadding: EdgeInsets.zero,
+                                        dense: true,
+                                        leading: Icon(Icons.delete_outline,
+                                            color: Colors.red),
+                                        title: Text('Hapus',
+                                            style: TextStyle(color: Colors.red)),
+                                      ),
                                     ),
                                   ],
                                 ),

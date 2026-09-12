@@ -37,6 +37,21 @@ Formatnya dibaca `scripts/release.sh`: judul `## <versi>`, lalu
 poin-poinnya. Versi yang tidak punya bagiannya di sini tetap terbit,
 hanya pengumumannya memakai kalimat umum.
 
+## 3.5.0
+
+- Isi pengumuman di Kotak Masuk kini ditampilkan sebagai daftar berbutir
+  yang rapi, tidak lagi patah di tengah kalimat
+- Tindakan di List Merchant berkumpul di satu tombol; aktif/nonaktif
+  merchant pindah ke dalam form Ubah, berikut konfirmasinya
+- Bagian Setoran ke Bank, Pengeluaran Perusahaan, dan Setoran Modal di
+  menu Saldo Perusahaan bisa dilipat, dengan tombolnya di ujung judul
+- Layar Bayar dengan Transfer menampilkan rekening utama saja
+- Kartu Rekening Bank di Saldo & Pengeluaran kini membaca daftar Rekening
+  Perusahaan — sebelumnya menampilkan rekening lama yang sudah tidak
+  dipakai
+- Daftar fitur di Tentang KaataGo disegarkan
+- Perbaikan bug dan penyempurnaan tampilan
+
 ## 3.4.0
 
 - Setor tunai yang disetujui kini mendarat di Saldo Bank Perusahaan, dan
