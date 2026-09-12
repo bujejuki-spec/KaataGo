@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../db/cash_deposit_repository.dart';
+import '../db/cashier_shift_repository.dart';
 import '../db/order_repository.dart';
 import '../db/petty_cash_repository.dart';
 import '../providers/auth_provider.dart';
@@ -30,8 +31,51 @@ import 'transaction_history_screen.dart';
 /// putting Riwayat Transaksi/Logout as app-bar icons on the ordering
 /// screen. "Kasir / Input Pesanan" is itself just a menu tile here —
 /// that's where the product grid + checkout flow ([PosHomeScreen]) lives.
-class KasirHomeScreen extends StatelessWidget {
+class KasirHomeScreen extends StatefulWidget {
   const KasirHomeScreen({super.key});
+
+  @override
+  State<KasirHomeScreen> createState() => _KasirHomeScreenState();
+}
+
+class _KasirHomeScreenState extends State<KasirHomeScreen> {
+  /// Kasir ini sedang memegang shift atau belum.
+  ///
+  /// Selama belum, berandanya cuma menawarkan tiga hal: membuka shift,
+  /// membaca kotak masuk, dan keluar. Sisanya menunggu.
+  ///
+  /// Bukan pengamanan — servernya sudah menolak hal-hal yang memang
+  /// tidak boleh. Ini soal urutan kerja: mencatat penjualan sebelum
+  /// laci punya titik awal berarti selisih tutup shift tidak bisa
+  /// ditelusuri ke mana pun, dan kasir yang terlanjur melayani sepuluh
+  /// pesanan tidak bisa mundur lagi.
+  ///
+  /// Null berarti belum diketahui. Selama itu yang ditampilkan tetap
+  /// yang sempit: menu yang sempat muncul lalu hilang sendiri lebih
+  /// membingungkan daripada menu yang datang belakangan.
+  bool? _shiftSaya;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _periksaShift());
+  }
+
+  Future<void> _periksaShift() async {
+    final restoId = context.read<AuthProvider>().restoId;
+    if (restoId == null) {
+      if (mounted) setState(() => _shiftSaya = false);
+      return;
+    }
+    try {
+      final ringkas = await CashierShiftRepository().ringkasTerbuka(restoId);
+      if (mounted) setState(() => _shiftSaya = ringkas.milikSaya);
+    } catch (_) {
+      // Gagal bertanya bukan alasan mengunci: kasir yang jaringannya
+      // sedang buruk tetap harus bisa bekerja.
+      if (mounted) setState(() => _shiftSaya = true);
+    }
+  }
 
   Future<void> _logout(BuildContext context) async {
     if (!await confirmLogout(context)) return;
@@ -80,10 +124,19 @@ class KasirHomeScreen extends StatelessWidget {
                   title: 'Shift Kasir',
                   subtitle: 'Buka shift, tutup shift, dan hitung uang laci',
                   color: const Color(0xFFF59E0B),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const CashierShiftScreen()),
-                  ),
+                  onTap: () async {
+                    await Navigator.of(context).push(
+                      MaterialPageRoute(
+                          builder: (_) => const CashierShiftScreen()),
+                    );
+                    // Kembali dari sana, keadaannya mungkin sudah
+                    // berubah — shift baru dibuka, atau baru ditutup.
+                    _periksaShift();
+                  },
                 ),
+                if (_shiftSaya != true)
+                  _MenungguShift()
+                else ...[
                 HubGroupTile(
                   icon: Icons.point_of_sale_outlined,
                   title: 'Penjualan',
@@ -134,14 +187,14 @@ class KasirHomeScreen extends StatelessWidget {
                 HubGroupTile(
                   icon: Icons.account_balance_wallet_outlined,
                   title: 'Keuangan',
-                  subtitle: 'Saldo, pengeluaran, setor tunai',
+                  subtitle: 'Saldo hari ini, petty cash, setor & pickup tunai',
                   color: const Color(0xFF6366F1),
                   loadCount: () => _penandaKeuangan(restoId),
                   tiles: () => [
                     BadgedHubTile(
                       icon: Icons.account_balance_wallet_outlined,
                       title: 'Saldo & Pengeluaran',
-                      subtitle: 'Lihat saldo, catat pengeluaran dari Petty Cash',
+                      subtitle: 'Penghasilan hari ini, tunai di laci, petty cash',
                       color: const Color(0xFF6366F1),
                       loadCount: () => restoId == null
                           ? Future.value(0)
@@ -151,7 +204,7 @@ class KasirHomeScreen extends StatelessWidget {
                     BadgedHubTile(
                       icon: Icons.account_balance_outlined,
                       title: 'Setor Saldo Cash',
-                      subtitle: 'Setor tunai di laci ke rekening merchant',
+                      subtitle: 'Setor ke rekening, atau serahkan ke petugas pickup',
                       color: const Color(0xFF0EA5E9),
                       loadCount: () => restoId == null
                           ? Future.value(0)
@@ -163,7 +216,7 @@ class KasirHomeScreen extends StatelessWidget {
                 HubGroupTile(
                   icon: Icons.tune,
                   title: 'Pengelolaan',
-                  subtitle: 'Promo per menu, bundling, minimum belanja',
+                  subtitle: 'Diskon dan promo yang berjalan di merchant ini',
                   color: const Color(0xFF8B5CF6),
                   tiles: () => [
                     HubMenuTile(
@@ -178,6 +231,7 @@ class KasirHomeScreen extends StatelessWidget {
                   ],
                 ),
                 const PenilaianTile(),
+                ],
                 const InboxTile(),
                 HubMenuTile(
                     icon: Icons.brightness_6_outlined,
@@ -215,4 +269,48 @@ Future<int> _penandaKeuangan(String? restoId) async {
     CashDepositRepository().pendingCount(restoId),
   ]);
   return hasil.fold<int>(0, (a, b) => a + b);
+}
+
+/// Keterangan saat berandanya masih sempit.
+///
+/// Tanpa ini, kasir yang menu-menunya belum muncul mengira aplikasinya
+/// belum selesai memuat — lalu menunggu sesuatu yang tidak akan datang
+/// sampai dia membuka shift.
+class _MenungguShift extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final muted = KaataTheme.mutedOf(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: KaataTheme.softFillOf(context),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.lock_clock, size: 20, color: Color(0xFFF59E0B)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Buka shift dulu',
+                    style:
+                        TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                const SizedBox(height: 4),
+                Text(
+                  'Menu kasir, pesanan, dan keuangan terbuka setelah shift '
+                  'dibuka — supaya uang di laci punya titik awal yang jelas '
+                  'dan selisihnya nanti bisa ditelusuri.',
+                  style: TextStyle(fontSize: 12.5, color: muted, height: 1.45),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

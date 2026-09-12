@@ -38,6 +38,19 @@ class _CashierShiftScreenState extends State<CashierShiftScreen> {
   /// Laci sedang dipegang, tapi bukan oleh orang yang sedang membuka
   /// layar ini — dan ia tidak berhak tahu oleh siapa.
   bool _dipegangOrangLain = false;
+
+  /// Shift yang sedang berjalan dibuka oleh orang yang sedang masuk.
+  ///
+  /// Owner dan Admin bisa MELIHAT shift siapa pun — barisnya memang
+  /// terbuka untuk mereka. Yang tidak boleh adalah menutupnya:
+  /// menutup shift berarti menghitung uang laci dan menandatangani
+  /// selisihnya, dan selisih itu tercatat atas nama kasirnya lalu jadi
+  /// tagihan atas namanya. Yang menandatangani harus orang yang hadir
+  /// saat uangnya dihitung.
+  bool _shiftMilikSaya = false;
+
+  /// Tanggal riwayat yang sedang dilihat. Bawaannya hari ini.
+  DateTime _tanggalRiwayat = DateTime.now();
   List<CashierShift> _riwayat = const [];
   List<CashVariance> _selisih = const [];
   bool _memuat = true;
@@ -46,6 +59,7 @@ class _CashierShiftScreenState extends State<CashierShiftScreen> {
   static final _rp =
       NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
   static final _waktu = DateFormat('d MMM yyyy, HH:mm', 'id_ID');
+  static final _tanggalPendek = DateFormat('d MMM yyyy', 'id_ID');
 
   @override
   void initState() {
@@ -64,7 +78,7 @@ class _CashierShiftScreenState extends State<CashierShiftScreen> {
     try {
       final hasil = await Future.wait([
         _repo.terbuka(restoId),
-        _repo.riwayat(restoId),
+        _repo.riwayat(restoId, tanggal: _tanggalRiwayat),
         _repo.selisih(restoId),
       ]);
       final ringkas = await _repo.ringkasTerbuka(restoId);
@@ -72,6 +86,7 @@ class _CashierShiftScreenState extends State<CashierShiftScreen> {
       setState(() {
         _terbuka = hasil[0] as CashierShift?;
         _dipegangOrangLain = ringkas.ada && !ringkas.milikSaya;
+        _shiftMilikSaya = ringkas.milikSaya;
         _riwayat = hasil[1] as List<CashierShift>;
         _selisih = hasil[2] as List<CashVariance>;
         _memuat = false;
@@ -666,6 +681,26 @@ class _CashierShiftScreenState extends State<CashierShiftScreen> {
     return hasil;
   }
 
+  Future<void> _pilihTanggal() async {
+    final dipilih = await showDatePicker(
+      context: context,
+      initialDate: _tanggalRiwayat,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+      helpText: 'Riwayat shift tanggal',
+    );
+    if (dipilih == null) return;
+    setState(() => _tanggalRiwayat = dipilih);
+    _muat();
+  }
+
+  bool get _riwayatHariIni {
+    final kini = DateTime.now();
+    return _tanggalRiwayat.year == kini.year &&
+        _tanggalRiwayat.month == kini.month &&
+        _tanggalRiwayat.day == kini.day;
+  }
+
   @override
   Widget build(BuildContext context) {
     return berdasarkanAkses(context, 'Shift Kasir', Scaffold(
@@ -707,15 +742,57 @@ class _CashierShiftScreenState extends State<CashierShiftScreen> {
                         ),
                     ],
                     const SizedBox(height: 20),
-                    const Text('Riwayat Shift',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 14)),
+                    // Judulnya sekaligus pemilih tanggalnya: tombol
+                    // terpisah di tempat lain membuat orang mencarinya,
+                    // dan yang dicari di sini cuma satu hal — hari mana.
+                    Row(
+                      children: [
+                        const Expanded(
+                          child: Text('Riwayat Shift',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 14)),
+                        ),
+                        TextButton.icon(
+                          onPressed: _pilihTanggal,
+                          icon: const Icon(Icons.calendar_today_outlined,
+                              size: 16),
+                          label: Text(
+                            _riwayatHariIni
+                                ? 'Hari ini'
+                                : _tanggalPendek.format(_tanggalRiwayat),
+                            style: const TextStyle(fontSize: 13),
+                          ),
+                          style: TextButton.styleFrom(
+                            visualDensity: VisualDensity.compact,
+                          ),
+                        ),
+                        // Jalan pulang ke hari ini, supaya yang terlanjur
+                        // menengok ke belakang tidak perlu membuka
+                        // kalender lagi untuk kembali.
+                        if (!_riwayatHariIni)
+                          IconButton(
+                            tooltip: 'Kembali ke hari ini',
+                            visualDensity: VisualDensity.compact,
+                            icon: const Icon(Icons.today_outlined, size: 18),
+                            onPressed: () {
+                              setState(
+                                  () => _tanggalRiwayat = DateTime.now());
+                              _muat();
+                            },
+                          ),
+                      ],
+                    ),
                     const SizedBox(height: 8),
                     if (_riwayat.isEmpty)
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 24),
                         child: Center(
-                          child: Text('Belum ada shift yang ditutup.',
+                          child: Text(
+                              _riwayatHariIni
+                                  ? 'Belum ada shift yang ditutup hari ini.'
+                                  : 'Tidak ada shift yang ditutup pada '
+                                      '${_tanggalPendek.format(_tanggalRiwayat)}.',
+                              textAlign: TextAlign.center,
                               style:
                                   TextStyle(color: KaataTheme.mutedOf(context))),
                         ),
@@ -812,10 +889,32 @@ class _CashierShiftScreenState extends State<CashierShiftScreen> {
             const SizedBox(height: 2),
             Text('Modal awal ${_rp.format(s.openingCash)}',
                 style: TextStyle(fontSize: 12, color: muted)),
+            // Kenapa tidak ada tombol tutup di sini, untuk yang memang
+            // tidak boleh menekannya. Tanpa kalimat ini, Owner yang
+            // membuka layar ini mengira tombolnya hilang karena rusak.
+            if (!_shiftMilikSaya) ...[
+              const SizedBox(height: 8),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.visibility_outlined, size: 15, color: muted),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Hanya ${s.namaTampil} yang bisa menutup shift ini — '
+                      'selisihnya tercatat atas namanya.',
+                      style: TextStyle(fontSize: 12, color: muted),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ],
           // Tanpa hak membuka, tidak ada tombol sama sekali. Tombol mati
           // yang tidak akan pernah hidup cuma memajang pintu terkunci.
-          if (s == null && !boleh)
+          // Tanpa hak membuka, tidak ada tombol sama sekali; begitu juga
+          // saat yang sedang berjalan milik orang lain.
+          if ((s == null && !boleh) || (s != null && !_shiftMilikSaya))
             const SizedBox.shrink()
           else ...[
           const SizedBox(height: 14),

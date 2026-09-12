@@ -37,6 +37,24 @@ Formatnya dibaca `scripts/release.sh`: judul `## <versi>`, lalu
 poin-poinnya. Versi yang tidak punya bagiannya di sini tetap terbit,
 hanya pengumumannya memakai kalimat umum.
 
+## 3.6.0
+
+- Shift kasir hanya bisa ditutup oleh yang membukanya. Owner dan Admin
+  tetap melihat shift yang sedang berjalan dan riwayatnya, tapi tidak
+  lagi bisa menutupnya — selisih laci tercatat atas nama kasirnya, dan
+  yang menandatanganinya harus orang yang hadir saat uangnya dihitung
+- Riwayat shift menampilkan hari ini; tanggal lain dipilih lewat kalender
+  di samping judulnya
+- Beranda kasir sebelum membuka shift hanya menawarkan Shift Kasir, Kotak
+  Masuk, dan Keluar. Menu lainnya terbuka setelah shiftnya dibuka
+- Menu baru Pembayaran dari KaataGo untuk Finance dan Owner: voucher yang
+  ditebus di merchant ini, berapa yang sudah dibayar, dan berapa yang
+  masih menggantung
+- Rekening bank di Saldo & Pengeluaran kini satu kartu per rekening,
+  dengan yang utama diberi tanda
+- Nama dan keterangan menu di semua beranda diperbarui
+- Perbaikan bug dan penyempurnaan tampilan
+
 ## 3.5.0
 
 - Isi pengumuman di Kotak Masuk kini ditampilkan sebagai daftar berbutir

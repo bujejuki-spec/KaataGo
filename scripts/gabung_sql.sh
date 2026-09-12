@@ -107,6 +107,7 @@ FILES=(
   backfill_saldo_bank.sql
   jurnal_selisih_ke_bank.sql
   setoran_ke_saldo_bank.sql
+  tutup_shift_sendiri.sql
   merchant_report.sql
   shift_opening_check.sql
   support_tickets.sql

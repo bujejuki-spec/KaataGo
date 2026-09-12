@@ -13,6 +13,7 @@ import 'cashier_shift_screen.dart';
 import 'category_management_screen.dart';
 import 'discount_screen.dart';
 import 'bank_account_screen.dart';
+import 'pembayaran_kaatago_screen.dart';
 import 'saldo_perusahaan_screen.dart';
 import 'super_admin_uam_screen.dart';
 import 'terima_pickup_screen.dart';
@@ -457,6 +458,11 @@ const _owner = <MenuWeb>[
     layar: SaldoPerusahaanScreen.new,
   ),
   MenuWeb(
+    ikon: Icons.confirmation_number_outlined,
+    judul: 'Pembayaran dari KaataGo',
+    layar: PembayaranKaataGoScreen.new,
+  ),
+  MenuWeb(
     ikon: Icons.qr_code_2,
     judul: 'QR Meja',
     layar: TableQrGeneratorScreen.new,
@@ -675,5 +681,10 @@ const _finance = <MenuWeb>[
     ikon: Icons.account_balance_wallet_outlined,
     judul: 'Saldo Perusahaan',
     layar: SaldoPerusahaanScreen.new,
+  ),
+  MenuWeb(
+    ikon: Icons.confirmation_number_outlined,
+    judul: 'Pembayaran dari KaataGo',
+    layar: PembayaranKaataGoScreen.new,
   ),
 ];

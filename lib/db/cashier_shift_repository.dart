@@ -40,12 +40,31 @@ class CashierShiftRepository {
   }
 
   /// Riwayat shift, yang terbaru lebih dulu.
-  Future<List<CashierShift>> riwayat(String restoId, {int batas = 60}) async {
+  /// Riwayat shift pada satu tanggal, yang terbaru lebih dulu.
+  ///
+  /// Tanggalnya wajib disebut. Menarik seluruh riwayat tiap kali layarnya
+  /// dibuka berarti kasir yang cuma ingin membuka shift menunggu daftar
+  /// berbulan-bulan lebih dulu — dan yang dia cari hampir selalu hari
+  /// ini.
+  ///
+  /// Batasnya WIB, bukan UTC: shift yang ditutup jam sebelas malam
+  /// tercatat hari itu juga, bukan besok.
+  Future<List<CashierShift>> riwayat(
+    String restoId, {
+    required DateTime tanggal,
+    int batas = 60,
+  }) async {
+    final awalWib = DateTime(tanggal.year, tanggal.month, tanggal.day);
+    final mulai = awalWib.subtract(const Duration(hours: 7));
+    final akhir = mulai.add(const Duration(days: 1));
+
     final rows = await _client
         .from('cashier_shifts')
         .select()
         .eq('resto_id', restoId)
         .not('closed_at', 'is', null)
+        .gte('opened_at', mulai.toIso8601String())
+        .lt('opened_at', akhir.toIso8601String())
         .order('opened_at', ascending: false)
         .limit(batas);
     return rows.map((r) => CashierShift.fromMap(r)).toList();

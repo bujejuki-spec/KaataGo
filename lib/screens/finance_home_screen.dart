@@ -20,6 +20,7 @@ import '../widgets/responsive.dart';
 import '../widgets/resto_switcher.dart';
 import '../widgets/kaata_logo.dart';
 import 'cash_deposit_screen.dart';
+import 'pembayaran_kaatago_screen.dart';
 import 'saldo_perusahaan_screen.dart';
 import 'terima_pickup_screen.dart';
 import 'cashier_shift_screen.dart';
@@ -93,7 +94,7 @@ class FinanceHomeScreen extends StatelessWidget {
                 HubGroupTile(
                   icon: Icons.trending_up,
                   title: 'Pemasukan & Saldo',
-                  subtitle: 'Pemasukan, saldo, pengeluaran, setoran',
+                  subtitle: 'Pemasukan, saldo harian, saldo perusahaan, setoran',
                   color: const Color(0xFF10B981),
                   loadCount: () => _penandaKeuangan(restoId),
                   tiles: () => [
@@ -112,7 +113,7 @@ class FinanceHomeScreen extends StatelessWidget {
                     BadgedHubTile(
                       icon: Icons.account_balance_wallet_outlined,
                       title: 'Saldo & Pengeluaran',
-                      subtitle: 'Lihat saldo total, catat pengeluaran',
+                      subtitle: 'Penghasilan hari ini, petty cash, dan pengeluarannya',
                       color: const Color(0xFF6366F1),
                       loadCount: () => restoId == null ? Future.value(0) : PettyCashRepository().pendingCount(restoId),
                       destination: () => const FinanceBalanceScreen(),
@@ -120,7 +121,7 @@ class FinanceHomeScreen extends StatelessWidget {
                     BadgedHubTile(
                       icon: Icons.account_balance_outlined,
                       title: 'Setor Saldo Cash',
-                      subtitle: 'Riwayat setoran tunai berikut buktinya',
+                      subtitle: 'Riwayat setoran & cash pickup berikut buktinya',
                       color: const Color(0xFF0EA5E9),
                       loadCount: () => restoId == null ? Future.value(0) : CashDepositRepository().pendingCount(restoId),
                       destination: () => const CashDepositScreen(),
@@ -141,10 +142,24 @@ class FinanceHomeScreen extends StatelessWidget {
                     // Uang perusahaan, dan di mana ia berada. Berbeda
                     // dari Saldo & Pengeluaran, yang menjawab
                     // pertanyaan hari ini.
+                    // Voucher KaataGo yang ditebus di sini dibayar
+                    // KaataGo ke akun pembayaran merchant. Uangnya sudah
+                    // lama berjalan sendiri; yang belum ada cuma
+                    // halaman untuk memeriksanya.
+                    HubMenuTile(
+                      icon: Icons.confirmation_number_outlined,
+                      title: 'Pembayaran dari KaataGo',
+                      subtitle: 'Voucher yang ditebus di sini dan penggantiannya',
+                      color: const Color(0xFF8B5CF6),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                            builder: (_) => const PembayaranKaataGoScreen()),
+                      ),
+                    ),
                     HubMenuTile(
                       icon: Icons.account_balance_wallet_outlined,
                       title: 'Saldo Perusahaan',
-                      subtitle: 'Saldo cash & bank, dan setor ke rekening',
+                      subtitle: 'Uang perusahaan: tunai, bank, modal, pengeluaran',
                       color: const Color(0xFF14B8A6),
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(
@@ -156,7 +171,7 @@ class FinanceHomeScreen extends StatelessWidget {
                 HubGroupTile(
                   icon: Icons.menu_book_outlined,
                   title: 'Pembukuan',
-                  subtitle: 'Mapping GL, jurnal, laporan, pencairan gateway',
+                  subtitle: 'Tutup buku, rekonsiliasi, GL, jurnal, laporan',
                   color: const Color(0xFF14B8A6),
                   tiles: () => [
                     HubMenuTile(
@@ -191,7 +206,7 @@ class FinanceHomeScreen extends StatelessWidget {
                     HubMenuTile(
                       icon: Icons.menu_book_outlined,
                       title: 'Jurnal GL',
-                      subtitle: 'Audit trail semua pergerakan uang per GL account',
+                      subtitle: 'Pergerakan uang per akun GL, pilih periodenya',
                       color: const Color(0xFF14B8A6),
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(builder: (_) => const FinanceJournalScreen()),
@@ -200,7 +215,7 @@ class FinanceHomeScreen extends StatelessWidget {
                     HubMenuTile(
                       icon: Icons.receipt_long_outlined,
                       title: 'Laporan Transaksi',
-                      subtitle: 'Export/cetak laporan seperti rekening koran',
+                      subtitle: 'Cetak laporan per periode, seperti rekening koran',
                       color: const Color(0xFF0EA5E9),
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(builder: (_) => const FinanceReportScreen()),
@@ -224,7 +239,7 @@ class FinanceHomeScreen extends StatelessWidget {
                 HubMenuTile(
                   icon: Icons.receipt_long_outlined,
                   title: 'Tagihan Langganan',
-                  subtitle: 'Biaya bulanan KaataGo & bukti pembayaran',
+                  subtitle: 'Tagihan langganan, bayar VA atau transfer',
                   color: const Color(0xFF6366F1),
                   onTap: () {
                     final restoId = context.read<AuthProvider>().restoId;
@@ -237,7 +252,7 @@ class FinanceHomeScreen extends StatelessWidget {
                 HubMenuTile(
                     icon: Icons.payments_outlined,
                     title: 'Pengaturan Pembayaran',
-                    subtitle: 'Atur QRIS & rekening bank merchant',
+                    subtitle: 'Metode bayar yang aktif, QRIS statis, rekening',
                     color: const Color(0xFFEC4899),
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute(builder: (_) => const SettingsScreen()),

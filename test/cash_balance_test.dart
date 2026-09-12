@@ -167,7 +167,16 @@ void main() {
     });
 
     test('menampilkan semua rekening, bukan satu saja', () {
-      expect(layar, contains('for (final r in _rekening)'));
+      expect(layar, contains('for (var i = 0; i < _rekening.length; i++)'));
+      expect(layar, contains('_KartuRekening(rekening: _rekening[i])'));
+    });
+
+    // Nomor rekening adalah deretan angka panjang yang dibaca digit per
+    // digit; kartu yang saling menempel membuat yang membacanya
+    // kehilangan barisnya di tengah.
+    test('tiap rekening punya kartunya sendiri, berjarak', () {
+      expect(layar, contains('if (i > 0) const SizedBox(height: 10)'));
+      expect(layar, contains('class _KartuRekening'));
     });
   });
 }

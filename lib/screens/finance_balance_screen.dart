@@ -792,22 +792,16 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
                         // duluan: merchant yang punya dua rekening
                         // sebelumnya cuma melihat satu, tanpa tanda
                         // bahwa ada yang lain.
-                        for (final r in _rekening)
-                          Card(
-                            child: ListTile(
-                              leading: CircleAvatar(
-                                backgroundColor: const Color(0xFFEC4899).withOpacity(0.12),
-                                child: const Icon(Icons.account_balance_outlined, color: Color(0xFFEC4899)),
-                              ),
-                              title: Text(
-                                r.isPrimary ? '${r.bankName} (utama)' : r.bankName,
-                                style: const TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                              subtitle: Text(
-                                  '${r.accountNumber}\na.n. ${r.accountHolder}'),
-                              isThreeLine: true,
-                            ),
-                          ),
+                        // Satu kartu utuh per rekening, bukan ListTile
+                        // yang saling menempel. Nomor rekening adalah
+                        // deretan angka panjang yang dibaca digit per
+                        // digit — ia butuh ruang sendiri dan jarak yang
+                        // jelas dari nomor di bawahnya, kalau tidak yang
+                        // membacanya kehilangan barisnya di tengah.
+                        for (var i = 0; i < _rekening.length; i++) ...[
+                          if (i > 0) const SizedBox(height: 10),
+                          _KartuRekening(rekening: _rekening[i]),
+                        ],
                       ],
                       const SizedBox(height: 24),
                       JudulBagian(
@@ -1055,6 +1049,98 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
 /// tidak daftar yang lama, dan menyembunyikannya berarti memaksa satu
 /// ketukan tambahan hanya untuk sampai ke tombol yang sudah ada di
 /// tempatnya.
+/// Satu rekening perusahaan, dalam bentuk yang enak dibaca sekilas.
+class _KartuRekening extends StatelessWidget {
+  final BankAccount rekening;
+
+  const _KartuRekening({required this.rekening});
+
+  @override
+  Widget build(BuildContext context) {
+    const warna = Color(0xFFEC4899);
+    final muted = KaataTheme.mutedOf(context);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: KaataTheme.surfaceOf(context),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          // Yang utama diberi garis berwarna: itu rekening yang dipakai
+          // kalau tidak disebut yang mana — tujuan setoran tunai, dan
+          // yang ditunjukkan ke pelanggan yang mentransfer.
+          color: rekening.isPrimary
+              ? warna.withOpacity(0.55)
+              : KaataTheme.borderOf(context),
+          width: rekening.isPrimary ? 1.4 : 1,
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: warna.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(11),
+            ),
+            child: const Icon(Icons.account_balance_outlined,
+                color: warna, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(rekening.bankName,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 14)),
+                    ),
+                    if (rekening.isPrimary) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: warna.withOpacity(0.14),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Text('Utama',
+                            style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.bold,
+                                color: warna)),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 6),
+                // Nomornya diberi jarak antar-angka: yang menyalinnya ke
+                // aplikasi bank membacanya digit per digit.
+                Text(
+                  rekening.accountNumber,
+                  style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.8),
+                ),
+                const SizedBox(height: 3),
+                Text('a.n. ${rekening.accountHolder}',
+                    style: TextStyle(fontSize: 12, color: muted)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _BalanceMiniCard extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -1814,7 +1900,11 @@ class _IncomeSplitCard extends StatelessWidget {
                   icon: Icons.payments_outlined,
                   color: const Color(0xFF0EA5E9),
                   label: 'Saldo Cash',
-                  hint: 'Ada di laci kasir',
+                  // Bukan "penghasilan tunai": angkanya sudah dikurangi
+                  // setoran, cash pickup, dan penarikan ke petty cash.
+                  // Yang tersisa adalah lembaran yang masih ada, dan
+                  // itulah yang dihitung ulang saat tutup shift.
+                  hint: 'Tunai belum disetor',
                   value: cashBalance,
                 ),
               ),
@@ -1825,7 +1915,7 @@ class _IncomeSplitCard extends StatelessWidget {
                   icon: Icons.qr_code_2,
                   color: const Color(0xFF8B5CF6),
                   label: 'Saldo Non Cash',
-                  hint: 'QRIS & transfer',
+                  hint: 'QRIS & transfer hari ini',
                   value: nonCashBalance,
                 ),
               ),

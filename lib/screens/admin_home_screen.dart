@@ -160,14 +160,14 @@ class AdminHomeScreen extends StatelessWidget {
                 HubGroupTile(
                   icon: Icons.account_balance_wallet_outlined,
                   title: 'Keuangan',
-                  subtitle: 'Saldo, pengeluaran, setor tunai',
+                  subtitle: 'Saldo hari ini, petty cash, setoran, tutup buku',
                   color: const Color(0xFF6366F1),
                   loadCount: () => _penandaKeuangan(restoId),
                   tiles: () => [
                     BadgedHubTile(
                       icon: Icons.account_balance_wallet_outlined,
                       title: 'Saldo & Pengeluaran',
-                      subtitle: 'Lihat saldo, catat pengeluaran dari Petty Cash',
+                      subtitle: 'Penghasilan hari ini, tunai di laci, petty cash',
                       color: const Color(0xFF6366F1),
                       loadCount: () => restoId == null
                           ? Future.value(0)
@@ -177,7 +177,7 @@ class AdminHomeScreen extends StatelessWidget {
                     BadgedHubTile(
                       icon: Icons.account_balance_outlined,
                       title: 'Setor Saldo Cash',
-                      subtitle: 'Setor tunai di laci ke rekening merchant',
+                      subtitle: 'Setor ke rekening, atau serahkan ke petugas pickup',
                       color: const Color(0xFF0EA5E9),
                       loadCount: () => restoId == null
                           ? Future.value(0)
@@ -205,13 +205,13 @@ class AdminHomeScreen extends StatelessWidget {
                 HubGroupTile(
                   icon: Icons.tune,
                   title: 'Pengelolaan',
-                  subtitle: 'Produk, diskon, dan pengumuman',
+                  subtitle: 'Produk, karyawan, diskon, dan pengumuman',
                   color: const Color(0xFF8B5CF6),
                   tiles: () => [
                     HubMenuTile(
                       icon: Icons.inventory_2_outlined,
                       title: 'Kelola Produk',
-                      subtitle: 'Tambah/edit produk, kategori, level/varian',
+                      subtitle: 'Produk, kategori, level/varian, dan topping',
                       color: const Color(0xFF6366F1),
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(builder: (_) => const ProductListScreen()),
@@ -251,7 +251,7 @@ class AdminHomeScreen extends StatelessWidget {
                 HubMenuTile(
                     icon: Icons.settings_outlined,
                     title: 'Pengaturan',
-                    subtitle: 'Info merchant, QR meja, pengaturan pembayaran',
+                    subtitle: 'Info merchant, QR meja, rekening, metode bayar',
                     color: const Color(0xFFEC4899),
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute(builder: (_) => const SettingsMenuScreen()),

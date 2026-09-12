@@ -13,9 +13,9 @@ void main() {
   const jumlahMenu = {
     'kasir': 11,
     'admin': 17,
-    'finance': 17,
+    'finance': 18,
     'super_admin': 12,
-    'owner': 27,
+    'owner': 28,
   };
 
   String isi(String peran) =>
