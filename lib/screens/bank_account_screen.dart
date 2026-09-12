@@ -21,7 +21,25 @@ import '../widgets/responsive.dart';
 /// beberapa cabang. Yang utama dipakai kalau tidak disebut yang mana:
 /// tujuan setoran tunai, dan yang ditampilkan di layar Transfer.
 class BankAccountScreen extends StatefulWidget {
-  const BankAccountScreen({super.key});
+  /// Resto yang rekeningnya dikelola. Kosong berarti resto tempat
+  /// orangnya bekerja.
+  ///
+  /// Diisi hanya oleh menu Rekening KaataGo milik Super Admin, yang
+  /// mengurus rekening platform — tujuan transfer tagihan langganan
+  /// merchant. Rekening itu tidak menempel ke merchant mana pun, jadi
+  /// tanpa ini tidak ada satu layar pun yang bisa membuatnya.
+  final String? restoId;
+
+  /// Judul layarnya. Rekening KaataGo dan rekening merchant memakai
+  /// layar yang sama; judul yang tetap "Rekening Perusahaan" membuat
+  /// Super Admin tidak punya cara tahu ia sedang menyunting yang mana.
+  final String judul;
+
+  const BankAccountScreen({
+    super.key,
+    this.restoId,
+    this.judul = 'Rekening Perusahaan',
+  });
 
   @override
   State<BankAccountScreen> createState() => _BankAccountScreenState();
@@ -34,7 +52,8 @@ class _BankAccountScreenState extends State<BankAccountScreen> {
   bool _memuat = true;
   bool _sibuk = false;
 
-  String? get _restoId => context.read<AuthProvider>().restoId;
+  String? get _restoId =>
+      widget.restoId ?? context.read<AuthProvider>().restoId;
 
   /// Kasir melihat, Owner dan Finance mengubah.
   ///
@@ -172,7 +191,7 @@ class _BankAccountScreenState extends State<BankAccountScreen> {
   @override
   Widget build(BuildContext context) {
     return berdasarkanAkses(context, 'Rekening Perusahaan', Scaffold(
-      appBar: AppBar(title: const Text('Rekening Perusahaan')),
+      appBar: AppBar(title: Text(widget.judul)),
       floatingActionButton: _bolehUbah && bolehUbahDiSini(context)
           ? FloatingActionButton.extended(
               onPressed: _sibuk ? null : () => _tambahAtauUbah(),

@@ -122,6 +122,105 @@ void main() {
     });
   });
 
+  group('rekening KaataGo', () {
+    final sql =
+        File('supabase/rekening_kaatago_terbaca.sql').readAsStringSync();
+
+    // Membuka `bank_accounts` saja tidak cukup: aplikasi membacanya
+    // lewat tabel penaut, dan merchant bukan karyawan 'kaatago' — jadi
+    // daftarnya kembali kosong dan kartu rekening di layar tagihan tidak
+    // berisi apa-apa.
+    test('baris penautnya ikut terbuka', () {
+      expect(sql, contains("resto_id = 'kaatago'"));
+      expect(sql, contains('"resto_bank_accounts: staff read"'));
+    });
+
+    test('yang dibuka cuma milik resto platform', () {
+      // Rekening merchant lain tetap tidak terlihat.
+      expect(sql, isNot(contains('for all using')));
+    });
+
+    test('layarnya bisa diarahkan ke resto platform', () {
+      final layar =
+          File('lib/screens/bank_account_screen.dart').readAsStringSync();
+      expect(layar, contains('final String? restoId;'));
+      expect(layar,
+          contains('widget.restoId ?? context.read<AuthProvider>().restoId'));
+    });
+  });
+
+  group('arah jurnalnya', () {
+    final sql =
+        File('supabase/jurnal_cash_pickup_benar.sql').readAsStringSync();
+
+    // Seluruh pembukuan aplikasi ini memakai satu arah: uang
+    // MENINGGALKAN sebuah akun dicatat debit, uang MASUK dicatat kredit.
+    test('uang keluar laci dicatat debit di GL Cash', () {
+      final blok = sql.substring(
+          sql.indexOf('create or replace function log_cash_deposit_journal'),
+          sql.indexOf('create or replace function log_cash_deposit_review'));
+      expect(blok, contains("new.amount, 'debit'"));
+      expect(blok, contains("new.amount, 'credit'"));
+      expect(blok.indexOf("'debit'"), lessThan(blok.indexOf("'credit'")));
+    });
+
+    // Jalur Suspense sempat tertimpa saat berkas pickup menulis ulang
+    // fungsi ini dari versi lama. Persetujuan Finance jadi tidak punya
+    // bekas apa pun di pembukuan.
+    test('setoran biasa tetap singgah di GL Suspense', () {
+      expect(sql, contains("then 'cash_pickup' else 'suspense' end"));
+    });
+
+    // Pickup masuk lewat GL Cash Pickup; melepasnya dari GL Suspense
+    // membuat kedua akun itu salah sekaligus.
+    test('penolakan melepas dari akun yang memang menerimanya', () {
+      final blok = sql.substring(
+          sql.indexOf('create or replace function log_cash_deposit_review'),
+          sql.indexOf('create or replace function terima_pickup'));
+      expect(blok, contains("then 'cash_pickup' else 'suspense' end"));
+      expect(blok, contains("v_target := 'cash';"));
+    });
+
+    test('serah terima: Cash Pickup debit, Saldo Perusahaan kredit', () {
+      final blok = sql.substring(sql.indexOf('v_ref := upper(substr'));
+      final iPickup = blok.indexOf("'cash_pickup'");
+      final iKas = blok.indexOf("'company_cash'");
+      expect(iPickup, lessThan(iKas));
+      expect(blok.substring(iPickup, iKas), contains("p_amount, 'debit'"));
+      expect(blok.substring(iKas), contains("p_amount, 'credit'"));
+    });
+
+    // Mematikan trigger menuntut kunci tabel yang menahan seluruh kasir
+    // yang sedang mencatat setoran.
+    test('jurnal ganda dicegah tanpa mematikan trigger', () {
+      expect(sql, isNot(contains('disable trigger')));
+      expect(sql, contains('new.received_at is not null'));
+    });
+
+    test('kedua akunnya bisa dipetakan di Mapping GL', () {
+      final layar =
+          File('lib/screens/finance_gl_mapping_screen.dart').readAsStringSync();
+      expect(layar, contains("_cashPickupMethod = 'cash_pickup'"));
+      expect(layar, contains("_companyCashMethod = 'company_cash'"));
+      expect(layar, contains('GL Saldo Cash Perusahaan'));
+    });
+  });
+
+  group('cash pickup tidak diputuskan di layar setoran', () {
+    final layar =
+        File('lib/screens/cash_deposit_screen.dart').readAsStringSync();
+
+    // Dua tempat memutuskan hal yang sama berarti yang satu pasti
+    // ketinggalan.
+    test('tombol konfirmasi dan tolak tidak untuk pickup', () {
+      expect(layar, contains('if (!deposit.isPickup &&'));
+    });
+
+    test('buktinya tidak ikut dipajang di sana', () {
+      expect(layar, contains('if (deposit.hasProof && !deposit.isPickup)'));
+    });
+  });
+
   group('tutup buku', () {
     test('Admin ikut boleh menutup dan membuka hari', () {
       expect(sqlBuku, contains("array['owner', 'finance', 'admin'])) then"));

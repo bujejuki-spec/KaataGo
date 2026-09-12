@@ -37,6 +37,26 @@ Formatnya dibaca `scripts/release.sh`: judul `## <versi>`, lalu
 poin-poinnya. Versi yang tidak punya bagiannya di sini tetap terbit,
 hanya pengumumannya memakai kalimat umum.
 
+## 3.1.0
+
+- Rekening KaataGo kini punya menunya sendiri di KaataGo Admin — rekening
+  tujuan transfer tagihan langganan merchant bisa ditambah dan diubah di
+  sana, dan merchant yang ditagih lewat transfer benar-benar melihat
+  nomornya
+- GL Cash Pickup dan GL Saldo Cash Perusahaan bisa dipetakan sendiri di
+  Mapping GL Account
+- Arah debit dan kredit pada jurnal cash pickup diperbaiki, dan pickup
+  yang ditolak kini dikembalikan dari GL Cash Pickup — bukan dari GL
+  Suspense Setoran, yang tidak pernah menerima uang itu
+- Setoran tunai kembali singgah di GL Suspense Setoran sampai Finance
+  menyetujuinya
+- Cash pickup tidak lagi dikonfirmasi atau ditolak dari layar Setor Saldo
+  Cash; serah terimanya hanya di menu Terima Cash Pickup
+- Menu Terima Cash Pickup menampilkan bukti yang diunggah kasir, dan
+  kolom jumlah diterima dikosongkan supaya diisi dari uang yang
+  benar-benar dihitung
+- Perbaikan bug dan penyempurnaan tampilan
+
 ## 2.40.0
 
 - Akses Menu (UAM) di KaataGo Admin: menu yang muncul dan yang boleh

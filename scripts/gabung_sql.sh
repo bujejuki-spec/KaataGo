@@ -100,6 +100,8 @@ FILES=(
   uam_menu.sql
   layar_pelanggan_rinci.sql
   stok_lepas_10_menit.sql
+  rekening_kaatago_terbaca.sql
+  jurnal_cash_pickup_benar.sql
   merchant_report.sql
   shift_opening_check.sql
   support_tickets.sql

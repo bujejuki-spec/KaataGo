@@ -369,7 +369,11 @@ void main() {
       for (final f in ['_saldoKaataGo', '_mappingKaataGo', '_jurnalKaataGo']) {
         expect(menu, contains(f));
       }
-      expect('restoId: kPlatformRestoId'.allMatches(menu).length, 3);
+      // Rekening KaataGo ikut menunjuk resto yang sama: rekening
+      // platform tidak menempel ke merchant mana pun, dan salah resto
+      // di sini berarti merchant ditagih ke rekening orang lain.
+      expect(menu, contains('_rekeningKaataGo'));
+      expect('restoId: kPlatformRestoId'.allMatches(menu).length, 4);
     });
   });
 

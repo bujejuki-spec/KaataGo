@@ -17,6 +17,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'publish_announcement_screen.dart';
 import 'restaurant_manage_list_screen.dart';
+import 'bank_account_screen.dart';
+import '../models/billing.dart';
 import 'super_admin_billing_screen.dart';
 import 'super_admin_uam_screen.dart';
 import 'super_admin_finance_screen.dart';
@@ -108,6 +110,25 @@ class SuperAdminHomeScreen extends StatelessWidget {
                       color: const Color(0xFF10B981),
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(builder: (_) => const SuperAdminBillingScreen()),
+                      ),
+                    ),
+                    // Rekening KaataGo sendiri, bukan rekening
+                    // merchant. Inilah tujuan transfer yang dilihat
+                    // merchant saat tagihan langganannya ditagih lewat
+                    // transfer — tanpa satu pun baris di sini, kolom
+                    // rekening di layar tagihannya kosong.
+                    HubMenuTile(
+                      icon: Icons.account_balance_wallet_outlined,
+                      title: 'Rekening KaataGo',
+                      subtitle: 'Rekening tujuan transfer tagihan langganan merchant',
+                      color: const Color(0xFF0EA5E9),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const BankAccountScreen(
+                            restoId: kPlatformRestoId,
+                            judul: 'Rekening KaataGo',
+                          ),
+                        ),
                       ),
                     ),
                     HubMenuTile(

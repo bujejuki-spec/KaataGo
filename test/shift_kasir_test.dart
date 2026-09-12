@@ -404,7 +404,7 @@ void main() {
       expect(layar, contains("const _cashVarianceMethod = 'cash_variance';"));
       // Ikut daftar utamanya — kalau tidak, kolomnya tampil tapi tidak
       // pernah ikut tersimpan.
-      expect(layar, contains('  _cashVarianceMethod,\n];'));
+      expect(layar, contains('  _cashVarianceMethod,\n'));
       expect(layar, contains("title: 'GL Selisih Kasir'"));
     });
   });

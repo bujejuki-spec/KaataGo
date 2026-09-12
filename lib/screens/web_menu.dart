@@ -161,6 +161,17 @@ List<MenuWeb> menuWebUntuk(AuthProvider auth) {
   return const [];
 }
 
+/// Rekening KaataGo sendiri — tujuan transfer tagihan langganan.
+///
+/// Layar yang sama dengan rekening merchant, cuma restonya yang disebut.
+/// Rekening platform tidak menempel ke merchant mana pun, jadi tanpa
+/// menu ini tidak ada satu layar pun yang bisa membuatnya — dan merchant
+/// yang ditagih lewat transfer melihat kolom rekening kosong.
+Widget _rekeningKaataGo() => const BankAccountScreen(
+      restoId: kPlatformRestoId,
+      judul: 'Rekening KaataGo',
+    );
+
 /// Menyaring daftar menu menurut akses, tanpa kehilangan judul
 /// kelompoknya.
 ///
@@ -236,6 +247,11 @@ const _superAdmin = <MenuWeb>[
   ),
   MenuWeb(
     kelompok: 'Keuangan',
+    ikon: Icons.account_balance_wallet_outlined,
+    judul: 'Rekening KaataGo',
+    layar: _rekeningKaataGo,
+  ),
+  MenuWeb(
     ikon: Icons.receipt_long_outlined,
     judul: 'Billing Merchant',
     layar: SuperAdminBillingScreen.new,

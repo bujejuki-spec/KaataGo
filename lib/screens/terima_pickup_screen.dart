@@ -11,11 +11,13 @@ import '../models/cash_deposit.dart';
 import '../providers/auth_provider.dart';
 import '../theme.dart';
 import '../utils/field_rules.dart';
+import '../utils/gambar_base64.dart';
 import '../utils/lebar_web.dart';
 import '../utils/pesan_galat.dart';
 import '../utils/photo_picker.dart';
 import '../utils/rupiah_input.dart';
 import '../widgets/app_toast.dart';
+import '../widgets/dialog_actions.dart';
 import '../widgets/required_label.dart';
 import '../widgets/responsive.dart';
 
@@ -278,6 +280,27 @@ class _KartuPickup extends StatelessWidget {
             if (pickup.sealNumber != null && pickup.sealNumber!.isNotEmpty)
               Text('Segel ${pickup.sealNumber}',
                   style: TextStyle(fontSize: 11.5, color: muted)),
+            // Bukti yang diunggah kasir atau admin saat uangnya dijemput.
+            //
+            // Tanpa ini, yang menerima uangnya harus percaya pada angka
+            // saja — padahal foto kantong dan segelnya itulah satu-
+            // satunya hal yang bisa dibandingkan dengan apa yang
+            // sekarang ada di tangannya.
+            if (pickup.hasProof) ...[
+              const SizedBox(height: 10),
+              _Bukti(
+                judul: 'Bukti pickup dari kasir',
+                base64: pickup.proofBase64!,
+              ),
+            ],
+            if (pickup.receiptProof != null &&
+                pickup.receiptProof!.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              _Bukti(
+                judul: 'Bukti terima',
+                base64: pickup.receiptProof!,
+              ),
+            ],
             if (selesai) ...[
               const Divider(height: 18),
               Text('Diterima ${rp.format(pickup.receivedAmount ?? 0)}',
@@ -320,6 +343,44 @@ class _KartuPickup extends StatelessWidget {
   }
 }
 
+/// Foto bukti, kecil di kartunya dan penuh saat diketuk.
+class _Bukti extends StatelessWidget {
+  final String judul;
+  final String base64;
+
+  const _Bukti({required this.judul, required this.base64});
+
+  @override
+  Widget build(BuildContext context) {
+    final gambar = byteGambar(base64);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(judul,
+            style: TextStyle(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w600,
+                color: KaataTheme.mutedOf(context))),
+        const SizedBox(height: 6),
+        InkWell(
+          onTap: () => showDialog<void>(
+            context: context,
+            builder: (_) => Dialog(
+              insetPadding: insetDialogWeb(context),
+              child: InteractiveViewer(child: Image.memory(gambar)),
+            ),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.memory(gambar,
+                width: 72, height: 72, fit: BoxFit.cover),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _DialogTerima extends StatefulWidget {
   final CashDeposit pickup;
 
@@ -342,10 +403,12 @@ class _DialogTerimaState extends State<_DialogTerima> {
   @override
   void initState() {
     super.initState();
-    // Diisi dari yang dicatat kasir, dan tetap boleh diubah. Yang
-    // mengetik ulang angka yang sama dari nol lebih sering salah ketik
-    // daripada menemukan selisih.
-    _jumlah.text = widget.pickup.amount.toString();
+    // Jumlahnya sengaja kosong.
+    //
+    // Diisi lebih dulu dengan angka kasir, yang menerimanya cukup
+    // menekan Terima tanpa menghitung — dan perhitungan ulang itulah
+    // satu-satunya alasan layar ini ada. Kotak kosong menuntut
+    // angkanya datang dari uang yang benar-benar dihitung.
     _petugas.text = widget.pickup.pickedUpBy ?? '';
     _segel.text = widget.pickup.sealNumber ?? '';
   }
@@ -360,7 +423,10 @@ class _DialogTerimaState extends State<_DialogTerima> {
 
   Future<void> _simpan() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_bukti == null) return;
+    if (_bukti == null) {
+      showAppToast(context, 'Bukti terima wajib dilampirkan.', isError: true);
+      return;
+    }
     setState(() => _menyimpan = true);
     try {
       await _repo.terimaPickup(
@@ -392,7 +458,15 @@ class _DialogTerimaState extends State<_DialogTerima> {
         padding: const EdgeInsets.all(20),
         child: Form(
           key: _formKey,
-          child: SingleChildScrollView(
+          // Isinya yang menggulung, bukan seluruh dialognya: tombol
+          // Terima yang ikut tergulung jauh ke bawah pada layar ponsel
+          // terbaca sebagai tombol yang tidak ada sama sekali.
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Flexible(
+                child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -493,28 +567,28 @@ class _DialogTerimaState extends State<_DialogTerima> {
                       ),
                     ],
                   ),
-                const SizedBox(height: 18),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton(
-                      onPressed: _menyimpan
-                          ? null
-                          : () => Navigator.of(context).pop(false),
-                      child: const Text('Batal'),
-                    ),
-                    const SizedBox(width: 8),
-                    // Bukti terima wajib, dan servernya menolak kalau
-                    // kosong. Tombol yang mati di sini cuma supaya
-                    // penolakannya tidak perlu terjadi.
-                    FilledButton(
-                      onPressed: _menyimpan || _bukti == null ? null : _simpan,
-                      child: Text(_menyimpan ? 'Menyimpan…' : 'Terima'),
-                    ),
-                  ],
-                ),
               ],
             ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              // Bentuk yang sama dengan dialog lain: yang dikerjakan
+              // selebar dialognya di atas, Batal di bawahnya. Dua dialog
+              // yang menanyakan hal sejenis dengan susunan tombol
+              // berbeda membuat orang membaca ulang tiap kali.
+              //
+              // Tombolnya hidup meski bukti terimanya belum dilampirkan:
+              // tombol mati di ujung formulir panjang terbaca sebagai
+              // tombol yang tidak ada, dan yang mencarinya tidak punya
+              // cara tahu apa yang kurang. Ditekan tanpa bukti, ia
+              // mengatakan apa yang kurang.
+              DialogActions(
+                confirmLabel: 'Terima',
+                busy: _menyimpan,
+                onConfirm: _simpan,
+                onCancel: () => Navigator.of(context).pop(false),
+              ),
+            ],
           ),
         ),
       ),

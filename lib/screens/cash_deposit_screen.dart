@@ -631,7 +631,13 @@ class _DepositTile extends StatelessWidget {
                     style: TextStyle(fontSize: 11.5, color: KaataTheme.mutedOf(context)),
                   ),
                 ],
-                if (deposit.hasProof) ...[
+                // Cash pickup punya layarnya sendiri: Terima Cash
+                // Pickup, milik Finance dan Owner. Di sini ia cuma
+                // riwayat — buktinya dan keputusannya ada di sana,
+                // berikut nomor segel dan jumlah yang benar-benar
+                // dihitung penerimanya. Dua tempat memutuskan hal yang
+                // sama berarti yang satu pasti ketinggalan.
+                if (deposit.hasProof && !deposit.isPickup) ...[
                   const SizedBox(height: 8),
                   GestureDetector(
                     onTap: () => _openProof(context),
@@ -647,7 +653,28 @@ class _DepositTile extends StatelessWidget {
                     ),
                   ),
                 ],
-                if (onApprove != null || onReject != null) ...[
+                if (deposit.isPickup) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(Icons.local_shipping_outlined,
+                          size: 15, color: KaataTheme.mutedOf(context)),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          deposit.sudahDiterima
+                              ? 'Sudah diserahkan — lihat Terima Cash Pickup'
+                              : 'Menunggu serah terima di menu Terima Cash Pickup',
+                          style: TextStyle(
+                              fontSize: 11.5,
+                              color: KaataTheme.mutedOf(context)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+                if (!deposit.isPickup &&
+                    (onApprove != null || onReject != null)) ...[
                   const SizedBox(height: 10),
                   Row(
                     children: [

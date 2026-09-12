@@ -117,6 +117,19 @@ const _capitalMethod = 'capital';
 // benar bisa dihitung tangan.
 const _cashVarianceMethod = 'cash_variance';
 
+// Uang tunai yang sudah dijemput petugas dan belum diserahkan ke
+// perusahaan. Titipan seperti Suspense Setoran, hanya saja yang harus
+// menyelesaikannya bukan Finance yang memeriksa slip bank melainkan
+// orang yang menghitung uangnya saat diserahkan. Tanpa akunnya sendiri,
+// uang yang sedang dibawa pergi tidak punya tempat mana pun di
+// pembukuan — dan pertanyaan "mana uang yang dijemput Selasa lalu?"
+// tidak bisa dijawab.
+const _cashPickupMethod = 'cash_pickup';
+
+// Tujuan akhir cash pickup: uang yang benar-benar sudah dipegang
+// perusahaan.
+const _companyCashMethod = 'company_cash';
+
 // PPN and service charge collected are money owed onward, not revenue,
 // so they're journaled to their own accounts instead of being folded
 // into the payment-method income mapping.
@@ -144,6 +157,8 @@ const _allMethods = [
   _voucherRedeemMethod,
   _capitalMethod,
   _cashVarianceMethod,
+  _cashPickupMethod,
+  _companyCashMethod,
 ];
 
 /// Akun yang hanya ada di pembukuan KaataGo sendiri.
@@ -625,6 +640,35 @@ class _FinanceGlMappingScreenState extends State<FinanceGlMappingScreen> {
                             color: const Color(0xFFF59E0B),
                             codeCtrl: _codeCtrls[_suspensePettyMethod]!,
                             nameCtrl: _nameCtrls[_suspensePettyMethod]!,
+                            editing: _editing,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      _GlSectionCard(
+                        icon: Icons.local_shipping_outlined,
+                        color: const Color(0xFF0EA5E9),
+                        title: 'GL Cash Pickup',
+                        subtitle: 'Uang laci yang dijemput petugas',
+                        children: [
+                          _GlAccountRow(
+                            icon: Icons.local_shipping_outlined,
+                            label: 'GL Cash Pickup',
+                            hint: 'Sudah keluar laci, belum diserahkan — '
+                                'titipan sampai serah terimanya selesai',
+                            color: const Color(0xFF0EA5E9),
+                            codeCtrl: _codeCtrls[_cashPickupMethod]!,
+                            nameCtrl: _nameCtrls[_cashPickupMethod]!,
+                            editing: _editing,
+                          ),
+                          _GlAccountRow(
+                            icon: Icons.account_balance_wallet_outlined,
+                            label: 'GL Saldo Cash Perusahaan',
+                            hint: 'Tujuan akhirnya — uang yang benar-benar '
+                                'sudah dipegang perusahaan',
+                            color: const Color(0xFF0EA5E9),
+                            codeCtrl: _codeCtrls[_companyCashMethod]!,
+                            nameCtrl: _nameCtrls[_companyCashMethod]!,
                             editing: _editing,
                           ),
                         ],
