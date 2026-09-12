@@ -27,14 +27,20 @@ void main() {
       expect(sql, contains("'voucher_redeem',\n     'capital'"));
     });
 
-    test('muncul di Pemetaan GL untuk semua yang punya pembukuan', () {
+    // Tinggal milik KaataGo sendiri.
+    //
+    // Di merchant, setoran modal sekarang mendarat di Saldo Cash atau
+    // Saldo Bank — yang mana disebut penyetornya. Akun ketiga yang
+    // berdiri sendiri menjawab pertanyaan yang tidak pernah ditanyakan:
+    // yang ditanyakan adalah berapa uang di tangan dan berapa di
+    // rekening.
+    test('GL Modal tinggal milik platform', () {
       expect(pemetaan, contains("const _capitalMethod = 'capital';"));
       expect(pemetaan, contains("title: 'GL Modal'"));
-      // Bukan akun khusus platform — resto juga menerima setoran modal.
       final blok = pemetaan.substring(
           pemetaan.indexOf('const _platformOnlyMethods'),
           pemetaan.indexOf('};', pemetaan.indexOf('const _platformOnlyMethods')));
-      expect(blok, isNot(contains('_capitalMethod')));
+      expect(blok, contains('_capitalMethod'));
     });
   });
 
@@ -98,11 +104,15 @@ void main() {
       expect(layar, contains('action: _canManageFunds'));
     });
 
-    test('tidak menawarkan pilihan masuk ke mana', () {
-      // Modal selalu menambah saldo utama; menawarkan pilihan lain cuma
-      // membuka jalan mencatatnya di tempat yang salah.
+    // Uang yang ditransfer dan uang yang diserahkan tunai mendarat di
+    // tempat yang berbeda, dan menebaknya berarti salah satu dari dua
+    // saldo perusahaan selalu meleset.
+    test('penyetornya menyebut masuk ke kantong mana', () {
       final form = layar.substring(layar.indexOf('class _FormModal'));
-      expect(form, isNot(contains('DropdownButtonFormField')));
+      expect(form, contains('DropdownButtonFormField'));
+      expect(form, contains("labelText: 'Masuk ke'"));
+      expect(form, contains("value: 'bank'"));
+      expect(form, contains("value: 'cash'"));
     });
   });
 

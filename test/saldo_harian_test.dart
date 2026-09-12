@@ -54,6 +54,23 @@ void main() {
     expect(b, isNot(contains('harian')));
   });
 
+  // Satu pelunasan transfer sempat menambah Saldo Non Cash setiap hari
+  // selamanya: daftarnya dimuat utuh dan tidak pernah ikut dipotong,
+  // jadi angkanya muncul di layar harian tanpa ada pemasukan apa pun
+  // hari itu.
+  test('selisih yang dilunasi transfer ikut tanggal pelunasannya', () {
+    final b = blok('int get _nonCashBalance', 'int get _pettyCashToppedUp');
+    expect(b, contains('selisihDibayarTransfer(_selisihTransferHarian)'));
+    expect(layar, contains('v.settledAt != null && sekarang(v.settledAt!)'));
+  });
+
+  // Tapi daftar penuhnya tetap dipakai isi laci: selisih kurang yang
+  // belum dibayar mengurangi laci sejak hari ia terjadi.
+  test('isi laci tetap memakai seluruh riwayat selisih', () {
+    final b = blok('int get _cashBalance', 'int get _nonCashBalance');
+    expect(b, contains('selisih: _selisih,'));
+  });
+
   test('isi laci dihitung dari seluruh riwayat', () {
     final b = blok('int get _cashBalance', 'int get _nonCashBalance');
     expect(b, contains('deposits: _depositsSemua'));

@@ -38,10 +38,39 @@ void main() {
   });
 
   group('apa yang mengisi kedua kantongnya', () {
-    test('penjualan non-tunai masuk rekening, tunai tidak', () {
-      // Tunai masuk laci, dan perjalanannya ke perusahaan lewat setoran
-      // atau cash pickup — keduanya sudah punya jurnalnya sendiri.
-      expect(sql, contains("v_method in ('qris', 'qris_static', 'transfer')"));
+    final terjadwal =
+        File('supabase/jurnal_bank_terjadwal.sql').readAsStringSync();
+
+    // Uang QRIS tidak mendarat di rekening pada detik pelanggan
+    // membayar; ia ditahan penyedia dan cair belakangan. Mencatatnya
+    // seketika membuat Saldo Bank menyebut uang yang belum bisa dipakai.
+    test('penjualan non-tunai masuk rekening lewat tugas jam 5 pagi', () {
+      expect(terjadwal,
+          contains("in ('qris', 'qris_static', 'transfer')"));
+      expect(terjadwal, contains('function jurnal_pendapatan_bank'));
+      // 22:00 UTC = 05:00 WIB. pg_cron berjalan dalam UTC.
+      expect(terjadwal, contains("'0 22 * * *'"));
+    });
+
+    test('pesanan lunas tidak lagi langsung menyentuh Saldo Bank', () {
+      final blok = terjadwal.substring(
+          terjadwal.indexOf('create or replace function log_order_paid_journal'),
+          terjadwal.indexOf('create or replace function jurnal_pendapatan_bank'));
+      expect(blok, isNot(contains('company_bank')));
+    });
+
+    // Kalau tugasnya pernah gagal jalan, yang terlewat ikut tersapu esok
+    // harinya — bukan hilang selamanya.
+    test('yang terlewat ikut tersapu, bukan cuma kemarin', () {
+      expect(terjadwal, contains('not exists ('));
+      expect(terjadwal, isNot(contains("interval '1 day'")));
+    });
+
+    // Penjualan 30 September yang tercatat 1 Oktober membuat kedua bulan
+    // salah di tutup buku dan laporan per periode.
+    test('tanggal jurnalnya ikut tanggal pesanannya', () {
+      expect(terjadwal,
+          contains("(o.created_at at time zone 'Asia/Jakarta')::date"));
     });
 
     test('setoran kasir yang disetujui ikut masuk rekening', () {
@@ -114,6 +143,40 @@ void main() {
       expect(balance, contains("'cash' => widget.saldoCash"));
       expect(balance, contains("'bank' => widget.saldoBank"));
       expect(balance, contains('Melebihi \$namaSumber'));
+    });
+  });
+
+  group('setoran modal memilih kantongnya', () {
+    final terjadwal =
+        File('supabase/jurnal_bank_terjadwal.sql').readAsStringSync();
+
+    test('merchant memilih cash atau bank', () {
+      expect(terjadwal,
+          contains("check (destination in ('cash', 'bank'))"));
+      expect(terjadwal, contains("then 'company_cash'"));
+    });
+
+    // Pembukuan KaataGo tidak punya laci kasir maupun rekening merchant,
+    // jadi tidak ada kantong lain untuk menampungnya.
+    test('KaataGo sendiri tetap memakai GL Setoran Modal', () {
+      expect(terjadwal, contains("when new.resto_id = 'kaatago' then 'capital'"));
+    });
+
+    // Barisnya di jurnal tidak disentuh: setoran modal yang sudah
+    // tercatat tetap berdiri di akun itu.
+    test('yang dilepas cuma pemetaannya, bukan jurnalnya', () {
+      expect(terjadwal, contains('delete from gl_accounts'));
+      expect(terjadwal, contains("where payment_method = 'capital'"));
+      expect(terjadwal, isNot(contains('delete from gl_journal_entries')));
+    });
+
+    test('GL Setoran Modal tinggal milik platform di Mapping GL', () {
+      final mapping =
+          File('lib/screens/finance_gl_mapping_screen.dart').readAsStringSync();
+      final blok = mapping.substring(
+          mapping.indexOf('const _platformOnlyMethods'),
+          mapping.indexOf('String _pctText'));
+      expect(blok, contains('_capitalMethod'));
     });
   });
 

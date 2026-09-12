@@ -176,7 +176,7 @@ class _SaldoPerusahaanScreenState extends State<SaldoPerusahaanScreen> {
                                   ikon: Icons.account_balance_outlined,
                                   judul: 'Saldo Bank',
                                   nilai: _rp.format(_bank),
-                                  keterangan: 'Uang di rekening merchant',
+                                  keterangan: 'Uang di Rekening Perusahaan',
                                   warna: const Color(0xFF0EA5E9),
                                 ),
                               ),
@@ -238,9 +238,17 @@ class _Keterangan extends StatelessWidget {
               style: TextStyle(fontSize: 12.5, color: muted)),
           const SizedBox(height: 8),
           Text('Saldo Bank bertambah dari penjualan QRIS Dinamis, QRIS '
-              'Statis, dan Transfer, dari setoran tunai kasir yang sudah '
-              'disetujui, dan dari setoran di layar ini. Berkurang oleh '
-              'pengeluaran bersumber bank.',
+              'Statis, dan Transfer, dari setoran kasir yang sudah '
+              'disetujui, dari setoran di layar ini, dan dari top up Modal '
+              'Non Cash merchant — semuanya dicatat setiap jam 5 pagi WIB. '
+              'Berkurang oleh pengeluaran bersumber dari Saldo Bank.',
+              style: TextStyle(fontSize: 12.5, color: muted)),
+          const SizedBox(height: 8),
+          // Kenapa bukan seketika. Tanpa kalimat ini, yang membuka layar
+          // sore hari mengira penjualan siang tadi hilang.
+          Text('Penjualan non-tunai tidak langsung masuk: uangnya ditahan '
+              'penyedia pembayaran dan baru cair belakangan. Yang hari ini '
+              'terlihat di Saldo Bank adalah yang sudah pada masuk.',
               style: TextStyle(fontSize: 12.5, color: muted)),
         ],
       ),

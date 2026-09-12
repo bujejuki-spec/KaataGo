@@ -63,6 +63,21 @@ class HubGroupTile extends StatelessWidget {
     return null;
   }
 
+  /// Apakah pintunya akan dipajang.
+  ///
+  /// Ditanyakan juga oleh tata letak di sekelilingnya: kartu yang
+  /// menghilang tapi jaraknya tetap ada meninggalkan lubang di tengah
+  /// daftar, dan lubang itu terbaca sebagai menu yang gagal dimuat.
+  bool terlihat(BuildContext context) {
+    final akses = AksesMenu.of(context);
+    if (akses == null || akses.peta.isEmpty) return true;
+    final judulIsi = [
+      for (final w in tiles())
+        if (_judul(w) != null) _judul(w)!,
+    ];
+    return judulIsi.isEmpty || judulIsi.any(akses.bolehLihat);
+  }
+
   @override
   Widget build(BuildContext context) {
     // Pintu yang di baliknya tidak ada apa-apa tidak dipajang.
@@ -84,16 +99,7 @@ class HubGroupTile extends StatelessWidget {
     // membatalkan itu. Selama petanya kosong — keadaan setiap merchant
     // yang belum diatur KaataGo Admin — tidak ada yang perlu diperiksa,
     // jadi tidak ada yang dibangun.
-    final akses = AksesMenu.of(context);
-    if (akses != null && akses.peta.isNotEmpty) {
-      final judulIsi = [
-        for (final w in tiles())
-          if (_judul(w) != null) _judul(w)!,
-      ];
-      final semuaDicabut = judulIsi.isNotEmpty &&
-          !judulIsi.any(akses.bolehLihat);
-      if (semuaDicabut) return const SizedBox.shrink();
-    }
+    if (!terlihat(context)) return const SizedBox.shrink();
 
     if (loadCount == null) {
       return HubMenuTile(

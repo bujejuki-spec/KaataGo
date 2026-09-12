@@ -7,6 +7,7 @@ import 'package:pos_app/utils/akses_menu.dart';
 import 'package:pos_app/utils/katalog_menu.dart';
 import 'package:pos_app/widgets/dialog_actions.dart';
 import 'package:pos_app/widgets/hub_menu_tile.dart';
+import 'package:pos_app/widgets/responsive.dart';
 
 /// Parameter akses menu (UAM).
 ///
@@ -124,6 +125,70 @@ void main() {
         isNotNull);
   });
 
+  testWidgets('kartu yang dicabut tidak meninggalkan jarak kosong',
+      (tester) async {
+    // Lebar ponsel, supaya yang diuji susunan satu kolom — di sanalah
+    // pemisah 12 piksel disisipkan satu per satu.
+    tester.view.physicalSize = const Size(400, 1600);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    // Kartu menyembunyikan dirinya sendiri, tapi jarak di antaranya
+    // disisipkan tata letaknya — dan jarak milik kartu yang menghilang
+    // tetap berdiri, meninggalkan lubang selebar dua jarak. Lubang itu
+    // terbaca sebagai menu yang gagal dimuat.
+    Widget bungkus(Map<String, TingkatAkses> peta) => MaterialApp(
+          home: AksesMenu(
+            peta: peta,
+            child: const Scaffold(
+              body: HubMenuLayout(
+                tiles: [
+                  HubMenuTile(
+                    icon: Icons.point_of_sale,
+                    title: 'Shift Kasir',
+                    subtitle: '',
+                    color: Colors.orange,
+                    onTap: _kosong,
+                  ),
+                  HubMenuTile(
+                    icon: Icons.local_offer_outlined,
+                    title: 'Diskon',
+                    subtitle: '',
+                    color: Colors.green,
+                    onTap: _kosong,
+                  ),
+                  HubMenuTile(
+                    icon: Icons.inbox_outlined,
+                    title: 'Kotak Masuk',
+                    subtitle: '',
+                    color: Colors.blue,
+                    onTap: _kosong,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+
+    await tester.pumpWidget(bungkus(const {}));
+    await tester.pumpAndSettle();
+    final utuh = tester.getTopLeft(find.text('Kotak Masuk')).dy -
+        tester.getTopLeft(find.text('Shift Kasir')).dy;
+
+    await tester.pumpWidget(bungkus(const {'Diskon': TingkatAkses.tidakAda}));
+    await tester.pumpAndSettle();
+    expect(find.text('Diskon'), findsNothing);
+
+    final sesudah = tester.getTopLeft(find.text('Kotak Masuk')).dy -
+        tester.getTopLeft(find.text('Shift Kasir')).dy;
+
+    // Jaraknya menyusut sebesar satu kartu penuh — bukan cuma sebesar
+    // kartunya sambil menyisakan pemisahnya.
+    final tinggiKartu = tester.getSize(find.byType(Card).first).height;
+    expect(sesudah, lessThan(utuh));
+    expect(utuh - sesudah, closeTo(tinggiKartu + 12, 1));
+  });
+
   group('katalognya', () {
     test('Super Admin tidak bisa diatur', () {
       // Peran yang bisa mengunci dirinya sendiri dari layar
@@ -174,3 +239,5 @@ void main() {
     });
   });
 }
+
+void _kosong() {}

@@ -37,6 +37,21 @@ Formatnya dibaca `scripts/release.sh`: judul `## <versi>`, lalu
 poin-poinnya. Versi yang tidak punya bagiannya di sini tetap terbit,
 hanya pengumumannya memakai kalimat umum.
 
+## 3.3.0
+
+- Penjualan QRIS, QRIS Statis, dan Transfer kini masuk ke Saldo Bank
+  setiap jam 5 pagi WIB, bukan seketika — mengikuti kenyataan bahwa
+  uangnya baru cair belakangan dari penyedia pembayaran
+- Top up modal di merchant memilih kantongnya: masuk ke Saldo Cash atau
+  Saldo Bank, sesuai cara uangnya diserahkan
+- GL Setoran Modal tidak lagi dipetakan di merchant; setoran modal
+  langsung mendarat di salah satu saldo perusahaan
+- Saldo Non Cash berhenti menghitung pelunasan selisih kasir lama setiap
+  hari; yang dihitung kini hanya pelunasan pada hari yang dilihat
+- Menu atau kelompok menu yang disembunyikan tidak lagi meninggalkan
+  jarak kosong di beranda
+- Perbaikan bug dan penyempurnaan tampilan
+
 ## 3.2.0
 
 - Menu baru Saldo Perusahaan untuk Finance dan Owner: uang tunai yang

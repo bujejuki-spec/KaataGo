@@ -14,6 +14,14 @@ class BalanceTopup {
   /// dipertanggungjawabkan ke siapa pun.
   final String source;
 
+  /// Mendarat di kantong mana: 'cash' atau 'bank'.
+  ///
+  /// Setoran modal bukan kantong tersendiri. Yang ditanyakan orang
+  /// adalah berapa uang di tangan dan berapa di rekening, dan setoran
+  /// modal mendarat di salah satu dari keduanya — jadi penyetornya yang
+  /// menyebutkan di mana.
+  final String destination;
+
   final String? note;
   final String? proofBase64;
   final String? createdBy;
@@ -24,11 +32,15 @@ class BalanceTopup {
     required this.restoId,
     required this.amount,
     required this.source,
+    this.destination = 'bank',
     this.note,
     this.proofBase64,
     this.createdBy,
     required this.createdAt,
   });
+
+  String get labelTujuan =>
+      destination == 'cash' ? 'Saldo Cash' : 'Saldo Bank';
 
   bool get punyaBukti => proofBase64 != null && proofBase64!.isNotEmpty;
 
@@ -37,6 +49,7 @@ class BalanceTopup {
         restoId: map['resto_id'] as String,
         amount: (map['amount'] as num?)?.toInt() ?? 0,
         source: map['source'] as String? ?? '',
+        destination: map['destination'] as String? ?? 'bank',
         note: map['note'] as String?,
         proofBase64: map['proof_base64'] as String?,
         createdBy: map['created_by'] as String?,

@@ -90,6 +90,14 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
 
   int _cashIncome = 0;
   List<CashVariance> _selisih = const [];
+
+  /// Selisih yang pelunasannya jatuh pada periode yang sedang dilihat.
+  ///
+  /// Terpisah dari [_selisih], yang harus tetap utuh: selisih kurang
+  /// yang belum dibayar mengurangi isi laci sejak hari ia terjadi, dan
+  /// memotongnya per hari membuat laci terlihat lebih penuh daripada
+  /// isinya.
+  List<CashVariance> _selisihTransferHarian = const [];
   int _nonCashIncome = 0;
   List<CashDeposit> _deposits = [];
 
@@ -315,6 +323,20 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
             if (!harian || sekarang(t.createdAt)) t,
         ];
         _selisih = results[7] as List<CashVariance>;
+        // Yang dilunasi lewat transfer disaring menurut TANGGAL
+        // PELUNASANNYA, bukan tanggal selisihnya terjadi: yang
+        // menambah rekening hari ini adalah uang yang diserahkan hari
+        // ini.
+        //
+        // Tanpa saringan ini, satu pelunasan transfer menambah Saldo
+        // Non Cash setiap hari selamanya — angka yang muncul di layar
+        // harian tanpa ada pemasukan apa pun hari itu.
+        _selisihTransferHarian = [
+          for (final v in _selisih)
+            if (!harian ||
+                (v.settledAt != null && sekarang(v.settledAt!)))
+              v,
+        ];
         _expensesSemua = results[1] as List<Expense>;
         _expenses = [
           for (final e in _expensesSemua)
@@ -387,7 +409,7 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
       _nonCashIncome +
       _topupTotal +
       _depositedTotal +
-      selisihDibayarTransfer(_selisih) -
+      selisihDibayarTransfer(_selisihTransferHarian) -
       _pettyCashFrom(PettyCashSource.incomeWithdrawal);
 
   /// Hanya yang sudah disetujui yang dihitung sebagai saldo petty cash.
@@ -2160,6 +2182,12 @@ class _FormModalState extends State<_FormModal> {
   final _dari = TextEditingController();
   final _catatan = TextEditingController();
   String? _bukti;
+
+  /// Mendarat di mana uangnya. Bawaannya rekening: setoran modal yang
+  /// besar hampir selalu ditransfer, dan yang menyerahkannya tunai akan
+  /// menyadarinya justru karena harus memilih.
+  String _tujuan = 'bank';
+
   bool _menyimpan = false;
 
   @override
@@ -2184,6 +2212,7 @@ class _FormModalState extends State<_FormModal> {
         restoId: widget.restoId,
         amount: parseRupiah(_nominal.text) ?? 0,
         source: _dari.text.trim(),
+        destination: _tujuan,
         note: _catatan.text.trim(),
         proofBase64: _bukti,
       );
@@ -2208,12 +2237,34 @@ class _FormModalState extends State<_FormModal> {
             children: [
               Text(
                 'Uang masuk dari luar penjualan — setoran investor atau '
-                'modal awal. Tercatat di jurnal sebagai GL Setoran Modal, '
-                'terpisah dari pendapatan.',
+                'modal awal. Menambah Saldo Perusahaan di kantong yang '
+                'dipilih, terpisah dari pendapatan penjualan.',
                 style: TextStyle(
                     fontSize: 12, color: KaataTheme.mutedOf(context)),
               ),
               const SizedBox(height: 14),
+              // Kantongnya disebut penyetornya. Uang yang ditransfer
+              // dan uang yang diserahkan tunai mendarat di tempat yang
+              // berbeda, dan menebaknya berarti salah satu dari dua
+              // saldo selalu meleset.
+              DropdownButtonFormField<String>(
+                value: _tujuan,
+                isExpanded: true,
+                decoration: const InputDecoration(
+                  labelText: 'Masuk ke',
+                  isDense: true,
+                ),
+                items: const [
+                  DropdownMenuItem(
+                      value: 'bank',
+                      child: Text('Saldo Bank — masuk rekening')),
+                  DropdownMenuItem(
+                      value: 'cash',
+                      child: Text('Saldo Cash — diserahkan tunai')),
+                ],
+                onChanged: (v) => setState(() => _tujuan = v ?? 'bank'),
+              ),
+              const SizedBox(height: 12),
               TextFormField(
                 controller: _nominal,
                 keyboardType: TextInputType.number,

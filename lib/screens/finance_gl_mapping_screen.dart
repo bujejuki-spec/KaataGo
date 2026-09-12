@@ -177,6 +177,18 @@ const _platformOnlyMethods = {
   _subscriptionDiscountMethod,
   _voucherMethod,
   _voucherRedeemMethod,
+  // GL Setoran Modal tinggal milik KaataGo sendiri.
+  //
+  // Di merchant, setoran modal sekarang mendarat di Saldo Cash atau
+  // Saldo Bank — yang mana disebut penyetornya. Akun ketiga yang berdiri
+  // sendiri cuma menjawab pertanyaan yang tidak pernah ditanyakan siapa
+  // pun: yang ditanyakan adalah berapa uang di tangan dan berapa di
+  // rekening.
+  //
+  // KaataGo tetap memakainya: pembukuannya tidak punya laci kasir
+  // maupun rekening merchant, jadi tidak ada kantong lain untuk
+  // menampungnya.
+  _capitalMethod,
 };
 
 /// Drops a trailing ".0" so a rate of 11 shows as "11", not "11.00".
@@ -707,25 +719,27 @@ class _FinanceGlMappingScreenState extends State<FinanceGlMappingScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 14),
-                      _GlSectionCard(
-                        icon: Icons.savings_outlined,
-                        color: const Color(0xFF14B8A6),
-                        title: 'GL Modal',
-                        subtitle: 'Uang masuk dari luar penjualan',
-                        children: [
-                          _GlAccountRow(
-                            icon: Icons.savings_outlined,
-                            label: 'GL Setoran Modal',
-                            hint: 'Setoran investor atau modal awal — '
-                                'menambah saldo, bukan pendapatan',
-                            color: const Color(0xFF14B8A6),
-                            codeCtrl: _codeCtrls[_capitalMethod]!,
-                            nameCtrl: _nameCtrls[_capitalMethod]!,
-                            editing: _editing,
-                          ),
-                        ],
-                      ),
+                      if (_untukPlatform) ...[
+                        const SizedBox(height: 14),
+                        _GlSectionCard(
+                          icon: Icons.savings_outlined,
+                          color: const Color(0xFF14B8A6),
+                          title: 'GL Modal',
+                          subtitle: 'Uang masuk dari luar penjualan',
+                          children: [
+                            _GlAccountRow(
+                              icon: Icons.savings_outlined,
+                              label: 'GL Setoran Modal',
+                              hint: 'Setoran investor atau modal awal — '
+                                  'menambah saldo, bukan pendapatan',
+                              color: const Color(0xFF14B8A6),
+                              codeCtrl: _codeCtrls[_capitalMethod]!,
+                              nameCtrl: _nameCtrls[_capitalMethod]!,
+                              editing: _editing,
+                            ),
+                          ],
+                        ),
+                      ],
                       const SizedBox(height: 14),
                       _GlSectionCard(
                         icon: Icons.point_of_sale,

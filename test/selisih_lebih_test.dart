@@ -238,7 +238,10 @@ void main() {
       expect(layar, contains("'Transfer — Masuk Rekening'"));
       final saldo =
           File('lib/screens/finance_balance_screen.dart').readAsStringSync();
-      expect(saldo, contains('selisihDibayarTransfer(_selisih)'));
+      // Daftarnya disaring dulu menurut tanggal pelunasan — layar
+      // Saldo & Pengeluaran bersifat harian, dan daftar penuh membuat
+      // satu pelunasan menambah Saldo Non Cash setiap hari selamanya.
+      expect(saldo, contains('selisihDibayarTransfer(_selisihTransferHarian)'));
     });
   });
 }

@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
+import 'tampak_menu.dart';
+
 /// Ambang lebar layar.
 ///
 /// Angkanya diambil dari perangkat yang benar-benar dipakai di resto:
@@ -118,6 +120,11 @@ class HubMenuLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Disaring lebih dulu, bukan dibiarkan tiap kartu menyembunyikan
+    // dirinya sendiri: jarak di antaranya disisipkan di sini, dan jarak
+    // milik kartu yang menghilang akan tetap berdiri.
+    final tampak = tileTampak(context, tiles);
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final columns = constraints.maxWidth >= Breakpoints.desktop
@@ -131,7 +138,7 @@ class HubMenuLayout extends StatelessWidget {
             padding: padding,
             children: [
               ...header,
-              for (final tile in tiles) ...[tile, const SizedBox(height: 12)],
+              for (final tile in tampak) ...[tile, const SizedBox(height: 12)],
             ],
           );
         }
@@ -152,7 +159,11 @@ class HubMenuLayout extends StatelessWidget {
                   spacing: gap,
                   runSpacing: gap,
                   children: [
-                    for (final tile in tiles)
+                    // Di susunan berkolom, kartu yang dicabut
+                    // meninggalkan petak kosong selebar kartunya —
+                    // lebih kentara lagi daripada lubang di daftar
+                    // satu kolom.
+                    for (final tile in tampak)
                       SizedBox(width: width, child: tile),
                   ],
                 );

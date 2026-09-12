@@ -22,6 +22,7 @@ class BalanceTopupRepository {
     required String restoId,
     required int amount,
     required String source,
+    String destination = 'bank',
     String? note,
     String? proofBase64,
   }) async {
@@ -29,6 +30,7 @@ class BalanceTopupRepository {
       'resto_id': restoId,
       'amount': amount,
       'source': source,
+      'destination': destination,
       if (note != null && note.isNotEmpty) 'note': note,
       if (proofBase64 != null && proofBase64.isNotEmpty)
         'proof_base64': proofBase64,

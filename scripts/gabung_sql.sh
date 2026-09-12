@@ -103,6 +103,8 @@ FILES=(
   rekening_kaatago_terbaca.sql
   jurnal_cash_pickup_benar.sql
   saldo_perusahaan.sql
+  jurnal_bank_terjadwal.sql
+  backfill_saldo_bank.sql
   merchant_report.sql
   shift_opening_check.sql
   support_tickets.sql
