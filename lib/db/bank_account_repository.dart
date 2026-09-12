@@ -50,25 +50,24 @@ class BankAccountRepository {
     required BankAccount rekening,
     bool jadikanUtama = false,
   }) async {
-    final adaRow = await _client
-        .from('bank_accounts')
-        .select()
-        .ilike('bank_name', rekening.bankName.trim())
-        .eq('account_number', rekening.accountNumber.trim())
-        .limit(1);
+    // Lewat satu fungsi di server, bukan tiga langkah dari sini.
+    //
+    // Mencari-lalu-memasukkan dari sisi klien tidak pernah bisa benar
+    // di sini: pencariannya tunduk pada RLS, jadi rekening yang sudah
+    // dicatat cabang lain tidak terlihat dan yang mengetiknya berakhir
+    // membuat baris kedua yang ditolak sebagai duplikat. Dan barisnya
+    // sendiri belum boleh ditulis sebelum tautannya ada — sementara
+    // tautannya baru bisa dibuat sesudah barisnya jadi.
+    final baris = Map<String, dynamic>.from(
+        await _client.rpc('simpan_rekening', params: {
+      'p_resto_id': restoId,
+      'p_bank_name': rekening.bankName.trim(),
+      'p_account_number': rekening.accountNumber.trim(),
+      'p_account_holder': rekening.accountHolder.trim(),
+      'p_label': rekening.label?.trim(),
+      'p_utama': jadikanUtama,
+    }) as Map);
 
-    final Map<String, dynamic> baris;
-    if (adaRow.isNotEmpty) {
-      baris = Map<String, dynamic>.from(adaRow.first);
-    } else {
-      baris = Map<String, dynamic>.from(await _client
-          .from('bank_accounts')
-          .insert(rekening.toMap())
-          .select()
-          .single());
-    }
-
-    await _tautkan(restoId, baris['id'].toString(), jadikanUtama);
     return BankAccount.fromMap({...baris, 'is_primary': jadikanUtama});
   }
 

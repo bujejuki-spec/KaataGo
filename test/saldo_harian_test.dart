@@ -1,0 +1,70 @@
+import 'dart:io';
+
+import 'package:flutter_test/flutter_test.dart';
+
+/// Saldo & Pengeluaran untuk Kasir dan Admin: hari ini saja.
+///
+/// Layar ini menjumlahkan sejak hari pertama, dan angka itu adalah saldo
+/// perusahaan. Tidak ada pekerjaan di meja kasir yang membutuhkannya.
+///
+/// Yang dijaga tes ini bukan pemotongannya — melainkan apa yang TIDAK
+/// boleh ikut terpotong. Uang yang sedang dipegang orangnya (isi laci
+/// dan petty cash) harus tetap dihitung utuh, karena keduanya tidak ikut
+/// berganti hari:
+///
+/// - Saldo Cash yang dipotong per hari membuat uang kemarin yang belum
+///   disetor lenyap dari layar, dan selisih tutup shift yang sebenarnya
+///   benar terbaca sebagai kurang.
+/// - Saldo Petty Cash yang dipotong per hari membuat batas "maksimal
+///   sekian" pada pencatatan pengeluaran ikut salah — kasir bisa
+///   mencatat pengeluaran lebih besar dari uang yang ada di tangannya.
+void main() {
+  final layar =
+      File('lib/screens/finance_balance_screen.dart').readAsStringSync();
+
+  String blok(String dari, String sampai) =>
+      layar.substring(layar.indexOf(dari), layar.indexOf(sampai));
+
+  test('yang dipotong per hari cuma untuk kasir dan admin', () {
+    final b = blok('bool get _harianSaja', 'bool get _needsApproval');
+    expect(b, contains('auth.isKasir'));
+    expect(b, contains('auth.isAdmin'));
+    // Pembukuan KaataGo sendiri tidak punya kasir, dan memotongnya per
+    // hari membuat layarnya berbunyi nol.
+    expect(b, contains('if (_untukPlatform) return false;'));
+  });
+
+  test('penghasilan non-tunai dan pengeluaran ikut terpotong', () {
+    expect(layar, contains("o.paymentMethod != 'cash'"));
+    expect(layar, contains('!harian || sekarang(o.createdAt)'));
+    expect(layar, contains('!harian || sekarang(e.createdAt)'));
+  });
+
+  test('penghasilan tunai tidak ikut terpotong', () {
+    // Baris tunainya berdiri sendiri tanpa syarat harian — kalau suatu
+    // saat syarat itu ditambahkan, isi laci berhenti cocok dengan tutup
+    // shift.
+    final b = blok('_cashIncome = orders', '_nonCashIncome = orders');
+    expect(b, isNot(contains('harian')));
+  });
+
+  test('isi laci dihitung dari seluruh riwayat', () {
+    final b = blok('int get _cashBalance', 'int get _nonCashBalance');
+    expect(b, contains('deposits: _depositsSemua'));
+    expect(b, contains('pettyCash: _pettyCashSemua'));
+  });
+
+  test('sisa petty cash dihitung dari seluruh riwayat', () {
+    final b = blok('int get _pettyCashBalance', 'int get _totalBalance');
+    expect(b, contains('_expensesSemua'));
+    expect(b, isNot(contains('_expenseBalance')));
+
+    final topup =
+        blok('int get _pettyCashToppedUp', 'int get _pettyCashPending');
+    expect(topup, contains('_pettyCashSemua'));
+  });
+
+  test('layarnya mengatakan yang sedang ditampilkan', () {
+    expect(layar, contains("_harianSaja ? 'Saldo Hari Ini' : 'Saldo Total'"));
+  });
+}

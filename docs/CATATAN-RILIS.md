@@ -37,6 +37,17 @@ Formatnya dibaca `scripts/release.sh`: judul `## <versi>`, lalu
 poin-poinnya. Versi yang tidak punya bagiannya di sini tetap terbit,
 hanya pengumumannya memakai kalimat umum.
 
+## 2.39.0
+
+- Owner dan Finance kini benar-benar bisa menambah rekening perusahaan;
+  sebelumnya penyimpanannya ditolak dan hanya berhasil untuk Super Admin
+- Nomor rekening yang sudah terdaftar dikenali dan dipakai ulang, bukan
+  ditolak sebagai duplikat tanpa penjelasan
+- Saldo & Pengeluaran untuk Kasir dan Admin kini menampilkan hari ini
+  saja. Saldo Cash dan sisa Petty Cash tetap dihitung utuh — keduanya
+  uang yang sedang dipegang, dan isinya tidak ikut berganti hari
+- Perbaikan bug dan penyempurnaan tampilan
+
 ## 2.38.0
 
 - Tutup buku harian: satu hari dikunci angkanya setelah diperiksa, dan

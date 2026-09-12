@@ -94,6 +94,7 @@ FILES=(
   setor_dan_pickup.sql
   mutasi_bank.sql
   cara_tagih.sql
+  rekening_owner.sql
   merchant_report.sql
   shift_opening_check.sql
   support_tickets.sql

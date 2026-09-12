@@ -90,6 +90,13 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
   List<CashVariance> _selisih = const [];
   int _nonCashIncome = 0;
   List<CashDeposit> _deposits = [];
+
+  /// Sejak hari pertama, apa pun perannya. Isi laci dihitung dari sini,
+  /// bukan dari daftar yang sudah dipotong per hari.
+  List<CashDeposit> _depositsSemua = const [];
+  List<PettyCashEntry> _pettyCashSemua = const [];
+  List<Expense> _expensesSemua = const [];
+
   List<Expense> _expenses = [];
   List<ExpenseGlAccount> _expenseGlAccounts = [];
   List<PettyCashEntry> _pettyCashEntries = [];
@@ -133,6 +140,23 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
   bool get _canManageFunds {
     final auth = context.read<AuthProvider>();
     return !auth.isKasir && !auth.isAdmin;
+  }
+
+  /// Kasir dan Admin cuma melihat hari ini — kecuali tunai.
+  ///
+  /// Layar ini menjumlahkan sejak hari pertama. Untuk Finance dan Owner
+  /// itu memang gunanya; untuk yang menjaga kasir, angka itu adalah
+  /// saldo perusahaan, dan tidak ada pekerjaan di meja kasir yang
+  /// membutuhkannya. Yang dibutuhkan cuma hari yang sedang berjalan.
+  ///
+  /// Tunai dikecualikan dan harus dikecualikan: Saldo Cash adalah isi
+  /// laci, dan laci tidak ikut berganti hari. Memotongnya per hari
+  /// membuat uang kemarin yang belum disetor lenyap dari layar — lalu
+  /// selisih tutup shift yang sebenarnya benar terbaca sebagai kurang.
+  bool get _harianSaja {
+    if (_untukPlatform) return false;
+    final auth = context.read<AuthProvider>();
+    return auth.isKasir || auth.isAdmin;
   }
 
   /// Kasir memegang uang lacinya dan sering kehabisan kembalian di tengah
@@ -225,19 +249,48 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
       // di laci dan harus disetor, sementara QRIS/transfer sudah masuk
       // rekening. Pesanan lama tanpa payment_method dianggap non-tunai —
       // itu semuanya self-order QRIS.
+      // Pemotongan per hari dilakukan di sini, sekali, supaya tidak ada
+      // satu pun angka di bawah yang perlu ingat sedang dibaca siapa.
+      final harian = _harianSaja;
+      final kini = DateTime.now().toWib();
+      final hariIni = DateTime(kini.year, kini.month, kini.day);
+      bool sekarang(DateTime t) {
+        final w = t.toWib();
+        return !DateTime(w.year, w.month, w.day).isBefore(hariIni);
+      }
+
+      final semuaSetoran = results[5] as List<CashDeposit>;
+      final semuaPetty = results[3] as List<PettyCashEntry>;
+
       setState(() {
+        // Tunai tetap sejak hari pertama: ini isi laci, bukan penjualan
+        // hari ini.
         _cashIncome = orders
             .where((o) => o.paymentMethod == 'cash')
             .fold(0, (sum, o) => sum + o.total);
         _nonCashIncome = orders
             .where((o) => o.paymentMethod != 'cash')
+            .where((o) => !harian || sekarang(o.createdAt))
             .fold(0, (sum, o) => sum + o.total);
-        _deposits = results[5] as List<CashDeposit>;
-        _topups = results[6] as List<BalanceTopup>;
+        _depositsSemua = semuaSetoran;
+        _pettyCashSemua = semuaPetty;
+        _deposits = harian
+            ? semuaSetoran.where((d) => sekarang(d.createdAt)).toList()
+            : semuaSetoran;
+        _topups = [
+          for (final t in results[6] as List<BalanceTopup>)
+            if (!harian || sekarang(t.createdAt)) t,
+        ];
         _selisih = results[7] as List<CashVariance>;
-        _expenses = results[1] as List<Expense>;
+        _expensesSemua = results[1] as List<Expense>;
+        _expenses = [
+          for (final e in _expensesSemua)
+            if (!harian || sekarang(e.createdAt)) e,
+        ];
         _expenseGlAccounts = results[2] as List<ExpenseGlAccount>;
-        _pettyCashEntries = results[3] as List<PettyCashEntry>;
+        _pettyCashEntries = harian
+            ? semuaPetty.where((e) => sekarang(e.createdAt)).toList()
+            : semuaPetty;
         _bankName = settings?['bank_name'] as String?;
         _accountNumber = settings?['account_number'] as String?;
         _accountHolder = settings?['account_holder'] as String?;
@@ -252,6 +305,7 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
     }
   }
 
+  /// Pengeluaran yang ditampilkan: hari ini saja untuk kasir dan admin.
   int get _expenseBalance => _expenses.fold(0, (sum, e) => sum + e.amount);
 
   /// Pengajuan yang ditolak tidak dihitung: uangnya dikembalikan ke
@@ -277,8 +331,10 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
   /// Yang seharusnya masih ada di laci kasir sekarang.
   int get _cashBalance => cashOnHand(
         cashIncome: _cashIncome,
-        deposits: _deposits,
-        pettyCash: _pettyCashEntries,
+        // Sejak hari pertama, bukan daftar yang sudah dipotong: uang
+        // yang keluar laci kemarin tetap sudah keluar hari ini.
+        deposits: _depositsSemua,
+        pettyCash: _pettyCashSemua,
         selisih: _selisih,
       );
 
@@ -305,7 +361,7 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
   /// Pengajuan yang masih menunggu nilainya mengendap di GL Suspense
   /// Petty Cash — uangnya sudah keluar dari sumbernya, tapi belum boleh
   /// dibelanjakan.
-  int get _pettyCashToppedUp => _pettyCashEntries
+  int get _pettyCashToppedUp => _pettyCashSemua
       .where((e) => e.isApproved)
       .fold(0, (sum, e) => sum + e.amount);
 
@@ -321,7 +377,15 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
   /// Every expense is paid from Petty Cash, so this bucket is shown net
   /// of them — which is why the total below just adds the two rather than
   /// subtracting expenses again (that would double-count them).
-  int get _pettyCashBalance => _pettyCashToppedUp - _expenseBalance;
+  /// Dihitung dari seluruh riwayat, bukan dari daftar harian.
+  ///
+  /// Ini uang yang sedang dipegang — sifatnya sama dengan isi laci, dan
+  /// alasan yang sama berlaku: memotongnya per hari membuat sisa float
+  /// kemarin terlihat belum terpakai, dan batas "maksimal sekian" pada
+  /// pencatatan pengeluaran ikut salah — kasir bisa mencatat lebih besar
+  /// dari uang yang benar-benar ada di tangannya.
+  int get _pettyCashBalance =>
+      _pettyCashToppedUp - _expensesSemua.fold(0, (sum, e) => sum + e.amount);
 
   /// Penghasilan + Petty Cash. Setorannya sudah ikut lewat Saldo Non
   /// Cash, jadi tidak ditambahkan lagi di sini.
@@ -595,7 +659,7 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
                                   Icon(Icons.account_balance_wallet_outlined,
                                       color: Colors.white.withOpacity(0.85), size: 18),
                                   const SizedBox(width: 6),
-                                  Text('Saldo Total',
+                                  Text(_harianSaja ? 'Saldo Hari Ini' : 'Saldo Total',
                                       style: TextStyle(color: Colors.white.withOpacity(0.85))),
                                 ],
                               ),
@@ -611,8 +675,12 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
                                     ? 'Pergerakan GL Total Saldo — langganan '
                                         'masuk, diskon & voucher keluar '
                                         '(pengeluaran sudah dikurangi)'
-                                    : 'Penghasilan + Petty Cash + Setoran '
-                                        '(pengeluaran sudah dikurangi)',
+                                    : _harianSaja
+                                        ? 'Penghasilan & pengeluaran hari ini. '
+                                            'Uang yang dipegang — isi laci dan '
+                                            'petty cash — dihitung utuh.'
+                                        : 'Penghasilan + Petty Cash + Setoran '
+                                            '(pengeluaran sudah dikurangi)',
                                 style: TextStyle(color: Colors.white.withOpacity(0.75), fontSize: 12),
                               ),
                             ],
