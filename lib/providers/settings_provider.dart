@@ -1,3 +1,5 @@
+import '../models/bank_account.dart';
+import '../db/bank_account_repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -67,9 +69,32 @@ class SettingsProvider extends ChangeNotifier {
 
       if (nama.isNotEmpty) merchantName = nama;
       qrisId = (row?['qris_id'] as String?) ?? qrisId;
-      bankName = (row?['bank_name'] as String?) ?? bankName;
-      accountNumber = (row?['account_number'] as String?) ?? accountNumber;
-      accountHolder = (row?['account_holder'] as String?) ?? accountHolder;
+
+      // Rekening diambil dari rekening UTAMA resto ini, bukan dari kolom
+      // di `settings`.
+      //
+      // Sejak rekening berdiri sebagai entitasnya sendiri, kolom lama di
+      // sana tidak lagi disunting di mana pun — jadi ia hanya bisa jadi
+      // usang. Dipakai sebagai cadangan sampai semua merchant punya
+      // barisnya, lalu dikosongkan (lihat rekening_perusahaan.sql).
+      //
+      // Diambil di sini, sekali, bukan di tiap layar yang
+      // menampilkannya: layar Transfer, struk, dan tujuan setoran
+      // semuanya bertanya hal yang sama.
+      BankAccount? utama;
+      try {
+        utama = await BankAccountRepository().utama(restoId);
+      } catch (_) {
+        // Tanpa jawaban, kolom lamanya yang dipakai.
+      }
+
+      bankName = utama?.bankName ?? (row?['bank_name'] as String?) ?? bankName;
+      accountNumber = utama?.accountNumber ??
+          (row?['account_number'] as String?) ??
+          accountNumber;
+      accountHolder = utama?.accountHolder ??
+          (row?['account_holder'] as String?) ??
+          accountHolder;
 
       // Disimpan lokal juga, supaya perangkat yang sedang offline besok
       // tetap menyebut nama yang benar.

@@ -53,6 +53,33 @@ class CashDeposit {
   final String? accountNumber;
   final String? accountHolder;
 
+  /// Rekening tujuannya, sejak rekening punya keberadaan sendiri.
+  ///
+  /// Null untuk baris lama: menebak setoran tahun lalu masuk ke rekening
+  /// mana berarti membuat data yang terlihat pasti padahal karangan.
+  final String? bankAccountId;
+
+  /// 'setor' — kasir menyetorkan sendiri ke bank.
+  /// 'pickup' — uangnya dijemput petugas penjemputan.
+  ///
+  /// Keduanya satu tabel karena yang terjadi pada uangnya sama persis:
+  /// lembarannya keluar dari laci, dan Saldo Cash sudah tahu cara
+  /// menghitung itu. Tabel terpisah berarti Saldo Cash harus diajari
+  /// sumber kedua — dan selama belum diajari, uang yang sudah dibawa
+  /// pergi masih dihitung ada di laci.
+  final String method;
+
+  /// Siapa yang menjemput uangnya. Hanya untuk pickup, dan wajib di
+  /// sana: uang yang keluar laci tanpa nama penerima adalah uang yang
+  /// tidak bisa ditanyakan ke siapa pun besok pagi.
+  final String? pickedUpBy;
+
+  /// Nomor segel kantong uangnya. Opsional — sebagian jasa penjemputan
+  /// memakainya, sebagian tidak.
+  final String? sealNumber;
+
+  bool get isPickup => method == 'pickup';
+
   /// Email yang menyetor. Kasir bertanggung jawab atas selisih laci,
   /// jadi nama ini bukan sekadar jejak audit.
   final String createdBy;
@@ -75,6 +102,10 @@ class CashDeposit {
     this.bankName,
     this.accountNumber,
     this.accountHolder,
+    this.bankAccountId,
+    this.method = 'setor',
+    this.pickedUpBy,
+    this.sealNumber,
     required this.createdBy,
     required this.createdAt,
     this.status = DepositStatus.pending,
@@ -96,6 +127,10 @@ class CashDeposit {
         if (bankName != null) 'bank_name': bankName,
         if (accountNumber != null) 'account_number': accountNumber,
         if (accountHolder != null) 'account_holder': accountHolder,
+        if (bankAccountId != null) 'bank_account_id': bankAccountId,
+        'method': method,
+        if (pickedUpBy != null) 'picked_up_by': pickedUpBy,
+        if (sealNumber != null) 'seal_number': sealNumber,
         'created_by': createdBy,
       };
 
@@ -109,6 +144,10 @@ class CashDeposit {
       bankName: map['bank_name'] as String?,
       accountNumber: map['account_number'] as String?,
       accountHolder: map['account_holder'] as String?,
+      bankAccountId: map['bank_account_id']?.toString(),
+      method: map['method'] as String? ?? 'setor',
+      pickedUpBy: map['picked_up_by'] as String?,
+      sealNumber: map['seal_number'] as String?,
       createdBy: map['created_by'] as String? ?? '',
       createdAt: DateTime.parse(map['created_at'] as String).toUtc(),
       status: DepositStatusDb.fromDb(map['status'] as String?),

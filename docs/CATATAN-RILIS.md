@@ -37,6 +37,28 @@ Formatnya dibaca `scripts/release.sh`: judul `## <versi>`, lalu
 poin-poinnya. Versi yang tidak punya bagiannya di sini tetap terbit,
 hanya pengumumannya memakai kalimat umum.
 
+## 2.38.0
+
+- Tutup buku harian: satu hari dikunci angkanya setelah diperiksa, dan
+  koreksi yang datang belakangan terlihat sebagai selisih, bukan
+  diam-diam mengubah angka yang sudah ditandatangani
+- Rekonsiliasi mutasi bank: setoran dan pembayaran yang belum punya
+  pasangan di rekening ditampilkan sendiri, dan bisa dicocokkan atau
+  dilepas lagi kalau keliru
+- Rekening perusahaan jadi data tersendiri — satu rekening bisa dipakai
+  beberapa resto, dan nama banknya dipilih dari daftar, bukan diketik
+- Setor bank kini dimulai dari nomor rekening; nama pemilik dan banknya
+  mengikuti sendiri, dan bukti transfernya wajib dilampirkan
+- Cash Pickup: nominal, catatan, nama yang menjemput, bukti, dan nomor
+  seal kalau ada
+- Penagihan langganan bisa diatur per merchant dari KaataGo Admin —
+  Virtual Account atau transfer ke rekening KaataGo, yang nomornya
+  tampil dan bisa disalin saat merchant membayar
+- Pengingat tagihan lewat WhatsApp dan surel kini menyebut nominalnya
+  berikut nomor VA atau nomor rekening tujuannya
+- Bukti pembayaran tagihan wajib diunggah sebelum tagihannya diperiksa
+- Perbaikan bug dan penyempurnaan tampilan
+
 ## 2.37.0
 
 - QRIS Statis kini bisa dipilih juga saat melunasi pesanan di Pending

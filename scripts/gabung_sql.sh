@@ -89,6 +89,11 @@ FILES=(
   tagihan_ikut_tanggal.sql
   qris_hangus.sql
   qris_statis.sql
+  tutup_buku_harian.sql
+  rekening_perusahaan.sql
+  setor_dan_pickup.sql
+  mutasi_bank.sql
+  cara_tagih.sql
   merchant_report.sql
   shift_opening_check.sql
   support_tickets.sql

@@ -1,10 +1,13 @@
+import '../utils/pesan_galat.dart';
+import '../utils/field_rules.dart';
+import '../models/bank_account.dart';
+import '../db/bank_account_repository.dart';
 import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../db/cash_deposit_repository.dart';
 import '../db/cashier_shift_repository.dart';
@@ -48,15 +51,12 @@ class _CashDepositScreenState extends State<CashDepositScreen> {
   final _pettyCashRepo = PettyCashRepository();
   final _shiftRepo = CashierShiftRepository();
 
-  String? _bankName;
-  String? _accountNumber;
-  String? _accountHolder;
-
   int _cashIncome = 0;
   int _pettyCashFromCash = 0;
   List<CashDeposit> _deposits = [];
   List<PettyCashEntry> _pettyCash = const [];
   List<CashVariance> _selisih = const [];
+  List<BankAccount> _rekening = const [];
   bool _loading = true;
   String? _loadError;
 
@@ -129,24 +129,26 @@ class _CashDepositScreenState extends State<CashDepositScreen> {
         _orderRepo.semua(restoId),
         _depositRepo.getForResto(restoId),
         _pettyCashRepo.getForResto(restoId),
-        Supabase.instance.client.from('settings').select().eq('resto_id', restoId).limit(1),
         _shiftRepo.selisih(restoId),
       ]);
+      // Dipisah dari Future.wait karena tipenya berbeda, dan gagalnya
+      // tidak boleh menjatuhkan seluruh layar: tanpa rekening, setoran
+      // masih bisa dicatat — cuma tujuannya yang belum tertulis.
+      var rekening = <BankAccount>[];
+      try {
+        rekening = await BankAccountRepository().untukResto(restoId);
+      } catch (_) {}
       if (!mounted) return;
       final orders = (results[0] as List<CustomerOrder>)
           .where((o) => o.paymentStatus == OrderPaymentStatus.paid);
       final pettyCash = results[2] as List<PettyCashEntry>;
-      final settingsRows = results[3] as List<Map<String, dynamic>>;
-      final settings = settingsRows.isNotEmpty ? settingsRows.first : null;
       setState(() {
-        _bankName = settings?['bank_name'] as String?;
-        _accountNumber = settings?['account_number'] as String?;
-        _accountHolder = settings?['account_holder'] as String?;
         _cashIncome =
             orders.where((o) => o.paymentMethod == 'cash').fold(0, (sum, o) => sum + o.total);
         _deposits = results[1] as List<CashDeposit>;
         _pettyCash = pettyCash;
-        _selisih = results[4] as List<CashVariance>;
+        _selisih = results[3] as List<CashVariance>;
+        _rekening = rekening;
         _pettyCashFromCash = pettyCashFromDrawer(pettyCash);
         _loading = false;
       });
@@ -159,15 +161,24 @@ class _CashDepositScreenState extends State<CashDepositScreen> {
     }
   }
 
+  Future<void> _addPickup() async {
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (_) => _PickupDialog(
+        restoId: _restoId,
+        cashOnHand: _cashOnHand,
+      ),
+    );
+    if (saved == true) _load();
+  }
+
   Future<void> _addDeposit() async {
     final saved = await showDialog<bool>(
       context: context,
       builder: (_) => _AddDepositDialog(
         restoId: _restoId,
         cashOnHand: _cashOnHand,
-        bankName: _bankName,
-        accountNumber: _accountNumber,
-        accountHolder: _accountHolder,
+        rekening: _rekening,
       ),
     );
     if (saved == true) _load();
@@ -339,6 +350,22 @@ class _CashDepositScreenState extends State<CashDepositScreen> {
                               minimumSize: const Size.fromHeight(50),
                             ),
                             onPressed: _cashOnHand > 0 ? _addDeposit : null,
+                          ),
+                        ),
+                        const SizedBox(height: 9),
+                        // Uangnya dijemput, bukan disetor sendiri. Yang
+                        // terjadi pada lacinya sama — lembarannya keluar
+                        // — jadi ia lewat jalur yang sama dan Saldo Cash
+                        // ikut berkurang tanpa perlu diajari sumber baru.
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            icon: const Icon(Icons.local_shipping_outlined),
+                            label: const Text('Cash Pickup'),
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size.fromHeight(48),
+                            ),
+                            onPressed: _cashOnHand > 0 ? _addPickup : null,
                           ),
                         ),
                         if (_cashOnHand <= 0) ...[
@@ -550,11 +577,36 @@ class _DepositTile extends StatelessWidget {
                         ),
                       ),
                     ),
+                    // Pickup ditandai, setoran biasa tidak. Yang membaca
+                    // riwayat perlu tahu uangnya berpindah dengan cara
+                    // apa — dibawa petugas atau disetor sendiri ke bank
+                    // — karena yang ditanyakan saat ada selisih berbeda.
+                    if (deposit.isPickup) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 7, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: KaataTheme.softFillOf(context),
+                          borderRadius: BorderRadius.circular(7),
+                        ),
+                        child: const Text('PICKUP',
+                            style: TextStyle(
+                                fontSize: 9.5, fontWeight: FontWeight.bold)),
+                      ),
+                    ],
                   ],
                 ),
                 const SizedBox(height: 2),
                 Text(dateFmt.format(deposit.createdAt.toWib()),
                     style: TextStyle(fontSize: 11.5, color: KaataTheme.mutedOf(context))),
+                if (deposit.isPickup && deposit.pickedUpBy != null)
+                  Text(
+                    'Dijemput ${deposit.pickedUpBy}'
+                    '${deposit.sealNumber == null ? '' : ' · Segel ${deposit.sealNumber}'}',
+                    style: TextStyle(
+                        fontSize: 12, color: KaataTheme.mutedOf(context)),
+                  ),
                 Text('Oleh ${deposit.createdBy}',
                     style: TextStyle(fontSize: 11.5, color: KaataTheme.mutedOf(context))),
                 if (deposit.bankName != null)
@@ -655,31 +707,249 @@ class _DepositTile extends StatelessWidget {
   }
 }
 
+/// Uang laci dijemput petugas penjemputan.
+///
+/// Tercatat di tabel yang sama dengan setoran, dan itu disengaja: yang
+/// terjadi pada uangnya sama persis — lembarannya keluar dari laci — dan
+/// Saldo Cash sudah tahu cara menghitung itu. Tabel tersendiri berarti
+/// Saldo Cash harus diajari sumber kedua, dan selama belum diajari, uang
+/// yang sudah dibawa pergi masih dihitung ada di laci.
+class _PickupDialog extends StatefulWidget {
+  final String restoId;
+  final int cashOnHand;
+
+  const _PickupDialog({required this.restoId, required this.cashOnHand});
+
+  @override
+  State<_PickupDialog> createState() => _PickupDialogState();
+}
+
+class _PickupDialogState extends State<_PickupDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _amountCtrl = TextEditingController();
+  final _petugasCtrl = TextEditingController();
+  final _segelCtrl = TextEditingController();
+  final _noteCtrl = TextEditingController();
+  final _repo = CashDepositRepository();
+
+  Uint8List? _bukti;
+  bool _saving = false;
+
+  @override
+  void dispose() {
+    _amountCtrl.dispose();
+    _petugasCtrl.dispose();
+    _segelCtrl.dispose();
+    _noteCtrl.dispose();
+    super.dispose();
+  }
+
+  bool get _siap => _bukti != null;
+
+  Future<void> _save() async {
+    if (!_formKey.currentState!.validate()) return;
+    final auth = context.read<AuthProvider>();
+    setState(() => _saving = true);
+    try {
+      await _repo.create(CashDeposit(
+        id: '',
+        restoId: widget.restoId,
+        amount: parseRupiah(_amountCtrl.text)!,
+        proofBase64: base64Encode(_bukti!),
+        note: _noteCtrl.text.trim().isEmpty ? null : _noteCtrl.text.trim(),
+        method: 'pickup',
+        pickedUpBy: _petugasCtrl.text.trim(),
+        sealNumber:
+            _segelCtrl.text.trim().isEmpty ? null : _segelCtrl.text.trim(),
+        createdBy: auth.user?.email ?? 'Kasir',
+        createdAt: DateTime.now(),
+      ));
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+    } catch (e) {
+      if (!mounted) return;
+      showAppToast(context, 'Gagal menyimpan: ${pesanGalat(e)}', isError: true);
+      setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final currency =
+        NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      insetPadding: insetDialogWeb(context),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Cash Pickup',
+                    style:
+                        TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 4),
+                Text(
+                  'Uang laci yang dijemput petugas. Saldo Cash berkurang '
+                  'sebesar ini begitu tersimpan.',
+                  style: TextStyle(
+                      fontSize: 12.5, color: KaataTheme.mutedOf(context)),
+                ),
+                const SizedBox(height: 14),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: KaataTheme.softFillOf(context),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text('Tunai di laci: ${currency.format(widget.cashOnHand)}',
+                      style: const TextStyle(
+                          fontSize: 12.5, fontWeight: FontWeight.w600)),
+                ),
+                const SizedBox(height: 14),
+                TextFormField(
+                  controller: _amountCtrl,
+                  decoration:
+                      InputDecoration(label: requiredLabel('Nominal Dijemput')),
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [ThousandsInputFormatter()],
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                  autofocus: true,
+                  validator: (v) {
+                    final n = parseRupiah(v ?? '');
+                    if (n == null || n <= 0) return 'Wajib diisi, angka > 0';
+                    // Menjemput lebih dari isi laci berarti salah hitung
+                    // di suatu tempat, dan kalau dibiarkan saldonya jadi
+                    // minus — angka yang tidak berarti apa-apa.
+                    if (n > widget.cashOnHand) {
+                      return 'Melebihi tunai di laci '
+                          '(maks ${currency.format(widget.cashOnHand)})';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _petugasCtrl,
+                  decoration:
+                      InputDecoration(label: requiredLabel('Nama Petugas')),
+                  inputFormatters: nameFormatters,
+                  textCapitalization: TextCapitalization.words,
+                  // Uang yang keluar laci tanpa nama penerima adalah uang
+                  // yang tidak bisa ditanyakan ke siapa pun besok pagi.
+                  validator: (v) =>
+                      validateName(v, label: 'Nama petugas penjemput'),
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _segelCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Nomor Segel (opsional)',
+                    helperText: 'Kalau kantongnya bersegel',
+                  ),
+                  textCapitalization: TextCapitalization.characters,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _noteCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Catatan (opsional)',
+                  ),
+                  maxLines: 2,
+                ),
+                const SizedBox(height: 14),
+                Text('Bukti Pickup',
+                    style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: KaataTheme.mutedOf(context))),
+                const SizedBox(height: 8),
+                if (_bukti == null)
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      final picked = await pickProofPhoto(context);
+                      if (picked != null && mounted) {
+                        setState(() => _bukti = picked);
+                      }
+                    },
+                    icon: const Icon(Icons.add_a_photo_outlined, size: 18),
+                    label: const Text('Lampirkan Bukti'),
+                    style: OutlinedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(46)),
+                  )
+                else
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Stack(
+                      children: [
+                        Image.memory(_bukti!,
+                            width: double.infinity,
+                            height: 150,
+                            fit: BoxFit.cover),
+                        Positioned(
+                          top: 6,
+                          right: 6,
+                          child: GestureDetector(
+                            onTap: () => setState(() => _bukti = null),
+                            child: const CircleAvatar(
+                              radius: 14,
+                              backgroundColor: Colors.black54,
+                              child: Icon(Icons.close,
+                                  size: 16, color: Colors.white),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (_bukti == null) ...[
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Bukti pickup wajib dilampirkan.',
+                    style: TextStyle(fontSize: 11.5, color: Colors.redAccent),
+                  ),
+                ],
+                const SizedBox(height: 20),
+                DialogActions(
+                  confirmLabel: 'Simpan Pickup',
+                  busy: _saving,
+                  onConfirm: _siap ? _save : null,
+                  onCancel: () => Navigator.of(context).pop(false),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _AddDepositDialog extends StatefulWidget {
   final String restoId;
   final int cashOnHand;
 
-  /// Rekening resto dari Pengaturan Pembayaran — ditampilkan, tidak
-  /// bisa diubah di sini.
+  /// Rekening yang boleh jadi tujuan, dari Rekening Perusahaan.
   ///
-  /// Dulu ini isian biasa yang boleh ditimpa, dengan alasan kasir
-  /// mungkin menyetor ke rekening lain. Yang terjadi justru sebaliknya:
-  /// rekeningnya nyaris selalu itu-itu juga, dan yang berubah cuma
-  /// salah ketik nomornya. Setoran yang tercatat ke nomor yang keliru
-  /// tidak bisa dicocokkan Finance dengan mutasi bank mana pun, dan
-  /// kekeliruannya baru ketahuan berhari-hari kemudian.
+  /// Dipilih, tidak diketik. Dulu ini isian biasa yang boleh ditimpa,
+  /// dengan alasan kasir mungkin menyetor ke rekening lain. Yang terjadi
+  /// justru sebaliknya: rekeningnya nyaris selalu itu-itu juga, dan yang
+  /// berubah cuma salah ketik nomornya. Setoran yang tercatat ke nomor
+  /// yang keliru tidak bisa dicocokkan Finance dengan mutasi bank mana
+  /// pun, dan kekeliruannya baru ketahuan berhari-hari kemudian.
   ///
-  /// Satu tempat mengaturnya: Finance → Pengaturan Pembayaran.
-  final String? bankName;
-  final String? accountNumber;
-  final String? accountHolder;
+  /// Satu tempat mengaturnya: Owner/Finance → Rekening Perusahaan.
+  final List<BankAccount> rekening;
 
   const _AddDepositDialog({
     required this.restoId,
     required this.cashOnHand,
-    this.bankName,
-    this.accountNumber,
-    this.accountHolder,
+    required this.rekening,
   });
 
   @override
@@ -694,6 +964,29 @@ class _AddDepositDialogState extends State<_AddDepositDialog> {
   Uint8List? _proof;
   bool _saving = false;
 
+  /// Rekening yang dipilih. Nomor rekeningnya yang dipilih orang; nama
+  /// bank dan atas namanya mengikuti, tidak diketik ulang.
+  ///
+  /// Sebelumnya ketiganya cuma teks yang disalin dari satu rekening
+  /// bawaan. Begitu merchant punya dua rekening, tidak ada cara
+  /// menyebutkan setoran ini masuk ke yang mana — dan mencocokkannya
+  /// dengan mutasi bank jadi tebakan.
+  BankAccount? _rekening;
+
+  @override
+  void initState() {
+    super.initState();
+    // Rekening utama terpilih lebih dulu. Merchant yang cuma punya satu
+    // tidak perlu memilih apa pun.
+    for (final r in widget.rekening) {
+      if (r.isPrimary) {
+        _rekening = r;
+        break;
+      }
+    }
+    _rekening ??= widget.rekening.isEmpty ? null : widget.rekening.first;
+  }
+
   @override
   void dispose() {
     _amountCtrl.dispose();
@@ -701,27 +994,32 @@ class _AddDepositDialogState extends State<_AddDepositDialog> {
     super.dispose();
   }
 
-  /// Rekening tujuannya sudah lengkap di Pengaturan Pembayaran.
-  bool get _accountReady =>
-      (widget.bankName ?? '').trim().isNotEmpty &&
-      (widget.accountNumber ?? '').trim().isNotEmpty &&
-      (widget.accountHolder ?? '').trim().isNotEmpty;
+  /// Ada rekening tujuan yang bisa dipilih.
+  bool get _accountReady => _rekening != null;
+
+  /// Bukti wajib, dan servernya menegakkan hal yang sama.
+  ///
+  /// Setoran tanpa bukti adalah pernyataan sepihak bahwa uang sudah
+  /// berpindah, dan yang memeriksanya nanti tidak punya apa pun untuk
+  /// dibandingkan dengan mutasi rekening.
+  bool get _siap => _accountReady && _proof != null;
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     final auth = context.read<AuthProvider>();
     setState(() => _saving = true);
     try {
-      final proofBase64 = _proof == null ? null : base64Encode(_proof!);
+      final r = _rekening!;
       await _repo.create(CashDeposit(
         id: '',
         restoId: widget.restoId,
         amount: parseRupiah(_amountCtrl.text)!,
-        proofBase64: proofBase64,
+        proofBase64: base64Encode(_proof!),
         note: _noteCtrl.text.trim().isEmpty ? null : _noteCtrl.text.trim(),
-        bankName: widget.bankName,
-        accountNumber: widget.accountNumber,
-        accountHolder: widget.accountHolder,
+        bankName: r.bankName,
+        accountNumber: r.accountNumber,
+        accountHolder: r.accountHolder,
+        bankAccountId: r.id,
         createdBy: auth.user?.email ?? 'Kasir',
         createdAt: DateTime.now(),
       ));
@@ -825,12 +1123,45 @@ class _AddDepositDialogState extends State<_AddDepositDialog> {
                     style: TextStyle(
                         fontSize: 12, fontWeight: FontWeight.w600, color: KaataTheme.mutedOf(context))),
                 const SizedBox(height: 8),
-                _ReadOnlyField(label: 'Nama Bank', value: widget.bankName),
+                // Nomor rekening yang dipilih, bukan nama banknya.
+                // Yang dicocokkan orang dengan slip setoran di tangannya
+                // adalah nomornya — nama bank cuma keterangan yang
+                // mengikuti.
+                DropdownButtonFormField<String>(
+                  value: _rekening?.id,
+                  isExpanded: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Nomor Rekening',
+                    isDense: true,
+                  ),
+                  items: [
+                    for (final r in widget.rekening)
+                      DropdownMenuItem(
+                        value: r.id,
+                        child: Text(
+                          r.isPrimary
+                              ? '${r.accountNumber}  (utama)'
+                              : r.accountNumber,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                  ],
+                  onChanged: (v) => setState(() {
+                    for (final r in widget.rekening) {
+                      if (r.id == v) _rekening = r;
+                    }
+                  }),
+                ),
                 const SizedBox(height: 10),
-                _ReadOnlyField(label: 'Nomor Rekening', value: widget.accountNumber),
-                const SizedBox(height: 10),
+                // Keduanya hasil dari pilihan di atas, bukan isian.
+                // Mengetiknya ulang berarti membuka pintu bagi setoran
+                // yang nomornya benar tapi namanya bukan milik rekening
+                // itu.
                 _ReadOnlyField(
-                    label: 'Nama Pemilik Rekening', value: widget.accountHolder),
+                    label: 'Nama Pemilik Rekening',
+                    value: _rekening?.accountHolder),
+                const SizedBox(height: 10),
+                _ReadOnlyField(label: 'Bank', value: _rekening?.bankName),
                 if (!_accountReady) ...[
                   const SizedBox(height: 8),
                   const Row(
@@ -840,8 +1171,9 @@ class _AddDepositDialogState extends State<_AddDepositDialog> {
                       SizedBox(width: 6),
                       Expanded(
                         child: Text(
-                          'Rekening merchant belum diatur. Minta Finance mengisinya di '
-                          'Pengaturan Pembayaran sebelum menyetor.',
+                          'Belum ada rekening perusahaan. Minta Owner atau '
+                          'Finance menambahkannya di Rekening Perusahaan '
+                          'sebelum menyetor.',
                           style: TextStyle(fontSize: 11.5, color: Colors.redAccent),
                         ),
                       ),
@@ -906,7 +1238,7 @@ class _AddDepositDialogState extends State<_AddDepositDialog> {
                   // ketiganya wajib diisi, jadi keadaan ini memang sudah
                   // selalu tertahan — yang berubah cuma siapa yang bisa
                   // memperbaikinya.
-                  onConfirm: _accountReady ? _save : null,
+                  onConfirm: _siap ? _save : null,
                   onCancel: () => Navigator.of(context).pop(false),
                 ),
               ],

@@ -11,6 +11,9 @@ import 'cash_deposit_screen.dart';
 import 'cashier_shift_screen.dart';
 import 'category_management_screen.dart';
 import 'discount_screen.dart';
+import 'bank_account_screen.dart';
+import 'rekonsiliasi_screen.dart';
+import 'tutup_buku_screen.dart';
 import 'employee_management_screen.dart';
 import 'employee_orders_screen.dart';
 import 'finance_balance_screen.dart';
@@ -189,6 +192,11 @@ const _superAdmin = <MenuWeb>[
     ikon: Icons.badge_outlined,
     judul: 'Kelola Karyawan',
     layar: EmployeeManagementScreen.new,
+  ),
+  MenuWeb(
+    ikon: Icons.account_balance_outlined,
+    judul: 'Rekening Perusahaan',
+    layar: BankAccountScreen.new,
   ),
   MenuWeb(
     kelompok: 'Keuangan',
@@ -371,6 +379,21 @@ const _owner = <MenuWeb>[
     layar: EmployeeManagementScreen.new,
   ),
   MenuWeb(
+    ikon: Icons.account_balance_outlined,
+    judul: 'Rekening Perusahaan',
+    layar: BankAccountScreen.new,
+  ),
+  MenuWeb(
+    ikon: Icons.event_available_outlined,
+    judul: 'Tutup Buku',
+    layar: TutupBukuScreen.new,
+  ),
+  MenuWeb(
+    ikon: Icons.compare_arrows,
+    judul: 'Rekonsiliasi Bank',
+    layar: RekonsiliasiScreen.new,
+  ),
+  MenuWeb(
     ikon: Icons.qr_code_2,
     judul: 'QR Meja',
     layar: TableQrGeneratorScreen.new,
@@ -470,6 +493,11 @@ const _admin = <MenuWeb>[
     layar: EmployeeManagementScreen.new,
   ),
   MenuWeb(
+    ikon: Icons.account_balance_outlined,
+    judul: 'Rekening Perusahaan',
+    layar: BankAccountScreen.new,
+  ),
+  MenuWeb(
     ikon: Icons.qr_code_2,
     judul: 'QR Meja',
     layar: TableQrGeneratorScreen.new,
@@ -554,5 +582,20 @@ const _finance = <MenuWeb>[
     judul: 'Kotak Masuk',
     layar: InboxScreen.new,
     belumDibaca: _inboxBelumDibaca,
+  ),
+  MenuWeb(
+    ikon: Icons.account_balance_outlined,
+    judul: 'Rekening Perusahaan',
+    layar: BankAccountScreen.new,
+  ),
+  MenuWeb(
+    ikon: Icons.event_available_outlined,
+    judul: 'Tutup Buku',
+    layar: TutupBukuScreen.new,
+  ),
+  MenuWeb(
+    ikon: Icons.compare_arrows,
+    judul: 'Rekonsiliasi Bank',
+    layar: RekonsiliasiScreen.new,
   ),
 ];

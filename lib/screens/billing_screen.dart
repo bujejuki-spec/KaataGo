@@ -1,3 +1,5 @@
+import '../models/bank_account.dart';
+import '../db/bank_account_repository.dart';
 import '../db/restaurant_repository.dart';
 import '../utils/invoice_pdf.dart';
 import 'dart:convert';
@@ -36,6 +38,15 @@ class _BillingScreenState extends State<BillingScreen> {
   final _repo = BillingRepository();
 
   RestoBilling? _setelan;
+
+  /// Rekening KaataGo untuk merchant yang ditagih lewat transfer.
+  ///
+  /// Dibaca dari `bank_accounts` yang tertaut ke resto platform. Policy
+  /// khusus membukanya untuk semua yang sudah masuk — inilah satu-
+  /// satunya rekening yang boleh dilihat di luar restonya sendiri, dan
+  /// tanpa itu merchant melihat kolom kosong lalu tidak punya nomor
+  /// untuk mentransfer.
+  BankAccount? _rekeningKaataGo;
   BillingState? _keadaan;
   String? _namaResto;
   List<BillingInvoice> _tagihan = const [];
@@ -88,9 +99,20 @@ class _BillingScreenState extends State<BillingScreen> {
       // Namanya untuk dicetak di invoice. Id resto di dokumen resmi
       // tidak berarti apa-apa bagi yang membacanya.
       final resto = await RestaurantRepository().getOnce(widget.restoId);
+      // Dipisah dan gagalnya diabaikan: tanpa rekening KaataGo, tagihan
+      // tetap terbaca — cuma tombol bayarnya tidak bisa menunjukkan ke
+      // mana mentransfer, dan itu jauh lebih baik daripada layar yang
+      // gagal terbuka sama sekali.
+      BankAccount? rekening;
+      if (setelan?.tagihLewatTransfer ?? false) {
+        try {
+          rekening = await BankAccountRepository().utama(kPlatformRestoId);
+        } catch (_) {}
+      }
       if (!mounted) return;
       setState(() {
         _setelan = setelan;
+        _rekeningKaataGo = rekening;
         _tagihan = tagihan;
         _keadaan = keadaan;
         _namaResto = resto?.name;
@@ -129,7 +151,11 @@ class _BillingScreenState extends State<BillingScreen> {
   Future<void> _bayar(BillingInvoice inv) async {
     final hasil = await showDialog<_Bukti>(
       context: context,
-      builder: (_) => _DialogBayar(invoice: inv),
+      builder: (_) => _DialogBayar(
+        invoice: inv,
+        rekeningKaataGo:
+            (_setelan?.tagihLewatTransfer ?? false) ? _rekeningKaataGo : null,
+      ),
     );
     if (hasil == null || !mounted) return;
 
@@ -715,9 +741,97 @@ class _Bukti {
   const _Bukti(this.foto, this.catatan);
 }
 
+/// Rekening KaataGo, untuk merchant yang ditagih lewat transfer.
+///
+/// Nomornya bisa disalin satu ketukan. Nomor rekening yang harus
+/// diketik ulang dari layar ke aplikasi bank adalah tempat paling
+/// sering lahirnya transfer ke rekening yang salah — dan yang
+/// menanggungnya merchant yang uangnya sudah keluar.
+class _KartuRekeningKaataGo extends StatelessWidget {
+  final BankAccount rekening;
+  final int nominal;
+
+  const _KartuRekeningKaataGo({
+    required this.rekening,
+    required this.nominal,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(
+        color: KaataTheme.softFillOf(context),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: KaataTheme.borderOf(context)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Transfer ke Rekening KaataGo',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+          const SizedBox(height: 8),
+          _salin(context, 'Bank', rekening.bankName, salin: false),
+          _salin(context, 'Nomor Rekening', rekening.accountNumber),
+          _salin(context, 'Atas Nama', rekening.accountHolder, salin: false),
+          _salin(context, 'Nominal', _rupiah.format(nominal),
+              nilaiSalin: '$nominal'),
+          const SizedBox(height: 4),
+          Text(
+            'Transfer tepat sejumlah di atas supaya mudah dicocokkan.',
+            style:
+                TextStyle(fontSize: 11, color: KaataTheme.mutedOf(context)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _salin(BuildContext context, String label, String nilai,
+      {bool salin = true, String? nilaiSalin}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 110,
+            child: Text(label,
+                style: TextStyle(
+                    fontSize: 12, color: KaataTheme.mutedOf(context))),
+          ),
+          Expanded(
+            child: Text(nilai,
+                style: const TextStyle(
+                    fontSize: 13.5, fontWeight: FontWeight.bold)),
+          ),
+          if (salin)
+            IconButton(
+              visualDensity: VisualDensity.compact,
+              tooltip: 'Salin',
+              icon: const Icon(Icons.copy, size: 16),
+              onPressed: () {
+                Clipboard.setData(ClipboardData(text: nilaiSalin ?? nilai));
+                showAppToast(context, '$label disalin.');
+              },
+            ),
+        ],
+      ),
+    );
+  }
+}
+
 class _DialogBayar extends StatefulWidget {
   final BillingInvoice invoice;
-  const _DialogBayar({required this.invoice});
+
+  /// Rekening KaataGo, kalau merchant ini ditagih lewat transfer.
+  ///
+  /// Null saat ditagih lewat VA — nomornya sudah tertera di kartu
+  /// tagihannya sendiri, dan menampilkan dua nomor sekaligus adalah cara
+  /// tercepat membuat orang mentransfer ke yang salah.
+  final BankAccount? rekeningKaataGo;
+
+  const _DialogBayar({required this.invoice, this.rekeningKaataGo});
 
   @override
   State<_DialogBayar> createState() => _DialogBayarState();
@@ -747,6 +861,14 @@ class _DialogBayarState extends State<_DialogBayar> {
               '${widget.invoice.id} · ${_rupiah.format(widget.invoice.amount)}',
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
+            const SizedBox(height: 10),
+            if (widget.rekeningKaataGo != null) ...[
+              const SizedBox(height: 10),
+              _KartuRekeningKaataGo(
+                rekening: widget.rekeningKaataGo!,
+                nominal: widget.invoice.amount,
+              ),
+            ],
             const SizedBox(height: 10),
             Text(
               'Lampirkan bukti transfer. KaataGo memeriksanya lebih dulu '

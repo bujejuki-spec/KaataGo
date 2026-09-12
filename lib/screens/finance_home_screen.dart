@@ -1,3 +1,5 @@
+import 'rekonsiliasi_screen.dart';
+import 'tutup_buku_screen.dart';
 import '../widgets/support_fab.dart';
 import '../widgets/penilaian_tile.dart';
 import 'billing_screen.dart';
@@ -129,6 +131,26 @@ class FinanceHomeScreen extends StatelessWidget {
                   subtitle: 'Mapping GL, jurnal, laporan, pencairan gateway',
                   color: const Color(0xFF14B8A6),
                   tiles: () => [
+                    HubMenuTile(
+                      icon: Icons.event_available_outlined,
+                      title: 'Tutup Buku',
+                      subtitle: 'Kunci angka sebuah hari, per metode bayar',
+                      color: const Color(0xFF0EA5E9),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                            builder: (_) => const TutupBukuScreen()),
+                      ),
+                    ),
+                    HubMenuTile(
+                      icon: Icons.compare_arrows,
+                      title: 'Rekonsiliasi Bank',
+                      subtitle: 'Cocokkan mutasi rekening dengan catatannya',
+                      color: const Color(0xFF8B5CF6),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                            builder: (_) => const RekonsiliasiScreen()),
+                      ),
+                    ),
                     HubMenuTile(
                       icon: Icons.numbers,
                       title: 'Mapping GL Account',

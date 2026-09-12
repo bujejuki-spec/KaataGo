@@ -1,4 +1,5 @@
 import '../widgets/bagian_metode_bayar.dart';
+import 'bank_account_screen.dart';
 import 'package:flutter/material.dart';
 
 import '../theme.dart';
@@ -200,37 +201,52 @@ class _SettingsScreenState extends State<SettingsScreen> {
               // tetap disimpan apa adanya supaya data lama tidak
               // terhapus hanya karena kolomnya tidak lagi tampil.
               const SizedBox(height: 24),
-              const Text(
-                'Transfer Bank',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: _bankNameCtrl,
-                enabled: _editing,
-                decoration: _decoration('Nama Bank', required: true),
-                inputFormatters: nameFormatters,
-                textCapitalization: TextCapitalization.characters,
-                validator: (v) => _editing ? validateName(v, label: 'Nama bank') : null,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _accountNumberCtrl,
-                enabled: _editing,
-                decoration: _decoration('Nomor Rekening', required: true),
-                keyboardType: TextInputType.number,
-                inputFormatters: accountNumberFormatters,
-                validator: (v) => _editing ? validateAccountNumber(v) : null,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _accountHolderCtrl,
-                enabled: _editing,
-                decoration: _decoration('Atas Nama (a.n. ...)', required: true),
-                inputFormatters: nameFormatters,
-                textCapitalization: TextCapitalization.words,
-                validator: (v) =>
-                    _editing ? validateName(v, label: 'Nama pemilik rekening') : null,
+              // Rekening tidak lagi disunting di sini.
+              //
+              // Ia sudah berdiri sebagai entitasnya sendiri — satu
+              // rekening bisa dipakai beberapa cabang, dan mutasi bank
+              // ditautkan ke rekeningnya, bukan ke restonya.
+              // Menyisakan penyuntingnya di sini berarti dua tempat
+              // mengubah hal yang sama, dan yang satu diam-diam kalah
+              // saat dibaca.
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: KaataTheme.surfaceOf(context),
+                  borderRadius: BorderRadius.circular(13),
+                  border: Border.all(color: KaataTheme.borderOf(context)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Transfer Bank',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 15)),
+                    const SizedBox(height: 6),
+                    Text(
+                      _bankNameCtrl.text.trim().isEmpty
+                          ? 'Belum ada rekening.'
+                          : '${_bankNameCtrl.text} · '
+                              '${_accountNumberCtrl.text}\n'
+                              'a.n. ${_accountHolderCtrl.text}',
+                      style: TextStyle(
+                          fontSize: 12.5, color: KaataTheme.mutedOf(context)),
+                    ),
+                    const SizedBox(height: 10),
+                    OutlinedButton.icon(
+                      onPressed: () async {
+                        await Navigator.of(context).push(MaterialPageRoute(
+                          builder: (_) => const BankAccountScreen(),
+                        ));
+                        if (mounted) _loadFromSupabase();
+                      },
+                      icon: const Icon(Icons.account_balance_outlined,
+                          size: 18),
+                      label: const Text('Kelola Rekening Perusahaan'),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 28),
               // Berdiri sendiri dari formulir di atasnya: yang di sini

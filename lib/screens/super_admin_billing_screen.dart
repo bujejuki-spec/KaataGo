@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
+import '../db/bank_account_repository.dart';
 import '../db/billing_repository.dart';
 import '../db/restaurant_repository.dart';
+import '../models/bank_account.dart';
 import '../models/billing.dart';
 import '../models/restaurant.dart';
 import '../theme.dart';
@@ -49,6 +51,9 @@ class _SuperAdminBillingScreenState extends State<SuperAdminBillingScreen> {
     return null;
   }
   Map<String, RestoBilling> _setelan = const {};
+
+  /// Rekening KaataGo, untuk merchant yang ditagih lewat transfer.
+  BankAccount? _rekeningKaataGo;
   List<BillingInvoice> _tagihan = const [];
   bool _memuat = true;
   String? _galat;
@@ -68,11 +73,18 @@ class _SuperAdminBillingScreenState extends State<SuperAdminBillingScreen> {
       final resto = await _restoRepo.getAll();
       final setelan = await _repo.allSettings();
       final tagihan = await _repo.allInvoices();
+      // Gagalnya tidak menggagalkan halaman: rekening ini cuma dipakai
+      // sebagian merchant, dan daftar tagihan tetap harus terbuka.
+      BankAccount? rekening;
+      try {
+        rekening = await BankAccountRepository().utama(kPlatformRestoId);
+      } catch (_) {}
       if (!mounted) return;
       setState(() {
         _resto = resto;
         _setelan = setelan;
         _tagihan = tagihan;
+        _rekeningKaataGo = rekening;
         _memuat = false;
       });
     } catch (e) {
@@ -285,7 +297,8 @@ class _SuperAdminBillingScreenState extends State<SuperAdminBillingScreen> {
                         ? (s.active ? 'Gratis' : 'Langganan dimatikan')
                         : '${_rupiah.format(s.monthlyPrice)} / bulan · '
                             'tiap tanggal ${s.billingDay} · '
-                            'tenggang ${s.graceDays} hari',
+                            'tenggang ${s.graceDays} hari · '
+                            '${s.tagihLewatTransfer ? 'Transfer' : 'VA'}',
                     style: TextStyle(
                         fontSize: 12, color: KaataTheme.mutedOf(context)),
                   ),
@@ -343,6 +356,8 @@ class _SuperAdminBillingScreenState extends State<SuperAdminBillingScreen> {
                             e.value.any(
                                 (t) => t.status == InvoiceStatus.review),
                         resto: _restoDari(e.value.first.restoId),
+                        setelan: _setelan[e.value.first.restoId],
+                        rekeningKaataGo: _rekeningKaataGo,
                         onTerima: (t) => _putuskan(t, true),
                         onTolak: (t) => _putuskan(t, false),
                         onSegarkan: _segarkan,
@@ -363,6 +378,8 @@ class _KelompokTagihan extends StatelessWidget {
   final List<BillingInvoice> tagihan;
   final bool awalTerbuka;
   final Restaurant? resto;
+  final RestoBilling? setelan;
+  final BankAccount? rekeningKaataGo;
   final void Function(BillingInvoice) onTerima;
   final void Function(BillingInvoice) onTolak;
   final void Function(BillingInvoice) onSegarkan;
@@ -372,6 +389,8 @@ class _KelompokTagihan extends StatelessWidget {
     required this.tagihan,
     required this.awalTerbuka,
     required this.resto,
+    required this.setelan,
+    required this.rekeningKaataGo,
     required this.onTerima,
     required this.onTolak,
     required this.onSegarkan,
@@ -422,6 +441,8 @@ class _KelompokTagihan extends StatelessWidget {
             _KartuTagihanAdmin(
               invoice: t,
               resto: resto,
+              setelan: setelan,
+              rekeningKaataGo: rekeningKaataGo,
               onTerima: () => onTerima(t),
               onTolak: () => onTolak(t),
               onSegarkan: () => onSegarkan(t),
@@ -435,6 +456,12 @@ class _KelompokTagihan extends StatelessWidget {
 class _KartuTagihanAdmin extends StatelessWidget {
   final BillingInvoice invoice;
   final Restaurant? resto;
+
+  /// Cara merchant ini ditagih, dan rekening KaataGo kalau lewat
+  /// transfer. Keduanya masuk ke pesan tagihan: pengingat membayar yang
+  /// tidak menyebutkan ke mana membayar cuma kabar cemas.
+  final RestoBilling? setelan;
+  final BankAccount? rekeningKaataGo;
   final VoidCallback onTerima;
   final VoidCallback onTolak;
   final VoidCallback onSegarkan;
@@ -442,6 +469,8 @@ class _KartuTagihanAdmin extends StatelessWidget {
   const _KartuTagihanAdmin({
     required this.invoice,
     required this.resto,
+    required this.setelan,
+    required this.rekeningKaataGo,
     required this.onTerima,
     required this.onTolak,
     required this.onSegarkan,
@@ -457,6 +486,33 @@ class _KartuTagihanAdmin extends StatelessWidget {
     final nama = invoice.restoName ?? resto?.name ?? invoice.restoId;
     final periode =
         '${_tanggal.format(invoice.periodStart)} – ${_tanggal.format(invoice.periodEnd)}';
+    // Cara bayarnya ikut ditulis, berikut nomornya.
+    //
+    // Pengingat yang cuma menyebut nominal dan tanggal memaksa yang
+    // menerimanya membuka aplikasi dulu hanya untuk mencari nomor — dan
+    // sebagian tidak jadi membuka sama sekali. Nomor yang ada di pesan
+    // bisa langsung disalin ke aplikasi bank.
+    final caraBayar = StringBuffer();
+    if (setelan?.tagihLewatTransfer ?? false) {
+      final r = rekeningKaataGo;
+      caraBayar.writeln('Transfer ke rekening KaataGo:');
+      if (r == null) {
+        caraBayar.writeln('(rekening belum diatur — hubungi KaataGo)');
+      } else {
+        caraBayar.writeln('Bank      : ${r.bankName}');
+        caraBayar.writeln('Rekening  : ${r.accountNumber}');
+        caraBayar.writeln('Atas nama : ${r.accountHolder}');
+      }
+    } else if (invoice.vaHidup) {
+      caraBayar.writeln('Bayar lewat Virtual Account:');
+      caraBayar.writeln('Bank : ${invoice.vaBank ?? '-'}');
+      caraBayar.writeln('No VA : ${invoice.vaNumber}');
+    } else {
+      caraBayar.writeln(
+          'Nomor Virtual Account-nya bisa dilihat di aplikasi KaataGo, '
+          'menu Tagihan Langganan.');
+    }
+
     return 'Halo $nama,\n\n'
         'Berikut tagihan langganan KaataGo yang belum dibayar:\n\n'
         'Merchant : $nama\n'
@@ -464,8 +520,11 @@ class _KartuTagihanAdmin extends StatelessWidget {
         'Nominal  : ${_rupiah.format(invoice.amount)}\n'
         'Jatuh tempo : ${_tanggal.format(invoice.dueDate)}\n'
         'No. tagihan : ${invoice.id}\n\n'
-        'Pembayaran bisa dilakukan lewat menu Tagihan Langganan di '
-        'aplikasi KaataGo. Terima kasih.';
+        '$caraBayar\n'
+        'Setelah membayar, silakan unggah bukti pembayaran di aplikasi '
+        'KaataGo — menu Tagihan Langganan — supaya tagihannya bisa kami '
+        'periksa dan ditandai lunas.\n\n'
+        'Terima kasih.';
   }
 
   String _subjek() {
@@ -682,6 +741,7 @@ class _DialogSetelanState extends State<_DialogSetelan> {
   );
   late final _tenggang =
       TextEditingController(text: '${widget.awal.graceDays}');
+  late String _caraTagih = widget.awal.paymentMethod;
   late int _tanggalTagih = widget.awal.billingDay;
   late bool _aktif = widget.awal.active;
 
@@ -758,6 +818,30 @@ class _DialogSetelanState extends State<_DialogSetelan> {
                 helperMaxLines: 2,
               ),
             ),
+            const SizedBox(height: 12),
+            // Cara menagihnya, per merchant.
+            //
+            // VA menuntut akun penyedia pembayaran yang aktif, dan
+            // sebagian merchant ditagih pada masa ketika akunnya belum
+            // siap. Yang terjadi kalau VA-nya tidak terbit: tagihannya
+            // tetap ada, jatuh temponya tetap berjalan, dan merchant
+            // tidak punya satu pun nomor untuk membayar.
+            DropdownButtonFormField<String>(
+              value: _caraTagih,
+              decoration: const InputDecoration(
+                labelText: 'Cara Penagihan',
+                helperText: 'VA lewat penyedia, atau transfer ke rekening '
+                    'KaataGo',
+                helperMaxLines: 2,
+              ),
+              items: const [
+                DropdownMenuItem(
+                    value: 'va', child: Text('Virtual Account')),
+                DropdownMenuItem(
+                    value: 'transfer', child: Text('Transfer Rekening')),
+              ],
+              onChanged: (v) => setState(() => _caraTagih = v ?? 'va'),
+            ),
             const SizedBox(height: 6),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
@@ -793,6 +877,7 @@ class _DialogSetelanState extends State<_DialogSetelan> {
               billingDay: _tanggalTagih,
               graceDays: (int.tryParse(_tenggang.text.trim()) ?? 1).clamp(0, 30),
               active: _aktif,
+              paymentMethod: _caraTagih,
             ),
           ),
         ),

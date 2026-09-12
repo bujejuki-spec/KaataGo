@@ -77,6 +77,16 @@ class RestoBilling {
   final bool active;
   final String? note;
 
+  /// 'va' — Virtual Account dari penyedia pembayaran.
+  /// 'transfer' — transfer manual ke rekening KaataGo.
+  ///
+  /// Bawaannya 'va': itu yang berlaku untuk merchant yang sudah ada, dan
+  /// mengubah cara menagih orang secara diam-diam saat aplikasinya
+  /// diperbarui bukan hal yang boleh terjadi.
+  final String paymentMethod;
+
+  bool get tagihLewatTransfer => paymentMethod == 'transfer';
+
   const RestoBilling({
     required this.restoId,
     this.monthlyPrice = 0,
@@ -84,6 +94,7 @@ class RestoBilling {
     this.graceDays = 1,
     this.active = true,
     this.note,
+    this.paymentMethod = 'va',
   });
 
   bool get gratis => monthlyPrice <= 0;
@@ -95,6 +106,7 @@ class RestoBilling {
         'grace_days': graceDays,
         'active': active,
         'note': note,
+        'payment_method': paymentMethod,
       };
 
   factory RestoBilling.fromMap(Map<String, dynamic> map) => RestoBilling(
@@ -104,6 +116,7 @@ class RestoBilling {
         graceDays: (map['grace_days'] as num?)?.toInt() ?? 1,
         active: map['active'] != false,
         note: map['note'] as String?,
+        paymentMethod: map['payment_method'] as String? ?? 'va',
       );
 
   RestoBilling copyWith({
@@ -112,9 +125,11 @@ class RestoBilling {
     int? graceDays,
     bool? active,
     String? note,
+    String? paymentMethod,
   }) =>
       RestoBilling(
         restoId: restoId,
+        paymentMethod: paymentMethod ?? this.paymentMethod,
         monthlyPrice: monthlyPrice ?? this.monthlyPrice,
         billingDay: billingDay ?? this.billingDay,
         graceDays: graceDays ?? this.graceDays,

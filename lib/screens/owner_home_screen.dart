@@ -1,3 +1,5 @@
+import 'rekonsiliasi_screen.dart';
+import 'tutup_buku_screen.dart';
 import 'customer_display_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -214,6 +216,26 @@ class OwnerHomeScreen extends StatelessWidget {
                       destination: () => const CashDepositScreen(),
                     ),
                       HubMenuTile(
+                      icon: Icons.event_available_outlined,
+                      title: 'Tutup Buku',
+                      subtitle: 'Kunci angka sebuah hari, per metode bayar',
+                      color: const Color(0xFF0EA5E9),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                            builder: (_) => const TutupBukuScreen()),
+                      ),
+                    ),
+                    HubMenuTile(
+                      icon: Icons.compare_arrows,
+                      title: 'Rekonsiliasi Bank',
+                      subtitle: 'Cocokkan mutasi rekening dengan catatannya',
+                      color: const Color(0xFF8B5CF6),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                            builder: (_) => const RekonsiliasiScreen()),
+                      ),
+                    ),
+                    HubMenuTile(
                       icon: Icons.numbers,
                       title: 'Mapping GL Account',
                       subtitle: 'Nomor akun untuk pemasukan & pengeluaran',
