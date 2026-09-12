@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../db/bank_account_repository.dart';
+import '../models/bank_account.dart';
 import '../providers/auth_provider.dart';
 import '../providers/settings_provider.dart';
 import '../theme.dart';
@@ -21,9 +23,11 @@ class PaymentInfoScreen extends StatefulWidget {
 class _PaymentInfoScreenState extends State<PaymentInfoScreen> {
   String _merchantName = '';
   String _qrisId = '';
-  String _bankName = '';
-  String _accountNumber = '';
-  String _accountHolder = '';
+  /// Rekening perusahaan resto ini — sumbernya `bank_accounts`, bukan
+  /// salinan lama di `settings`. Kolom lama itu ditinggalkan apa adanya
+  /// saat rekening dipindah jadi entitas sendiri, dan layar yang masih
+  /// membacanya menampilkan rekening yang sama untuk kedua kalinya.
+  List<BankAccount> _rekening = const [];
   bool _loading = true;
 
   @override
@@ -34,9 +38,6 @@ class _PaymentInfoScreenState extends State<PaymentInfoScreen> {
     final s = context.read<SettingsProvider>();
     _merchantName = s.merchantName;
     _qrisId = s.qrisId;
-    _bankName = s.bankName;
-    _accountNumber = s.accountNumber;
-    _accountHolder = s.accountHolder;
     _load();
   }
 
@@ -53,11 +54,10 @@ class _PaymentInfoScreenState extends State<PaymentInfoScreen> {
         setState(() {
           _merchantName = row['merchant_name'] as String? ?? _merchantName;
           _qrisId = row['qris_id'] as String? ?? _qrisId;
-          _bankName = row['bank_name'] as String? ?? _bankName;
-          _accountNumber = row['account_number'] as String? ?? _accountNumber;
-          _accountHolder = row['account_holder'] as String? ?? _accountHolder;
         });
       }
+      final rekening = await BankAccountRepository().untukResto(restoId);
+      if (mounted) setState(() => _rekening = rekening);
     } catch (_) {
       // Offline — keep showing the local cache loaded above.
     }
@@ -96,16 +96,33 @@ class _PaymentInfoScreenState extends State<PaymentInfoScreen> {
             // Menyisakan kolomnya berarti menawarkan setelan yang tidak
             // dipakai apa pun, dan yang mengisinya akan menunggu
             // hasilnya sia-sia.
-            _InfoCard(
-              icon: Icons.account_balance_outlined,
-              color: const Color(0xFFEC4899),
-              title: 'Transfer Bank',
-              rows: [
-                ('Nama Bank', _bankName),
-                ('Nomor Rekening', _accountNumber),
-                ('Atas Nama', _accountHolder),
+            if (_rekening.isEmpty)
+              const _InfoCard(
+                icon: Icons.account_balance_outlined,
+                color: Color(0xFFEC4899),
+                title: 'Transfer Bank',
+                rows: [
+                  ('Rekening', 'Belum ada'),
+                ],
+              )
+            else
+              // Satu kartu per rekening, bukan satu kartu berisi
+              // rekening "yang itu". Merchant yang punya dua rekening
+              // sebelumnya cuma melihat satu, tanpa tanda bahwa ada
+              // yang lain.
+              for (final r in _rekening) ...[
+                _InfoCard(
+                  icon: Icons.account_balance_outlined,
+                  color: const Color(0xFFEC4899),
+                  title: r.isPrimary ? 'Transfer Bank (utama)' : 'Transfer Bank',
+                  rows: [
+                    ('Nama Bank', r.bankName),
+                    ('Nomor Rekening', r.accountNumber),
+                    ('Atas Nama', r.accountHolder),
+                  ],
+                ),
+                const SizedBox(height: 12),
               ],
-            ),
             const SizedBox(height: 16),
             Row(
               children: [

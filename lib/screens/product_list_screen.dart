@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 import '../theme.dart';
+import '../utils/akses_menu.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -74,10 +75,10 @@ class _ProductListScreenState extends State<ProductListScreen> {
     // orang tidak akan mencarinya karena sidebarnya sudah menyebut
     // keduanya di luar.
     if (kIsWeb) {
-      return Scaffold(
+      return berdasarkanAkses(context, 'Kelola Produk', Scaffold(
         appBar: AppBar(title: const Text('Kelola Produk')),
         body: const _ProductTab(),
-      );
+      ));
     }
 
     return DefaultTabController(
@@ -596,7 +597,9 @@ class _ProductTabState extends State<_ProductTab> {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: !bolehUbahDiSini(context)
+          ? null
+          : FloatingActionButton(
         onPressed: () {
           Navigator.of(context).push(MaterialPageRoute(
             builder: (_) => const ProductFormScreen(),

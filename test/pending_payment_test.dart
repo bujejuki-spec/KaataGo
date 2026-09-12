@@ -223,7 +223,12 @@ void main() {
       expect(order.settledAtCounter, isFalse);
     });
 
-    test('tenggang bayarnya 30 menit sejak pesanannya dibuat', () {
+    // Sepuluh menit, bukan tiga puluh. Yang memperpendeknya bukan
+    // kerapian layar melainkan stok: porsi yang dipesan sudah berkurang
+    // dari rak sejak pesanannya dibuat, dan selama jendela ini terbuka
+    // ia tercatat terjual kepada orang yang mungkin tidak pernah
+    // kembali.
+    test('tenggang bayarnya 10 menit sejak pesanannya dibuat', () {
       final order = _order(
         source: OrderSource.customer,
         status: OrderPaymentStatus.pending,
@@ -231,7 +236,7 @@ void main() {
       );
       expect(
         order.paymentDeadline.difference(order.createdAt),
-        const Duration(minutes: 30),
+        const Duration(minutes: 10),
       );
     });
   });

@@ -66,4 +66,55 @@ class CashDepositRepository {
       if (note != null && note.trim().isNotEmpty) 'review_note': note.trim(),
     }).eq('id', id);
   }
+
+  /// Cash pickup di merchant ini, yang belum diterima lebih dulu.
+  Future<List<CashDeposit>> pickup(String restoId) async {
+    final rows = await _client
+        .from('cash_deposits')
+        .select()
+        .eq('resto_id', restoId)
+        .eq('method', 'pickup')
+        .order('created_at', ascending: false);
+    final semua = rows.map((r) => CashDeposit.fromMap(r)).toList();
+    semua.sort((a, b) {
+      if (a.sudahDiterima != b.sudahDiterima) return a.sudahDiterima ? 1 : -1;
+      return b.createdAt.compareTo(a.createdAt);
+    });
+    return semua;
+  }
+
+  /// Berapa pickup yang uangnya sudah dibawa pergi dan belum diakui
+  /// diterima siapa pun. Inilah penanda yang layak dipajang di menu.
+  Future<int> pickupBelumDiterima(String restoId) async {
+    return await _client
+        .from('cash_deposits')
+        .count(CountOption.exact)
+        .eq('resto_id', restoId)
+        .eq('method', 'pickup')
+        .isFilter('received_at', null);
+  }
+
+  /// Menerima satu cash pickup.
+  ///
+  /// Lewat RPC, bukan update biasa: yang terjadi bukan cuma mengisi
+  /// kolom — uangnya berpindah dari GL Cash Pickup ke GL Saldo Cash
+  /// Perusahaan, dan jurnal itu tidak boleh bergantung pada aplikasi
+  /// yang mengirimnya. Nama penerimanya juga diambil server dari data
+  /// karyawan, bukan dari perangkat orang yang menekan tombolnya.
+  Future<CashDeposit> terimaPickup({
+    required String id,
+    required int jumlahDiterima,
+    required String namaPetugas,
+    required String bukti,
+    String? nomorSeal,
+  }) async {
+    final row = await _client.rpc('terima_pickup', params: {
+      'p_id': id,
+      'p_amount': jumlahDiterima,
+      'p_officer': namaPetugas,
+      'p_proof': bukti,
+      'p_seal': nomorSeal,
+    });
+    return CashDeposit.fromMap(Map<String, dynamic>.from(row as Map));
+  }
 }

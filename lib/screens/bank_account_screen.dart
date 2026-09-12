@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../db/bank_account_repository.dart';
+import '../utils/akses_menu.dart';
 import '../models/bank_account.dart';
 import '../providers/auth_provider.dart';
 import '../theme.dart';
@@ -170,9 +171,9 @@ class _BankAccountScreenState extends State<BankAccountScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return berdasarkanAkses(context, 'Rekening Perusahaan', Scaffold(
       appBar: AppBar(title: const Text('Rekening Perusahaan')),
-      floatingActionButton: _bolehUbah
+      floatingActionButton: _bolehUbah && bolehUbahDiSini(context)
           ? FloatingActionButton.extended(
               onPressed: _sibuk ? null : () => _tambahAtauUbah(),
               icon: const Icon(Icons.add),
@@ -213,7 +214,7 @@ class _BankAccountScreenState extends State<BankAccountScreen> {
                 ),
               ),
             ),
-    );
+    ));
   }
 
   Widget _kartu(BankAccount r) {

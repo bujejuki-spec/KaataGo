@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../db/bank_account_repository.dart';
+import '../utils/akses_menu.dart';
 import '../db/settlement_repository.dart';
 import '../models/bank_account.dart';
 import '../models/settlement.dart';
@@ -180,7 +181,7 @@ class _RekonsiliasiScreenState extends State<RekonsiliasiScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return berdasarkanAkses(context, 'Rekonsiliasi Bank', Scaffold(
       appBar: AppBar(title: const Text('Rekonsiliasi Bank')),
       floatingActionButton: _dipilih == null
           ? null
@@ -243,7 +244,7 @@ class _RekonsiliasiScreenState extends State<RekonsiliasiScreen> {
                     ),
                   ),
                 ),
-    );
+    ));
   }
 
   Widget _pilihRekening() => Padding(

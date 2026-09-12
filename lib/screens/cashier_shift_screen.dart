@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../db/cashier_shift_repository.dart';
+import '../utils/akses_menu.dart';
 import '../models/cash_variance.dart';
 import '../models/cashier_shift.dart';
 import '../providers/auth_provider.dart';
@@ -33,6 +34,10 @@ class _CashierShiftScreenState extends State<CashierShiftScreen> {
   final _repo = CashierShiftRepository();
 
   CashierShift? _terbuka;
+
+  /// Laci sedang dipegang, tapi bukan oleh orang yang sedang membuka
+  /// layar ini — dan ia tidak berhak tahu oleh siapa.
+  bool _dipegangOrangLain = false;
   List<CashierShift> _riwayat = const [];
   List<CashVariance> _selisih = const [];
   bool _memuat = true;
@@ -62,9 +67,11 @@ class _CashierShiftScreenState extends State<CashierShiftScreen> {
         _repo.riwayat(restoId),
         _repo.selisih(restoId),
       ]);
+      final ringkas = await _repo.ringkasTerbuka(restoId);
       if (!mounted) return;
       setState(() {
         _terbuka = hasil[0] as CashierShift?;
+        _dipegangOrangLain = ringkas.ada && !ringkas.milikSaya;
         _riwayat = hasil[1] as List<CashierShift>;
         _selisih = hasil[2] as List<CashVariance>;
         _memuat = false;
@@ -661,7 +668,7 @@ class _CashierShiftScreenState extends State<CashierShiftScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return berdasarkanAkses(context, 'Shift Kasir', Scaffold(
       backgroundColor: KaataTheme.backgroundOf(context),
       appBar: AppBar(title: const Text('Shift Kasir')),
       body: _memuat
@@ -721,7 +728,7 @@ class _CashierShiftScreenState extends State<CashierShiftScreen> {
                 ),
               ),
             ),
-    );
+    ));
   }
 
   Widget _kartuShift() {
@@ -733,12 +740,19 @@ class _CashierShiftScreenState extends State<CashierShiftScreen> {
     // kasir yang berdiri di depan antrean tidak punya waktu menebak.
     final boleh = _bolehBukaShift;
     final utang = _utangSendiri;
-    final tertahan = s == null && (!boleh || utang > 0);
-    final alasan = !boleh
-        ? 'Yang membuka laci adalah Kasir. Di sini kamu memantau '
-            'riwayatnya dan menutup selisihnya.'
-        : 'Selisih kurang ${_rp.format(utang)} atas namamu belum '
-            'dilunasi. Lunasi dulu sebelum memegang laci lagi.';
+    // Satu laci, satu shift. Yang kedua ditolak server, dan menahannya
+    // di sini supaya penolakannya terbaca sebagai aturan — bukan sebagai
+    // galat yang muncul entah kenapa.
+    final terkunci = s == null && _dipegangOrangLain;
+    final tertahan = s == null && (!boleh || utang > 0 || terkunci);
+    final alasan = terkunci
+        ? 'Masih ada shift yang belum ditutup di merchant ini. Shift '
+            'berikutnya baru bisa dibuka setelah yang sekarang ditutup.'
+        : !boleh
+            ? 'Yang membuka laci adalah Kasir. Di sini kamu memantau '
+                'riwayatnya dan menutup selisihnya.'
+            : 'Selisih kurang ${_rp.format(utang)} atas namamu belum '
+                'dilunasi. Lunasi dulu sebelum memegang laci lagi.';
 
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
@@ -764,7 +778,11 @@ class _CashierShiftScreenState extends State<CashierShiftScreen> {
               ),
               const SizedBox(width: 8),
               Text(
-                s == null ? 'Tidak ada shift terbuka' : 'Shift sedang berjalan',
+                s == null
+                    ? (terkunci
+                        ? 'Laci sedang dipegang'
+                        : 'Tidak ada shift terbuka')
+                    : 'Shift sedang berjalan',
                 style: const TextStyle(
                     fontWeight: FontWeight.bold, fontSize: 14.5),
               ),
@@ -779,7 +797,9 @@ class _CashierShiftScreenState extends State<CashierShiftScreen> {
                       'laci punya titik awal yang jelas.',
               style: TextStyle(
                 fontSize: 12.5,
-                color: tertahan && boleh ? const Color(0xFFDC2626) : muted,
+                color: tertahan && boleh && !terkunci
+                    ? const Color(0xFFDC2626)
+                    : muted,
               ),
             )
           else ...[
@@ -803,7 +823,7 @@ class _CashierShiftScreenState extends State<CashierShiftScreen> {
             width: double.infinity,
             child: s == null
                 ? FilledButton.icon(
-                    onPressed: _sibuk || utang > 0 ? null : _buka,
+                    onPressed: _sibuk || utang > 0 || terkunci ? null : _buka,
                     icon: const Icon(Icons.play_arrow, size: 18),
                     label: const Text('Buka Shift'),
                   )

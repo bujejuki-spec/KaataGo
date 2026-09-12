@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../utils/akses_menu.dart';
+
 import '../theme.dart';
 
 import 'count_badge.dart';
@@ -32,6 +34,14 @@ class HubMenuTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Satu tempat untuk seluruh beranda.
+    //
+    // Tiap kartu menu di aplikasi ini berakhir di sini, termasuk yang
+    // berpenanda — jadi menyaringnya di sini berarti tidak ada satu pun
+    // layar beranda yang perlu ingat menyaring sendiri, dan tidak ada
+    // yang bisa lupa.
+    if (!bolehLihatMenu(context, title)) return const SizedBox.shrink();
+
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(

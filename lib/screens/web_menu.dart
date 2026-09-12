@@ -5,6 +5,7 @@ import '../db/announcement_repository.dart';
 import '../db/support_repository.dart';
 import '../models/billing.dart';
 import '../providers/auth_provider.dart';
+import '../utils/akses_menu.dart';
 import 'billing_discount_screen.dart';
 import 'billing_screen.dart';
 import 'cash_deposit_screen.dart';
@@ -12,6 +13,8 @@ import 'cashier_shift_screen.dart';
 import 'category_management_screen.dart';
 import 'discount_screen.dart';
 import 'bank_account_screen.dart';
+import 'super_admin_uam_screen.dart';
+import 'terima_pickup_screen.dart';
 import 'rekonsiliasi_screen.dart';
 import 'tutup_buku_screen.dart';
 import 'employee_management_screen.dart';
@@ -158,6 +161,34 @@ List<MenuWeb> menuWebUntuk(AuthProvider auth) {
   return const [];
 }
 
+/// Menyaring daftar menu menurut akses, tanpa kehilangan judul
+/// kelompoknya.
+///
+/// Judul kelompok menempel pada menu PERTAMA kelompok itu. Kalau yang
+/// pertama yang dicabut, judulnya ikut hilang dan sisa isinya menyatu ke
+/// kelompok di atasnya — jadi labelnya diteruskan ke menu berikutnya
+/// yang selamat. Kelompok yang seluruh isinya dicabut hilang seluruhnya,
+/// judul dan semuanya.
+List<MenuWeb> saringMenuWeb(BuildContext context, List<MenuWeb> semua) {
+  final hasil = <MenuWeb>[];
+  String? tertunda;
+  for (final m in semua) {
+    if (m.kelompok != null) tertunda = m.kelompok;
+    if (!bolehLihatMenu(context, m.judul)) continue;
+    hasil.add(tertunda == null
+        ? m
+        : MenuWeb(
+            ikon: m.ikon,
+            judul: m.judul,
+            layar: m.layar,
+            kelompok: tertunda,
+            belumDibaca: m.belumDibaca,
+          ));
+    tertunda = null;
+  }
+  return hasil;
+}
+
 /// Pintasan ke seluruh menu, sebagai halaman pertama.
 ///
 /// Sidebar sudah memuat semuanya, jadi ini bukan satu-satunya jalan ke
@@ -197,6 +228,11 @@ const _superAdmin = <MenuWeb>[
     ikon: Icons.account_balance_outlined,
     judul: 'Rekening Perusahaan',
     layar: BankAccountScreen.new,
+  ),
+  MenuWeb(
+    ikon: Icons.admin_panel_settings_outlined,
+    judul: 'Akses Menu (UAM)',
+    layar: SuperAdminUamScreen.new,
   ),
   MenuWeb(
     kelompok: 'Keuangan',
@@ -394,6 +430,11 @@ const _owner = <MenuWeb>[
     layar: RekonsiliasiScreen.new,
   ),
   MenuWeb(
+    ikon: Icons.local_shipping_outlined,
+    judul: 'Terima Cash Pickup',
+    layar: TerimaPickupScreen.new,
+  ),
+  MenuWeb(
     ikon: Icons.qr_code_2,
     judul: 'QR Meja',
     layar: TableQrGeneratorScreen.new,
@@ -454,6 +495,11 @@ const _admin = <MenuWeb>[
     ikon: Icons.account_balance_outlined,
     judul: 'Setor Saldo Cash',
     layar: CashDepositScreen.new,
+  ),
+  MenuWeb(
+    ikon: Icons.event_available_outlined,
+    judul: 'Tutup Buku',
+    layar: TutupBukuScreen.new,
   ),
   MenuWeb(
     kelompok: 'Pengelolaan',
@@ -597,5 +643,10 @@ const _finance = <MenuWeb>[
     ikon: Icons.compare_arrows,
     judul: 'Rekonsiliasi Bank',
     layar: RekonsiliasiScreen.new,
+  ),
+  MenuWeb(
+    ikon: Icons.local_shipping_outlined,
+    judul: 'Terima Cash Pickup',
+    layar: TerimaPickupScreen.new,
   ),
 ];

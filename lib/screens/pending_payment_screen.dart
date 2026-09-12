@@ -489,10 +489,13 @@ class _CountdownState extends State<_Countdown> {
       );
     }
 
-    // Sepuluh menit terakhir diberi warna. Sebelum itu semua pesanan
-    // sama mendesaknya, dan mewarnai semuanya sama saja dengan tidak
-    // mewarnai apa pun.
-    final urgent = left.inMinutes < 10;
+    // Tiga menit terakhir diberi warna.
+    //
+    // Dulu sepuluh, saat tenggangnya masih setengah jam. Dengan
+    // tenggang sepuluh menit, ambang itu berarti hampir setiap pesanan
+    // berwarna merah sejak awal — dan mewarnai semuanya sama saja
+    // dengan tidak mewarnai apa pun.
+    final urgent = left.inMinutes < 3;
     final menit = left.inMinutes;
     return _Chip(
       icon: Icons.timer_outlined,

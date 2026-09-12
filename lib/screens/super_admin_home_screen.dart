@@ -18,6 +18,7 @@ import 'package:provider/provider.dart';
 import 'publish_announcement_screen.dart';
 import 'restaurant_manage_list_screen.dart';
 import 'super_admin_billing_screen.dart';
+import 'super_admin_uam_screen.dart';
 import 'super_admin_finance_screen.dart';
 
 /// Home screen for the 'super_admin' role — not scoped to any single
@@ -81,6 +82,15 @@ class SuperAdminHomeScreen extends StatelessWidget {
                       color: const Color(0xFF6366F1),
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(builder: (_) => const EmployeeManagementScreen()),
+                      ),
+                    ),
+                    HubMenuTile(
+                      icon: Icons.admin_panel_settings_outlined,
+                      title: 'Akses Menu (UAM)',
+                      subtitle: 'Atur menu yang muncul & bisa diubah, per merchant dan per peran',
+                      color: const Color(0xFFF59E0B),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const SuperAdminUamScreen()),
                       ),
                     ),
                   ],

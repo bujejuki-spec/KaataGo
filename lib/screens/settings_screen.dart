@@ -1,4 +1,6 @@
 import '../widgets/bagian_metode_bayar.dart';
+import '../db/bank_account_repository.dart';
+import '../models/bank_account.dart';
 import 'bank_account_screen.dart';
 import 'package:flutter/material.dart';
 
@@ -50,6 +52,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _accountNumberCtrl = TextEditingController(text: s.accountNumber);
     _accountHolderCtrl = TextEditingController(text: s.accountHolder);
     _loadFromSupabase();
+    _muatRekening();
+  }
+
+  /// Rekening perusahaan resto ini, sumber satu-satunya.
+  List<BankAccount> _rekening = const [];
+
+  Future<void> _muatRekening() async {
+    try {
+      final restoId = context.read<AuthProvider>().restoId!;
+      final r = await BankAccountRepository().untukResto(restoId);
+      if (mounted) setState(() => _rekening = r);
+    } catch (_) {
+      // Luring. Kartunya menyebut "belum ada rekening", dan itu lebih
+      // baik daripada menampilkan salinan lama yang mungkin sudah
+      // berbeda dari yang sebenarnya dipakai.
+    }
   }
 
   Future<void> _loadFromSupabase() async {
@@ -224,12 +242,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         style: TextStyle(
                             fontWeight: FontWeight.bold, fontSize: 15)),
                     const SizedBox(height: 6),
+                    // Dibaca dari `bank_accounts`, bukan dari kolom lama
+                    // di `settings`.
+                    //
+                    // Keduanya sempat berisi rekening yang sama:
+                    // kolom lamanya ditinggalkan apa adanya saat rekening
+                    // dipindah jadi entitas sendiri, dan kartu ini masih
+                    // membacanya. Akibatnya satu rekening terlihat dua
+                    // kali — sekali di sini, sekali di daftar Rekening
+                    // Perusahaan — dan yang membacanya tidak punya cara
+                    // tahu mana yang dipakai saat pelanggan mentransfer.
                     Text(
-                      _bankNameCtrl.text.trim().isEmpty
+                      _rekening.isEmpty
                           ? 'Belum ada rekening.'
-                          : '${_bankNameCtrl.text} · '
-                              '${_accountNumberCtrl.text}\n'
-                              'a.n. ${_accountHolderCtrl.text}',
+                          : [
+                              for (final r in _rekening)
+                                '${r.bankName} · ${r.accountNumber}\n'
+                                    'a.n. ${r.accountHolder}'
+                                    '${r.isPrimary ? '  (utama)' : ''}',
+                            ].join('\n\n'),
                       style: TextStyle(
                           fontSize: 12.5, color: KaataTheme.mutedOf(context)),
                     ),
@@ -239,7 +270,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         await Navigator.of(context).push(MaterialPageRoute(
                           builder: (_) => const BankAccountScreen(),
                         ));
-                        if (mounted) _loadFromSupabase();
+                        if (mounted) {
+                          _loadFromSupabase();
+                          _muatRekening();
+                        }
                       },
                       icon: const Icon(Icons.account_balance_outlined,
                           size: 18),

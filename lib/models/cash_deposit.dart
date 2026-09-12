@@ -80,6 +80,31 @@ class CashDeposit {
 
   bool get isPickup => method == 'pickup';
 
+  /// Serah terima cash pickup, diisi Finance atau Owner.
+  ///
+  /// Terpisah dari kolom review, dan memang harus terpisah: review
+  /// menjawab "setorannya sah atau tidak", serah terima menjawab
+  /// "uangnya sudah ada di tangan kami". Pickup yang disetujui tapi
+  /// belum diserahkan tidak boleh terbaca sama dengan yang sudah.
+  final DateTime? receivedAt;
+  final String? receivedBy;
+  final String? receivedByName;
+
+  /// Yang benar-benar dihitung penerima. Boleh berbeda dari yang
+  /// dicatat kasir — kalau berbeda, itu justru temuannya.
+  final int? receivedAmount;
+  final String? receivedSeal;
+  final String? receiptProof;
+
+  bool get sudahDiterima => receivedAt != null;
+
+  /// Pending sampai ada yang menerimanya, lalu Completed.
+  String get statusPickup => sudahDiterima ? 'Completed' : 'Pending';
+
+  /// Selisih antara yang dicatat kasir dan yang dihitung penerima.
+  int get selisihTerima =>
+      receivedAmount == null ? 0 : receivedAmount! - amount;
+
   /// Email yang menyetor. Kasir bertanggung jawab atas selisih laci,
   /// jadi nama ini bukan sekadar jejak audit.
   final String createdBy;
@@ -106,6 +131,12 @@ class CashDeposit {
     this.method = 'setor',
     this.pickedUpBy,
     this.sealNumber,
+    this.receivedAt,
+    this.receivedBy,
+    this.receivedByName,
+    this.receivedAmount,
+    this.receivedSeal,
+    this.receiptProof,
     required this.createdBy,
     required this.createdAt,
     this.status = DepositStatus.pending,
@@ -148,6 +179,14 @@ class CashDeposit {
       method: map['method'] as String? ?? 'setor',
       pickedUpBy: map['picked_up_by'] as String?,
       sealNumber: map['seal_number'] as String?,
+      receivedAt: map['received_at'] == null
+          ? null
+          : DateTime.parse(map['received_at'] as String).toUtc(),
+      receivedBy: map['received_by'] as String?,
+      receivedByName: map['received_by_name'] as String?,
+      receivedAmount: (map['received_amount'] as num?)?.toInt(),
+      receivedSeal: map['received_seal'] as String?,
+      receiptProof: map['receipt_proof'] as String?,
       createdBy: map['created_by'] as String? ?? '',
       createdAt: DateTime.parse(map['created_at'] as String).toUtc(),
       status: DepositStatusDb.fromDb(map['status'] as String?),

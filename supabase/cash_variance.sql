@@ -32,7 +32,8 @@ alter table gl_accounts add constraint gl_accounts_payment_method_check
      'income_aggregate', 'total_balance',
      'ppn', 'service', 'suspense', 'suspense_petty', 'gateway_fee', 'discount',
      'subscription', 'subscription_discount', 'voucher', 'voucher_redeem',
-     'capital', 'cash_variance', 'other_income'));
+     'capital', 'cash_variance', 'other_income',
+     'cash_pickup', 'company_cash'));
 
 alter table gl_journal_entries drop constraint if exists gl_journal_entries_reference_type_check;
 alter table gl_journal_entries add constraint gl_journal_entries_reference_type_check
@@ -67,10 +68,14 @@ as $$
     ('petty_cash',       '1980001', 'GL Petty Cash'),
     -- Total saldo
     ('total_balance',    '1990001', 'GL Total Saldo'),
+    -- Uang yang benar-benar sudah dipegang perusahaan
+    ('company_cash',     '1990002', 'GL Saldo Cash Perusahaan'),
     -- Suspense — titipan yang belum diakui masuk ke mana pun
     ('suspense',         '2100001', 'GL Suspense Setoran'),
     ('suspense_petty',   '2100002', 'GL Suspense Petty Cash'),
     ('cash_variance',    '2100003', 'GL Selisih Kasir'),
+    -- Uang yang sudah dijemput petugas dan belum diserahkan
+    ('cash_pickup',      '2100004', 'GL Cash Pickup'),
     -- Payment gateway & diskon
     ('gateway_fee',      '2200001', 'GL Biaya Payment Gateway'),
     ('discount',         '2200002', 'GL Diskon Penjualan');

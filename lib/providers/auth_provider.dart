@@ -1,6 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../db/menu_access_repository.dart';
+import '../models/menu_access.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../services/push_service.dart';
@@ -112,6 +115,31 @@ class AuthProvider extends ChangeNotifier {
 
   bool get isLoggedIn => user != null;
   bool get isEmployee => role != null;
+
+  /// Pembatasan menu yang berlaku untuk peran ini di resto ini.
+  ///
+  /// Kosong berarti tidak ada pembatasan — keadaan setiap merchant yang
+  /// belum pernah diatur KaataGo Admin, dan juga keadaan saat
+  /// pemuatannya gagal. Gagal membaca parameter tidak boleh mengunci
+  /// orang dari pekerjaannya.
+  Map<String, TingkatAkses> aksesMenu = const {};
+
+  /// Super Admin tidak pernah dibatasi: ia yang mengatur pembatasannya.
+  Future<void> muatAksesMenu() async {
+    final r = restoId;
+    final peran = role;
+    if (r == null || peran == null || peran == EmployeeRole.superAdmin) {
+      aksesMenu = const {};
+      return;
+    }
+    try {
+      aksesMenu =
+          await MenuAccessRepository().untukPeran(r, peran.dbValue);
+    } catch (_) {
+      aksesMenu = const {};
+    }
+  }
+
   bool get isSuperAdmin => role == EmployeeRole.superAdmin;
   bool get isAdmin => role == EmployeeRole.admin;
   bool get isKasir => role == EmployeeRole.kasir;
@@ -308,6 +336,7 @@ class AuthProvider extends ChangeNotifier {
     restoIds = found.restoIds;
     restoId = await _restoreSelectedResto(found.restoIds);
     employeeName = found.name;
+    await muatAksesMenu();
     return true;
   }
 
@@ -322,6 +351,7 @@ class AuthProvider extends ChangeNotifier {
     user = null;
     role = null;
     restoId = null;
+    aksesMenu = const {};
     restoIds = const [];
     employeeName = null;
     notifyListeners();
@@ -346,6 +376,7 @@ class AuthProvider extends ChangeNotifier {
     restoIds = found.restoIds;
     restoId = await _restoreSelectedResto(found.restoIds);
     employeeName = found.name;
+    await muatAksesMenu();
     if (found.blockedReason != null) lastError = found.blockedReason;
 
     isCheckingRole = false;
@@ -446,6 +477,10 @@ class AuthProvider extends ChangeNotifier {
     restoId = id;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_lastRestoKey, id);
+    // Parameternya per resto: cabang lain bisa punya pembatasan yang
+    // berbeda, dan memakai peta cabang sebelumnya berarti menyembunyikan
+    // menu yang di sini justru boleh dibuka.
+    await muatAksesMenu();
     notifyListeners();
   }
 
@@ -478,6 +513,7 @@ class AuthProvider extends ChangeNotifier {
     user = null;
     role = null;
     restoId = null;
+    aksesMenu = const {};
     restoIds = const [];
     employeeName = null;
     notifyListeners();

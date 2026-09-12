@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme.dart';
+import '../utils/akses_menu.dart';
 import 'badged_hub_tile.dart';
 import 'hub_menu_tile.dart';
 import 'responsive.dart';
@@ -55,8 +56,45 @@ class HubGroupTile extends StatelessWidget {
     ));
   }
 
+  /// Judul menu di dalam sebuah kartu, kalau kartunya memang menu.
+  static String? _judul(Widget w) {
+    if (w is HubMenuTile) return w.title;
+    if (w is BadgedHubTile) return w.title;
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Pintu yang di baliknya tidak ada apa-apa tidak dipajang.
+    //
+    // Tiap menu menyembunyikan dirinya sendiri saat aksesnya dicabut,
+    // dan itu cukup untuk menunya — tapi kelompoknya tidak ikut tahu.
+    // Yang tersisa adalah kartu yang mengundang orang masuk ke halaman
+    // kosong, dan halaman kosong tanpa sebab terbaca sebagai aplikasi
+    // yang rusak.
+    //
+    // Yang dihitung hanya kartu yang memang menu. Kelompok yang isinya
+    // bukan menu sama sekali — keterangan, pemisah, apa pun — tidak
+    // pernah disembunyikan: sama seperti seluruh fitur ini, yang tidak
+    // dikenali jatuh ke "boleh".
+    //
+    // Isinya baru dibangun kalau merchant ini memang punya pembatasan.
+    // [tiles] sengaja berupa fungsi supaya isinya tidak dibangun sampai
+    // pintunya dibuka; memanggilnya di sini untuk setiap kelompok
+    // membatalkan itu. Selama petanya kosong — keadaan setiap merchant
+    // yang belum diatur KaataGo Admin — tidak ada yang perlu diperiksa,
+    // jadi tidak ada yang dibangun.
+    final akses = AksesMenu.of(context);
+    if (akses != null && akses.peta.isNotEmpty) {
+      final judulIsi = [
+        for (final w in tiles())
+          if (_judul(w) != null) _judul(w)!,
+      ];
+      final semuaDicabut = judulIsi.isNotEmpty &&
+          !judulIsi.any(akses.bolehLihat);
+      if (semuaDicabut) return const SizedBox.shrink();
+    }
+
     if (loadCount == null) {
       return HubMenuTile(
         icon: icon,

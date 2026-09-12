@@ -13,6 +13,7 @@ import 'providers/app_prefs_provider.dart';
 import 'services/app_updater.dart';
 import 'services/notification_service.dart';
 import 'providers/auth_provider.dart';
+import 'utils/akses_menu.dart';
 import 'providers/cart_provider.dart';
 import 'providers/category_provider.dart';
 import 'providers/level_group_provider.dart';
@@ -124,9 +125,19 @@ class PosApp extends StatelessWidget {
           //
           // `builder` membungkus Navigator-nya, jadi penandanya
           // mengambang di atas rute mana pun yang sedang terbuka.
+          // Parameter akses dipasang di `builder` dengan alasan yang
+          // sama seperti penanda unduhan: ia harus berada di atas
+          // Navigator, supaya rute mana pun yang terbuka membacanya —
+          // termasuk popup, yang juga rute.
           builder: (context, child) => _PopupTerbatas(
             child: UpdateDownloadBanner(
-              child: child ?? const SizedBox.shrink(),
+              child: Consumer<AuthProvider>(
+                builder: (context, auth, isi) => AksesMenu(
+                  peta: auth.aksesMenu,
+                  child: isi!,
+                ),
+                child: child ?? const SizedBox.shrink(),
+              ),
             ),
           ),
           home: const OrderNotificationBinder(child: RootScreen()),

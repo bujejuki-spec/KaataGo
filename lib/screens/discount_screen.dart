@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../db/discount_repository.dart';
+import '../utils/akses_menu.dart';
 import '../models/discount.dart';
 import '../models/level_option.dart';
 import '../models/product.dart';
@@ -116,7 +117,7 @@ class _DiscountScreenState extends State<DiscountScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return berdasarkanAkses(context, 'Diskon', Scaffold(
       appBar: AppBar(title: const Text('Diskon')),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
@@ -158,12 +159,14 @@ class _DiscountScreenState extends State<DiscountScreen> {
                         ),
                       ),
                     ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: !bolehUbahDiSini(context)
+          ? null
+          : FloatingActionButton.extended(
         onPressed: () => _edit(),
         icon: const Icon(Icons.add),
         label: const Text('Diskon Baru'),
       ),
-    );
+    ));
   }
 }
 

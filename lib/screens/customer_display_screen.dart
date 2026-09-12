@@ -154,6 +154,101 @@ class _Menganggur extends StatelessWidget {
   }
 }
 
+/// Rincian pesanan di layar depan.
+///
+/// Sengaja tanpa harga satuan: yang dibaca pelanggan dari jarak
+/// sejangkauan tangan adalah apa yang dipesan, berapa banyak, dan berapa
+/// totalnya. Kolom keempat membuat ketiganya jadi lebih kecil.
+class _RincianPesanan extends StatelessWidget {
+  final List<BarisTampilan> items;
+
+  const _RincianPesanan({required this.items});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: KaataTheme.surfaceOf(context),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: KaataTheme.borderOf(context)),
+      ),
+      child: Column(
+        children: [
+          for (final i in items)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: 34,
+                    child: Text('${i.qty}×',
+                        style: const TextStyle(
+                            fontSize: 15, fontWeight: FontWeight.bold)),
+                  ),
+                  Expanded(
+                    child: Text(i.nama,
+                        style: const TextStyle(fontSize: 15)),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(_rupiah.format(i.total),
+                      style: const TextStyle(
+                          fontSize: 15, fontWeight: FontWeight.w600)),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Rekening tujuan transfer, untuk dibaca dan disalin pelanggan sendiri.
+///
+/// Nomor rekening yang dibacakan dengan suara di tengah keramaian adalah
+/// nomor yang salah ditulis.
+class _KartuRekening extends StatelessWidget {
+  final TampilanLayar tampilan;
+
+  const _KartuRekening({required this.tampilan});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: KaataTheme.surfaceOf(context),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: KaataTheme.borderOf(context)),
+      ),
+      child: Column(
+        children: [
+          Text('TRANSFER KE REKENING',
+              style: TextStyle(
+                  fontSize: 12,
+                  letterSpacing: 1.2,
+                  fontWeight: FontWeight.bold,
+                  color: KaataTheme.mutedOf(context))),
+          const SizedBox(height: 10),
+          Text(tampilan.bankName ?? '-',
+              style: const TextStyle(fontSize: 17)),
+          const SizedBox(height: 4),
+          SelectableText(
+            tampilan.accountNumber ?? '-',
+            style: const TextStyle(
+                fontSize: 30, fontWeight: FontWeight.bold, letterSpacing: 1.5),
+          ),
+          const SizedBox(height: 4),
+          Text('a.n. ${tampilan.accountHolder ?? '-'}',
+              style: TextStyle(
+                  fontSize: 15, color: KaataTheme.mutedOf(context))),
+        ],
+      ),
+    );
+  }
+}
+
 /// Logo merchant, dengan logo KaataGo sebagai penggantinya.
 ///
 /// Merchant yang belum memasang logo tetap butuh sesuatu di sana —
@@ -251,6 +346,20 @@ class _Menunggu extends StatelessWidget {
               color: KaataTheme.brandOf(context),
             ),
           ),
+          // Rincian pesanannya, di atas cara bayarnya.
+          //
+          // Pelanggan yang menyerahkan uang tanpa pernah melihat apa
+          // yang ditagihkan baru bisa membantah setelah struknya
+          // tercetak — kalau ia sempat membacanya sama sekali.
+          if (tampilan.items.isNotEmpty) ...[
+            const SizedBox(height: 18),
+            Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: _RincianPesanan(items: tampilan.items),
+              ),
+            ),
+          ],
           const SizedBox(height: 22),
           if (tampilan.adaQr) ...[
             // Kartu QR KaataGo yang sama dengan di layar kasir dan QR
@@ -272,8 +381,49 @@ class _Menunggu extends StatelessWidget {
                 width: 300,
               ),
             ),
+          ] else if (tampilan.adaGambarQr) ...[
+            // QRIS Statis: QR-nya milik merchant dan berupa gambar,
+            // bukan teks EMVCo yang bisa digambar ulang. Jadi yang
+            // ditampilkan gambarnya sendiri — dan itu memang yang
+            // dipindai pelanggan.
+            Text('Pindai QRIS di bawah ini',
+                style: TextStyle(
+                    fontSize: 15, color: KaataTheme.mutedOf(context))),
+            const SizedBox(height: 10),
+            Center(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: Image.network(
+                  tampilan.qrImageUrl!,
+                  width: 300,
+                  fit: BoxFit.contain,
+                  // QR yang gagal dimuat tidak boleh jadi kotak kosong
+                  // tanpa penjelasan: pelanggan akan berdiri menunggu
+                  // sesuatu yang tidak akan datang.
+                  errorBuilder: (_, __, ___) => Text(
+                    'QR-nya gagal dimuat. Minta QR ke kasir.',
+                    style: TextStyle(
+                        fontSize: 15, color: KaataTheme.mutedOf(context)),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text('Nominalnya diisi sendiri sesuai total di atas',
+                style: TextStyle(
+                    fontSize: 13, color: KaataTheme.mutedOf(context))),
+          ] else if (tampilan.adaRekening) ...[
+            Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: _KartuRekening(tampilan: tampilan),
+              ),
+            ),
           ] else
-            Text('Silakan bayar di kasir',
+            Text(
+                tampilan.paymentMethod == 'cash'
+                    ? 'Silakan bayar tunai di kasir'
+                    : 'Silakan bayar di kasir',
                 style: TextStyle(
                     fontSize: 16, color: KaataTheme.mutedOf(context))),
         ],

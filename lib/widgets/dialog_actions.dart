@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../utils/akses_menu.dart';
+
 /// Standard action layout for confirmation dialogs: the action being
 /// confirmed sits on top as a full-width button, with "Batal" centered
 /// underneath it.
@@ -43,6 +45,12 @@ class DialogActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Menu yang cuma boleh dilihat: formulirnya tetap terbuka, tombol
+    // simpannya mati. Melihat isi sebuah dialog tidak mengubah apa pun,
+    // dan menutup jalan melihatnya berarti "Lihat" tidak berbeda dari
+    // "Tidak Ada".
+    final terkunci = !ModeAkses.bolehUbahDiSini(context);
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -52,7 +60,7 @@ class DialogActions extends StatelessWidget {
             style: destructive
                 ? FilledButton.styleFrom(backgroundColor: Colors.red)
                 : null,
-            onPressed: busy ? null : onConfirm,
+            onPressed: busy || terkunci ? null : onConfirm,
             child: busy
                 ? const SizedBox(
                     width: 20,

@@ -95,6 +95,11 @@ FILES=(
   mutasi_bank.sql
   cara_tagih.sql
   rekening_owner.sql
+  shift_privasi.sql
+  terima_cash_pickup.sql
+  uam_menu.sql
+  layar_pelanggan_rinci.sql
+  stok_lepas_10_menit.sql
   merchant_report.sql
   shift_opening_check.sql
   support_tickets.sql

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../theme.dart';
+import '../utils/akses_menu.dart';
 
 import '../db/employee_repository.dart';
 import '../db/restaurant_repository.dart';
@@ -149,9 +150,11 @@ class _EmployeeManagementScreenState extends State<EmployeeManagementScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return berdasarkanAkses(context, 'Kelola Karyawan', Scaffold(
       appBar: AppBar(title: const Text('Kelola Karyawan')),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: !bolehUbahDiSini(context)
+          ? null
+          : FloatingActionButton.extended(
         onPressed: () => _openForm(),
         icon: const Icon(Icons.person_add_alt_1),
         label: const Text('Tambah Karyawan'),
@@ -209,7 +212,7 @@ class _EmployeeManagementScreenState extends State<EmployeeManagementScreen> {
                   ),
                 ],
               ),
-    );
+    ));
   }
 
   /// Groups employees by restaurant name (Super Admins — no resto — get

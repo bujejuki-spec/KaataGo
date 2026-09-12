@@ -21,6 +21,7 @@ import '../widgets/responsive.dart';
 import '../widgets/kaata_logo.dart';
 import '../widgets/resto_switcher.dart';
 import 'cash_deposit_screen.dart';
+import 'terima_pickup_screen.dart';
 import 'cashier_shift_screen.dart';
 import 'chef_home_screen.dart';
 import 'employee_orders_screen.dart';
@@ -214,6 +215,19 @@ class OwnerHomeScreen extends StatelessWidget {
                           ? Future.value(0)
                           : CashDepositRepository().pendingCount(restoId),
                       destination: () => const CashDepositScreen(),
+                    ),
+                    // Penandanya menghitung uang yang sedang di jalan:
+                    // sudah keluar laci dan belum diakui diterima siapa
+                    // pun. Itu angka yang layak mengganggu orang.
+                    BadgedHubTile(
+                      icon: Icons.local_shipping_outlined,
+                      title: 'Terima Cash Pickup',
+                      subtitle: 'Serah terima uang yang dijemput petugas',
+                      color: const Color(0xFFF59E0B),
+                      loadCount: () => restoId == null
+                          ? Future.value(0)
+                          : CashDepositRepository().pickupBelumDiterima(restoId),
+                      destination: () => const TerimaPickupScreen(),
                     ),
                       HubMenuTile(
                       icon: Icons.event_available_outlined,

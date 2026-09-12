@@ -241,10 +241,21 @@ class CustomerOrder {
   ///
   /// Tanpa batas, pesanan yang orangnya berubah pikiran — atau tidak
   /// pernah datang — menggantung selamanya di layar kasir dan di dapur,
-  /// dan tiap hari sisanya menumpuk sedikit lagi. Setengah jam cukup
-  /// panjang untuk berjalan ke kasir sambil mengantre, dan cukup pendek
-  /// supaya antrean layarnya tetap terbaca.
-  static const paymentWindow = Duration(minutes: 30);
+  /// dan tiap hari sisanya menumpuk sedikit lagi.
+  ///
+  /// Sepuluh menit, bukan setengah jam, dan yang memperpendeknya bukan
+  /// kerapian layar melainkan stok: porsi yang dipesan sudah berkurang
+  /// dari rak sejak pesanannya dibuat. Selama jendela ini terbuka,
+  /// porsi terakhir tercatat terjual kepada orang yang mungkin tidak
+  /// pernah kembali — dan pelanggan berikutnya, yang berdiri di depan
+  /// kasir dengan uang di tangan, ditolak.
+  ///
+  /// Angka ini harus sama dengan tenggang di
+  /// `supabase/stok_lepas_10_menit.sql`. Yang menghanguskan adalah
+  /// server; yang di sini cuma hitung mundur yang dilihat pelanggan, dan
+  /// hitung mundur yang lebih panjang dari kenyataannya berarti orang
+  /// melihat sisa waktu pada pesanan yang sudah hangus.
+  static const paymentWindow = Duration(minutes: 10);
 
   /// Kapan pesanan ini hangus kalau belum dibayar juga.
   DateTime get paymentDeadline => createdAt.add(paymentWindow);

@@ -98,9 +98,11 @@ create policy "daily_settlements: staff read" on daily_settlements
 drop policy if exists "daily_settlements: finance write" on daily_settlements;
 create policy "daily_settlements: finance write" on daily_settlements
   for all using (
-    is_super_admin() or is_resto_employee(resto_id, array['owner', 'finance'])
+    is_super_admin()
+    or is_resto_employee(resto_id, array['owner', 'finance', 'admin'])
   ) with check (
-    is_super_admin() or is_resto_employee(resto_id, array['owner', 'finance'])
+    is_super_admin()
+    or is_resto_employee(resto_id, array['owner', 'finance', 'admin'])
   );
 
 commit;
@@ -197,8 +199,10 @@ begin
   end if;
 
   if not (is_super_admin()
-          or is_resto_employee(p_resto_id, array['owner', 'finance'])) then
-    raise exception 'Hanya Owner dan Finance yang boleh menutup buku.';
+          or is_resto_employee(p_resto_id,
+               array['owner', 'finance', 'admin'])) then
+    raise exception
+      'Hanya Owner, Finance, dan Admin yang boleh menutup buku.';
   end if;
 
   -- Hari yang belum selesai tidak bisa ditutup. Menutup hari ini pada
@@ -267,8 +271,10 @@ set search_path = public
 as $$
 begin
   if not (is_super_admin()
-          or is_resto_employee(p_resto_id, array['owner', 'finance'])) then
-    raise exception 'Hanya Owner dan Finance yang boleh membuka buku.';
+          or is_resto_employee(p_resto_id,
+               array['owner', 'finance', 'admin'])) then
+    raise exception
+      'Hanya Owner, Finance, dan Admin yang boleh membuka buku.';
   end if;
 
   update daily_settlements

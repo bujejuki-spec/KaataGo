@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../db/settlement_repository.dart';
+import '../utils/akses_menu.dart';
 import '../models/settlement.dart';
 import '../providers/auth_provider.dart';
 import '../theme.dart';
@@ -194,7 +195,7 @@ class _TutupBukuScreenState extends State<TutupBukuScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return berdasarkanAkses(context, 'Tutup Buku', Scaffold(
       appBar: AppBar(title: const Text('Tutup Buku')),
       body: _memuat
           ? const Center(child: CircularProgressIndicator())
@@ -249,7 +250,7 @@ class _TutupBukuScreenState extends State<TutupBukuScreen> {
                 ),
               ),
             ),
-    );
+    ));
   }
 
   Widget _kartuKemarin(DailySettlement s) {

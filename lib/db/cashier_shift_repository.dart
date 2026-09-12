@@ -20,6 +20,25 @@ class CashierShiftRepository {
     return rows.isEmpty ? null : CashierShift.fromMap(rows.first);
   }
 
+  /// Ada tidaknya shift yang sedang berjalan, tanpa menyebut siapa.
+  ///
+  /// Kasir tidak lagi bisa membaca baris shift orang lain, jadi
+  /// [terbuka] mengembalikan null untuknya sekalipun lacinya sedang
+  /// dipegang. Tanpa jawaban ini, tombol Buka Shift terpajang, ditekan,
+  /// lalu ditolak server — dan penolakan yang muncul setelah tombol
+  /// ditekan terbaca sebagai aplikasi yang rusak.
+  Future<({bool ada, bool milikSaya})> ringkasTerbuka(String restoId) async {
+    final rows = await _client
+        .rpc('shift_terbuka_ringkas', params: {'p_resto_id': restoId});
+    final list = (rows as List?) ?? const [];
+    if (list.isEmpty) return (ada: false, milikSaya: false);
+    final r = Map<String, dynamic>.from(list.first as Map);
+    return (
+      ada: r['ada'] as bool? ?? false,
+      milikSaya: r['milik_saya'] as bool? ?? false,
+    );
+  }
+
   /// Riwayat shift, yang terbaru lebih dulu.
   Future<List<CashierShift>> riwayat(String restoId, {int batas = 60}) async {
     final rows = await _client

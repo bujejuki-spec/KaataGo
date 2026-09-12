@@ -37,6 +37,33 @@ Formatnya dibaca `scripts/release.sh`: judul `## <versi>`, lalu
 poin-poinnya. Versi yang tidak punya bagiannya di sini tetap terbit,
 hanya pengumumannya memakai kalimat umum.
 
+## 2.40.0
+
+- Akses Menu (UAM) di KaataGo Admin: menu yang muncul dan yang boleh
+  diubah kini diatur per merchant dan per peran — Tidak Ada, Lihat, atau
+  Lihat & Ubah. Merchant yang belum diatur tidak berubah sama sekali
+- Kelompok menu yang seluruh isinya dicabut ikut hilang, bukan
+  meninggalkan pintu menuju halaman kosong
+- Layar Pelanggan kini menampilkan rincian pesanan untuk semua cara
+  bayar: tunai menampilkan ringkasan dan totalnya, QRIS Statis
+  menampilkan QR merchant untuk dipindai, dan transfer menampilkan
+  rekening tujuannya
+- Kasir hanya melihat shift dan selisih atas namanya sendiri; shift orang
+  lain tidak lagi terbaca dari perangkatnya
+- Laci yang sedang dipegang orang lain terbaca sebagai aturan di kartu
+  shift, bukan sebagai galat setelah tombol Buka Shift ditekan
+- Tutup Buku kini bisa diakses Admin
+- Terima Cash Pickup untuk Finance dan Owner: uang yang dijemput petugas
+  singgah di GL Cash Pickup sampai serah terimanya selesai, lalu masuk ke
+  GL Saldo Cash Perusahaan. Nomor segel, jumlah yang diterima, nama
+  petugas, dan bukti terimanya dicatat
+- Nomor rekening di dialog Setor Bank bisa disalin sekali ketuk
+- Rekening merchant tidak lagi tampil dua kali di Info Pembayaran dan
+  Pengaturan Pembayaran; semuanya membaca daftar Rekening Perusahaan
+- Pesanan yang belum dibayar hangus setelah 10 menit, bukan 30 — stok
+  yang dipesan kembali bisa dijual jauh lebih cepat
+- Perbaikan bug dan penyempurnaan tampilan
+
 ## 2.39.0
 
 - Owner dan Finance kini benar-benar bisa menambah rekening perusahaan;

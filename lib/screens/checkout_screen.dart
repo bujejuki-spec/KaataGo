@@ -1,6 +1,10 @@
 import '../widgets/app_toast.dart';
 import '../db/metode_bayar_repository.dart';
 import '../models/metode_bayar.dart';
+import '../db/customer_display_repository.dart';
+import '../db/bank_account_repository.dart';
+import '../models/bank_account.dart';
+import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../theme.dart';
@@ -48,6 +52,55 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   /// Metode yang dinyalakan merchant ini.
   MetodeBayarMerchant _metode = const MetodeBayarMerchant();
+
+  final _layarDepan = CustomerDisplayRepository();
+
+  /// Menyalakan layar pelanggan dengan rincian dan cara bayarnya.
+  ///
+  /// Rekeningnya disalin ke barisnya, bukan dibaca perangkat layar
+  /// depan: perangkat itu tidak perlu hak baca atas rekening perusahaan
+  /// hanya untuk menampilkan satu baris yang memang sedang ditunjukkan
+  /// ke pelanggan.
+  Future<void> _nyalakanLayarDepan(
+    String restoId,
+    CartProvider cart,
+    PaymentMethod method,
+    int amount,
+  ) async {
+    try {
+      final baris = [
+        for (final i in cart.items)
+          BarisTampilan(
+            nama: i.product.name,
+            qty: i.quantity,
+            total: cart.menuSubtotalOf(i),
+          ),
+      ];
+
+      BankAccount? rekening;
+      if (method == PaymentMethod.transfer) {
+        rekening = await BankAccountRepository().utama(restoId);
+      }
+
+      await _layarDepan.tampilkan(
+        restoId,
+        amount: amount,
+        items: baris,
+        paymentMethod: switch (method) {
+          PaymentMethod.cash => 'cash',
+          PaymentMethod.qris => 'qris',
+          PaymentMethod.qrisStatic => 'qris_static',
+          _ => 'transfer',
+        },
+        qrImageUrl:
+            method == PaymentMethod.qrisStatic ? _metode.qrisStatisUrl : null,
+        bankName: rekening?.bankName,
+        accountNumber: rekening?.accountNumber,
+        accountHolder: rekening?.accountHolder,
+      );
+    } catch (_) {}
+  }
+
 
   Future<void> _muatMetodeBayar() async {
     final restoId = context.read<AuthProvider>().restoId;
@@ -445,6 +498,23 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     // dihitung kembaliannya.
     final amount = cart.payableFor(_orderType);
 
+    // Layar depan dinyalakan sebelum cara bayarnya dijalankan, dan
+    // untuk SEMUA cara bayar — bukan cuma QRIS dinamis seperti dulu.
+    //
+    // Pelanggan yang membayar tunai tidak pernah melihat apa yang
+    // ditagihkan; yang memindai QRIS statis tidak punya apa pun untuk
+    // dipindai di layar depan; yang mentransfer mendengar nomor
+    // rekening dibacakan di tengah keramaian. Ketiganya diselesaikan
+    // dengan menyebut rinciannya di sini.
+    //
+    // Kegagalannya diabaikan dengan sengaja: layar depan pelengkap, dan
+    // kasir yang tidak bisa menyelesaikan pembayaran karena perangkat
+    // kedua sedang mati adalah kerugian yang jauh lebih besar.
+    final restoUntukLayar = context.read<AuthProvider>().restoId;
+    if (restoUntukLayar != null) {
+      unawaited(_nyalakanLayarDepan(restoUntukLayar, cart, method, amount));
+    }
+
     // Cash: the cashier keys in what the customer handed over so the
     // change is worked out here instead of in their head — and so the
     // receipt can print both figures.
@@ -454,7 +524,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         context: context,
         builder: (_) => CashPaymentDialog(total: amount),
       );
-      if (cashReceived == null || !context.mounted) return;
+      if (cashReceived == null || !context.mounted) {
+        if (restoUntukLayar != null) {
+          unawaited(_layarDepan.kosongkan(restoUntukLayar).catchError((_) {}));
+        }
+        return;
+      }
     }
 
     // QRIS/Transfer show a dummy "simulate payment" screen first, and
@@ -479,7 +554,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           },
         ),
       );
-      if (confirmed != true) return;
+      if (confirmed != true) {
+        if (restoUntukLayar != null) {
+          unawaited(_layarDepan.kosongkan(restoUntukLayar).catchError((_) {}));
+        }
+        return;
+      }
     }
 
     if (!context.mounted) return;

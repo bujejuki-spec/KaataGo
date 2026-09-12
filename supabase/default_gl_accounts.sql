@@ -61,9 +61,13 @@ as $$
     ('petty_cash',       '1980001', 'GL Petty Cash'),
     -- Total saldo
     ('total_balance',    '1990001', 'GL Total Saldo'),
+    -- Uang yang benar-benar sudah dipegang perusahaan
+    ('company_cash',     '1990002', 'GL Saldo Cash Perusahaan'),
     -- Suspense — titipan yang belum diakui masuk ke mana pun
     ('suspense',         '2100001', 'GL Suspense Setoran'),
     ('suspense_petty',   '2100002', 'GL Suspense Petty Cash'),
+    -- Uang yang sudah dijemput petugas dan belum diserahkan
+    ('cash_pickup',      '2100004', 'GL Cash Pickup'),
     -- Payment gateway & diskon
     ('gateway_fee',      '2200001', 'GL Biaya Payment Gateway'),
     ('discount',         '2200002', 'GL Diskon Penjualan');

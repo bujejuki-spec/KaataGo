@@ -1,4 +1,5 @@
 import '../db/balance_topup_repository.dart';
+import '../utils/akses_menu.dart';
 import '../models/balance_topup.dart';
 import '../models/billing.dart';
 import '../models/gl_journal_entry.dart';
@@ -603,7 +604,7 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
   Widget build(BuildContext context) {
     final currency = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
 
-    return Scaffold(
+    return berdasarkanAkses(context, 'Saldo & Pengeluaran', Scaffold(
       appBar: AppBar(title: const Text('Saldo & Pengeluaran')),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
@@ -1044,7 +1045,7 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
                     ],
                   ),
                 ),
-    );
+    ));
   }
 }
 

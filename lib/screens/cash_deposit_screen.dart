@@ -1,11 +1,12 @@
 import '../utils/pesan_galat.dart';
+import '../utils/akses_menu.dart';
 import '../utils/field_rules.dart';
 import '../models/bank_account.dart';
 import '../db/bank_account_repository.dart';
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -318,7 +319,7 @@ class _CashDepositScreenState extends State<CashDepositScreen> {
     final currency = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
     final dateFmt = DateFormat('d MMM yyyy, HH:mm', 'id_ID');
 
-    return Scaffold(
+    return berdasarkanAkses(context, 'Setor Saldo Cash', Scaffold(
       appBar: AppBar(title: const Text('Setor Saldo Cash')),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
@@ -416,7 +417,7 @@ class _CashDepositScreenState extends State<CashDepositScreen> {
                     ),
                   ),
                 ),
-    );
+    ));
   }
 }
 
@@ -1152,6 +1153,30 @@ class _AddDepositDialogState extends State<_AddDepositDialog> {
                     }
                   }),
                 ),
+                // Nomor rekening diketik ulang di aplikasi bank, dan
+                // digit yang diketik ulang adalah digit yang bisa salah.
+                if (_rekening != null) ...[
+                  const SizedBox(height: 6),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: () async {
+                        await Clipboard.setData(
+                            ClipboardData(text: _rekening!.accountNumber));
+                        if (context.mounted) {
+                          showAppToast(context, 'Nomor rekening disalin.');
+                        }
+                      },
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      icon: const Icon(Icons.copy_rounded, size: 15),
+                      label: const Text('Salin Nomor Rekening',
+                          style: TextStyle(fontSize: 12)),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 10),
                 // Keduanya hasil dari pilihan di atas, bukan isian.
                 // Mengetiknya ulang berarti membuka pintu bagi setoran

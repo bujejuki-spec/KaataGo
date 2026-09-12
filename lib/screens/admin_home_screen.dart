@@ -27,6 +27,7 @@ import 'settings_menu_screen.dart';
 import 'merchant_report_screen.dart';
 import 'transaction_history_screen.dart';
 import 'cash_deposit_screen.dart';
+import 'tutup_buku_screen.dart';
 import 'cashier_shift_screen.dart';
 import 'finance_balance_screen.dart';
 
@@ -182,6 +183,22 @@ class AdminHomeScreen extends StatelessWidget {
                           ? Future.value(0)
                           : CashDepositRepository().pendingCount(restoId),
                       destination: () => const CashDepositScreen(),
+                    ),
+                    // Menutup hari adalah pekerjaan operasional:
+                    // memastikan shiftnya sudah ditutup dan angkanya
+                    // sudah berhenti bergerak. Rekonsiliasi mutasi bank
+                    // sengaja tidak ikut — itu pemeriksaan, dan
+                    // pemeriksaan tidak dipegang orang yang sehari-hari
+                    // memegang lacinya.
+                    HubMenuTile(
+                      icon: Icons.event_available_outlined,
+                      title: 'Tutup Buku',
+                      subtitle: 'Kunci angka sebuah hari, per metode bayar',
+                      color: const Color(0xFF0EA5E9),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                            builder: (_) => const TutupBukuScreen()),
+                      ),
                     ),
                   ],
                 ),

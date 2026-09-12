@@ -71,7 +71,10 @@ class _WebShellScreenState extends State<WebShellScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
-    final tujuan = menuWebUntuk(auth);
+    // Disaring di sini, bukan di dalam setiap daftar peran: sidebar
+    // dan halaman pintasannya membaca daftar yang sama, jadi menu yang
+    // dicabut hilang dari keduanya sekaligus.
+    final tujuan = saringMenuWeb(context, menuWebUntuk(auth));
     final menu = [if (tujuan.isNotEmpty) menuBerandaWeb, ...tujuan];
 
     if (menu.isEmpty) {
