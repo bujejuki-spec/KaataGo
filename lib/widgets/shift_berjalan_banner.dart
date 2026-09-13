@@ -8,6 +8,7 @@ import '../services/notification_router.dart' show navigatorKey;
 import '../providers/auth_provider.dart';
 import '../screens/cashier_shift_screen.dart';
 import '../utils/shift_berjalan.dart';
+import 'penanda_mengambang.dart';
 
 /// Penanda mengambang soal shift: yang sedang berjalan, atau yang belum
 /// dibuka.
@@ -59,7 +60,7 @@ class _ShiftBerjalanBannerState extends State<ShiftBerjalanBanner> {
     return Stack(
       children: [
         widget.child,
-        _Mengambang(
+        PenandaMengambang(
           child: AnimatedBuilder(
             animation: ShiftBerjalan.instance,
             builder: (context, _) {
@@ -82,91 +83,6 @@ class _ShiftBerjalanBannerState extends State<ShiftBerjalanBanner> {
           ),
         ),
       ],
-    );
-  }
-}
-
-/// Pembungkus yang menaruh pilnya di bawah dan membiarkannya digeser.
-///
-/// Bawah, bukan atas: yang di atas menutupi judul layar dan tombol
-/// kembali — dua hal yang dipakai terus-menerus. Yang di bawah memang
-/// bisa bertabrakan dengan tombol mengambang tiap layar, dan justru
-/// itulah sebabnya pilnya bisa dipindahkan: yang tahu mana yang sedang
-/// terhalang cuma orang yang sedang memakainya.
-///
-/// Letaknya disimpan selama aplikasi berjalan saja, tidak disimpan ke
-/// penyimpanan. Letak yang diingat lintas pemakaian berarti pil yang
-/// suatu hari muncul di tempat yang tidak dipahami lagi asalnya.
-class _Mengambang extends StatefulWidget {
-  final Widget child;
-
-  const _Mengambang({required this.child});
-
-  @override
-  State<_Mengambang> createState() => _MengambangState();
-}
-
-class _MengambangState extends State<_Mengambang> {
-  static const _tepi = 12.0;
-
-  final _kunciPil = GlobalKey();
-
-  /// Kiri-atas pilnya di dalam Stack, atau null selama belum digeser —
-  /// selama itu ia mengikuti tempat bawaannya di bawah tengah.
-  Offset? _letak;
-  Size? _ukuran;
-
-  void _mulai() {
-    final pil = _kunciPil.currentContext?.findRenderObject() as RenderBox?;
-    final wadah = context.findRenderObject() as RenderBox?;
-    if (pil == null || wadah == null) return;
-    _ukuran = pil.size;
-    // Digeser dari tempatnya yang sekarang, bukan melompat ke jari.
-    _letak ??= wadah.globalToLocal(pil.localToGlobal(Offset.zero));
-  }
-
-  void _geser(DragUpdateDetails d, BoxConstraints batas) {
-    final ukuran = _ukuran;
-    if (_letak == null || ukuran == null) return;
-    final calon = _letak! + d.delta;
-    setState(() {
-      _letak = Offset(
-        calon.dx.clamp(_tepi, (batas.maxWidth - ukuran.width - _tepi)
-            .clamp(_tepi, double.infinity)),
-        calon.dy.clamp(_tepi, (batas.maxHeight - ukuran.height - _tepi)
-            .clamp(_tepi, double.infinity)),
-      );
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, batas) {
-        // Lebarnya tetap dibatasi meski sudah digeser: Positioned yang
-        // cuma menyebut kiri dan atas memberi ruang tak terbatas, dan
-        // teks yang seharusnya dipendekkan malah melimpah keluar layar.
-        final pil = ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: batas.maxWidth - _tepi * 2),
-          child: GestureDetector(
-            onPanStart: (_) => _mulai(),
-            onPanUpdate: (d) => _geser(d, batas),
-            child: KeyedSubtree(key: _kunciPil, child: widget.child),
-          ),
-        );
-        if (_letak == null) {
-          return Positioned(
-            left: _tepi,
-            right: _tepi,
-            bottom: _tepi,
-            child: SafeArea(
-              top: false,
-              child: Align(alignment: Alignment.bottomCenter, child: pil),
-            ),
-          );
-        }
-        return Positioned(left: _letak!.dx, top: _letak!.dy, child: pil);
-      },
     );
   }
 }

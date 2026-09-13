@@ -40,22 +40,17 @@ void main() {
   });
 
   // Bagian bawah layar sudah ditempati tombol Support, penanda
-  // unduhan, dan tombol mengambang tiap layar.
-  // Yang di atas menutupi judul layar dan tombol kembali — dua hal yang
-  // dipakai terus-menerus. Yang di bawah bisa bertabrakan dengan tombol
-  // mengambang tiap layar, dan justru itu sebabnya ia bisa digeser.
-  test('duduk di bawah dan bisa dipindahkan', () {
-    expect(banner, contains('bottom: _tepi'));
-    expect(banner, contains('onPanUpdate:'));
-    expect(banner, contains('Alignment.bottomCenter'));
-  });
-
-  // Positioned yang cuma menyebut kiri dan atas memberi ruang tak
-  // terbatas, dan teks yang seharusnya dipendekkan melimpah keluar
-  // layar.
-  test('lebarnya tetap dibatasi meski sudah digeser', () {
-    expect(banner, contains('ConstrainedBox('));
-    expect(banner, contains('maxWidth: batas.maxWidth - _tepi * 2'));
+  // Letak dan geserannya diuji dengan benar-benar dipasang, bukan
+  // dicocokkan sebagai teks — lihat shift_banner_terpasang_test.dart.
+  //
+  // Dua pengujian yang dulu berdiri di sini mencocokkan `bottom: _tepi`
+  // dan `onPanUpdate:` sebagai potongan teks. Keduanya lulus pada versi
+  // 3.9.0 yang justru menutupi seluruh layar dengan kotak galat: teksnya
+  // memang ada, dan widgetnya memang tidak pernah digambar satu kali pun
+  // oleh pengujian mana pun.
+  test('penandanya dipasang lewat pembungkus yang bisa diuji sendiri', () {
+    expect(banner, contains('PenandaMengambang('));
+    expect(File('lib/widgets/penanda_mengambang.dart').existsSync(), isTrue);
   });
 
   // Kasir yang menu-menunya belum muncul mengira aplikasinya belum

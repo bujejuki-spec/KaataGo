@@ -37,6 +37,11 @@ Formatnya dibaca `scripts/release.sh`: judul `## <versi>`, lalu
 poin-poinnya. Versi yang tidak punya bagiannya di sini tetap terbit,
 hanya pengumumannya memakai kalimat umum.
 
+## 3.9.1
+
+- Memperbaiki layar yang tertutup lapisan abu-abu di versi 3.9.0. Semua
+  menu dan tombol kembali seperti semula; tidak ada data yang terpengaruh
+
 ## 3.9.0
 
 - **Absensi karyawan dengan wajah dan titik lokasi.** Semua peran absen

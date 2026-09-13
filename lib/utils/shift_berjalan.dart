@@ -18,7 +18,12 @@ class ShiftBerjalan extends ChangeNotifier {
 
   static final ShiftBerjalan instance = ShiftBerjalan._();
 
-  final _repo = CashierShiftRepository();
+  /// Dibuat saat pertama dipakai, bukan saat singletonnya lahir.
+  ///
+  /// Membangunnya di konstruktor berarti sekadar menyentuh
+  /// `ShiftBerjalan.instance` menuntut Supabase sudah siap — termasuk di
+  /// pengujian widget yang cuma ingin menggambar penandanya.
+  late final _repo = CashierShiftRepository();
 
   /// Kapan shift itu dibuka. Null berarti tidak ada yang sedang
   /// dipegang orang ini.
@@ -62,6 +67,16 @@ class ShiftBerjalan extends ChangeNotifier {
   /// Dipanggil layar Shift Kasir sesudah membuka atau menutup, supaya
   /// penandanya tidak menunggu pemuatan berikutnya.
   void tandaiTutup() => _set(null);
+
+  /// Menyetel keadaannya langsung, tanpa bertanya ke server.
+  ///
+  /// Hanya untuk pengujian widget: memasang penandanya butuh keadaan
+  /// "ada shift berjalan", dan satu-satunya jalan ke sana selama ini
+  /// lewat jaringan — yang berarti pilnya tidak pernah benar-benar
+  /// tergambar di pengujian mana pun. Itu yang membuat galat tata letak
+  /// di dalamnya lolos sampai ke rilis.
+  @visibleForTesting
+  void segarkanUntukUji(DateTime? dibuka) => _set(dibuka);
 
   void _set(DateTime? nilai) {
     final berubah = _dibuka != nilai || !_diketahui;
