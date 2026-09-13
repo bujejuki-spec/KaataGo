@@ -108,10 +108,13 @@ void main() {
       final rumus = blok.substring(0, blok.indexOf(';'));
       expect(rumus, isNot(contains('_setoranKeRekening')));
       expect(rumus, isNot(contains('_depositedTotal')));
-      // Yang tersisa: penjualan non-tunai, setoran modal, dan pelunasan
-      // selisih lewat transfer.
+      // Yang tersisa cuma penjualan non-tunai hari ini, dikurangi yang
+      // ditarik ke petty cash. Pelunasan selisih lewat transfer juga
+      // sudah pindah: uangnya mendarat di rekening, dan sejak
+      // jurnal_selisih_ke_bank.sql ia dikreditkan ke Saldo Bank
+      // Perusahaan.
       expect(rumus, contains('_nonCashIncome'));
-      expect(rumus, contains('selisihDibayarTransfer'));
+      expect(rumus, isNot(contains('selisihDibayarTransfer')));
     });
 
     test('tidak ditambahkan lagi di Saldo Total', () {

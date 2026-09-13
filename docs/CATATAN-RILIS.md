@@ -37,6 +37,18 @@ Formatnya dibaca `scripts/release.sh`: judul `## <versi>`, lalu
 poin-poinnya. Versi yang tidak punya bagiannya di sini tetap terbit,
 hanya pengumumannya memakai kalimat umum.
 
+## 3.7.0
+
+- Saldo & Pengeluaran kini menyebut angka yang sama untuk semua peran.
+  Isi laci dijawab server — angka yang sama persis dengan yang dipakai
+  saat tutup shift — bukan dihitung dari daftar yang isinya berbeda-beda
+  tergantung siapa yang membukanya
+- Pelunasan selisih kasir lewat transfer tidak lagi dihitung di Saldo Non
+  Cash; uangnya sudah tercatat di Saldo Bank Perusahaan
+- Pengeluaran yang dibayar dari kas atau rekening perusahaan tidak lagi
+  mengurangi sisa Petty Cash kasir
+- Perbaikan bug dan penyempurnaan tampilan
+
 ## 3.6.0
 
 - Shift kasir hanya bisa ditutup oleh yang membukanya. Owner dan Admin

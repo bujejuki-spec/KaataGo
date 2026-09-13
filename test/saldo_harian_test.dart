@@ -54,20 +54,26 @@ void main() {
     expect(b, isNot(contains('harian')));
   });
 
-  // Satu pelunasan transfer sempat menambah Saldo Non Cash setiap hari
-  // selamanya: daftarnya dimuat utuh dan tidak pernah ikut dipotong,
-  // jadi angkanya muncul di layar harian tanpa ada pemasukan apa pun
-  // hari itu.
-  test('selisih yang dilunasi transfer ikut tanggal pelunasannya', () {
+  // Pelunasan selisih lewat transfer keluar seluruhnya dari layar ini.
+  //
+  // Uangnya mendarat di rekening dan sudah dikreditkan ke Saldo Bank
+  // Perusahaan. Menghitungnya juga di sini membuat uang yang sama muncul
+  // di dua layar — dan karena daftar selisih dibatasi RLS, angkanya
+  // bahkan berbeda antar peran untuk hari yang sama.
+  test('pelunasan selisih transfer tidak ikut Saldo Non Cash', () {
     final b = blok('int get _nonCashBalance', 'int get _pettyCashToppedUp');
-    expect(b, contains('selisihDibayarTransfer(_selisihTransferHarian)'));
-    expect(layar, contains('v.settledAt != null && sekarang(v.settledAt!)'));
+    expect(b, isNot(contains('selisihDibayarTransfer')));
   });
 
   // Tapi daftar penuhnya tetap dipakai isi laci: selisih kurang yang
   // belum dibayar mengurangi laci sejak hari ia terjadi.
-  test('isi laci tetap memakai seluruh riwayat selisih', () {
-    final b = blok('int get _cashBalance', 'int get _nonCashBalance');
+  // Isi laci ditanyakan ke server, bukan dihitung sendiri: daftar
+  // selisih dibatasi RLS, jadi hitungan dari sisi aplikasi menghasilkan
+  // isi laci yang berbeda antar peran — padahal lacinya cuma satu.
+  test('isi laci ditanyakan ke server, dengan cadangan lokal', () {
+    expect(layar, contains('_saldoLaciServer ?? _cashBalanceLokal'));
+    expect(layar, contains('CashierShiftRepository().saldoCashLaci'));
+    final b = blok('int get _cashBalanceLokal', 'int get _nonCashBalance');
     expect(b, contains('selisih: _selisih,'));
   });
 

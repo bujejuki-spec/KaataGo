@@ -233,15 +233,15 @@ void main() {
       expect(selisihDibayarTransfer(daftar), 30000);
     });
 
-    test('layarnya menawarkan keduanya, dan Non Cash memakainya', () {
+    test('layarnya menawarkan keduanya', () {
       expect(layar, contains("'Tunai — Masuk Laci'"));
       expect(layar, contains("'Transfer — Masuk Rekening'"));
       final saldo =
           File('lib/screens/finance_balance_screen.dart').readAsStringSync();
-      // Daftarnya disaring dulu menurut tanggal pelunasan — layar
-      // Saldo & Pengeluaran bersifat harian, dan daftar penuh membuat
-      // satu pelunasan menambah Saldo Non Cash setiap hari selamanya.
-      expect(saldo, contains('selisihDibayarTransfer(_selisihTransferHarian)'));
+      // Yang dibayar transfer tidak lagi menambah Saldo Non Cash
+      // merchant: uangnya mendarat di rekening, dan tempatnya di Saldo
+      // Bank Perusahaan.
+      expect(saldo, isNot(contains('selisihDibayarTransfer')));
     });
   });
 }

@@ -88,13 +88,6 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
   int _cashIncome = 0;
   List<CashVariance> _selisih = const [];
 
-  /// Selisih yang pelunasannya jatuh pada periode yang sedang dilihat.
-  ///
-  /// Terpisah dari [_selisih], yang harus tetap utuh: selisih kurang
-  /// yang belum dibayar mengurangi isi laci sejak hari ia terjadi, dan
-  /// memotongnya per hari membuat laci terlihat lebih penuh daripada
-  /// isinya.
-  List<CashVariance> _selisihTransferHarian = const [];
   int _nonCashIncome = 0;
   List<CashDeposit> _deposits = [];
 
@@ -261,6 +254,16 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
         _rekening = await BankAccountRepository().untukResto(restoId);
       } catch (_) {}
 
+      try {
+        _saldoLaciServer =
+            await CashierShiftRepository().saldoCashLaci(restoId);
+      } catch (_) {
+        // Jatuh ke hitungan sendiri. Disebut di layarnya juga, supaya
+        // yang membandingkannya dengan tutup shift tahu angkanya
+        // perkiraan.
+        _saldoLaciServer = null;
+      }
+
       final semuaSetoran = results[4] as List<CashDeposit>;
       final semuaPetty = results[3] as List<PettyCashEntry>;
 
@@ -280,21 +283,17 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
             ? semuaSetoran.where((d) => sekarang(d.createdAt)).toList()
             : semuaSetoran;
         _selisih = results[5] as List<CashVariance>;
-        // Yang dilunasi lewat transfer disaring menurut TANGGAL
-        // PELUNASANNYA, bukan tanggal selisihnya terjadi: yang
-        // menambah rekening hari ini adalah uang yang diserahkan hari
-        // ini.
+        // Hanya yang dibayar dari petty cash.
         //
-        // Tanpa saringan ini, satu pelunasan transfer menambah Saldo
-        // Non Cash setiap hari selamanya — angka yang muncul di layar
-        // harian tanpa ada pemasukan apa pun hari itu.
-        _selisihTransferHarian = [
-          for (final v in _selisih)
-            if (!harian ||
-                (v.settledAt != null && sekarang(v.settledAt!)))
-              v,
+        // Pengeluaran yang dibayar dari kas atau rekening perusahaan
+        // punya layarnya sendiri di Saldo Perusahaan. Ikut menghitungnya
+        // di sini membuat satu pengeluaran terbaca di dua layar — dan
+        // lebih buruk lagi, ia mengurangi sisa petty cash kasir untuk
+        // uang yang tidak pernah keluar dari kas kecil.
+        _expensesSemua = [
+          for (final e in results[1] as List<Expense>)
+            if (e.fundSource == 'petty') e,
         ];
-        _expensesSemua = results[1] as List<Expense>;
         _expenses = [
           for (final e in _expensesSemua)
             if (!harian || sekarang(e.createdAt)) e,
@@ -342,7 +341,23 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
       _deposits.where((d) => d.isPending).fold(0, (sum, d) => sum + d.amount);
 
   /// Yang seharusnya masih ada di laci kasir sekarang.
-  int get _cashBalance => cashOnHand(
+  /// Isi laci menurut server, kalau bisa ditanyakan.
+  ///
+  /// Angka yang sama persis dengan yang dipakai tutup shift sebagai
+  /// `expected_cash` — dan itu intinya: layar ini dan layar tutup shift
+  /// tidak boleh menyebut dua angka berbeda untuk laci yang sama.
+  ///
+  /// Selain itu ia bebas dari RLS. Daftar selisih kasir dibatasi — kasir
+  /// cuma melihat miliknya sendiri — jadi hitungan dari sisi aplikasi
+  /// menghasilkan isi laci yang BERBEDA antar peran, padahal lacinya
+  /// cuma satu dan isinya bisa dihitung tangan.
+  int? _saldoLaciServer;
+
+  int get _cashBalance => _saldoLaciServer ?? _cashBalanceLokal;
+
+  /// Cadangan saat servernya tidak bisa ditanya — luring, atau RPC-nya
+  /// belum ada. Angka perkiraan lebih baik daripada layar kosong.
+  int get _cashBalanceLokal => cashOnHand(
         cashIncome: _cashIncome,
         // Sejak hari pertama, bukan daftar yang sudah dipotong: uang
         // yang keluar laci kemarin tetap sudah keluar hari ini.
@@ -375,13 +390,24 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
   /// Cash pickup sama: keluar laci, lalu masuk Saldo Cash Perusahaan
   /// begitu serah terimanya selesai.
   ///
-  /// Jadi yang tersisa di sini adalah uang yang masih milik hari ini:
-  /// penjualan non-tunai, setoran modal, dan pelunasan selisih lewat
-  /// transfer.
+  /// Pelunasan selisih lewat transfer juga tidak ikut lagi.
+  ///
+  /// Uangnya mendarat di rekening merchant, dan sejak
+  /// jurnal_selisih_ke_bank.sql ia dikreditkan ke GL Saldo Bank
+  /// Perusahaan. Menghitungnya juga di sini berarti uang yang sama
+  /// muncul di dua layar — kekeliruan yang sama persis dengan setoran
+  /// dan cash pickup, yang sudah lebih dulu dikeluarkan dari sini.
+  ///
+  /// Ada akibat sampingan yang ikut hilang, dan itu justru yang
+  /// menyingkapkannya: daftar selisih dibatasi RLS — kasir cuma melihat
+  /// miliknya sendiri — jadi angka ini sempat BERBEDA antar peran untuk
+  /// hari yang sama. Satu layar yang menyebut dua angka untuk uang yang
+  /// sama adalah tanda perhitungannya memang salah tempat.
+  ///
+  /// Yang tersisa: penjualan non-tunai hari ini, dikurangi yang ditarik
+  /// ke petty cash.
   int get _nonCashBalance =>
-      _nonCashIncome +
-      selisihDibayarTransfer(_selisihTransferHarian) -
-      _pettyCashFrom(PettyCashSource.incomeWithdrawal);
+      _nonCashIncome - _pettyCashFrom(PettyCashSource.incomeWithdrawal);
 
   /// Hanya yang sudah disetujui yang dihitung sebagai saldo petty cash.
   /// Pengajuan yang masih menunggu nilainya mengendap di GL Suspense
@@ -724,6 +750,7 @@ class _FinanceBalanceScreenState extends State<FinanceBalanceScreen> {
                         // sering dicari — itulah yang harus cocok dengan isi
                         // laci saat tutup toko.
                         _IncomeSplitCard(
+                          perkiraan: _saldoLaciServer == null,
                           cashBalance: _cashBalance,
                           nonCashBalance: _nonCashBalance,
                           deposited: _setoranKeRekening,
@@ -1867,6 +1894,9 @@ class _SourceTab extends StatelessWidget {
 /// disetorkan, sedangkan QRIS dan transfer sudah aman di rekening. Satu
 /// angka gabungan menyembunyikan persis perbedaan itu.
 class _IncomeSplitCard extends StatelessWidget {
+  /// Isi lacinya dihitung sendiri, bukan dijawab server.
+  final bool perkiraan;
+
   final int cashBalance;
   final int nonCashBalance;
   final int deposited;
@@ -1874,6 +1904,7 @@ class _IncomeSplitCard extends StatelessWidget {
   final NumberFormat currency;
 
   const _IncomeSplitCard({
+    required this.perkiraan,
     required this.cashBalance,
     required this.nonCashBalance,
     required this.deposited,
@@ -1904,7 +1935,16 @@ class _IncomeSplitCard extends StatelessWidget {
                   // setoran, cash pickup, dan penarikan ke petty cash.
                   // Yang tersisa adalah lembaran yang masih ada, dan
                   // itulah yang dihitung ulang saat tutup shift.
-                  hint: 'Tunai belum disetor',
+                  //
+                  // Saat servernya tidak bisa ditanya, angkanya dihitung
+                  // sendiri dari data yang terbaca perangkat ini — dan
+                  // daftar selisih kasir dibatasi RLS, jadi hasilnya
+                  // bisa berbeda antar peran. Itu disebutkan, bukan
+                  // didiamkan: angka perkiraan yang tampil seperti
+                  // angka pasti adalah yang paling menyesatkan.
+                  hint: perkiraan
+                      ? 'Perkiraan — gagal menghubungi server'
+                      : 'Tunai belum disetor',
                   value: cashBalance,
                 ),
               ),
