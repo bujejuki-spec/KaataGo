@@ -14,6 +14,7 @@ import 'services/app_updater.dart';
 import 'services/notification_service.dart';
 import 'providers/auth_provider.dart';
 import 'utils/akses_menu.dart';
+import 'widgets/shift_berjalan_banner.dart';
 import 'providers/cart_provider.dart';
 import 'providers/category_provider.dart';
 import 'providers/level_group_provider.dart';
@@ -130,13 +131,15 @@ class PosApp extends StatelessWidget {
           // Navigator, supaya rute mana pun yang terbuka membacanya —
           // termasuk popup, yang juga rute.
           builder: (context, child) => _PopupTerbatas(
-            child: UpdateDownloadBanner(
-              child: Consumer<AuthProvider>(
-                builder: (context, auth, isi) => AksesMenu(
-                  peta: auth.aksesMenu,
-                  child: isi!,
+            child: ShiftBerjalanBanner(
+              child: UpdateDownloadBanner(
+                child: Consumer<AuthProvider>(
+                  builder: (context, auth, isi) => AksesMenu(
+                    peta: auth.aksesMenu,
+                    child: isi!,
+                  ),
+                  child: child ?? const SizedBox.shrink(),
                 ),
-                child: child ?? const SizedBox.shrink(),
               ),
             ),
           ),

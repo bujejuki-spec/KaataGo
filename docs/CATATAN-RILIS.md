@@ -37,6 +37,12 @@ Formatnya dibaca `scripts/release.sh`: judul `## <versi>`, lalu
 poin-poinnya. Versi yang tidak punya bagiannya di sini tetap terbit,
 hanya pengumumannya memakai kalimat umum.
 
+## 3.8.0
+
+- Shift yang sedang berjalan kini ditandai di atas layar, di halaman mana
+  pun — berikut sudah berapa lama berjalan dan tombol untuk mengakhirinya
+- Perbaikan bug dan penyempurnaan tampilan
+
 ## 3.7.0
 
 - Saldo & Pengeluaran kini menyebut angka yang sama untuk semua peran.

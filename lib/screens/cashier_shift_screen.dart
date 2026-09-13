@@ -9,6 +9,7 @@ import '../models/cashier_shift.dart';
 import '../providers/auth_provider.dart';
 import '../theme.dart';
 import '../utils/pesan_galat.dart';
+import '../utils/shift_berjalan.dart';
 import '../utils/id_time.dart';
 import '../utils/rupiah_input.dart';
 import '../widgets/app_toast.dart';
@@ -75,6 +76,9 @@ class _CashierShiftScreenState extends State<CashierShiftScreen> {
       setState(() => _memuat = false);
       return;
     }
+    // Dibaca sebelum menunggu jaringan: sesudah await, context-nya
+    // mungkin sudah tidak menempel ke pohon yang sama.
+    final emailSaya = context.read<AuthProvider>().user?.email;
     try {
       final hasil = await Future.wait([
         _repo.terbuka(restoId),
@@ -82,9 +86,22 @@ class _CashierShiftScreenState extends State<CashierShiftScreen> {
         _repo.selisih(restoId),
       ]);
       final ringkas = await _repo.ringkasTerbuka(restoId);
+      // Penanda mengambangnya ikut disegarkan dari sini: layar ini
+      // satu-satunya tempat shift dibuka dan ditutup, jadi keadaannya
+      // paling mutakhir justru sesudah salah satu dari keduanya.
+      final terbuka = hasil[0] as CashierShift?;
+      if (terbuka != null &&
+          ringkas.milikSaya &&
+          emailSaya != null &&
+          terbuka.employeeEmail.toLowerCase() == emailSaya.toLowerCase()) {
+        ShiftBerjalan.instance.segarkan(restoId, emailSaya);
+      } else if (!ringkas.milikSaya) {
+        ShiftBerjalan.instance.tandaiTutup();
+      }
+
       if (!mounted) return;
       setState(() {
-        _terbuka = hasil[0] as CashierShift?;
+        _terbuka = terbuka;
         _dipegangOrangLain = ringkas.ada && !ringkas.milikSaya;
         _shiftMilikSaya = ringkas.milikSaya;
         _riwayat = hasil[1] as List<CashierShift>;
