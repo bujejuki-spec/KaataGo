@@ -37,6 +37,30 @@ Formatnya dibaca `scripts/release.sh`: judul `## <versi>`, lalu
 poin-poinnya. Versi yang tidak punya bagiannya di sini tetap terbit,
 hanya pengumumannya memakai kalimat umum.
 
+## 3.10.0
+
+- **Absen wajah sekarang langsung bisa dipakai** — tanpa unduhan tambahan
+  apa pun. Wajah didaftarkan sekali, lalu tiap absen dicocokkan dengan
+  bentuk wajah itu berikut titik GPS-nya
+- **Jam kerja** dihitung dari absen masuk sampai absen pulang, dan ikut di
+  rekap maupun cetakannya
+- Admin dan Finance tidak lagi diikat radius merchant. Kantor mereka
+  memang bisa berbeda dari restonya; titik GPS-nya tetap dicatat
+- Foto acuan dan foto absen bisa dibuka bersebelahan di Absensi Karyawan,
+  supaya yang memutuskan gaji bisa memeriksanya sendiri
+- Hari yang kemiripan wajahnya kurang meyakinkan ditandai, bukan ditolak —
+  cahaya pagi yang berbeda tidak boleh mengunci orang dari pekerjaannya
+- Masa percobaan kini menyebut paketnya: yang dicobakan Basic melihat
+  Basic sejak hari pertama, bukan mencicipi Premium lalu kehilangan
+  separuh menunya saat mulai membayar
+- Lencana paket di beranda menyebut sisa hari percobaan, dan yang sudah
+  berlangganan bisa langsung pindah paket dari situ
+- Harga paket bisa diubah KaataGo Admin dari aplikasi
+- Ukuran berkas pembaruan di Kotak Masuk kini menyebut angka yang
+  sebenarnya, bukan angka lama yang ditulis tangan
+- Memperbaiki kotak-kotak kosong yang muncul di cetakan Absensi & Payroll
+- Perbaikan bug dan penyempurnaan tampilan
+
 ## 3.9.1
 
 - Memperbaiki layar yang tertutup lapisan abu-abu di versi 3.9.0. Semua

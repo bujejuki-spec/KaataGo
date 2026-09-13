@@ -39,6 +39,21 @@ class AppUpdater extends ChangeNotifier {
   /// Persen bulat untuk ditampilkan, atau null kalau belum diketahui.
   int? get percent => progress == null ? null : (progress! * 100).round();
 
+  /// Panjang berkasnya dalam byte, begitu servernya memberitahukan.
+  int? totalBytes;
+
+  /// "154 MB", atau null selama belum diketahui.
+  ///
+  /// Dibaca dari unduhannya sendiri, bukan ditulis tangan di layar.
+  /// Angka yang ditulis tangan tertinggal pada rilis berikutnya — dan
+  /// itu persis yang terjadi: layar ini menyebut 80 MB sampai berkasnya
+  /// hampir dua kali lipat.
+  String? get ukuranTeks {
+    final b = totalBytes;
+    if (b == null || b <= 0) return null;
+    return '${(b / 1048576).round()} MB';
+  }
+
   /// Persen terakhir yang sudah dikirim ke notifikasi Android.
   ///
   /// Tiap potongan data memanggil onProgress — ribuan kali untuk 83 MB —
@@ -140,16 +155,24 @@ class AppUpdater extends ChangeNotifier {
     // membunuh keduanya. Ditanyakan dulu, jadi yang disambung memang
     // unduhan yang masih ada, bukan bayangannya.
     final keadaan = await UnduhanSistem.status();
+    if (keadaan.total > 0) totalBytes = keadaan.total;
     if (keadaan.keadaan == 'kosong' || keadaan.dibatalkan) {
       await UnduhanSistem.lupakan();
       return;
     }
 
     _url = url;
-    final updater = ApkUpdater(onProgress: (p) {
-      progress = p;
-      notifyListeners();
-    });
+    final updater = ApkUpdater(
+      onProgress: (p) {
+        progress = p;
+        notifyListeners();
+      },
+      onTotal: (t) {
+        if (t == null || t == totalBytes) return;
+        totalBytes = t;
+        notifyListeners();
+      },
+    );
     _updater = updater;
 
     // Yang dijeda tidak disambung sendiri: menjeda adalah keputusan

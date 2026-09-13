@@ -5,6 +5,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 import '../models/absensi.dart';
+import 'absensi_export.dart' show temaPdf;
 import 'kode_bank.dart';
 
 final _rp =
@@ -25,11 +26,13 @@ Future<Uint8List> pdfSlipGaji({
   required AturanGaji aturan,
 }) async {
   final doc = pw.Document();
+  final tema = await temaPdf();
 
   doc.addPage(
     pw.Page(
       pageFormat: PdfPageFormat.a4,
       margin: const pw.EdgeInsets.all(40),
+      theme: tema,
       build: (context) => pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
@@ -54,7 +57,7 @@ Future<Uint8List> pdfSlipGaji({
                   pw.Text('Periode',
                       style: const pw.TextStyle(
                           fontSize: 9, color: PdfColors.grey600)),
-                  pw.Text('${_tgl.format(mulai)} – ${_tgl.format(akhir)}',
+                  pw.Text('${_tgl.format(mulai)} - ${_tgl.format(akhir)}',
                       style: const pw.TextStyle(fontSize: 10)),
                 ],
               ),
@@ -66,7 +69,7 @@ Future<Uint8List> pdfSlipGaji({
           _baris('Nama', slip.nama),
           _baris('Peran', slip.peran),
           if (slip.accountNumber?.isNotEmpty == true) ...[
-            _baris('Bank', bankBerkode(slip.bankName)),
+            _baris('Bank', bankBerkode(slip.bankName, pemisah: ' - ')),
             _baris('No. rekening', slip.accountNumber!),
             if (slip.accountHolder?.isNotEmpty == true)
               _baris('Atas nama', slip.accountHolder!),
@@ -197,6 +200,6 @@ pw.Widget _blok(String judul, List<(String, int)> isi) => pw.Column(
             ),
           ),
         if (isi.isEmpty)
-          pw.Text('—', style: const pw.TextStyle(fontSize: 9.5)),
+          pw.Text('-', style: const pw.TextStyle(fontSize: 9.5)),
       ],
     );

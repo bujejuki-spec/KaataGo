@@ -86,7 +86,10 @@ class _PilihPaketScreenState extends State<PilihPaketScreen> {
         _paket = hasil[0] as List<InfoPaket>;
         _rekening = hasil[1] as List<BankAccount>;
         _keadaan = hasil[2] as KeadaanLangganan;
-        _dipilih ??= _keadaan.paket;
+        // Yang sedang mengubah paket langsung diarahkan ke tujuannya —
+        // cuma ada satu pilihan, dan menuntutnya memilih dulu adalah
+        // ketukan yang tidak menentukan apa pun.
+        _dipilih ??= _keadaan.paketTujuanUbah ?? _keadaan.trialPaket;
         _memuat = false;
       });
     } catch (e) {
@@ -96,6 +99,17 @@ class _PilihPaketScreenState extends State<PilihPaketScreen> {
         _memuat = false;
       });
     }
+  }
+
+  /// Paket yang boleh dipilih dari layar ini.
+  ///
+  /// Semuanya kalau belum berlangganan — termasuk saat sedang mencoba,
+  /// karena percobaan Basic tetap boleh berlangganan Premium. Yang sudah
+  /// berlangganan cuma bisa pindah ke yang satunya.
+  List<InfoPaket> get _pilihanPaket {
+    final tujuan = _keadaan.paketTujuanUbah;
+    if (tujuan == null) return _paket;
+    return _paket.where((p) => p.paket == tujuan).toList();
   }
 
   Future<void> _ambilBukti() async {
@@ -154,7 +168,11 @@ class _PilihPaketScreenState extends State<PilihPaketScreen> {
 
     return Scaffold(
       backgroundColor: KaataTheme.backgroundOf(context),
-      appBar: AppBar(title: const Text('Langganan KaataGo')),
+      appBar: AppBar(
+        title: Text(_keadaan.sudahBerlangganan
+            ? 'Ubah Paket'
+            : 'Langganan KaataGo'),
+      ),
       body: _memuat
           ? const Center(child: CircularProgressIndicator())
           : ResponsiveCenter(
@@ -170,18 +188,25 @@ class _PilihPaketScreenState extends State<PilihPaketScreen> {
                       _Ditolak(alasan: _keadaan.alasanTolak),
                     _Pengantar(keadaan: _keadaan),
                     const SizedBox(height: 18),
-                    Text('Pilih paket',
+                    Text(
+                        _keadaan.sudahBerlangganan
+                            ? 'Pindah ke paket'
+                            : 'Pilih paket',
                         style: TextStyle(
                             fontSize: 12.5,
                             fontWeight: FontWeight.bold,
                             color: muted)),
                     const SizedBox(height: 10),
-                    for (final p in _paket)
+                    // Yang sudah berlangganan cuma ditawari paket yang
+                    // lain. Menampilkan paket yang sedang dipakai sebagai
+                    // pilihan berarti menawarkan tombol yang tidak
+                    // mengubah apa pun — lalu menagih bayaran untuknya.
+                    for (final p in _pilihanPaket)
                       _KartuPaket(
                         info: p,
                         rp: _rp,
                         dipilih: _dipilih == p.paket,
-                        sedangDipakai: _keadaan.paket == p.paket,
+                        sedangDipakai: _keadaan.paketBerlaku == p.paket,
                         onTap: () => setState(() => _dipilih = p.paket),
                       ),
                     if (_dipilih != null) ...[
@@ -275,6 +300,7 @@ class _Pengantar extends StatelessWidget {
   Widget build(BuildContext context) {
     final habis = keadaan.percobaanHabis;
     final sisa = keadaan.sisaHari;
+    final ubah = keadaan.sudahBerlangganan;
 
     return Container(
       width: double.infinity,
@@ -293,22 +319,30 @@ class _Pengantar extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            habis
-                ? 'Masa percobaan sudah berakhir'
-                : sisa != null && keadaan.dalamPercobaan
-                    ? 'Masa percobaan tinggal $sisa hari'
-                    : 'Pilih paket langgananmu',
+            ubah
+                ? 'Pindah dari ${keadaan.paket!.label}'
+                : habis
+                    ? 'Masa percobaan sudah berakhir'
+                    : sisa != null && keadaan.dalamPercobaan
+                        ? 'Percobaan ${keadaan.trialPaket?.label ?? ''} '
+                            'tinggal $sisa hari'
+                        : 'Pilih paket langgananmu',
             style: const TextStyle(
                 fontSize: 19, fontWeight: FontWeight.bold, color: Colors.white),
           ),
           const SizedBox(height: 6),
           Text(
-            habis
-                ? 'Pilih paket dan kirim bukti transfernya. Begitu KaataGo '
-                    'memastikan pembayarannya masuk, aplikasinya bisa dipakai '
-                    'lagi seperti semula — data merchantmu tetap utuh.'
-                : 'Berlangganan sekarang supaya aplikasinya tidak berhenti '
-                    'bisa dipakai saat percobaannya habis.',
+            ubah
+                ? 'Paket barunya berjalan begitu KaataGo memastikan '
+                    'pembayarannya masuk. Sampai saat itu, paket '
+                    '${keadaan.paket!.label} tetap berjalan seperti biasa.'
+                : habis
+                    ? 'Pilih paket dan kirim bukti transfernya. Begitu KaataGo '
+                        'memastikan pembayarannya masuk, aplikasinya bisa '
+                        'dipakai lagi seperti semula — data merchantmu tetap '
+                        'utuh.'
+                    : 'Berlangganan sekarang supaya aplikasinya tidak berhenti '
+                        'bisa dipakai saat percobaannya habis.',
             style: TextStyle(
                 fontSize: 12.5,
                 height: 1.45,

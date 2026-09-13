@@ -92,8 +92,10 @@ class _UpdateDownloadButtonState extends State<UpdateDownloadButton> {
           ),
           const SizedBox(height: 4),
           Text(
-            'Berkasnya sekitar 80 MB. Unduhan tetap berjalan walau '
-            'kotak masuk ini ditutup.',
+            _updater.ukuranTeks == null
+                ? 'Unduhan tetap berjalan walau kotak masuk ini ditutup.'
+                : 'Berkasnya ${_updater.ukuranTeks}. Unduhan tetap berjalan '
+                    'walau kotak masuk ini ditutup.',
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 11, color: KaataTheme.mutedOf(context)),
           ),

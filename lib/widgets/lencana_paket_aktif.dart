@@ -80,18 +80,30 @@ class _LencanaPaketAktifState extends State<LencanaPaketAktif> {
     final k = _keadaan;
     if (k == null || k.diluarJalurPaket) return const SizedBox.shrink();
 
-    // Masih percobaan: yang ditunjukkan sisa harinya, bukan paketnya —
-    // paketnya memang belum ada.
+    Future<void> buka() async {
+      await Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const PilihPaketScreen()),
+      );
+      // Paketnya mungkin berubah di sana — ingatannya dibuang supaya
+      // lencananya ikut berganti tanpa menunggu aplikasinya dibuka lagi.
+      LencanaPaketAktif.lupakan(_restoTerakhir);
+      if (mounted && _restoTerakhir != null) _muat(_restoTerakhir!);
+    }
+
+    // Masih percobaan: paketnya disebut berikut sisa harinya.
+    //
+    // Menyebut "Percobaan" saja tidak cukup — yang mencoba Basic dan
+    // yang mencoba Premium melihat menu yang berbeda, dan tanpa
+    // namanya tidak ada cara tahu yang mana yang sedang dipegang.
     if (k.dalamPercobaan) {
+      final coba = k.trialPaket ?? Paket.premium;
       return Padding(
         padding: const EdgeInsets.only(top: 10),
         child: _Pil(
-          warna: const Color(0xFF6366F1),
+          warna: warnaPaket(coba),
           ikon: Icons.hourglass_bottom,
-          teks: 'Percobaan · ${k.sisaHari ?? 0} hari lagi',
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const PilihPaketScreen()),
-          ),
+          teks: 'Percobaan ${coba.label} · ${k.sisaHari ?? 0} hari lagi',
+          onTap: buka,
         ),
       );
     }
@@ -107,9 +119,7 @@ class _LencanaPaketAktifState extends State<LencanaPaketAktif> {
             ? Icons.workspace_premium
             : Icons.star_outline,
         teks: 'Langganan ${paket.label}',
-        onTap: () => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const PilihPaketScreen()),
-        ),
+        onTap: buka,
       ),
     );
   }

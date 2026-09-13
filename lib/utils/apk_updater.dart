@@ -27,7 +27,15 @@ class ApkUpdater {
   /// diberitahukan server — jarang, tapi mungkin.
   final void Function(double? progress)? onProgress;
 
-  ApkUpdater({this.onProgress});
+  /// Panjang berkasnya dalam byte, begitu server memberitahukannya.
+  ///
+  /// Dilaporkan terpisah dari kemajuannya karena yang ditampilkan ke
+  /// orang bukan pecahan melainkan angka MB — dan angka itu tidak boleh
+  /// ditulis tangan di layar. Yang ditulis tangan akan tertinggal pada
+  /// rilis berikutnya, lalu menyebut ukuran yang sudah tidak benar.
+  final void Function(int? total)? onTotal;
+
+  ApkUpdater({this.onProgress, this.onTotal});
 
   /// Di Android unduhannya dijalankan layanan latar milik aplikasi ini,
   /// supaya ia bertahan saat layarnya dikunci atau orangnya pindah
@@ -195,6 +203,7 @@ class ApkUpdater {
       }
 
       onProgress?.call(keadaan.kemajuan);
+      onTotal?.call(keadaan.total > 0 ? keadaan.total : null);
 
       if (keadaan.selesai) {
         await UnduhanSistem.lupakan();
@@ -294,6 +303,7 @@ class ApkUpdater {
         _received += chunk.length;
         onProgress?.call(
             total == null || total == 0 ? null : _received / total);
+        onTotal?.call(total);
       }
       await sink.flush();
       await sink.close();

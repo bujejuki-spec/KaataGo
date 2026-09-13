@@ -234,6 +234,86 @@ void main() {
     });
   });
 
+  group('masa percobaan punya paketnya sendiri', () {
+    final rapi = File('supabase/paket_trial_rapi.sql').readAsStringSync();
+
+    // Yang dicoba-cobakan Basic tidak boleh mencicipi Premium dua minggu
+    // lalu kehilangan separuh menunya persis di hari dia mulai membayar.
+    test('akses menunya mengikuti paket yang dicoba', () {
+      expect(rapi, contains('perform terapkan_paket(p_resto_id, v_paket)'));
+      expect(rapi, isNot(contains("terapkan_paket(p_resto_id, 'premium')")));
+    });
+
+    // Daftar parameternya berubah — `create or replace` dengan daftar
+    // berbeda membuat fungsi KEDUA, bukan menimpa.
+    test('fungsi lamanya dibuang lebih dulu', () {
+      expect(rapi.indexOf('drop function if exists set_trial_resto(text, integer)'),
+          lessThan(rapi.indexOf('create or replace function set_trial_resto')));
+      expect(rapi.indexOf('drop function if exists keadaan_langganan(text)'),
+          lessThan(rapi.indexOf('create or replace function keadaan_langganan')));
+    });
+
+    // Percobaan bukan langganan: penagihannya tidak boleh ikut jalan.
+    test('percobaan tidak menyetel paket berbayar', () {
+      final blok = rapi.substring(rapi.indexOf('function set_trial_resto'));
+      expect(blok.substring(0, blok.indexOf('\$fn\$;')),
+          contains('paket = null'));
+    });
+
+    // Kolom yang melupakan angka yang barusan diisi orang membuat setiap
+    // pembukaan berikutnya terlihat seperti perubahan yang gagal
+    // tersimpan.
+    test('dialog membaca kembali lama percobaan yang sudah disetel', () {
+      final layar = File('lib/screens/super_admin_billing_screen.dart')
+          .readAsStringSync();
+      expect(layar, contains("_hari.text = '\${k.trialHari ?? 14}'"));
+      expect(layar, contains('_paketPercobaan = k.trialPaket ?? Paket.premium'));
+    });
+
+    // Tanpa penanda, layar KaataGo Admin tidak punya satu pun tempat
+    // yang menyebut siapa yang sedang percobaan.
+    test('daftar merchant menyebut yang sedang percobaan', () {
+      final layar = File('lib/screens/super_admin_billing_screen.dart')
+          .readAsStringSync();
+      expect(layar, contains('class _PenandaBaris'));
+      expect(layar, contains("'Trial \${k.sisaHari}h'"));
+    });
+
+    // Lencana yang cuma menyebut "Percobaan" tidak memberi tahu menu
+    // mana yang sedang dipegang.
+    test('lencana merchant menyebut paket percobaannya', () {
+      final lencana =
+          File('lib/widgets/lencana_paket_aktif.dart').readAsStringSync();
+      expect(lencana, contains("'Percobaan \${coba.label}"));
+    });
+
+    // Menampilkan paket yang sedang dipakai sebagai pilihan berarti
+    // menawarkan tombol yang tidak mengubah apa pun, lalu menagih
+    // bayaran untuknya.
+    test('yang sudah berlangganan cuma ditawari paket yang lain', () {
+      const basic = KeadaanLangganan(paket: Paket.basic);
+      expect(basic.paketTujuanUbah, Paket.premium);
+      const premium = KeadaanLangganan(paket: Paket.premium);
+      expect(premium.paketTujuanUbah, Paket.basic);
+      const belum = KeadaanLangganan();
+      expect(belum.paketTujuanUbah, isNull);
+
+      final layar =
+          File('lib/screens/pilih_paket_screen.dart').readAsStringSync();
+      expect(layar, contains('List<InfoPaket> get _pilihanPaket'));
+      expect(layar, contains('p.paket == tujuan'));
+    });
+
+    // Percobaan Basic tetap boleh langsung berlangganan Premium.
+    test('yang sedang percobaan tetap bisa memilih dua-duanya', () {
+      const coba = KeadaanLangganan(
+          dalamPercobaan: true, trialPaket: Paket.basic);
+      expect(coba.paketTujuanUbah, isNull);
+      expect(coba.paketBerlaku, Paket.basic);
+      expect(coba.sudahBerlangganan, isFalse);
+    });
+  });
+
   group('keadaan langganan', () {
     test('merchant lama dikenali di luar jalur paket', () {
       const k = KeadaanLangganan();

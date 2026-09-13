@@ -52,6 +52,10 @@ class KeadaanLangganan {
   final DateTime? trialSampai;
   final int? trialHari;
 
+  /// Paket yang sedang dicoba. Percobaan lama tanpa paket dijawab
+  /// server sebagai Premium, sama seperti perilakunya dulu.
+  final Paket? trialPaket;
+
   /// Sisa hari percobaan. Negatif berarti sudah lewat.
   final int? sisaHari;
 
@@ -70,6 +74,7 @@ class KeadaanLangganan {
     this.harga = 0,
     this.trialSampai,
     this.trialHari,
+    this.trialPaket,
     this.sisaHari,
     this.dalamPercobaan = false,
     this.percobaanHabis = false,
@@ -91,6 +96,25 @@ class KeadaanLangganan {
   bool get mendekatiHabis =>
       dalamPercobaan && sisaHari != null && sisaHari! <= 2;
 
+  /// Paket yang sedang berlaku sekarang — yang dilanggan, atau yang
+  /// sedang dicoba.
+  Paket? get paketBerlaku => paket ?? (dalamPercobaan ? trialPaket : null);
+
+  /// Paket lain yang bisa dipindahi.
+  ///
+  /// Yang sudah Basic cuma bisa pindah ke Premium, dan sebaliknya.
+  /// Menawarkan paket yang sedang dipakai sebagai pilihan berarti
+  /// menawarkan tombol yang tidak mengubah apa pun.
+  Paket? get paketTujuanUbah => switch (paket) {
+        Paket.basic => Paket.premium,
+        Paket.premium => Paket.basic,
+        null => null,
+      };
+
+  /// Sudah berlangganan — pilihannya bukan lagi "pilih paket" melainkan
+  /// "ubah paket".
+  bool get sudahBerlangganan => paket != null;
+
   factory KeadaanLangganan.fromMap(Map<String, dynamic> map) =>
       KeadaanLangganan(
         paket: paketDari(map['paket']?.toString()),
@@ -100,6 +124,7 @@ class KeadaanLangganan {
             ? null
             : DateTime.parse(map['trial_until'].toString()),
         trialHari: (map['trial_days'] as num?)?.toInt(),
+        trialPaket: paketDari(map['trial_paket']?.toString()),
         sisaHari: (map['sisa_hari'] as num?)?.toInt(),
         dalamPercobaan: map['dalam_percobaan'] == true,
         percobaanHabis: map['percobaan_habis'] == true,

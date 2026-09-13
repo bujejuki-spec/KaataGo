@@ -122,6 +122,23 @@ class AbsensiRepository {
     return BarisAbsensi.fromMap(rows.first);
   }
 
+  /// Foto acuan tiap karyawan — yang didaftarkan sekali di awal.
+  ///
+  /// Dipakai layar Absensi Karyawan untuk menyandingkannya dengan foto
+  /// absen hari itu. Pemeriksaan otomatis menangkap yang bentuk
+  /// wajahnya jelas berbeda; yang halus ditangkap mata orang, dan cuma
+  /// bisa ditangkap kalau kedua fotonya benar-benar bersebelahan.
+  Future<Map<String, String>> fotoAcuan(String restoId) async {
+    final rows =
+        await _client.rpc('foto_acuan_wajah', params: {'p_resto_id': restoId});
+    return {
+      for (final r in (rows as List? ?? const []))
+        if ((r as Map)['foto_url'] != null)
+          r['employee_email'].toString().toLowerCase():
+              r['foto_url'].toString(),
+    };
+  }
+
   /// Atasan membetulkan statusnya, atau memutuskan potong gaji.
   Future<void> putuskan({
     required String id,

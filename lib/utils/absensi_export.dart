@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 
 import '../models/absensi.dart';
 import 'id_time.dart';
@@ -72,6 +73,7 @@ Uint8List xlsxAbsensiPayroll({
       SelXlsx.teks('Atas Nama'),
       SelXlsx.teks('Hari Kerja'),
       SelXlsx.teks('Hadir'),
+      SelXlsx.teks('Jam Kerja'),
       SelXlsx.teks('Izin'),
       SelXlsx.teks('Sakit'),
       SelXlsx.teks('Cuti'),
@@ -100,6 +102,9 @@ Uint8List xlsxAbsensiPayroll({
         SelXlsx.teks(r.payroll.accountHolder ?? '-'),
         SelXlsx.angka(r.payroll.hariKerja),
         SelXlsx.angka(r.payroll.hadir),
+        SelXlsx.angka(double.parse(
+            r.absensi.fold<double>(0, (a, b) => a + b.lamaJam)
+                .toStringAsFixed(2))),
         SelXlsx.angka(r.payroll.izin),
         SelXlsx.angka(r.payroll.sakit),
         SelXlsx.angka(r.payroll.cuti),
@@ -115,7 +120,7 @@ Uint8List xlsxAbsensiPayroll({
     const [SelXlsx.kosong()],
     [
       const SelXlsx.teks('TOTAL'),
-      for (var i = 0; i < 17; i++) const SelXlsx.kosong(),
+      for (var i = 0; i < 18; i++) const SelXlsx.kosong(),
       SelXlsx.angka(data.fold<int>(0, (a, b) => a + b.payroll.gajiBersih)),
     ],
     const [SelXlsx.kosong()],
@@ -140,6 +145,7 @@ Uint8List xlsxAbsensiPayroll({
       SelXlsx.teks('Status'),
       SelXlsx.teks('Masuk'),
       SelXlsx.teks('Pulang'),
+      SelXlsx.teks('Jam Kerja'),
       SelXlsx.teks('Jarak (m)'),
       SelXlsx.teks('Latitude'),
       SelXlsx.teks('Longitude'),
@@ -155,6 +161,12 @@ Uint8List xlsxAbsensiPayroll({
           SelXlsx.teks(a.masukAt == null ? '-' : _jam.format(a.masukAt!.toWib())),
           SelXlsx.teks(
               a.pulangAt == null ? '-' : _jam.format(a.pulangAt!.toWib())),
+          // Angka, bukan "7j 45m": lembar ini dipakai menjumlah, dan
+          // teks berjam-menit berhenti bisa dijumlahkan di Excel.
+          if (a.lama != null)
+            SelXlsx.angka(double.parse(a.lamaJam.toStringAsFixed(2)))
+          else
+            const SelXlsx.teks('-'),
           if (a.masukJarakM != null)
             SelXlsx.angka(a.masukJarakM!)
           else
@@ -176,13 +188,13 @@ Uint8List xlsxAbsensiPayroll({
     LembarXlsx(
       nama: 'Payroll',
       baris: rekap,
-      lebarKolom: const [22, 10, 14, 10, 18, 20, 11, 8, 7, 8, 7, 7, 12, 14, 13,
-        15, 15, 20, 15],
+      lebarKolom: const [22, 10, 14, 10, 18, 20, 11, 8, 11, 7, 8, 7, 7, 12,
+        14, 13, 15, 15, 20, 15],
     ),
     LembarXlsx(
       nama: 'Absensi Harian',
       baris: harian,
-      lebarKolom: const [22, 12, 10, 9, 9, 10, 12, 12, 11, 30],
+      lebarKolom: const [22, 12, 10, 9, 9, 11, 10, 12, 12, 11, 30],
     ),
   ]);
 }
@@ -190,6 +202,28 @@ Uint8List xlsxAbsensiPayroll({
 // ─────────────────────────────────────────────────────────────────────
 // PDF
 // ─────────────────────────────────────────────────────────────────────
+
+/// Font yang punya huruf-huruf di luar Latin-1.
+///
+/// Font bawaan PDF (Helvetica) cuma menjamin Latin-1. Nama merchant dan
+/// nama karyawan diketik orang dari papan ketik ponsel, yang gemar
+/// menyisipkan tanda kutip melengkung dan en dash tanpa diminta — dan
+/// semuanya keluar sebagai kotak kosong, tanpa satu pun galat.
+///
+/// Gagal memuatnya tidak menggagalkan cetakan: yang dipakai kembali font
+/// bawaannya, dan yang hilang cuma beberapa huruf yang jarang. Laporan
+/// gaji yang batal tercetak karena jaringan sedang mati jauh lebih
+/// merugikan.
+Future<pw.ThemeData?> temaPdf() async {
+  try {
+    return pw.ThemeData.withFont(
+      base: await PdfGoogleFonts.notoSansRegular(),
+      bold: await PdfGoogleFonts.notoSansBold(),
+    );
+  } catch (_) {
+    return null;
+  }
+}
 
 Future<Uint8List> pdfAbsensiPayroll({
   required String namaMerchant,
@@ -200,16 +234,18 @@ Future<Uint8List> pdfAbsensiPayroll({
 }) async {
   final doc = pw.Document();
   final total = data.fold<int>(0, (a, b) => a + b.payroll.gajiBersih);
+  final tema = await temaPdf();
 
   doc.addPage(
     pw.MultiPage(
       pageFormat: PdfPageFormat.a4.landscape,
       margin: const pw.EdgeInsets.all(28),
+      theme: tema,
       header: (context) => context.pageNumber == 1
           ? pw.SizedBox()
           : pw.Padding(
               padding: const pw.EdgeInsets.only(bottom: 10),
-              child: pw.Text('Absensi & Payroll — $namaMerchant',
+              child: pw.Text('Absensi & Payroll - $namaMerchant',
                   style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
             ),
       footer: (context) => pw.Align(
@@ -222,10 +258,15 @@ Future<Uint8List> pdfAbsensiPayroll({
             style: pw.TextStyle(fontSize: 17, fontWeight: pw.FontWeight.bold)),
         pw.SizedBox(height: 2),
         pw.Text(namaMerchant, style: const pw.TextStyle(fontSize: 12)),
+        // Pemisahnya koma, bukan bullet.
+        //
+        // Font bawaan PDF cuma menjamin Latin-1; bullet di luar itu, dan
+        // yang keluar kotak kosong — bukan galat, jadi tidak ada yang
+        // memberitahu selain orang yang membuka berkasnya.
         pw.Text(
           'Periode ${_tglPendek.format(mulai)} - ${_tglPendek.format(akhir)}'
-          '  •  ${aturan.hariKerjaPeriode} hari kerja'
-          '  •  gajian tiap tanggal ${aturan.tanggalGajian}',
+          ', ${aturan.hariKerjaPeriode} hari kerja'
+          ', gajian tiap tanggal ${aturan.tanggalGajian}',
           style: const pw.TextStyle(fontSize: 9.5, color: PdfColors.grey700),
         ),
         pw.SizedBox(height: 12),
@@ -261,7 +302,7 @@ pw.Widget _tabelPayroll(List<RekapKaryawan> data) {
     headerDecoration: const pw.BoxDecoration(color: PdfColors.grey200),
     cellAlignment: pw.Alignment.centerLeft,
     cellAlignments: {
-      for (var i = 6; i <= 12; i++) i: pw.Alignment.centerRight,
+      for (var i = 5; i <= 13; i++) i: pw.Alignment.centerRight,
     },
     headers: const [
       'Nama',
@@ -270,6 +311,7 @@ pw.Widget _tabelPayroll(List<RekapKaryawan> data) {
       'No. Rekening',
       'Atas Nama',
       'Hadir',
+      'Jam',
       'Potong',
       'Gaji Pokok',
       'Tunjangan',
@@ -285,10 +327,11 @@ pw.Widget _tabelPayroll(List<RekapKaryawan> data) {
           r.payroll.peran,
           // Kode dan nama bank digabung di PDF — yang membacanya manusia,
           // bukan yang menyalin ke kolom formulir.
-          bankBerkode(r.payroll.bankName),
+          bankBerkode(r.payroll.bankName, pemisah: ' - '),
           r.payroll.accountNumber ?? '-',
           r.payroll.accountHolder ?? '-',
           '${r.payroll.hadir}',
+          r.absensi.fold<double>(0, (a, b) => a + b.lamaJam).toStringAsFixed(1),
           '${r.payroll.hariPotong}',
           _rp.format(r.payroll.gajiPokok),
           _rp.format(r.payroll.tunjangan),
@@ -312,6 +355,7 @@ pw.Widget _tabelHarian(List<RekapKaryawan> data) {
       'Status',
       'Masuk',
       'Pulang',
+      'Jam',
       'Jarak',
       'Titik GPS',
       'Potong',
@@ -326,6 +370,7 @@ pw.Widget _tabelHarian(List<RekapKaryawan> data) {
             a.status.label,
             a.masukAt == null ? '-' : _jam.format(a.masukAt!.toWib()),
             a.pulangAt == null ? '-' : _jam.format(a.pulangAt!.toWib()),
+            a.lamaTeks ?? '-',
             a.masukJarakM == null ? '-' : '${a.masukJarakM} m',
             a.masukLat == null
                 ? '-'

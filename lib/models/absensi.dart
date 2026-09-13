@@ -42,6 +42,11 @@ class BarisAbsensi {
   final String? buktiUrl;
   final bool potongGaji;
 
+  /// Kemiripan wajahnya jatuh di pita ragu-ragu: diterima, tapi pantas
+  /// dilihat orang sebelum gajinya dihitung.
+  final bool masukRagu;
+  final bool pulangRagu;
+
   const BarisAbsensi({
     required this.id,
     required this.email,
@@ -59,7 +64,11 @@ class BarisAbsensi {
     this.alasan,
     this.buktiUrl,
     this.potongGaji = false,
+    this.masukRagu = false,
+    this.pulangRagu = false,
   });
+
+  bool get ragu => masukRagu || pulangRagu;
 
   bool get sudahMasuk => masukAt != null;
   bool get sudahPulang => pulangAt != null;
@@ -67,6 +76,20 @@ class BarisAbsensi {
   /// Berapa lama di tempat kerja, atau null kalau belum pulang.
   Duration? get lama =>
       masukAt == null || pulangAt == null ? null : pulangAt!.difference(masukAt!);
+
+  /// "7j 45m", atau null kalau belum pulang.
+  ///
+  /// Diformat di satu tempat, bukan di tiap layar dan tiap ekspor.
+  /// Angka jam kerja yang ditulis berbeda-beda di tiga tempat akan
+  /// suatu hari dijumlahkan orang dan tidak cocok.
+  String? get lamaTeks {
+    final d = lama;
+    if (d == null || d.isNegative) return null;
+    return '${d.inHours}j ${d.inMinutes % 60}m';
+  }
+
+  /// Lama kerja dalam jam, untuk dijumlahkan.
+  double get lamaJam => (lama?.inMinutes ?? 0) / 60.0;
 
   factory BarisAbsensi.fromMap(Map<String, dynamic> map) => BarisAbsensi(
         id: map['id']?.toString() ?? '',
@@ -85,6 +108,8 @@ class BarisAbsensi {
         alasan: map['alasan'] as String?,
         buktiUrl: map['bukti_url'] as String?,
         potongGaji: map['potong_gaji'] == true,
+        masukRagu: map['masuk_ragu'] == true,
+        pulangRagu: map['pulang_ragu'] == true,
       );
 
   static DateTime? _waktu(dynamic v) =>

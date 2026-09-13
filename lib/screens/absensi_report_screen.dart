@@ -43,6 +43,7 @@ class _AbsensiReportScreenState extends State<AbsensiReportScreen> {
   AturanGaji _aturan = const AturanGaji();
   List<BarisAbsensi> _baris = const [];
   var _nama = const <String, String>{};
+  var _acuan = const <String, String>{};
   String _namaMerchant = '';
 
   bool _memuat = true;
@@ -83,6 +84,7 @@ class _AbsensiReportScreenState extends State<AbsensiReportScreen> {
         _absensi.rentang(restoId, mulai: p.mulai, akhir: p.akhir),
         RestaurantRepository().getOnce(restoId),
         EmployeeRepository().getByResto(restoId),
+        _absensi.fotoAcuan(restoId),
       ]);
       if (!mounted) return;
       setState(() {
@@ -96,6 +98,7 @@ class _AbsensiReportScreenState extends State<AbsensiReportScreen> {
           for (final e in hasil[2] as List<Employee>)
             e.email.toLowerCase(): e.name.isEmpty ? e.email : e.name,
         };
+        _acuan = hasil[3] as Map<String, String>;
         _memuat = false;
       });
     } catch (e) {
@@ -267,6 +270,7 @@ class _AbsensiReportScreenState extends State<AbsensiReportScreen> {
                           _KartuOrang(
                             nama: _namaOrang(e.key),
                             email: e.key,
+                            acuanUrl: _acuan[e.key],
                             baris: e.value,
                             terbuka: _fokus == e.key,
                             jam: _jam,
@@ -286,6 +290,7 @@ class _AbsensiReportScreenState extends State<AbsensiReportScreen> {
 class _KartuOrang extends StatelessWidget {
   final String nama;
   final String email;
+  final String? acuanUrl;
   final List<BarisAbsensi> baris;
   final bool terbuka;
   final DateFormat jam;
@@ -297,6 +302,7 @@ class _KartuOrang extends StatelessWidget {
   const _KartuOrang({
     required this.nama,
     required this.email,
+    this.acuanUrl,
     required this.baris,
     required this.terbuka,
     required this.jam,
@@ -309,6 +315,8 @@ class _KartuOrang extends StatelessWidget {
     final muted = KaataTheme.mutedOf(context);
     final hadir = baris.where((b) => b.status == StatusAbsen.hadir).length;
     final potong = baris.where((b) => b.potongGaji).length;
+    final ragu = baris.where((b) => b.ragu).length;
+    final totalJam = baris.fold<double>(0, (a, b) => a + b.lamaJam);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -325,8 +333,12 @@ class _KartuOrang extends StatelessWidget {
                     fontSize: 14, fontWeight: FontWeight.bold)),
             subtitle: Text(
               '$hadir hari hadir'
-              '${potong > 0 ? '  •  $potong hari potong gaji' : ''}',
-              style: TextStyle(fontSize: 12, color: muted),
+              '${totalJam > 0 ? '  •  ${totalJam.toStringAsFixed(1)} jam kerja' : ''}'
+              '${potong > 0 ? '  •  $potong hari potong gaji' : ''}'
+              '${ragu > 0 ? '  •  $ragu hari perlu dilihat' : ''}',
+              style: TextStyle(
+                  fontSize: 12,
+                  color: ragu > 0 ? const Color(0xFFB45309) : muted),
             ),
             trailing: Icon(terbuka ? Icons.expand_less : Icons.expand_more),
             onTap: onToggle,
@@ -349,6 +361,7 @@ class _KartuOrang extends StatelessWidget {
                             b.status == StatusAbsen.hadir
                                 ? '${b.masukAt == null ? '—' : jam.format(b.masukAt!.toWib())}'
                                     ' → ${b.pulangAt == null ? '—' : jam.format(b.pulangAt!.toWib())}'
+                                    '${b.lamaTeks == null ? '' : '  ·  ${b.lamaTeks}'}'
                                     '${b.masukJarakM == null ? '' : '  (${b.masukJarakM} m)'}'
                                 : '${b.status.label}${b.alasan == null ? '' : ' — ${b.alasan}'}',
                             maxLines: 1,
@@ -356,6 +369,21 @@ class _KartuOrang extends StatelessWidget {
                             style: const TextStyle(fontSize: 12),
                           ),
                         ),
+                        // Foto absennya disandingkan dengan foto acuan.
+                        //
+                        // Inilah yang benar-benar menangkap absen yang
+                        // dititipkan. Pencocokan otomatisnya cuma
+                        // membandingkan bentuk wajah, dan bentuk wajah
+                        // dua orang bisa mirip — yang tidak mirip
+                        // wajahnya sendiri, dan itu terlihat dalam dua
+                        // detik kalau kedua fotonya bersebelahan.
+                        if (b.masukFotoUrl != null)
+                          _TombolFoto(
+                            acuanUrl: acuanUrl,
+                            absenUrl: b.masukFotoUrl!,
+                            nama: nama,
+                            ragu: b.masukRagu,
+                          ),
                         // Keputusan potong gaji ada di baris harinya,
                         // bukan di layar payroll. Yang memutuskannya
                         // butuh melihat alasan dan buktinya — dan
@@ -378,6 +406,175 @@ class _KartuOrang extends StatelessWidget {
             ),
         ],
       ),
+    );
+  }
+}
+
+/// Membuka foto acuan dan foto absen bersebelahan.
+///
+/// Inilah pemeriksaan yang benar-benar menangkap absen yang dititipkan.
+/// Pencocokan otomatis di server cuma membandingkan BENTUK wajah, dan
+/// bentuk wajah dua orang bisa mirip — yang tidak mirip wajahnya
+/// sendiri, dan itu terlihat seketika oleh mata orang.
+///
+/// Diletakkan di baris harinya, tepat di sebelah sakelar potong gaji:
+/// keduanya dipakai pada saat yang sama, yaitu saat memutuskan seseorang
+/// dibayar untuk hari itu atau tidak.
+class _TombolFoto extends StatelessWidget {
+  final String? acuanUrl;
+  final String absenUrl;
+  final String nama;
+  final bool ragu;
+
+  const _TombolFoto({
+    required this.acuanUrl,
+    required this.absenUrl,
+    required this.nama,
+    required this.ragu,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      icon: Icon(
+        ragu ? Icons.report_gmailerrorred_outlined : Icons.face_outlined,
+        size: 19,
+        color: ragu ? const Color(0xFFB45309) : null,
+      ),
+      tooltip: ragu
+          ? 'Wajahnya kurang meyakinkan — periksa fotonya'
+          : 'Bandingkan dengan foto acuan',
+      onPressed: () => showDialog<void>(
+        context: context,
+        builder: (_) => _DialogBandingFoto(
+          acuanUrl: acuanUrl,
+          absenUrl: absenUrl,
+          nama: nama,
+          ragu: ragu,
+        ),
+      ),
+    );
+  }
+}
+
+class _DialogBandingFoto extends StatelessWidget {
+  final String? acuanUrl;
+  final String absenUrl;
+  final String nama;
+  final bool ragu;
+
+  const _DialogBandingFoto({
+    required this.acuanUrl,
+    required this.absenUrl,
+    required this.nama,
+    required this.ragu,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final muted = KaataTheme.mutedOf(context);
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: Text(nama,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 16)),
+      contentPadding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+      content: SizedBox(
+        width: 340,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (ragu) ...[
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFB45309).withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Text(
+                  'Kemiripan wajahnya di bawah yang meyakinkan. Absennya '
+                  'tetap tercatat — periksa sendiri kedua fotonya.',
+                  style: TextStyle(fontSize: 12, color: Color(0xFF92400E)),
+                ),
+              ),
+              const SizedBox(height: 14),
+            ],
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: _Foto(
+                      judul: 'Acuan', url: acuanUrl, kosong: 'Belum ada'),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _Foto(judul: 'Absen hari itu', url: absenUrl),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Foto acuan diambil sekali saat mendaftarkan wajah. Kalau '
+              'kedua wajah ini jelas bukan orang yang sama, reset wajahnya '
+              'lewat Kelola Karyawan lalu tandai harinya memotong gaji.',
+              style: TextStyle(fontSize: 11.5, height: 1.4, color: muted),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Tutup'),
+        ),
+      ],
+    );
+  }
+}
+
+class _Foto extends StatelessWidget {
+  final String judul;
+  final String? url;
+  final String kosong;
+
+  const _Foto({required this.judul, this.url, this.kosong = 'Tidak ada'});
+
+  @override
+  Widget build(BuildContext context) {
+    final muted = KaataTheme.mutedOf(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(judul,
+            style: TextStyle(
+                fontSize: 11.5, fontWeight: FontWeight.bold, color: muted)),
+        const SizedBox(height: 5),
+        AspectRatio(
+          aspectRatio: 1,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: url == null
+                ? Container(
+                    color: KaataTheme.softFillOf(context),
+                    alignment: Alignment.center,
+                    child: Text(kosong,
+                        style: TextStyle(fontSize: 11.5, color: muted)),
+                  )
+                : Image.network(
+                    url!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      color: KaataTheme.softFillOf(context),
+                      alignment: Alignment.center,
+                      child: Text('Gagal dimuat',
+                          style: TextStyle(fontSize: 11.5, color: muted)),
+                    ),
+                  ),
+          ),
+        ),
+      ],
     );
   }
 }

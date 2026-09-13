@@ -116,6 +116,9 @@ FILES=(
   absensi_payroll.sql
   paket_langganan.sql
   perbaikan_hak_fungsi.sql
+  paket_trial_rapi.sql
+  wajah_tidak_kembar.sql
+  wajah_geometri.sql
   shift_opening_check.sql
   support_tickets.sql
   support_push.sql

@@ -123,13 +123,35 @@ class PaketLanggananRepository {
       });
 
   /// Memberi masa percobaan sekian hari, dihitung dari hari ini.
+  ///
+  /// Paketnya ikut disebut: yang mencoba Basic memang harus melihat
+  /// Basic, bukan mencicipi Premium dua minggu lalu kehilangan separuh
+  /// menunya persis di hari dia mulai membayar.
   Future<DateTime> setelPercobaan({
     required String restoId,
     required int hari,
+    required Paket paket,
   }) async {
-    final sampai = await _client.rpc('set_trial_resto',
-        params: {'p_resto_id': restoId, 'p_hari': hari});
+    final sampai = await _client.rpc('set_trial_resto', params: {
+      'p_resto_id': restoId,
+      'p_hari': hari,
+      'p_paket': paket.kode,
+    });
     return DateTime.parse(sampai.toString());
+  }
+
+  /// Keadaan seluruh merchant sekaligus, untuk layar KaataGo Admin.
+  ///
+  /// Satu panggilan, bukan satu per baris: layarnya menampilkan puluhan
+  /// merchant, dan menanyakannya satu per satu berarti puluhan
+  /// panggilan tiap kali layarnya dibuka.
+  Future<Map<String, KeadaanLangganan>> keadaanSemua() async {
+    final rows = await _client.rpc('keadaan_langganan_semua');
+    return {
+      for (final r in (rows as List? ?? const []))
+        (r as Map)['resto_id'].toString():
+            KeadaanLangganan.fromMap(Map<String, dynamic>.from(r)),
+    };
   }
 
   /// Berapa pengajuan yang menunggu diperiksa — isi penanda merah di

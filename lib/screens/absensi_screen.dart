@@ -312,12 +312,33 @@ class _AbsensiScreenState extends State<AbsensiScreen> {
                         pesan: 'Absen hanya bisa lewat aplikasi KaataGo di HP — '
                             'yang diperlukan kamera depan dan GPS yang kamu bawa.',
                       )
-                    else if (!_modelSiap)
+                    else if (!_modelSiap) ...[
+                      // Tidak menyuruh memperbarui aplikasi.
+                      //
+                      // Modelnya tidak ada di versi mana pun — ia belum
+                      // dipasang KaataGo sama sekali. Menyuruh orang
+                      // memperbarui berarti menyuruhnya mengerjakan
+                      // sesuatu yang tidak akan menolong, lalu menyimpulkan
+                      // sendiri bahwa aplikasinya rusak saat ternyata
+                      // pesannya tetap sama.
                       const _Peringatan(
-                        pesan: 'Pengenal wajah belum terpasang di versi aplikasi '
-                            'ini. Perbarui aplikasinya lewat Kotak Masuk.',
-                      )
-                    else if (!_wajahTerdaftar)
+                        pesan: 'Absen wajah belum diaktifkan KaataGo untuk '
+                            'aplikasi ini. Mengajukan izin, sakit, atau cuti '
+                            'tetap bisa dilakukan di bawah.',
+                      ),
+                      // Izin dan sakit memang tidak butuh wajah maupun
+                      // GPS — yang sedang sakit di rumah tidak bisa
+                      // berdiri di depan merchant. Menyembunyikannya di
+                      // balik pemeriksaan model berarti orang yang sakit
+                      // hari ini tidak punya cara menyatakannya sama
+                      // sekali.
+                      _KartuTidakMasukSaja(
+                        baris: _hariIni,
+                        sibuk: _sibuk,
+                        tanggal: _tanggalPanjang,
+                        onTidakMasuk: _ajukanTidakMasuk,
+                      ),
+                    ] else if (!_wajahTerdaftar)
                       _KartuDaftarWajah(sibuk: _sibuk, onDaftar: _daftarWajah)
                     else
                       _KartuHariIni(
@@ -534,8 +555,13 @@ class _KartuHariIni extends StatelessWidget {
                 const Icon(Icons.check_circle, size: 18, color: Color(0xFF10B981)),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text('Absensi hari ini sudah lengkap.',
-                      style: TextStyle(fontSize: 12.5, color: muted)),
+                  child: Text(
+                    baris?.lamaTeks == null
+                        ? 'Absensi hari ini sudah lengkap.'
+                        : 'Selesai — hari ini ${baris!.lamaTeks} di tempat '
+                            'kerja.',
+                    style: TextStyle(fontSize: 12.5, color: muted),
+                  ),
                 ),
               ],
             ),
@@ -550,6 +576,68 @@ class _KartuHariIni extends StatelessWidget {
               ),
             ),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Saat absen wajahnya belum bisa dipakai, tapi menyatakan tidak masuk
+/// masih bisa.
+class _KartuTidakMasukSaja extends StatelessWidget {
+  final BarisAbsensi? baris;
+  final bool sibuk;
+  final DateFormat tanggal;
+  final VoidCallback onTidakMasuk;
+
+  const _KartuTidakMasukSaja({
+    required this.baris,
+    required this.sibuk,
+    required this.tanggal,
+    required this.onTidakMasuk,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final muted = KaataTheme.mutedOf(context);
+    final sudahDiajukan = baris != null && baris!.status != StatusAbsen.hadir;
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: KaataTheme.surfaceOf(context),
+        border: Border.all(color: KaataTheme.borderOf(context)),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(tanggal.format(DateTime.now().toWib()),
+              style: TextStyle(fontSize: 12.5, color: muted)),
+          const SizedBox(height: 10),
+          if (sudahDiajukan)
+            Text(
+              'Hari ini tercatat ${baris!.status.label.toLowerCase()}'
+              '${baris!.alasan == null ? '' : ' — ${baris!.alasan}'}.',
+              style: const TextStyle(fontSize: 14),
+            )
+          else
+            Text(
+              'Belum ada catatan untuk hari ini.',
+              style: TextStyle(fontSize: 14, color: muted),
+            ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            height: 46,
+            child: FilledButton.icon(
+              icon: const Icon(Icons.event_busy_outlined, size: 18),
+              label: Text(sudahDiajukan
+                  ? 'Ubah Pengajuan'
+                  : 'Ajukan Izin / Sakit / Cuti'),
+              onPressed: sibuk ? null : onTidakMasuk,
+            ),
+          ),
         ],
       ),
     );
@@ -654,6 +742,7 @@ class _BarisRiwayat extends StatelessWidget {
                   baris.status == StatusAbsen.hadir
                       ? '${baris.masukAt == null ? '—' : jam.format(baris.masukAt!.toWib())}'
                           ' → ${baris.pulangAt == null ? 'belum pulang' : jam.format(baris.pulangAt!.toWib())}'
+                          '${baris.lamaTeks == null ? '' : '  ·  ${baris.lamaTeks}'}'
                       : (baris.alasan?.isNotEmpty == true
                           ? baris.alasan!
                           : baris.status.label),

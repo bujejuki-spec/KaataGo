@@ -222,12 +222,318 @@ void main() {
   test('mesin wajah diimpor bersyarat supaya web tetap bisa dibangun', () {
     final s = File('lib/utils/mesin_wajah.dart').readAsStringSync();
     expect(s, contains("export 'mesin_wajah_kosong.dart'"));
-    expect(s, contains("if (dart.library.io) 'mesin_wajah_tflite.dart'"));
+    expect(s, contains("if (dart.library.io) 'mesin_wajah_perangkat.dart'"));
 
     // Layar absensinya sendiri tidak boleh mengimpor tflite langsung.
     final layar = File('lib/screens/absensi_screen.dart').readAsStringSync();
-    expect(layar, isNot(contains('tflite_flutter')));
     expect(layar, isNot(contains('google_mlkit')));
+  });
+
+  // Kotak kosong di PDF tidak pernah muncul sebagai galat. Yang
+  // menemukannya orang yang membuka berkasnya — dan untuk daftar
+  // transfer gaji, kotak kosong di tengah nomor rekening adalah
+  // kekeliruan yang mahal.
+  group('PDF tidak menghasilkan kotak kosong', () {
+    // Font bawaan PDF (Helvetica) cuma menjamin Latin-1.
+    final diluarLatin1 = RegExp(r'[^\x00-\xFF]');
+
+    /// Teks di dalam tanda kutip pada sebuah berkas Dart.
+    Iterable<String> teksDart(String jalur) {
+      final isi = File(jalur).readAsStringSync();
+      // Komentar dibuang: yang dicetak ke PDF cuma literalnya.
+      final tanpaKomentar =
+          isi.split('\n').where((b) => !b.trimLeft().startsWith('//')).join('\n');
+      return RegExp(r"'((?:[^'\\\n]|\\.)*)'")
+          .allMatches(tanpaKomentar)
+          .map((m) => m.group(1)!);
+    }
+
+    for (final berkas in [
+      'lib/utils/absensi_export.dart',
+      'lib/utils/slip_gaji_pdf.dart',
+    ]) {
+      test('$berkas memakai huruf yang dijamin ada', () {
+        final nakal = teksDart(berkas)
+            .where((t) => diluarLatin1.hasMatch(t))
+            .toList();
+        expect(nakal, isEmpty,
+            reason: 'huruf ini keluar sebagai kotak kosong di PDF: '
+                '${nakal.join(' | ')}');
+      });
+    }
+
+    // Nama merchant dan nama karyawan diketik orang dari papan ketik
+    // ponsel, yang gemar menyisipkan tanda kutip melengkung tanpa
+    // diminta. Itu tidak bisa disaring di sini — jadi fontnya dipasang.
+    test('fontnya dipasang, dan gagal memuatnya tidak membatalkan cetakan',
+        () {
+      final ekspor =
+          File('lib/utils/absensi_export.dart').readAsStringSync();
+      expect(ekspor, contains('PdfGoogleFonts.notoSansRegular()'));
+      expect(ekspor, contains('Future<pw.ThemeData?> temaPdf()'));
+      final blok = ekspor.substring(ekspor.indexOf('Future<pw.ThemeData?> temaPdf'));
+      expect(blok.substring(0, blok.indexOf('\n}')), contains('catch (_)'));
+
+      final slip = File('lib/utils/slip_gaji_pdf.dart').readAsStringSync();
+      expect(slip, contains('theme: tema'));
+    });
+
+    // Kode bank yang dipisah em dash keluar sebagai kotak di tengah
+    // nomor rekening.
+    test('kode bank di PDF memakai pemisah biasa', () {
+      expect(bankBerkode('BCA', pemisah: ' - '), '014 - BCA');
+      for (final berkas in [
+        'lib/utils/absensi_export.dart',
+        'lib/utils/slip_gaji_pdf.dart',
+      ]) {
+        final isi = File(berkas).readAsStringSync();
+        if (!isi.contains('bankBerkode(')) continue;
+        expect(isi, contains("pemisah: ' - '"), reason: berkas);
+      }
+    });
+  });
+
+  group('jam kerja dari absen masuk sampai pulang', () {
+    BarisAbsensi baris({DateTime? masuk, DateTime? pulang}) => BarisAbsensi(
+          id: '1',
+          email: 'a@b.c',
+          tanggal: DateTime(2026, 9, 14),
+          status: StatusAbsen.hadir,
+          masukAt: masuk,
+          pulangAt: pulang,
+        );
+
+    test('dihitung dari selisih keduanya', () {
+      final b = baris(
+        masuk: DateTime.utc(2026, 9, 14, 1),
+        pulang: DateTime.utc(2026, 9, 14, 8, 45),
+      );
+      expect(b.lamaTeks, '7j 45m');
+      expect(b.lamaJam, closeTo(7.75, 0.001));
+    });
+
+    // Yang belum pulang belum punya jam kerja — bukan nol, karena nol
+    // terbaca sebagai "datang lalu langsung pulang".
+    test('belum pulang berarti belum ada angkanya', () {
+      expect(baris(masuk: DateTime.utc(2026, 9, 14, 1)).lamaTeks, isNull);
+      expect(baris().lamaTeks, isNull);
+    });
+
+    // Jam pulang yang lebih awal daripada jam masuk cuma bisa datang
+    // dari data yang kacau; yang keluar jangan angka minus.
+    test('selisih minus tidak ditampilkan', () {
+      final b = baris(
+        masuk: DateTime.utc(2026, 9, 14, 9),
+        pulang: DateTime.utc(2026, 9, 14, 8),
+      );
+      expect(b.lamaTeks, isNull);
+    });
+
+    test('tampil di layar karyawan, layar atasan, dan kedua ekspor', () {
+      for (final jalur in [
+        'lib/screens/absensi_screen.dart',
+        'lib/screens/absensi_report_screen.dart',
+        'lib/utils/absensi_export.dart',
+      ]) {
+        final isi = File(jalur).readAsStringSync();
+        expect(isi, anyOf(contains('lamaTeks'), contains('lamaJam')),
+            reason: jalur);
+      }
+    });
+
+    // Lembar XLSX dipakai menjumlah. Teks "7j 45m" berhenti bisa
+    // dijumlahkan di Excel.
+    test('XLSX menulisnya sebagai angka, PDF sebagai teks', () {
+      final e = File('lib/utils/absensi_export.dart').readAsStringSync();
+      expect(e, contains('SelXlsx.angka(double.parse(a.lamaJam'));
+      expect(e, contains('a.lamaTeks ?? '));
+    });
+  });
+
+  // Radiusnya ada supaya kasir dan dapur benar-benar berada di merchant.
+  // Admin dan Finance sering tidak — satu kantor pusat bisa mengurus
+  // beberapa merchant sekaligus.
+  group('radius absen', () {
+    final sql = File('supabase/wajah_geometri.sql').readAsStringSync();
+
+    test('Admin dan Finance tidak diikat radius', () {
+      expect(sql, contains("not in ('admin', 'finance')"));
+      expect(sql, contains('v_wajib_dekat and v_jarak >'));
+    });
+
+    // Yang dilepas cuma penolakannya, bukan pencatatannya — kalau suatu
+    // hari ada yang perlu ditelusuri, yang dibutuhkan justru titik itu.
+    test('titik GPS-nya tetap dicatat', () {
+      final blok = sql.substring(sql.indexOf('v_wajib_dekat :='));
+      expect(blok, contains('masuk_jarak_m'));
+      expect(blok, contains('masuk_lat'));
+    });
+
+    test('peran lain tetap diikat', () {
+      // Kasir, chef, dan owner tidak disebut di pengecualiannya.
+      final blok = sql.substring(sql.indexOf('v_wajib_dekat :='),
+          sql.indexOf('v_wajib_dekat and'));
+      for (final peran in ['kasir', 'chef', 'owner']) {
+        expect(blok, isNot(contains("'$peran'")), reason: peran);
+      }
+    });
+  });
+
+  // Absen wajah sekarang memakai geometri dari ML Kit, bukan model
+  // terlatih. Tidak ada berkas model yang perlu ikut.
+  group('pencocokan wajah dari geometri', () {
+    final mesin =
+        File('lib/utils/mesin_wajah_perangkat.dart').readAsStringSync();
+    final sql = File('supabase/wajah_geometri.sql').readAsStringSync();
+
+    test('tidak lagi bergantung pada model terlatih', () {
+      expect(File('pubspec.yaml').readAsStringSync(),
+          isNot(contains('tflite_flutter')));
+      expect(File('lib/utils/mesin_wajah_tflite.dart').existsSync(), isFalse);
+      expect(mesin, contains("namaModel = 'geometri-mlkit-v1'"));
+    });
+
+    // Wajah yang sama pada jarak berbeda dari kamera menghasilkan angka
+    // yang sama sekali berbeda tanpa penyeragaman ini — dan yang
+    // dibandingkan bukan lagi wajahnya melainkan seberapa dekat orangnya
+    // berdiri.
+    test('diluruskan pada garis mata dan diseragamkan skalanya', () {
+      expect(mesin, contains('math.atan2(beda.dy, beda.dx)'));
+      expect(mesin, contains('/ jarakMata'));
+    });
+
+    // Bibir berubah total antara tersenyum dan tidak; mata menyipit dan
+    // membuka. Orang yang absen sambil tersenyum akan ditolak oleh
+    // wajahnya sendiri kalau keduanya ikut dihitung.
+    test('bagian yang berubah oleh ekspresi tidak ikut', () {
+      final blok = mesin.substring(mesin.indexOf('static const _dipakai'));
+      final daftar = blok.substring(0, blok.indexOf('};'));
+      for (final jangan in ['Lip', 'leftEye:', 'rightEye:']) {
+        expect(daftar, isNot(contains(jangan)), reason: jangan);
+      }
+      expect(daftar, contains('FaceContourType.face'));
+      expect(daftar, contains('noseBridge'));
+    });
+
+    // Deret yang panjangnya berbeda tidak bisa dibandingkan sama sekali.
+    test('panjang deretnya dipaksa tetap', () {
+      expect(mesin, contains('_ambilRata('));
+      final blok = mesin.substring(mesin.indexOf('_ambilRata(List<math.Point'));
+      expect(blok.substring(0, blok.indexOf('\n  }')), contains('berapa'));
+    });
+
+    // Kosinus atas koordinat mendekati 1 untuk siapa pun — semua wajah
+    // memang berbentuk wajah. Yang dibandingkan berhenti berarti apa-apa,
+    // dan semua orang lolos.
+    test('dibandingkan dengan jarak bentuk, bukan kosinus', () {
+      expect(sql, contains('create or replace function _mirip_geometri'));
+      expect(sql, contains('avg((x - y) * (x - y))'));
+      expect(sql, contains("like 'geometri-%' then _mirip_geometri"));
+    });
+
+    // Ada pita di antara "jelas orangnya" dan "jelas bukan". Menolak
+    // semua yang jatuh di situ mengunci orang dari pekerjaannya karena
+    // cahaya pagi yang berbeda.
+    test('yang ragu ditandai, bukan ditolak', () {
+      expect(sql, contains('_ambang_geo_yakin()'));
+      expect(sql, contains('masuk_ragu boolean'));
+      final blok = sql.substring(sql.indexOf('v_ragu := '));
+      expect(blok.substring(0, 200), contains('_ambang_geo_yakin()'));
+    });
+
+    // Angka ambangnya belum diuji pada wajah sungguhan — ia harus bisa
+    // disetel tanpa merilis APK.
+    test('ambangnya berdiri sebagai fungsi yang bisa disetel', () {
+      for (final f in ['_skala_geo', '_ambang_geo', '_ambang_geo_yakin']) {
+        expect(sql, contains('create or replace function $f()'), reason: f);
+      }
+    });
+  });
+
+  // Pencocokan otomatisnya cuma membandingkan bentuk wajah, dan bentuk
+  // wajah dua orang bisa mirip. Yang tidak mirip wajahnya sendiri — dan
+  // itu cuma bisa dilihat kalau kedua fotonya bersebelahan.
+  group('foto acuan disandingkan dengan foto absen', () {
+    final layar =
+        File('lib/screens/absensi_report_screen.dart').readAsStringSync();
+
+    test('layar Absensi Karyawan bisa membandingkan keduanya', () {
+      expect(layar, contains('class _DialogBandingFoto'));
+      expect(layar, contains("judul: 'Acuan'"));
+      expect(layar, contains("judul: 'Absen hari itu'"));
+    });
+
+    test('hari yang ragu ditandai di kartu orangnya', () {
+      expect(layar, contains('hari perlu dilihat'));
+    });
+
+    // employee_faces sengaja tanpa satu pun kebijakan SELECT — yang
+    // dibuka cuma URL fotonya, dan cuma untuk yang memeriksa absensi.
+    test('foto acuan dibuka lewat fungsi, bukan tabelnya', () {
+      final sql = File('supabase/wajah_geometri.sql').readAsStringSync();
+      expect(sql, contains('create or replace function foto_acuan_wajah'));
+      expect(sql, contains("array['owner', 'admin', 'finance']"));
+      expect(File('lib/db/absensi_repository.dart').readAsStringSync(),
+          contains("rpc('foto_acuan_wajah'"));
+    });
+  });
+
+  // Kegagalan yang paling berbahaya bukan model yang menolak semua
+  // orang — itu langsung ketahuan. Yang berbahaya model yang menerima
+  // semua orang, karena tidak ada yang mengeluh.
+  group('wajah kembar ditolak saat pendaftaran', () {
+    final sql = File('supabase/wajah_tidak_kembar.sql').readAsStringSync();
+
+    test('dibandingkan dengan rekan satu merchant', () {
+      expect(sql, contains('_mirip_wajah(embedding, p_embedding)'));
+      expect(sql, contains('v_kembar.skor >= _ambang_kembar()'));
+    });
+
+    // Sidik dari dua model berbeda memang tidak sebanding.
+    test('hanya sidik dari model yang sama yang dibandingkan', () {
+      expect(sql, contains("model = coalesce(p_model, 'mobilefacenet-192')"));
+    });
+
+    // Menyebutkan emailnya membocorkan siapa saja yang sudah terdaftar
+    // kepada siapa pun yang mau memancingnya.
+    test('tidak menyebut wajah siapa yang mirip', () {
+      final blok = sql.substring(sql.indexOf('terlalu mirip'));
+      expect(blok.substring(0, 200),
+          isNot(contains('v_kembar.employee_email')));
+    });
+
+    // Menolak pendaftaran orang yang wajahnya kebetulan mirip
+    // saudaranya mengunci dia sampai ada yang turun tangan.
+    test('ambangnya lebih longgar daripada ambang absen', () {
+      expect(sql, contains('select 0.90::double precision'));
+      final absen = File('supabase/absensi_payroll.sql').readAsStringSync();
+      expect(absen, contains('select 0.75::double precision'));
+    });
+  });
+
+  // Menyuruh orang memperbarui aplikasi berarti menyuruhnya mengerjakan
+  // sesuatu yang tidak akan menolong, lalu menyimpulkan sendiri bahwa
+  // aplikasinya rusak saat pesannya tetap sama.
+  test('tanpa model, pesannya tidak menyuruh memperbarui aplikasi', () {
+    final layar = File('lib/screens/absensi_screen.dart').readAsStringSync();
+    expect(layar, isNot(contains('Perbarui aplikasinya lewat Kotak Masuk')));
+    expect(layar, contains('belum diaktifkan KaataGo'));
+  });
+
+  // Yang sedang sakit di rumah tidak bisa berdiri di depan merchant, dan
+  // servernya memang tidak menuntut wajah maupun GPS untuk itu.
+  // Menyembunyikannya di balik pemeriksaan model berarti orang yang
+  // sakit hari ini tidak punya cara menyatakannya sama sekali.
+  test('tanpa model, izin dan sakit tetap bisa diajukan', () {
+    final layar = File('lib/screens/absensi_screen.dart').readAsStringSync();
+    expect(layar, contains('class _KartuTidakMasukSaja'));
+
+    final blok = layar.substring(
+      layar.indexOf('else if (!_modelSiap)'),
+      layar.indexOf('else if (!_wajahTerdaftar)'),
+    );
+    expect(blok, contains('_KartuTidakMasukSaja('));
+    expect(blok, contains('onTidakMasuk: _ajukanTidakMasuk'));
   });
 
   // Gambar yang boleh dipilih dari galeri adalah gambar yang bisa

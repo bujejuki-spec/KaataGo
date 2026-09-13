@@ -98,6 +98,13 @@ class _SuperAdminBillingScreenState extends State<SuperAdminBillingScreen> {
         _memuat = false;
       });
     }
+    // Keadaan paketnya menyusul, dan kegagalannya tidak menggagalkan
+    // daftarnya: baris tanpa penanda paket masih berguna, layar kosong
+    // tidak.
+    try {
+      final p = await _paketRepo.keadaanSemua();
+      if (mounted) setState(() => _paket = p);
+    } catch (_) {}
   }
 
   Future<void> _terbitkanSekarang() async {
@@ -114,6 +121,9 @@ class _SuperAdminBillingScreenState extends State<SuperAdminBillingScreen> {
   }
 
   final _paketRepo = PaketLanggananRepository();
+
+  /// Keadaan paket tiap merchant, ditarik sekali untuk seluruh daftar.
+  var _paket = const <String, KeadaanLangganan>{};
 
   Future<void> _atur(Restaurant resto) async {
     final hasil = await showDialog<RestoBilling>(
@@ -143,14 +153,17 @@ class _SuperAdminBillingScreenState extends State<SuperAdminBillingScreen> {
     );
     if (hasil == null || !mounted) return;
     try {
-      if (hasil.hariPercobaan != null) {
+      if (hasil.percobaan) {
         final sampai = await _paketRepo.setelPercobaan(
-            restoId: resto.id, hari: hasil.hariPercobaan!);
+          restoId: resto.id,
+          hari: hasil.hariPercobaan!,
+          paket: hasil.paketPercobaan!,
+        );
         if (!mounted) return;
         showAppToast(
           context,
-          'Masa percobaan ${resto.name} sampai '
-          '${DateFormat('d MMM yyyy', 'id_ID').format(sampai)}.',
+          'Percobaan ${hasil.paketPercobaan!.label} untuk ${resto.name} '
+          'sampai ${DateFormat('d MMM yyyy', 'id_ID').format(sampai)}.',
         );
       } else {
         await _paketRepo.setelPaket(restoId: resto.id, paket: hasil.paket);
@@ -354,6 +367,7 @@ class _SuperAdminBillingScreenState extends State<SuperAdminBillingScreen> {
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      _PenandaBaris(keadaan: _paket[r.id]),
                       IconButton(
                         icon: const Icon(Icons.workspace_premium_outlined,
                             size: 19),
@@ -1036,19 +1050,38 @@ class _DialogTolakState extends State<_DialogTolak> {
 
 /// Apa yang dipilih KaataGo Admin di dialog paket.
 ///
-/// Salah satu saja: menyetel paket, atau memberi masa percobaan.
+/// Salah satu saja: menyetel langganan, atau memberi masa percobaan.
 /// Keduanya sekaligus tidak punya arti — memberi trial pada merchant
 /// yang sudah berlangganan berarti menggratiskan yang sudah membayar.
 class _PilihanPaket {
   final Paket? paket;
   final int? hariPercobaan;
+  final Paket? paketPercobaan;
 
-  const _PilihanPaket.paketnya(this.paket) : hariPercobaan = null;
-  const _PilihanPaket.percobaan(int hari)
+  const _PilihanPaket.langganan(this.paket)
+      : hariPercobaan = null,
+        paketPercobaan = null;
+
+  const _PilihanPaket.percobaan(int hari, Paket paket)
       : hariPercobaan = hari,
+        paketPercobaan = paket,
         paket = null;
+
+  bool get percobaan => hariPercobaan != null;
 }
 
+/// Menyetel paket dan masa percobaan satu merchant.
+///
+/// ── Kenapa keduanya dipisah tegas ────────────────────────────────────
+///
+/// Sebelumnya tombol paket dan kolom percobaan berdiri berdampingan
+/// tanpa batas yang jelas, dan keduanya memang mengerjakan hal yang
+/// sangat berbeda: yang satu memulai penagihan bulanan, yang satu
+/// memberi gratis sekian hari. Yang menekan "Basic" karena ingin
+/// mencobakan Basic justru membuat merchant itu langsung berlangganan.
+///
+/// Sekarang dua bagian dengan judul dan kartunya sendiri, dan yang
+/// mengubah keadaan cuma satu tombol di masing-masing bagian.
 class _DialogPaket extends StatefulWidget {
   final Restaurant resto;
 
@@ -1060,10 +1093,14 @@ class _DialogPaket extends StatefulWidget {
 
 class _DialogPaketState extends State<_DialogPaket> {
   final _repo = PaketLanggananRepository();
-  final _hari = TextEditingController(text: '14');
+  final _hari = TextEditingController();
 
   KeadaanLangganan? _keadaan;
   bool _memuat = true;
+
+  /// Paket yang dipilih di masing-masing bagian.
+  Paket? _paketLangganan;
+  Paket _paketPercobaan = Paket.premium;
 
   @override
   void initState() {
@@ -1080,14 +1117,24 @@ class _DialogPaketState extends State<_DialogPaket> {
   Future<void> _muat() async {
     try {
       final k = await _repo.keadaan(widget.resto.id);
-      if (mounted) {
-        setState(() {
-          _keadaan = k;
-          _memuat = false;
-        });
-      }
+      if (!mounted) return;
+      setState(() {
+        _keadaan = k;
+        _paketLangganan = k.paket;
+        // Lama percobaan yang sudah pernah disetel dibaca kembali, bukan
+        // dikembalikan ke 14. Kolom yang melupakan angka yang barusan
+        // diisi orang membuat setiap pembukaan berikutnya terlihat
+        // seperti perubahan yang gagal tersimpan.
+        _paketPercobaan = k.trialPaket ?? Paket.premium;
+        _hari.text = '${k.trialHari ?? 14}';
+        _memuat = false;
+      });
     } catch (_) {
-      if (mounted) setState(() => _memuat = false);
+      if (!mounted) return;
+      setState(() {
+        _hari.text = '14';
+        _memuat = false;
+      });
     }
   }
 
@@ -1098,118 +1145,356 @@ class _DialogPaketState extends State<_DialogPaket> {
 
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      // Judulnya dipendekkan sendiri, bukan dibiarkan mendorong lebar
+      // dialognya di layar sempit.
       title: Text('Paket ${widget.resto.name}',
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
           style: const TextStyle(fontSize: 16)),
-      content: _memuat
-          ? const SizedBox(
-              height: 80, child: Center(child: CircularProgressIndicator()))
-          : SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    k == null
-                        ? 'Keadaannya belum terbaca.'
-                        : k.paket != null
-                            ? 'Sekarang: langganan ${k.paket!.label}.'
-                            : k.dalamPercobaan
-                                ? 'Sekarang: masa percobaan, sisa '
-                                    '${k.sisaHari} hari.'
-                                : k.percobaanHabis
-                                    ? 'Sekarang: masa percobaan sudah habis, '
-                                        'merchant terkunci.'
-                                    : 'Sekarang: di luar jalur paket — '
-                                        'berjalan tanpa pembatasan.',
-                    style: TextStyle(fontSize: 12.5, color: muted),
-                  ),
-                  const SizedBox(height: 18),
-                  Text('Setel paket',
-                      style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: muted)),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Akses menunya langsung ikut disesuaikan. Pengaturan UAM '
-                    'yang pernah disetel tangan untuk merchant ini tetap '
-                    'berdiri.',
-                    style: TextStyle(fontSize: 11.5, color: muted),
-                  ),
-                  const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 8,
-                    children: [
-                      for (final p in Paket.values)
-                        FilledButton(
-                          style: FilledButton.styleFrom(
-                              backgroundColor: warnaPaket(p)),
-                          onPressed: () => Navigator.pop(
-                              context, _PilihanPaket.paketnya(p)),
-                          child: Text(p.label),
+      contentPadding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+      content: SizedBox(
+        // Dipatok selebar dialognya supaya isinya tidak mengembang
+        // mengikuti teks terpanjang — di layar 5 inci itulah yang
+        // membuat tombolnya terpotong.
+        width: 340,
+        child: _memuat
+            ? const SizedBox(
+                height: 90, child: Center(child: CircularProgressIndicator()))
+            : SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _Sekarang(keadaan: k),
+                    const SizedBox(height: 20),
+                    _Bagian(
+                      judul: 'Langganan',
+                      keterangan:
+                          'Penagihan bulanan langsung berjalan. Akses menunya '
+                          'ikut disesuaikan.',
+                      anak: [
+                        _PilihPaketBaris(
+                          terpilih: _paketLangganan,
+                          onPilih: (p) => setState(() => _paketLangganan = p),
                         ),
-                      OutlinedButton(
-                        onPressed: () => Navigator.pop(
-                            context, const _PilihanPaket.paketnya(null)),
-                        child: const Text('Lepas paket'),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: k?.paket == null
+                                    ? null
+                                    : () => Navigator.pop(context,
+                                        const _PilihanPaket.langganan(null)),
+                                child: const Text('Lepas'),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              flex: 2,
+                              child: FilledButton(
+                                onPressed: _paketLangganan == null ||
+                                        _paketLangganan == k?.paket
+                                    ? null
+                                    : () => Navigator.pop(
+                                          context,
+                                          _PilihanPaket.langganan(
+                                              _paketLangganan),
+                                        ),
+                                child: const Text('Setel Langganan'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+                    _Bagian(
+                      judul: 'Masa percobaan',
+                      keterangan:
+                          'Gratis sekian hari dengan akses paket yang dicoba. '
+                          'Dua hari sebelum habis, merchant diingatkan sendiri '
+                          'lewat aplikasinya.',
+                      anak: [
+                        _PilihPaketBaris(
+                          terpilih: _paketPercobaan,
+                          onPilih: (p) => setState(() => _paketPercobaan = p!),
+                          bolehKosong: false,
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            SizedBox(
+                              width: 90,
+                              child: TextField(
+                                controller: _hari,
+                                keyboardType: TextInputType.number,
+                                decoration: const InputDecoration(
+                                  labelText: 'Hari',
+                                  border: OutlineInputBorder(),
+                                  isDense: true,
+                                  contentPadding: EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 14),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: FilledButton(
+                                style: FilledButton.styleFrom(
+                                    backgroundColor:
+                                        warnaPaket(_paketPercobaan)),
+                                onPressed: () {
+                                  final hari = int.tryParse(_hari.text) ?? 0;
+                                  if (hari < 1 || hari > 365) {
+                                    showAppToast(
+                                        context,
+                                        'Lama percobaannya antara 1 dan 365 '
+                                        'hari.',
+                                        isError: true);
+                                    return;
+                                  }
+                                  Navigator.pop(
+                                    context,
+                                    _PilihanPaket.percobaan(
+                                        hari, _paketPercobaan),
+                                  );
+                                },
+                                // Satu baris, tidak dipatahkan jadi
+                                // "Beri Percobaa / n" seperti dulu.
+                                child: const Text('Beri Percobaan',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    if (k?.dalamPercobaan == true) ...[
+                      const SizedBox(height: 10),
+                      Text(
+                        'Memberi percobaan lagi menimpa yang sedang berjalan.',
+                        style: TextStyle(fontSize: 11.5, color: muted),
                       ),
                     ],
-                  ),
-                  const Divider(height: 30),
-                  Text('Beri masa percobaan',
-                      style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: muted)),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Selama percobaan semua fitur terbuka. Dua hari sebelum '
-                    'habis, merchant diingatkan sendiri lewat aplikasinya.',
-                    style: TextStyle(fontSize: 11.5, color: muted),
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      SizedBox(
-                        width: 96,
-                        child: TextField(
-                          controller: _hari,
-                          keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(
-                            labelText: 'Hari',
-                            border: OutlineInputBorder(),
-                            isDense: true,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: FilledButton(
-                          onPressed: () {
-                            final hari = int.tryParse(_hari.text) ?? 0;
-                            if (hari < 1 || hari > 365) {
-                              showAppToast(context,
-                                  'Lama percobaannya antara 1 dan 365 hari.',
-                                  isError: true);
-                              return;
-                            }
-                            Navigator.pop(
-                                context, _PilihanPaket.percobaan(hari));
-                          },
-                          child: const Text('Beri Percobaan'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
+      ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
           child: const Text('Tutup'),
         ),
       ],
+    );
+  }
+}
+
+/// Keadaan merchant ini sekarang, disebut lebih dulu.
+///
+/// Tanpa ini yang membuka dialog harus menebak sendiri apakah dia sedang
+/// mengubah sesuatu yang sudah berjalan atau memulai dari nol.
+class _Sekarang extends StatelessWidget {
+  final KeadaanLangganan? keadaan;
+
+  const _Sekarang({required this.keadaan});
+
+  @override
+  Widget build(BuildContext context) {
+    final k = keadaan;
+    final muted = KaataTheme.mutedOf(context);
+
+    final (teks, warna) = switch (k) {
+      null => ('Keadaannya belum terbaca.', null),
+      _ when k.paket != null => (
+          'Berlangganan ${k.paket!.label}.',
+          warnaPaket(k.paket!)
+        ),
+      _ when k.dalamPercobaan => (
+          'Percobaan ${k.trialPaket?.label ?? ''} — sisa ${k.sisaHari} hari.',
+          warnaPaket(k.trialPaket ?? Paket.premium)
+        ),
+      _ when k.percobaanHabis => (
+          'Percobaan sudah habis — merchant terkunci.',
+          const Color(0xFFEF4444)
+        ),
+      _ => ('Di luar jalur paket — berjalan tanpa pembatasan.', null),
+    };
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: (warna ?? Colors.grey).withOpacity(0.12),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.info_outline, size: 16, color: warna ?? muted),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(teks,
+                style: TextStyle(
+                    fontSize: 12.5,
+                    height: 1.35,
+                    fontWeight: FontWeight.w600,
+                    color: warna ?? muted)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Satu bagian bertajuk, dengan jarak yang sama di mana pun dipakai.
+class _Bagian extends StatelessWidget {
+  final String judul;
+  final String keterangan;
+  final List<Widget> anak;
+
+  const _Bagian({
+    required this.judul,
+    required this.keterangan,
+    required this.anak,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final muted = KaataTheme.mutedOf(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(judul,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 3),
+        Text(keterangan,
+            style: TextStyle(fontSize: 11.5, height: 1.4, color: muted)),
+        const SizedBox(height: 12),
+        ...anak,
+      ],
+    );
+  }
+}
+
+/// Dua paket berdampingan, dipilih salah satu.
+///
+/// Berdampingan, bukan bertumpuk: keduanya pilihan sederajat, dan dua
+/// tombol lebar bertumpuk terbaca sebagai dua tindakan berurutan.
+class _PilihPaketBaris extends StatelessWidget {
+  final Paket? terpilih;
+  final ValueChanged<Paket?> onPilih;
+  final bool bolehKosong;
+
+  const _PilihPaketBaris({
+    required this.terpilih,
+    required this.onPilih,
+    this.bolehKosong = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        for (final p in Paket.values) ...[
+          if (p != Paket.values.first) const SizedBox(width: 10),
+          Expanded(
+            child: _KotakPaket(
+              paket: p,
+              dipilih: terpilih == p,
+              onTap: () => onPilih(
+                  bolehKosong && terpilih == p ? null : p),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _KotakPaket extends StatelessWidget {
+  final Paket paket;
+  final bool dipilih;
+  final VoidCallback onTap;
+
+  const _KotakPaket({
+    required this.paket,
+    required this.dipilih,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final warna = warnaPaket(paket);
+    return Material(
+      color: dipilih ? warna : KaataTheme.softFillOf(context),
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: onTap,
+        child: Container(
+          height: 44,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+                color: dipilih ? warna : KaataTheme.borderOf(context)),
+          ),
+          child: Text(
+            paket.label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 13.5,
+              fontWeight: FontWeight.bold,
+              color: dipilih ? Colors.white : null,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Penanda paket di baris daftar merchant.
+///
+/// Ada karena tanpanya layar ini tidak punya satu pun tempat yang
+/// menyebut siapa yang sedang percobaan — dan yang sedang percobaan
+/// justru merchant yang paling perlu dilihat, karena aksesnya berhenti
+/// pada tanggal tertentu.
+class _PenandaBaris extends StatelessWidget {
+  final KeadaanLangganan? keadaan;
+
+  const _PenandaBaris({this.keadaan});
+
+  @override
+  Widget build(BuildContext context) {
+    final k = keadaan;
+    if (k == null || k.diluarJalurPaket) return const SizedBox.shrink();
+
+    final (teks, warna) = switch (k) {
+      _ when k.paket != null => (k.paket!.label, warnaPaket(k.paket!)),
+      _ when k.dalamPercobaan => (
+          'Trial ${k.sisaHari}h',
+          warnaPaket(k.trialPaket ?? Paket.premium)
+        ),
+      _ when k.percobaanHabis => ('Terkunci', const Color(0xFFEF4444)),
+      _ => ('', null),
+    };
+    if (teks.isEmpty || warna == null) return const SizedBox.shrink();
+
+    return Container(
+      margin: const EdgeInsets.only(right: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: warna.withOpacity(0.16),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(teks,
+          style: TextStyle(
+              fontSize: 10.5, fontWeight: FontWeight.bold, color: warna)),
     );
   }
 }

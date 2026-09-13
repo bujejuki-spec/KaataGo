@@ -203,8 +203,10 @@ Future<void> showUpdateDownloadDialog(BuildContext context) {
                     ? 'Yang sudah turun tetap tersimpan. Melanjutkan '
                         'meneruskan dari titik ini, bukan mengulang dari '
                         'nol.'
-                    : 'Berkasnya sekitar 80 MB. Unduhan tetap berjalan '
-                        'walau layar ini ditutup.',
+                    : updater.ukuranTeks == null
+                        ? 'Unduhan tetap berjalan walau layar ini ditutup.'
+                        : 'Berkasnya ${updater.ukuranTeks}. Unduhan tetap '
+                            'berjalan walau layar ini ditutup.',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 11.5, color: KaataTheme.mutedOf(context)),
               ),

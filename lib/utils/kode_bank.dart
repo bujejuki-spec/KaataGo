@@ -110,9 +110,14 @@ String? kodeBank(String? namaBank) {
 /// Satu kolom, bukan dua. Kolom kode yang sebagian besarnya terisi lalu
 /// kosong di beberapa baris terbaca seperti data yang gagal dimuat —
 /// padahal memang tidak ada yang bisa diisi di sana.
-String bankBerkode(String? namaBank) {
+///
+/// [pemisah] bisa diganti karena PDF tidak selalu punya em dash.
+/// Font bawaan PDF cuma menjamin Latin-1, dan em dash di luar itu —
+/// yang keluar bukan galat melainkan kotak kosong di tengah nomor
+/// rekening, tepat di berkas yang dipakai menyusun daftar transfer.
+String bankBerkode(String? namaBank, {String pemisah = ' — '}) {
   final nama = namaBank?.trim() ?? '';
   if (nama.isEmpty) return '-';
   final kode = kodeBank(nama);
-  return kode == null ? nama : '$kode — $nama';
+  return kode == null ? nama : '$kode$pemisah$nama';
 }
