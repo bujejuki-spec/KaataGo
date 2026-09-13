@@ -1,5 +1,9 @@
 import 'dart:convert';
 
+import '../db/paket_langganan_repository.dart';
+import '../models/paket_langganan.dart';
+import '../utils/pesan_galat.dart';
+import '../widgets/lencana_paket_aktif.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -109,6 +113,8 @@ class _SuperAdminBillingScreenState extends State<SuperAdminBillingScreen> {
     }
   }
 
+  final _paketRepo = PaketLanggananRepository();
+
   Future<void> _atur(Restaurant resto) async {
     final hasil = await showDialog<RestoBilling>(
       context: context,
@@ -126,6 +132,43 @@ class _SuperAdminBillingScreenState extends State<SuperAdminBillingScreen> {
     } catch (e) {
       if (!mounted) return;
       showAppToast(context, 'Gagal menyimpan: $e', isError: true);
+    }
+  }
+
+  /// Paket dan masa percobaan, terpisah dari harga dan tanggal tagih.
+  Future<void> _aturPaket(Restaurant resto) async {
+    final hasil = await showDialog<_PilihanPaket>(
+      context: context,
+      builder: (_) => _DialogPaket(resto: resto),
+    );
+    if (hasil == null || !mounted) return;
+    try {
+      if (hasil.hariPercobaan != null) {
+        final sampai = await _paketRepo.setelPercobaan(
+            restoId: resto.id, hari: hasil.hariPercobaan!);
+        if (!mounted) return;
+        showAppToast(
+          context,
+          'Masa percobaan ${resto.name} sampai '
+          '${DateFormat('d MMM yyyy', 'id_ID').format(sampai)}.',
+        );
+      } else {
+        await _paketRepo.setelPaket(restoId: resto.id, paket: hasil.paket);
+        if (!mounted) return;
+        showAppToast(
+          context,
+          hasil.paket == null
+              ? 'Paket ${resto.name} dilepas.'
+              : 'Paket ${resto.name} disetel ke ${hasil.paket!.label}, '
+                  'akses menunya ikut disesuaikan.',
+        );
+      }
+      // Lencana di beranda merchant itu ikut berubah.
+      LencanaPaketAktif.lupakan(resto.id);
+      _muat();
+    } catch (e) {
+      if (!mounted) return;
+      showAppToast(context, pesanGalat(e), isError: true);
     }
   }
 
@@ -302,7 +345,24 @@ class _SuperAdminBillingScreenState extends State<SuperAdminBillingScreen> {
                     style: TextStyle(
                         fontSize: 12, color: KaataTheme.mutedOf(context)),
                   ),
-                  trailing: const Icon(Icons.edit_outlined, size: 19),
+                  // Dua hal yang berbeda: harga dan tanggal tagihnya
+                  // (ketuk barisnya), dan paket berikut masa
+                  // percobaannya (tombol di kanan). Menggabungkannya
+                  // jadi satu dialog panjang membuat yang cuma ingin
+                  // memberi trial menggulir melewati enam kolom yang
+                  // tidak dia sentuh.
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.workspace_premium_outlined,
+                            size: 19),
+                        tooltip: 'Paket & masa percobaan',
+                        onPressed: () => _aturPaket(r),
+                      ),
+                      const Icon(Icons.edit_outlined, size: 19),
+                    ],
+                  ),
                   onTap: () => _atur(r),
                 ),
               );
@@ -968,6 +1028,186 @@ class _DialogTolakState extends State<_DialogTolak> {
             if (t.isEmpty) return;
             Navigator.pop(context, t);
           },
+        ),
+      ],
+    );
+  }
+}
+
+/// Apa yang dipilih KaataGo Admin di dialog paket.
+///
+/// Salah satu saja: menyetel paket, atau memberi masa percobaan.
+/// Keduanya sekaligus tidak punya arti — memberi trial pada merchant
+/// yang sudah berlangganan berarti menggratiskan yang sudah membayar.
+class _PilihanPaket {
+  final Paket? paket;
+  final int? hariPercobaan;
+
+  const _PilihanPaket.paketnya(this.paket) : hariPercobaan = null;
+  const _PilihanPaket.percobaan(int hari)
+      : hariPercobaan = hari,
+        paket = null;
+}
+
+class _DialogPaket extends StatefulWidget {
+  final Restaurant resto;
+
+  const _DialogPaket({required this.resto});
+
+  @override
+  State<_DialogPaket> createState() => _DialogPaketState();
+}
+
+class _DialogPaketState extends State<_DialogPaket> {
+  final _repo = PaketLanggananRepository();
+  final _hari = TextEditingController(text: '14');
+
+  KeadaanLangganan? _keadaan;
+  bool _memuat = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _muat();
+  }
+
+  @override
+  void dispose() {
+    _hari.dispose();
+    super.dispose();
+  }
+
+  Future<void> _muat() async {
+    try {
+      final k = await _repo.keadaan(widget.resto.id);
+      if (mounted) {
+        setState(() {
+          _keadaan = k;
+          _memuat = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _memuat = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final muted = KaataTheme.mutedOf(context);
+    final k = _keadaan;
+
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: Text('Paket ${widget.resto.name}',
+          style: const TextStyle(fontSize: 16)),
+      content: _memuat
+          ? const SizedBox(
+              height: 80, child: Center(child: CircularProgressIndicator()))
+          : SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    k == null
+                        ? 'Keadaannya belum terbaca.'
+                        : k.paket != null
+                            ? 'Sekarang: langganan ${k.paket!.label}.'
+                            : k.dalamPercobaan
+                                ? 'Sekarang: masa percobaan, sisa '
+                                    '${k.sisaHari} hari.'
+                                : k.percobaanHabis
+                                    ? 'Sekarang: masa percobaan sudah habis, '
+                                        'merchant terkunci.'
+                                    : 'Sekarang: di luar jalur paket — '
+                                        'berjalan tanpa pembatasan.',
+                    style: TextStyle(fontSize: 12.5, color: muted),
+                  ),
+                  const SizedBox(height: 18),
+                  Text('Setel paket',
+                      style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: muted)),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Akses menunya langsung ikut disesuaikan. Pengaturan UAM '
+                    'yang pernah disetel tangan untuk merchant ini tetap '
+                    'berdiri.',
+                    style: TextStyle(fontSize: 11.5, color: muted),
+                  ),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    children: [
+                      for (final p in Paket.values)
+                        FilledButton(
+                          style: FilledButton.styleFrom(
+                              backgroundColor: warnaPaket(p)),
+                          onPressed: () => Navigator.pop(
+                              context, _PilihanPaket.paketnya(p)),
+                          child: Text(p.label),
+                        ),
+                      OutlinedButton(
+                        onPressed: () => Navigator.pop(
+                            context, const _PilihanPaket.paketnya(null)),
+                        child: const Text('Lepas paket'),
+                      ),
+                    ],
+                  ),
+                  const Divider(height: 30),
+                  Text('Beri masa percobaan',
+                      style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: muted)),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Selama percobaan semua fitur terbuka. Dua hari sebelum '
+                    'habis, merchant diingatkan sendiri lewat aplikasinya.',
+                    style: TextStyle(fontSize: 11.5, color: muted),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      SizedBox(
+                        width: 96,
+                        child: TextField(
+                          controller: _hari,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: 'Hari',
+                            border: OutlineInputBorder(),
+                            isDense: true,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: FilledButton(
+                          onPressed: () {
+                            final hari = int.tryParse(_hari.text) ?? 0;
+                            if (hari < 1 || hari > 365) {
+                              showAppToast(context,
+                                  'Lama percobaannya antara 1 dan 365 hari.',
+                                  isError: true);
+                              return;
+                            }
+                            Navigator.pop(
+                                context, _PilihanPaket.percobaan(hari));
+                          },
+                          child: const Text('Beri Percobaan'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Tutup'),
         ),
       ],
     );

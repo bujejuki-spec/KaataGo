@@ -63,6 +63,8 @@ as $$
     ('total_balance',    '1990001', 'GL Total Saldo'),
     -- Uang yang benar-benar sudah dipegang perusahaan
     ('company_cash',     '1990002', 'GL Saldo Cash Perusahaan'),
+    -- Lawan akun saat saldo disamakan dengan mutasi bank
+    ('opening_balance',  '1990004', 'GL Saldo Awal'),
     -- Suspense — titipan yang belum diakui masuk ke mana pun
     ('suspense',         '2100001', 'GL Suspense Setoran'),
     ('suspense_petty',   '2100002', 'GL Suspense Petty Cash'),

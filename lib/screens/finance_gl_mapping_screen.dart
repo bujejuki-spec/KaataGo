@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../db/expense_gl_account_repository.dart';
+import '../utils/akses_menu.dart';
 import '../db/gl_account_repository.dart';
 import '../models/billing.dart';
 import '../models/expense_gl_account.dart';
@@ -134,6 +135,11 @@ const _companyCashMethod = 'company_cash';
 // kasir yang sudah disetujui, dan setoran dari kas perusahaan sendiri.
 const _companyBankMethod = 'company_bank';
 
+// Lawan akun penyesuaian saldo awal. Isinya cuma satu hal: uang yang
+// sudah ada sebelum aplikasi ini mulai mencatat — dan saldonya sendiri
+// memang tidak berarti apa-apa selain itu.
+const _openingBalanceMethod = 'opening_balance';
+
 // PPN and service charge collected are money owed onward, not revenue,
 // so they're journaled to their own accounts instead of being folded
 // into the payment-method income mapping.
@@ -164,6 +170,7 @@ const _allMethods = [
   _cashPickupMethod,
   _companyCashMethod,
   _companyBankMethod,
+  _openingBalanceMethod,
 ];
 
 /// Akun yang hanya ada di pembukuan KaataGo sendiri.
@@ -500,7 +507,7 @@ class _FinanceGlMappingScreenState extends State<FinanceGlMappingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return berdasarkanAkses(context, 'Mapping GL Account', Scaffold(
       backgroundColor: KaataTheme.backgroundOf(context),
       appBar: AppBar(
         title: const Text('Mapping GL Account'),
@@ -509,7 +516,11 @@ class _FinanceGlMappingScreenState extends State<FinanceGlMappingScreen> {
             IconButton(
               icon: const Icon(Icons.edit_outlined),
               tooltip: 'Edit',
-              onPressed: _startEdit,
+              // Menu yang cuma boleh dilihat tidak menawarkan pintu
+              // masuk ke mode ubah sama sekali. Membiarkan tombolnya lalu
+              // mematikan simpannya membuat orang mengisi formulir penuh
+              // sebelum tahu ia tidak bisa disimpan.
+              onPressed: bolehUbahDiSini(context) ? _startEdit : null,
             ),
         ],
       ),
@@ -686,6 +697,16 @@ class _FinanceGlMappingScreenState extends State<FinanceGlMappingScreen> {
                             color: const Color(0xFF0EA5E9),
                             codeCtrl: _codeCtrls[_companyCashMethod]!,
                             nameCtrl: _nameCtrls[_companyCashMethod]!,
+                            editing: _editing,
+                          ),
+                          _GlAccountRow(
+                            icon: Icons.history_toggle_off,
+                            label: 'GL Saldo Awal',
+                            hint: 'Lawan akun saat saldo disamakan dengan '
+                                'mutasi bank',
+                            color: const Color(0xFF0EA5E9),
+                            codeCtrl: _codeCtrls[_openingBalanceMethod]!,
+                            nameCtrl: _nameCtrls[_openingBalanceMethod]!,
                             editing: _editing,
                           ),
                           _GlAccountRow(
@@ -883,7 +904,7 @@ class _FinanceGlMappingScreenState extends State<FinanceGlMappingScreen> {
                     ],
                   ),
                 ),
-    );
+    ));
   }
 }
 

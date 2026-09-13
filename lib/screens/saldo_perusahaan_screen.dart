@@ -132,6 +132,19 @@ class _SaldoPerusahaanScreenState extends State<SaldoPerusahaanScreen> {
     }
   }
 
+  Future<void> _setelSaldoAwal() async {
+    final restoId = _restoId;
+    if (restoId == null) return;
+    final tersimpan = await showDialog<bool>(
+      context: context,
+      builder: (_) => _DialogSaldoAwal(restoId: restoId),
+    );
+    if (tersimpan == true) {
+      if (!mounted) return;
+      _muat();
+    }
+  }
+
   Future<void> _topUpModal() async {
     final restoId = _restoId;
     if (restoId == null) return;
@@ -190,7 +203,35 @@ class _SaldoPerusahaanScreenState extends State<SaldoPerusahaanScreen> {
       'Saldo Perusahaan',
       Scaffold(
         backgroundColor: KaataTheme.backgroundOf(context),
-        appBar: AppBar(title: const Text('Saldo Perusahaan')),
+        appBar: AppBar(
+          title: const Text('Saldo Perusahaan'),
+          actions: [
+            // Di menu tiga titik, bukan tombol tetap: menyetel saldo awal
+            // dilakukan sekali saat pembukuannya dimulai, bukan pekerjaan
+            // harian. Tombol yang selalu terpampang untuk hal yang
+            // dilakukan setahun sekali cuma mengundang orang menekannya.
+            if (bolehUbahDiSini(context))
+              PopupMenuButton<String>(
+                tooltip: 'Lainnya',
+                onSelected: (p) {
+                  if (p == 'saldo-awal') _setelSaldoAwal();
+                },
+                itemBuilder: (context) => const [
+                  PopupMenuItem(
+                    value: 'saldo-awal',
+                    child: ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      dense: true,
+                      leading: Icon(Icons.tune),
+                      title: Text('Setel Saldo Awal'),
+                      subtitle: Text('Samakan dengan mutasi bank',
+                          style: TextStyle(fontSize: 11)),
+                    ),
+                  ),
+                ],
+              ),
+          ],
+        ),
         body: _memuat
             ? const Center(child: CircularProgressIndicator())
             : _galat != null
@@ -1207,6 +1248,196 @@ class _DialogPengeluaranState extends State<_DialogPengeluaran> {
               const SizedBox(height: 18),
               DialogActions(
                 confirmLabel: 'Simpan',
+                busy: _menyimpan,
+                onConfirm: _simpan,
+                onCancel: () => Navigator.of(context).pop(false),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Menyetel saldo awal sebuah kantong.
+///
+/// Yang diminta bukan tebakan melainkan satu kenyataan dari luar: berapa
+/// isi rekening pada suatu tanggal menurut mutasi bank sungguhan, atau
+/// berapa uang tunai yang benar-benar dihitung tangan hari itu.
+///
+/// Selisih terhadap yang tercatat ditulis sebagai penyesuaian bertanggal
+/// itu. Pergerakan sesudahnya tidak disentuh — ia berjalan di atas saldo
+/// awalnya.
+class _DialogSaldoAwal extends StatefulWidget {
+  final String restoId;
+
+  const _DialogSaldoAwal({required this.restoId});
+
+  @override
+  State<_DialogSaldoAwal> createState() => _DialogSaldoAwalState();
+}
+
+class _DialogSaldoAwalState extends State<_DialogSaldoAwal> {
+  final _formKey = GlobalKey<FormState>();
+  final _nominal = TextEditingController();
+  final _catatan = TextEditingController();
+  final _repo = CompanyBalanceRepository();
+
+  String _kantong = 'bank';
+  DateTime _tanggal = DateTime.now();
+  bool _menyimpan = false;
+
+  @override
+  void dispose() {
+    _nominal.dispose();
+    _catatan.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pilihTanggal() async {
+    final dipilih = await showDatePicker(
+      context: context,
+      initialDate: _tanggal,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+      helpText: 'Saldo per tanggal',
+    );
+    if (dipilih != null) setState(() => _tanggal = dipilih);
+  }
+
+  Future<void> _simpan() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _menyimpan = true);
+    try {
+      final selisih = await _repo.setelSaldoAwal(
+        restoId: widget.restoId,
+        kantong: _kantong,
+        saldo: parseRupiah(_nominal.text)!,
+        tanggal: _tanggal,
+        catatan: _catatan.text.trim().isEmpty ? null : _catatan.text.trim(),
+      );
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+      final rp = NumberFormat.currency(
+          locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+      showAppToast(
+        context,
+        selisih == 0
+            ? 'Sudah cocok — tidak ada penyesuaian yang perlu ditulis.'
+            : 'Penyesuaian ${rp.format(selisih.abs())} '
+                '${selisih > 0 ? 'ditambahkan' : 'dikurangkan'}.',
+      );
+    } catch (e) {
+      if (!mounted) return;
+      showAppToast(context, 'Gagal menyetel: ${pesanGalat(e)}', isError: true);
+      setState(() => _menyimpan = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final muted = KaataTheme.mutedOf(context);
+    final tanggalFmt = DateFormat('d MMMM yyyy', 'id_ID');
+
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      insetPadding: insetDialogWeb(context),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Flexible(
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Setel Saldo Awal',
+                          style: TextStyle(
+                              fontSize: 17, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Sebutkan isi kantong ini pada satu tanggal menurut '
+                        'mutasi bank atau hitungan tangan. Selisihnya '
+                        'terhadap catatan ditulis sebagai penyesuaian, dan '
+                        'pergerakan sesudah tanggal itu tidak disentuh.',
+                        style: TextStyle(fontSize: 12.5, color: muted),
+                      ),
+                      const SizedBox(height: 14),
+                      DropdownButtonFormField<String>(
+                        value: _kantong,
+                        isExpanded: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Kantong',
+                          isDense: true,
+                        ),
+                        items: const [
+                          DropdownMenuItem(
+                              value: 'bank',
+                              child: Text('Saldo Bank Perusahaan')),
+                          DropdownMenuItem(
+                              value: 'cash',
+                              child: Text('Saldo Cash Perusahaan')),
+                        ],
+                        onChanged: (v) => setState(() => _kantong = v ?? 'bank'),
+                      ),
+                      const SizedBox(height: 12),
+                      InkWell(
+                        onTap: _pilihTanggal,
+                        borderRadius: BorderRadius.circular(8),
+                        child: InputDecorator(
+                          decoration: const InputDecoration(
+                            labelText: 'Saldo per tanggal',
+                            isDense: true,
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                  child: Text(tanggalFmt.format(_tanggal))),
+                              const Icon(Icons.calendar_today_outlined,
+                                  size: 16),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _nominal,
+                        decoration: InputDecoration(
+                          label: requiredLabel('Saldo Sebenarnya'),
+                          prefixText: 'Rp ',
+                        ),
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [ThousandsInputFormatter()],
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                        autofocus: true,
+                        validator: (v) {
+                          final n = parseRupiah(v ?? '');
+                          if (n == null || n < 0) return 'Wajib diisi';
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _catatan,
+                        decoration: const InputDecoration(
+                          labelText: 'Catatan (opsional)',
+                          helperText: 'Misalnya: menurut mutasi BCA 31 Agustus',
+                        ),
+                        maxLines: 2,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              DialogActions(
+                confirmLabel: 'Setel',
                 busy: _menyimpan,
                 onConfirm: _simpan,
                 onCancel: () => Navigator.of(context).pop(false),

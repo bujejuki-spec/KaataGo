@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 
 import '../theme.dart';
+import '../utils/akses_menu.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 
@@ -36,10 +37,10 @@ class PublishAnnouncementScreen extends StatelessWidget {
     final canPublishUpdate = auth.isSuperAdmin;
 
     if (!canPublishUpdate) {
-      return Scaffold(
+      return berdasarkanAkses(context, 'Kirim Pengumuman', Scaffold(
         appBar: AppBar(title: const Text('Kirim Pengumuman')),
         body: const _AnnouncementForm(category: AnnouncementCategory.general),
-      );
+      ));
     }
 
     return DefaultTabController(
@@ -357,7 +358,8 @@ class _AnnouncementFormState extends State<_AnnouncementForm>
                     : const Icon(Icons.campaign_outlined),
                 label: const Text('Kirim Pengumuman'),
                 style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
-                onPressed: _saving ? null : _publish,
+                onPressed:
+                    _saving || !bolehUbahDiSini(context) ? null : _publish,
               ),
             ),
           ],

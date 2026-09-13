@@ -1,5 +1,6 @@
 import 'payment_qris_statis_screen.dart';
 import '../db/metode_bayar_repository.dart';
+import '../utils/akses_menu.dart';
 import '../models/metode_bayar.dart';
 import 'dart:async';
 
@@ -145,10 +146,10 @@ class _PendingPaymentScreenState extends State<PendingPaymentScreen> {
     final restoId = context.watch<AuthProvider>().restoId;
 
     if (restoId == null) {
-      return Scaffold(
+      return berdasarkanAkses(context, 'Pending Payment', Scaffold(
         appBar: AppBar(title: const Text('Pending Payment')),
         body: const Center(child: Text('Akun ini belum punya Merchant ID.')),
-      );
+      ));
     }
 
     return Scaffold(
@@ -331,7 +332,8 @@ class _PendingCard extends StatelessWidget {
                   Expanded(
                     flex: 2,
                     child: FilledButton.icon(
-                      onPressed: busy ? null : onSettle,
+                      onPressed:
+                          busy || !bolehUbahDiSini(context) ? null : onSettle,
                       icon: busy
                           ? const SizedBox(
                               width: 14,

@@ -151,6 +151,75 @@ class ThemeToggle extends StatelessWidget {
   }
 }
 
+/// Pemilih tema versi header hub: tiga tombol kecil di atas gradien.
+///
+/// Berdiri sendiri, bukan [ThemeToggle] yang diwarnai ulang:
+/// SegmentedButton mengambil warnanya dari skema tema yang sedang
+/// berlaku, dan di atas gradien berwarna hasilnya tombol terpilih yang
+/// nyaris tidak terbaca justru pada tema yang sedang aktif.
+///
+/// Langsung tiga tombol, bukan satu tombol yang membuka dialog. Mengganti
+/// tema adalah hal yang dicoba bolak-balik sampai enak dilihat, dan tiap
+/// percobaan yang menuntut membuka lalu menutup dialog membuat orang
+/// berhenti mencoba sebelum menemukan yang dia mau.
+class TemaHeader extends StatelessWidget {
+  const TemaHeader({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final prefs = context.watch<AppPrefsProvider>();
+    final terpilih = kIsWeb && prefs.themeMode == ThemeMode.system
+        ? (MediaQuery.platformBrightnessOf(context) == Brightness.dark
+            ? ThemeMode.dark
+            : ThemeMode.light)
+        : prefs.themeMode;
+
+    // Wrap, bukan Row: tiga tombol berteks penuh tidak selalu muat
+    // selebar layar terkecil, dan yang tidak muat di Row menjadi garis
+    // kuning-hitam menutupi header.
+    return Wrap(
+      alignment: WrapAlignment.center,
+      spacing: 6,
+      runSpacing: 6,
+      children: [
+        for (final (mode, ikon, nama) in ThemeToggle._pilihanDipakai)
+          Tooltip(
+              message: context.tr(nama),
+              child: Material(
+                color: Colors.white.withOpacity(mode == terpilih ? 0.30 : 0.12),
+                borderRadius: BorderRadius.circular(20),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(20),
+                  onTap: () => prefs.setThemeMode(mode),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 11, vertical: 6),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(ikon, size: 15, color: Colors.white),
+                        const SizedBox(width: 5),
+                        Text(
+                          context.tr(nama),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 11.5,
+                            fontWeight: mode == terpilih
+                                ? FontWeight.bold
+                                : FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+      ],
+    );
+  }
+}
+
 /// Blok Bahasa + Tampilan untuk layar Pengaturan.
 class LanguageThemeSection extends StatelessWidget {
   final VoidCallback? onThemeChanged;

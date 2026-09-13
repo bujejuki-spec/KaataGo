@@ -37,4 +37,27 @@ class CompanyBalanceRepository {
   Future<void> setor(CompanyDeposit setoran) async {
     await _client.from('company_deposits').insert(setoran.toMap());
   }
+
+  /// Menyatakan berapa isi kantong pada suatu tanggal, menurut kenyataan
+  /// di luar aplikasi — mutasi bank, atau uang yang dihitung tangan.
+  ///
+  /// Server membandingkannya dengan yang tercatat sampai tanggal itu
+  /// lalu menuliskan selisihnya sebagai penyesuaian. Mengembalikan
+  /// selisih yang ditulis; nol berarti angkanya memang sudah cocok.
+  Future<int> setelSaldoAwal({
+    required String restoId,
+    required String kantong,
+    required int saldo,
+    required DateTime tanggal,
+    String? catatan,
+  }) async {
+    final hasil = await _client.rpc('setel_saldo_awal', params: {
+      'p_resto_id': restoId,
+      'p_kantong': kantong,
+      'p_saldo': saldo,
+      'p_tanggal': tanggal.toIso8601String().substring(0, 10),
+      'p_note': catatan,
+    });
+    return (hasil as num?)?.toInt() ?? 0;
+  }
 }

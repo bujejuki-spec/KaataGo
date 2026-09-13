@@ -22,6 +22,76 @@ class BarisTampilan {
       );
 }
 
+/// Dari mana totalnya berasal.
+///
+/// Baris pesanan di layar depan sudah membawa harga menunya berikut PPN
+/// yang menempel di harga itu — jadi yang disebut di sini bukan ulangan
+/// melainkan yang TIDAK terlihat di baris mana pun: service yang
+/// ditambahkan per tagihan, dan potongan yang dikurangkan dari totalnya.
+class RincianBiaya {
+  /// Jumlah harga menunya seperti yang tertulis di daftar — sudah
+  /// termasuk PPN, persis seperti yang dijumlahkan pelanggan sendiri
+  /// dari baris-baris pesanannya.
+  ///
+  /// Bukan nilai sebelum pajak. Yang sebelum pajak tidak pernah dilihat
+  /// pelanggan di mana pun, dan menaruhnya di baris "Subtotal" membuat
+  /// tidak satu pun angka di layar ini bisa dijumlahkan ke bawah.
+  final int subtotal;
+  final int service;
+  final int ppn;
+  final int discount;
+  final String? discountName;
+
+  /// Tarif PPN-nya, bukan cuma nominalnya.
+  ///
+  /// Dipakai menulis "Harga sudah termasuk PPN 11%" — kalimat yang
+  /// menjelaskan kenapa PPN tidak muncul sebagai baris tambahan, dan
+  /// tanpanya pelanggan menyimpulkan pajaknya memang tidak ditagihkan.
+  final double ppnPercent;
+
+  final double servicePercent;
+
+  const RincianBiaya({
+    this.subtotal = 0,
+    this.service = 0,
+    this.ppn = 0,
+    this.discount = 0,
+    this.discountName,
+    this.ppnPercent = 0,
+    this.servicePercent = 0,
+  });
+
+  /// Tidak ada yang perlu dirinci: totalnya memang persis jumlah
+  /// barisnya. Daftar rincian berisi satu baris yang mengulang angka di
+  /// atasnya cuma menambah yang harus dibaca.
+  bool get kosong => service == 0 && ppn == 0 && discount == 0;
+
+  /// Yang perlu diuraikan baris per baris. PPN tidak termasuk: ia sudah
+  /// menempel di harga tiap menu, dan menyebutnya lagi sebagai baris
+  /// tersendiri berarti menjumlahkannya dua kali di mata pembacanya.
+  bool get adaBaris => service > 0 || discount > 0;
+
+  Map<String, dynamic> toMap() => {
+        'subtotal': subtotal,
+        'service': service,
+        'ppn': ppn,
+        'discount': discount,
+        'discount_name': discountName,
+        'ppn_percent': ppnPercent,
+        'service_percent': servicePercent,
+      };
+
+  factory RincianBiaya.fromMap(Map<String, dynamic> map) => RincianBiaya(
+        subtotal: (map['subtotal'] as num?)?.toInt() ?? 0,
+        service: (map['service'] as num?)?.toInt() ?? 0,
+        ppn: (map['ppn'] as num?)?.toInt() ?? 0,
+        discount: (map['discount'] as num?)?.toInt() ?? 0,
+        discountName: map['discount_name'] as String?,
+        ppnPercent: (map['ppn_percent'] as num?)?.toDouble() ?? 0,
+        servicePercent: (map['service_percent'] as num?)?.toDouble() ?? 0,
+      );
+}
+
 class TampilanLayar {
   final StatusLayar status;
   final int? amount;
@@ -40,6 +110,9 @@ class TampilanLayar {
   final String? accountNumber;
   final String? accountHolder;
 
+  /// Null berarti tidak ada biaya tambahan maupun potongan.
+  final RincianBiaya? rincian;
+
   const TampilanLayar({
     this.status = StatusLayar.menganggur,
     this.amount,
@@ -51,6 +124,7 @@ class TampilanLayar {
     this.bankName,
     this.accountNumber,
     this.accountHolder,
+    this.rincian,
   });
 
   bool get adaQr => qrString != null && qrString!.isNotEmpty;
@@ -76,6 +150,10 @@ class TampilanLayar {
         bankName: map['bank_name'] as String?,
         accountNumber: map['account_number'] as String?,
         accountHolder: map['account_holder'] as String?,
+        rincian: map['breakdown'] == null
+            ? null
+            : RincianBiaya.fromMap(
+                Map<String, dynamic>.from(map['breakdown'] as Map)),
       );
 }
 
@@ -99,6 +177,7 @@ class CustomerDisplayRepository {
     String? bankName,
     String? accountNumber,
     String? accountHolder,
+    RincianBiaya? rincian,
   }) async {
     await _client.rpc('set_customer_display', params: {
       'p_resto_id': restoId,
@@ -112,6 +191,7 @@ class CustomerDisplayRepository {
       'p_bank_name': bankName,
       'p_account_number': accountNumber,
       'p_account_holder': accountHolder,
+      'p_breakdown': rincian?.toMap(),
     });
   }
 
@@ -127,6 +207,7 @@ class CustomerDisplayRepository {
     String? bankName,
     String? accountNumber,
     String? accountHolder,
+    RincianBiaya? rincian,
   }) =>
       _tulis(
         restoId,
@@ -140,6 +221,7 @@ class CustomerDisplayRepository {
         bankName: bankName,
         accountNumber: accountNumber,
         accountHolder: accountHolder,
+        rincian: rincian,
       );
 
   /// Menyatakan lunas — tampil sebentar sebagai konfirmasi.

@@ -5,6 +5,8 @@ import '../utils/akses_menu.dart';
 import '../theme.dart';
 
 import 'count_badge.dart';
+import 'language_theme_toggle.dart';
+import 'lencana_paket_aktif.dart';
 
 /// A colorful menu row used on "hub" home screens (Super Admin, Finance)
 /// — an icon in a soft gradient badge, title/subtitle, and a chevron.
@@ -114,6 +116,25 @@ class HubHeader extends StatelessWidget {
   /// muncul untuk akun pemegang lebih dari satu cabang.
   final Widget? trailing;
 
+  /// Tiga tombol tema tepat di bawah barisan "Peran • email".
+  ///
+  /// Sebelumnya ini satu menu bernama "Tampilan" di antara menu-menu
+  /// kerja — padahal ia bukan pekerjaan, cuma kenyamanan melihat. Yang
+  /// mencarinya harus menggulir melewati kasir, keuangan, dan
+  /// pengelolaan untuk sampai ke sana, dan menemukannya di situ
+  /// menyiratkan ia sederajat dengan menutup shift.
+  ///
+  /// Dimatikan untuk Chef: layarnya tidak memakai header ini, dan
+  /// tampilan dapur yang menyala sepanjang hari memang tidak diutak-atik
+  /// dari layarnya sendiri.
+  final bool tampilkanTema;
+
+  /// Lencana paket langganan, di bawah tombol temanya.
+  ///
+  /// Dimatikan untuk beranda pelanggan dan KaataGo Admin: yang pertama
+  /// bukan merchant, yang kedua justru yang menetapkan paketnya.
+  final bool tampilkanPaket;
+
   const HubHeader({
     super.key,
     required this.logo,
@@ -122,6 +143,8 @@ class HubHeader extends StatelessWidget {
     required this.colorB,
     this.subtitle,
     this.trailing,
+    this.tampilkanTema = false,
+    this.tampilkanPaket = false,
   });
 
   @override
@@ -160,6 +183,11 @@ class HubHeader extends StatelessWidget {
               style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 12.5),
             ),
           ],
+          if (tampilkanTema) ...[
+            const SizedBox(height: 12),
+            const TemaHeader(),
+          ],
+          if (tampilkanPaket) const LencanaPaketAktif(),
           if (trailing != null) trailing!,
         ],
       ),

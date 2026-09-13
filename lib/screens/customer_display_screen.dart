@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../db/customer_display_repository.dart';
+import '../utils/tax_calculator.dart' show formatPercent, menuPriceNote;
 import '../db/restaurant_repository.dart';
 import '../providers/auth_provider.dart';
 import '../theme.dart';
@@ -204,6 +205,104 @@ class _RincianPesanan extends StatelessWidget {
   }
 }
 
+/// Dari mana totalnya berasal.
+///
+/// Baris pesanan di atasnya sudah memuat harga menu berikut PPN yang
+/// menempel di harga itu, jadi yang disebut di sini cuma yang tidak
+/// terlihat di baris mana pun. Menyebut PPN lagi sebagai baris tersendiri
+/// berarti menjumlahkannya dua kali di mata orang yang membacanya.
+class _RincianBiaya extends StatelessWidget {
+  final RincianBiaya rincian;
+  final int total;
+
+  const _RincianBiaya({required this.rincian, required this.total});
+
+  @override
+  Widget build(BuildContext context) {
+    final muted = KaataTheme.mutedOf(context);
+    final catatan = menuPriceNote(rincian.ppnPercent);
+
+    // Baris service dihitung mundur dari totalnya, bukan dijumlahkan
+    // maju — sama seperti di layar kasir. Service membawa PPN-nya
+    // sendiri, dan barisan yang dijumlahkan maju meleset dari totalnya
+    // persis sebesar pajak itu.
+    final subtotal = rincian.subtotal;
+    final service =
+        total + rincian.discount - subtotal >= 0 && rincian.service > 0
+            ? total + rincian.discount - subtotal
+            : 0;
+
+    final baris = <(String, int, bool)>[
+      ('Subtotal', subtotal, false),
+      if (service > 0)
+        ('Biaya Service ${formatPercent(rincian.servicePercent)}', service,
+            false),
+      if (rincian.discount > 0)
+        (
+          rincian.discountName?.isNotEmpty == true
+              ? 'Diskon ${rincian.discountName}'
+              : 'Diskon',
+          -rincian.discount,
+          true
+        ),
+    ];
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: KaataTheme.softFillOf(context),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (rincian.adaBaris) ...[
+            for (final (nama, nilai, hijau) in baris)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 3),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(nama,
+                          style: TextStyle(fontSize: 14, color: muted)),
+                    ),
+                    Text(
+                      nilai < 0
+                          ? '\u2212 ${_rupiah.format(-nilai)}'
+                          : _rupiah.format(nilai),
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: hijau ? const Color(0xFF15803D) : null,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            const Divider(height: 16),
+            Row(
+              children: [
+                const Expanded(
+                  child: Text('Total',
+                      style: TextStyle(
+                          fontSize: 15, fontWeight: FontWeight.bold)),
+                ),
+                Text(_rupiah.format(total),
+                    style: const TextStyle(
+                        fontSize: 15, fontWeight: FontWeight.bold)),
+              ],
+            ),
+          ],
+          if (catatan != null) ...[
+            if (rincian.adaBaris) const SizedBox(height: 6),
+            Text(catatan, style: TextStyle(fontSize: 12.5, color: muted)),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 /// Rekening tujuan transfer, untuk dibaca dan disalin pelanggan sendiri.
 ///
 /// Nomor rekening yang dibacakan dengan suara di tengah keramaian adalah
@@ -357,6 +456,16 @@ class _Menunggu extends StatelessWidget {
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 420),
                 child: _RincianPesanan(items: tampilan.items),
+              ),
+            ),
+          ],
+          if (tampilan.rincian != null) ...[
+            const SizedBox(height: 10),
+            Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: _RincianBiaya(
+                    rincian: tampilan.rincian!, total: tampilan.amount ?? 0),
               ),
             ),
           ],

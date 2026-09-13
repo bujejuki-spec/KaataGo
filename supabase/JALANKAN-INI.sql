@@ -17,7 +17,7 @@
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 1 dari 93 — employee_surrogate_key.sql
+-- BAGIAN 1 dari 100 — employee_surrogate_key.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — email karyawan jadi bisa diubah.
@@ -68,7 +68,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 2 dari 93 — promo_banner.sql
+-- BAGIAN 2 dari 100 — promo_banner.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — banner promo per resto.
@@ -130,7 +130,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 3 dari 93 — rilis_setor_petty_inbox.sql
+-- BAGIAN 3 dari 100 — rilis_setor_petty_inbox.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — setoran & top up petty cash berjenjang, GL Suspense, dan
@@ -377,7 +377,7 @@ alter table gl_accounts add constraint gl_accounts_payment_method_check
      'ppn', 'service', 'suspense', 'suspense_petty', 'gateway_fee', 'discount',
      'subscription', 'subscription_discount', 'voucher', 'voucher_redeem',
      'capital', 'cash_variance', 'other_income',
-     'cash_pickup', 'company_cash', 'company_bank'));
+     'cash_pickup', 'company_cash', 'company_bank', 'opening_balance'));
 
 -- ─────────────────────────────────────────────────────────────────────
 -- 4. Jurnal petty cash mengikuti statusnya
@@ -617,7 +617,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 4 dari 93 — customer_cash_payment.sql
+-- BAGIAN 4 dari 100 — customer_cash_payment.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pelanggan boleh memilih bayar tunai di kasir.
@@ -687,7 +687,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 5 dari 93 — push_notifications.sql
+-- BAGIAN 5 dari 100 — push_notifications.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — notifikasi yang tetap sampai walau aplikasinya tertutup.
@@ -1035,7 +1035,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 6 dari 93 — announcement_categories.sql
+-- BAGIAN 6 dari 100 — announcement_categories.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pengumuman dibagi dua jenis, dan admin resto boleh mengirim.
@@ -1124,7 +1124,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 7 dari 93 — fix_device_tokens_rls.sql
+-- BAGIAN 7 dari 100 — fix_device_tokens_rls.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pendaftaran token push lewat fungsi, bukan tulis langsung.
@@ -1243,7 +1243,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 8 dari 93 — push_trigger_pg_net.sql
+-- BAGIAN 8 dari 100 — push_trigger_pg_net.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — panggil Edge Function langsung dari database, tanpa webhook.
@@ -1356,7 +1356,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 9 dari 93 — payment_gateway.sql
+-- BAGIAN 9 dari 100 — payment_gateway.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — QRIS sungguhan lewat Xendit.
@@ -1510,7 +1510,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 10 dari 93 — gateway_settlement.sql
+-- BAGIAN 10 dari 100 — gateway_settlement.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pencairan dana dari payment gateway.
@@ -1550,7 +1550,7 @@ alter table gl_accounts add constraint gl_accounts_payment_method_check
      'ppn', 'service', 'suspense', 'suspense_petty', 'gateway_fee', 'discount',
      'subscription', 'subscription_discount', 'voucher', 'voucher_redeem',
      'capital', 'cash_variance', 'other_income',
-     'cash_pickup', 'company_cash', 'company_bank'));
+     'cash_pickup', 'company_cash', 'company_bank', 'opening_balance'));
 
 -- ─────────────────────────────────────────────────────────────────────
 -- 2. Catatan pencairan
@@ -1693,7 +1693,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 11 dari 93 — resto_payment_accounts.sql
+-- BAGIAN 11 dari 100 — resto_payment_accounts.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pencairan langsung ke rekening masing-masing resto.
@@ -1786,7 +1786,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 12 dari 93 — counter_charge.sql
+-- BAGIAN 12 dari 100 — counter_charge.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — tagihan QRIS di meja kasir.
@@ -1823,7 +1823,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 13 dari 93 — announcement_push.sql
+-- BAGIAN 13 dari 100 — announcement_push.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pengumuman ikut membunyikan HP.
@@ -1880,7 +1880,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 14 dari 93 — cash_payment_expiry.sql
+-- BAGIAN 14 dari 100 — cash_payment_expiry.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pesanan tunai yang tidak dilunasi di kasir hangus sendiri.
@@ -1966,7 +1966,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 15 dari 93 — level_groups.sql
+-- BAGIAN 15 dari 100 — level_groups.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — tiap resto menyusun sendiri kelompok levelnya.
@@ -2092,7 +2092,7 @@ create trigger trg_seed_level_groups
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 16 dari 93 — resto_order_types.sql
+-- BAGIAN 16 dari 100 — resto_order_types.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — resto menentukan sendiri melayani Dine In, Take Away, atau
@@ -2130,7 +2130,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 17 dari 93 — product_out_of_stock.sql
+-- BAGIAN 17 dari 100 — product_out_of_stock.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — ketersediaan produk ditandai, bukan dihitung.
@@ -2174,7 +2174,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 18 dari 93 — discounts.sql
+-- BAGIAN 18 dari 100 — discounts.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — diskon: per menu (termasuk bundling) atau minimum belanja.
@@ -2296,7 +2296,7 @@ alter table gl_accounts add constraint gl_accounts_payment_method_check
      'ppn', 'service', 'suspense', 'suspense_petty', 'gateway_fee', 'discount',
      'subscription', 'subscription_discount', 'voucher', 'voucher_redeem',
      'capital', 'cash_variance', 'other_income',
-     'cash_pickup', 'company_cash', 'company_bank'));
+     'cash_pickup', 'company_cash', 'company_bank', 'opening_balance'));
 
 insert into gl_accounts (resto_id, payment_method, gl_code, gl_name)
 select r.id, 'discount', '2200002', 'GL Diskon Penjualan'
@@ -2313,7 +2313,7 @@ alter table gl_journal_entries add constraint gl_journal_entries_reference_type_
     reference_type in
     ('order', 'order_discount', 'expense', 'petty_cash', 'cash_deposit',
      'billing', 'billing_discount', 'voucher', 'capital', 'cash_variance',
-     'other_income', 'company_deposit'));
+     'other_income', 'company_deposit', 'opening_balance'));
 
 -- Jurnal diskon.
 --
@@ -2384,7 +2384,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 19 dari 93 — promo_banner_period.sql
+-- BAGIAN 19 dari 100 — promo_banner_period.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — banner promo punya masa berlaku.
@@ -2412,7 +2412,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 20 dari 93 — default_gl_accounts.sql
+-- BAGIAN 20 dari 100 — default_gl_accounts.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — resto baru langsung punya bagan akun dan tarif pajaknya.
@@ -2480,6 +2480,8 @@ as $$
     ('total_balance',    '1990001', 'GL Total Saldo'),
     -- Uang yang benar-benar sudah dipegang perusahaan
     ('company_cash',     '1990002', 'GL Saldo Cash Perusahaan'),
+    -- Lawan akun saat saldo disamakan dengan mutasi bank
+    ('opening_balance',  '1990004', 'GL Saldo Awal'),
     -- Suspense — titipan yang belum diakui masuk ke mana pun
     ('suspense',         '2100001', 'GL Suspense Setoran'),
     ('suspense_petty',   '2100002', 'GL Suspense Petty Cash'),
@@ -2582,7 +2584,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 21 dari 93 — gateway_account_super_admin.sql
+-- BAGIAN 21 dari 100 — gateway_account_super_admin.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pengenal sub-akun Xendit jadi urusan Super Admin saja.
@@ -2623,7 +2625,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 22 dari 93 — announcement_audience.sql
+-- BAGIAN 22 dari 100 — announcement_audience.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pengumuman resto memilih sasarannya: karyawan, pelanggan,
@@ -2696,7 +2698,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 23 dari 93 — kasir_journal_read.sql
+-- BAGIAN 23 dari 100 — kasir_journal_read.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — kasir boleh melihat jurnal dari catatan yang dia buat.
@@ -2732,7 +2734,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 24 dari 93 — cancel_order.sql
+-- BAGIAN 24 dari 100 — cancel_order.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pelanggan boleh membatalkan pesanannya sendiri selama
@@ -2824,7 +2826,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 25 dari 93 — settled_at_counter.sql
+-- BAGIAN 25 dari 100 — settled_at_counter.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — menandai pesanan mandiri yang uangnya diterima di meja
@@ -2866,7 +2868,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 26 dari 93 — discount_min_qty.sql
+-- BAGIAN 26 dari 100 — discount_min_qty.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — diskon dengan syarat jumlah pembelian.
@@ -2896,7 +2898,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 27 dari 93 — discount_product_rules.sql
+-- BAGIAN 27 dari 100 — discount_product_rules.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — syarat jumlah menempel di tiap menu, bukan di promonya.
@@ -2949,7 +2951,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 28 dari 93 — billing.sql
+-- BAGIAN 28 dari 100 — billing.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — langganan bulanan resto.
@@ -3365,7 +3367,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 29 dari 93 — billing_va.sql
+-- BAGIAN 29 dari 100 — billing_va.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — tagihan langganan dibayar lewat Virtual Account Xendit.
@@ -3535,7 +3537,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 30 dari 93 — platform_finance.sql
+-- BAGIAN 30 dari 100 — platform_finance.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — keuangan KaataGo sendiri, terpisah dari keuangan resto.
@@ -3765,7 +3767,7 @@ alter table gl_journal_entries add constraint gl_journal_entries_reference_type_
     reference_type in
     ('order', 'order_discount', 'expense', 'petty_cash', 'cash_deposit',
      'billing', 'billing_discount', 'voucher', 'capital', 'cash_variance',
-     'other_income', 'company_deposit'));
+     'other_income', 'company_deposit', 'opening_balance'));
 
 create or replace function log_billing_journal()
 returns trigger
@@ -3893,7 +3895,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 31 dari 93 — resto_soft_delete.sql
+-- BAGIAN 31 dari 100 — resto_soft_delete.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — menghapus resto tanpa membuang datanya.
@@ -4072,7 +4074,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 32 dari 93 — billing_discount_apply.sql
+-- BAGIAN 32 dari 100 — billing_discount_apply.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — diskon ikut memotong tagihan yang sudah terbit.
@@ -4239,7 +4241,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 33 dari 93 — billing_journal_gross.sql
+-- BAGIAN 33 dari 100 — billing_journal_gross.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pendapatan langganan dicatat sebesar harga penuh.
@@ -4390,7 +4392,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 34 dari 93 — gl_discount_backfill.sql
+-- BAGIAN 34 dari 100 — gl_discount_backfill.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — GL Diskon terisi bawaannya di tiap resto.
@@ -4452,7 +4454,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 35 dari 93 — platform_gl_renumber.sql
+-- BAGIAN 35 dari 100 — platform_gl_renumber.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — nomor akun penyewa platform dipindah ke golongan 11xxxxx.
@@ -4552,7 +4554,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 36 dari 93 — product_toppings.sql
+-- BAGIAN 36 dari 100 — product_toppings.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — topping per menu, berikut harga dan batas pilihnya.
@@ -4594,7 +4596,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 37 dari 93 — vouchers.sql
+-- BAGIAN 37 dari 100 — vouchers.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — voucher untuk pelanggan, dananya benar-benar berpindah.
@@ -4778,7 +4780,7 @@ alter table gl_journal_entries add constraint gl_journal_entries_reference_type_
     reference_type in
     ('order', 'order_discount', 'expense', 'petty_cash', 'cash_deposit',
      'billing', 'billing_discount', 'voucher', 'capital', 'cash_variance',
-     'other_income', 'company_deposit'));
+     'other_income', 'company_deposit', 'opening_balance'));
 
 -- ─────────────────────────────────────────────────────────────────────
 -- 1. Menerbitkan batch
@@ -5081,7 +5083,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 38 dari 93 — voucher_payouts.sql
+-- BAGIAN 38 dari 100 — voucher_payouts.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — voucher yang dipakai pelanggan dibayarkan sungguhan ke resto.
@@ -5424,7 +5426,7 @@ select cron.schedule('settle-voucher-payouts', '*/15 * * * *',
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 39 dari 93 — voucher_announcement.sql
+-- BAGIAN 39 dari 100 — voucher_announcement.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — voucher yang terbit langsung mengabari pelanggan.
@@ -5552,7 +5554,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 40 dari 93 — voucher_manage.sql
+-- BAGIAN 40 dari 100 — voucher_manage.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — banner voucher, dan menghapus batch yang tidak jadi.
@@ -5740,7 +5742,7 @@ revoke all on function delete_voucher_batch(text) from public, anon;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 41 dari 93 — market_report.sql
+-- BAGIAN 41 dari 100 — market_report.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — laporan pasar untuk Super Admin.
@@ -5899,7 +5901,7 @@ revoke all on function report_idle_restos(integer) from public, anon;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 42 dari 93 — billing_due_day.sql
+-- BAGIAN 42 dari 100 — billing_due_day.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — tanggal tagih 29, 30, 31, dan jatuh tempo berikutnya.
@@ -6055,7 +6057,7 @@ $$;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 43 dari 93 — balance_topup.sql
+-- BAGIAN 43 dari 100 — balance_topup.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — setoran modal ke saldo utama.
@@ -6086,7 +6088,7 @@ alter table gl_accounts add constraint gl_accounts_payment_method_check
      'ppn', 'service', 'suspense', 'suspense_petty', 'gateway_fee', 'discount',
      'subscription', 'subscription_discount', 'voucher', 'voucher_redeem',
      'capital', 'cash_variance', 'other_income',
-     'cash_pickup', 'company_cash', 'company_bank'));
+     'cash_pickup', 'company_cash', 'company_bank', 'opening_balance'));
 
 -- Untuk KaataGo — sederet dengan akun platform lainnya.
 insert into gl_accounts (resto_id, payment_method, gl_code, gl_name)
@@ -6109,7 +6111,7 @@ alter table gl_journal_entries add constraint gl_journal_entries_reference_type_
     reference_type in
     ('order', 'order_discount', 'expense', 'petty_cash', 'cash_deposit',
      'billing', 'billing_discount', 'voucher', 'capital', 'cash_variance',
-     'other_income', 'company_deposit'));
+     'other_income', 'company_deposit', 'opening_balance'));
 
 create table if not exists balance_topups (
   id uuid primary key default gen_random_uuid(),
@@ -6225,7 +6227,7 @@ create trigger trg_log_balance_topup
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 44 dari 93 — voucher_new_customer.sql
+-- BAGIAN 44 dari 100 — voucher_new_customer.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — voucher khusus pengguna baru.
@@ -6460,7 +6462,7 @@ $$;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 45 dari 93 — qris_receipt_fields.sql
+-- BAGIAN 45 dari 100 — qris_receipt_fields.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — rincian kuitansi QRIS dari Xendit, jadi kolomnya sendiri.
@@ -6597,7 +6599,7 @@ where c.id = d.id;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 46 dari 93 — order_number.sql
+-- BAGIAN 46 dari 100 — order_number.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — nomor pesanan harian per resto.
@@ -6746,7 +6748,7 @@ do update set last_no = greatest(order_counters.last_no, excluded.last_no);
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 47 dari 93 — customer_display.sql
+-- BAGIAN 47 dari 100 — customer_display.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — layar pelanggan di meja kasir.
@@ -6894,7 +6896,7 @@ end $$;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 48 dari 93 — resto_facilities.sql
+-- BAGIAN 48 dari 100 — resto_facilities.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — fasilitas merchant.
@@ -6937,7 +6939,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 49 dari 93 — merchant_reviews.sql
+-- BAGIAN 49 dari 100 — merchant_reviews.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — penilaian merchant oleh pelanggan, dan jam bukanya.
@@ -7053,7 +7055,7 @@ $$;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 50 dari 93 — review_prompt.sql
+-- BAGIAN 50 dari 100 — review_prompt.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — mengajak pelanggan menilai, sejam sesudah membayar.
@@ -7168,7 +7170,7 @@ select cron.schedule('review-prompts', '*/20 * * * *',
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 51 dari 93 — order_cancel_kitchen.sql
+-- BAGIAN 51 dari 100 — order_cancel_kitchen.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pesanan yang batal berhenti punya status dapur.
@@ -7250,7 +7252,7 @@ where payment_status in ('cancelled', 'expired')
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 52 dari 93 — product_badges_reviews.sql
+-- BAGIAN 52 dari 100 — product_badges_reviews.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — label menu, penilaian menu, dan angka terjualnya.
@@ -7408,7 +7410,7 @@ grant execute on function product_stats(text) to anon, authenticated;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 53 dari 93 — cashier_shift.sql
+-- BAGIAN 53 dari 100 — cashier_shift.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — buka dan tutup shift kasir.
@@ -7688,7 +7690,7 @@ grant execute on function shift_expected_cash(uuid, timestamptz) to authenticate
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 54 dari 93 — product_review_per_order.sql
+-- BAGIAN 54 dari 100 — product_review_per_order.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — penilaian menu menempel pada pesanannya, bukan pada menunya.
@@ -7787,7 +7789,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 55 dari 93 — cash_variance.sql
+-- BAGIAN 55 dari 100 — cash_variance.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — GL Selisih Kasir, dan pelunasannya.
@@ -7825,7 +7827,7 @@ alter table gl_accounts add constraint gl_accounts_payment_method_check
      'ppn', 'service', 'suspense', 'suspense_petty', 'gateway_fee', 'discount',
      'subscription', 'subscription_discount', 'voucher', 'voucher_redeem',
      'capital', 'cash_variance', 'other_income',
-     'cash_pickup', 'company_cash', 'company_bank'));
+     'cash_pickup', 'company_cash', 'company_bank', 'opening_balance'));
 
 alter table gl_journal_entries drop constraint if exists gl_journal_entries_reference_type_check;
 alter table gl_journal_entries add constraint gl_journal_entries_reference_type_check
@@ -7833,7 +7835,7 @@ alter table gl_journal_entries add constraint gl_journal_entries_reference_type_
     reference_type in
     ('order', 'order_discount', 'expense', 'petty_cash', 'cash_deposit',
      'billing', 'billing_discount', 'voucher', 'capital', 'cash_variance',
-     'other_income', 'company_deposit'));
+     'other_income', 'company_deposit', 'opening_balance'));
 
 -- Untuk resto yang sudah ada.
 insert into gl_accounts (resto_id, payment_method, gl_code, gl_name)
@@ -7863,6 +7865,8 @@ as $$
     ('total_balance',    '1990001', 'GL Total Saldo'),
     -- Uang yang benar-benar sudah dipegang perusahaan
     ('company_cash',     '1990002', 'GL Saldo Cash Perusahaan'),
+    -- Lawan akun saat saldo disamakan dengan mutasi bank
+    ('opening_balance',  '1990004', 'GL Saldo Awal'),
     -- Suspense — titipan yang belum diakui masuk ke mana pun
     ('suspense',         '2100001', 'GL Suspense Setoran'),
     ('suspense_petty',   '2100002', 'GL Suspense Petty Cash'),
@@ -8098,7 +8102,7 @@ grant execute on function settle_cash_variance(uuid, text) to authenticated;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 56 dari 93 — cash_variance_lebih.sql
+-- BAGIAN 56 dari 100 — cash_variance_lebih.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — selisih lebih shift kasir jadi titipan yang ditelusuri.
@@ -8166,7 +8170,7 @@ alter table gl_accounts add constraint gl_accounts_payment_method_check
      'ppn', 'service', 'suspense', 'suspense_petty', 'gateway_fee', 'discount',
      'subscription', 'subscription_discount', 'voucher', 'voucher_redeem',
      'capital', 'cash_variance', 'other_income',
-     'cash_pickup', 'company_cash', 'company_bank'));
+     'cash_pickup', 'company_cash', 'company_bank', 'opening_balance'));
 
 insert into gl_accounts (resto_id, payment_method, gl_code, gl_name)
 select r.id, 'other_income', '1950009', 'GL Pendapatan Lain-lain'
@@ -8461,7 +8465,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 57 dari 93 — backfill_selisih_lebih.sql
+-- BAGIAN 57 dari 100 — backfill_selisih_lebih.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — melahirkan baris kerja untuk selisih lebih yang terlanjur
@@ -8509,7 +8513,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 58 dari 93 — buka_shift_terkunci.sql
+-- BAGIAN 58 dari 100 — buka_shift_terkunci.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — siapa yang boleh membuka shift, dan kapan dia belum boleh.
@@ -8606,7 +8610,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 59 dari 93 — perbaiki_deskripsi_jurnal.sql
+-- BAGIAN 59 dari 100 — perbaiki_deskripsi_jurnal.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - membetulkan deskripsi jurnal yang huruf pisahnya rusak.
@@ -8751,7 +8755,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 60 dari 93 — stok_terkunci.sql
+-- BAGIAN 60 dari 100 — stok_terkunci.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - stok yang benar-benar menahan pesanan.
@@ -9005,7 +9009,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 61 dari 93 — foto_menu_storage.sql
+-- BAGIAN 61 dari 100 — foto_menu_storage.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - foto menu pindah dari kolom tabel ke Storage.
@@ -9158,7 +9162,7 @@ create policy "menu-foto: hapus karyawan" on storage.objects
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 62 dari 93 — saldo_cash_pembanding.sql
+-- BAGIAN 62 dari 100 — saldo_cash_pembanding.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - buka dan tutup shift dibandingkan dengan Saldo Cash.
@@ -9349,7 +9353,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 63 dari 93 — merchant_email.sql
+-- BAGIAN 63 dari 100 — merchant_email.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - alamat surel merchant.
@@ -9373,7 +9377,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 64 dari 93 — tagihan_ikut_tanggal.sql
+-- BAGIAN 64 dari 100 — tagihan_ikut_tanggal.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - tagihan yang belum waktunya ikut hilang saat tanggalnya diubah.
@@ -9504,7 +9508,7 @@ $$;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 65 dari 93 — qris_hangus.sql
+-- BAGIAN 65 dari 100 — qris_hangus.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - pesanan QRIS yang tidak dibayar ikut hangus.
@@ -9624,7 +9628,7 @@ grant execute on function bangkitkan_pesanan_terbayar(uuid) to authenticated;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 66 dari 93 — qris_statis.sql
+-- BAGIAN 66 dari 100 — qris_statis.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - QRIS Statis, dan metode bayar yang bisa dipilih merchant.
@@ -9737,7 +9741,7 @@ alter table gl_accounts add constraint gl_accounts_payment_method_check
      'ppn', 'service', 'suspense', 'suspense_petty', 'gateway_fee', 'discount',
      'subscription', 'subscription_discount', 'voucher', 'voucher_redeem',
      'capital', 'cash_variance', 'other_income',
-     'cash_pickup', 'company_cash', 'company_bank'));
+     'cash_pickup', 'company_cash', 'company_bank', 'opening_balance'));
 
 commit;
 
@@ -9851,7 +9855,7 @@ create policy "qris-statis: hapus karyawan" on storage.objects
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 67 dari 93 — tutup_buku_harian.sql
+-- BAGIAN 67 dari 100 — tutup_buku_harian.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - tutup buku harian merchant.
@@ -10145,7 +10149,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 68 dari 93 — rekening_perusahaan.sql
+-- BAGIAN 68 dari 100 — rekening_perusahaan.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - rekening perusahaan berdiri sendiri, tidak menempel di resto.
@@ -10382,7 +10386,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 69 dari 93 — setor_dan_pickup.sql
+-- BAGIAN 69 dari 100 — setor_dan_pickup.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - setoran menyebut rekeningnya, dan cash pickup.
@@ -10494,7 +10498,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 70 dari 93 — mutasi_bank.sql
+-- BAGIAN 70 dari 100 — mutasi_bank.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - mutasi rekening, dan mencocokkannya dengan yang tercatat.
@@ -10849,7 +10853,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 71 dari 93 — cara_tagih.sql
+-- BAGIAN 71 dari 100 — cara_tagih.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - cara menagih merchant: Virtual Account atau transfer.
@@ -10961,7 +10965,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 72 dari 93 — rekening_owner.sql
+-- BAGIAN 72 dari 100 — rekening_owner.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - Owner dan Finance benar-benar bisa menambah rekening.
@@ -11115,7 +11119,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 73 dari 93 — shift_privasi.sql
+-- BAGIAN 73 dari 100 — shift_privasi.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - kasir melihat shiftnya sendiri, bukan shift orang lain.
@@ -11216,7 +11220,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 74 dari 93 — terima_cash_pickup.sql
+-- BAGIAN 74 dari 100 — terima_cash_pickup.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - serah terima cash pickup, dan dua akun GL untuknya.
@@ -11258,7 +11262,7 @@ alter table gl_accounts add constraint gl_accounts_payment_method_check
      'ppn', 'service', 'suspense', 'suspense_petty', 'gateway_fee', 'discount',
      'subscription', 'subscription_discount', 'voucher', 'voucher_redeem',
      'capital', 'cash_variance', 'other_income',
-     'cash_pickup', 'company_cash', 'company_bank'));
+     'cash_pickup', 'company_cash', 'company_bank', 'opening_balance'));
 
 -- Cash Pickup sederet dengan akun titipan lain (21xxxxx): isinya bukan
 -- milik siapa pun sampai serah terimanya selesai.
@@ -11520,7 +11524,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 75 dari 93 — uam_menu.sql
+-- BAGIAN 75 dari 100 — uam_menu.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - parameter akses menu per resto, per peran.
@@ -11610,7 +11614,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 76 dari 93 — layar_pelanggan_rinci.sql
+-- BAGIAN 76 dari 100 — layar_pelanggan_rinci.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - layar pelanggan menampilkan rincian, bukan cuma nominal.
@@ -11748,7 +11752,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 77 dari 93 — stok_lepas_10_menit.sql
+-- BAGIAN 77 dari 100 — stok_lepas_10_menit.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - stok yang dipesan dan tidak dibayar kembali ke rak
@@ -11822,7 +11826,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 78 dari 93 — rekening_kaatago_terbaca.sql
+-- BAGIAN 78 dari 100 — rekening_kaatago_terbaca.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - merchant benar-benar bisa membaca rekening KaataGo.
@@ -11861,7 +11865,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 79 dari 93 — jurnal_cash_pickup_benar.sql
+-- BAGIAN 79 dari 100 — jurnal_cash_pickup_benar.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - jurnal cash pickup diperbaiki, dan jalur Suspense dipulihkan.
@@ -12182,7 +12186,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 80 dari 93 — saldo_perusahaan.sql
+-- BAGIAN 80 dari 100 — saldo_perusahaan.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - Saldo Perusahaan: kas dan bank sebagai dua kantong nyata.
@@ -12236,7 +12240,7 @@ alter table gl_accounts add constraint gl_accounts_payment_method_check
      'ppn', 'service', 'suspense', 'suspense_petty', 'gateway_fee', 'discount',
      'subscription', 'subscription_discount', 'voucher', 'voucher_redeem',
      'capital', 'cash_variance', 'other_income',
-     'cash_pickup', 'company_cash', 'company_bank'));
+     'cash_pickup', 'company_cash', 'company_bank', 'opening_balance'));
 
 insert into gl_accounts (resto_id, payment_method, gl_code, gl_name)
 select r.id, 'company_bank', '1990003', 'GL Saldo Bank Perusahaan'
@@ -12380,7 +12384,7 @@ alter table gl_journal_entries add constraint gl_journal_entries_reference_type_
     reference_type in
     ('order', 'order_discount', 'expense', 'petty_cash', 'cash_deposit',
      'billing', 'billing_discount', 'voucher', 'capital', 'cash_variance',
-     'other_income', 'company_deposit'));
+     'other_income', 'company_deposit', 'opening_balance'));
 
 commit;
 
@@ -12673,7 +12677,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 81 dari 93 — jurnal_bank_terjadwal.sql
+-- BAGIAN 81 dari 100 — jurnal_bank_terjadwal.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - pendapatan non-tunai masuk Saldo Bank tiap jam 5 pagi WIB.
@@ -12925,7 +12929,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 82 dari 93 — backfill_saldo_bank.sql
+-- BAGIAN 82 dari 100 — backfill_saldo_bank.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - saldo bank perusahaan diisi dari penjualan non-tunai yang
@@ -13023,7 +13027,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 83 dari 93 — jurnal_selisih_ke_bank.sql
+-- BAGIAN 83 dari 100 — jurnal_selisih_ke_bank.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - selisih kasir yang dilunasi transfer ikut masuk Saldo Bank.
@@ -13210,7 +13214,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 84 dari 93 — setoran_ke_saldo_bank.sql
+-- BAGIAN 84 dari 100 — setoran_ke_saldo_bank.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - setoran tunai yang disetujui mendarat di Saldo Bank
@@ -13356,7 +13360,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 85 dari 93 — tutup_shift_sendiri.sql
+-- BAGIAN 85 dari 100 — tutup_shift_sendiri.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - shift hanya bisa ditutup oleh yang membukanya.
@@ -13451,7 +13455,543 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 86 dari 93 — merchant_report.sql
+-- BAGIAN 86 dari 100 — saldo_awal.sql
+-- ═══════════════════════════════════════════════════════════════════
+
+-- KaataGo - menyetel saldo awal kas dan rekening perusahaan.
+--
+-- Jalankan SETELAH saldo_perusahaan.sql. Aman diulang.
+--
+-- Saldo Bank Perusahaan sekarang menjumlahkan uang yang PERNAH MASUK,
+-- bukan yang masih ada. Sebabnya bukan salah hitung: pengeluaran yang
+-- dilakukan dari rekening sebelum aplikasi ini mencatatnya memang tidak
+-- punya barisnya di mana pun, jadi tidak ada yang bisa dikurangkan.
+--
+-- Selama itu belum dibereskan, angkanya tidak bisa dipakai mengambil
+-- keputusan — dan angka yang tidak bisa dipakai mengambil keputusan
+-- lebih berbahaya daripada angka yang tidak ada, karena ia tetap
+-- dibaca orang.
+--
+-- Yang dibutuhkan bukan tebakan sistem melainkan satu kenyataan dari
+-- luar: berapa isi rekening pada suatu tanggal, menurut mutasi bank
+-- sungguhan. Fungsi di bawah menerima angka itu, membandingkannya
+-- dengan apa yang tercatat sampai tanggal itu, lalu menuliskan
+-- selisihnya sebagai penyesuaian.
+--
+-- ── Kenapa penyesuaian, bukan menghapus lalu menulis ulang ───────────
+--
+-- Baris lama tidak disentuh. Penjualan yang pernah masuk memang pernah
+-- masuk, dan menghapusnya demi merapikan satu angka berarti menukar
+-- angka yang salah dengan riwayat yang bohong. Yang ditambahkan cuma
+-- satu baris yang menyatakan: sampai tanggal ini, isinya sekian.
+--
+-- Pergerakan SESUDAH tanggal itu tidak ikut disetel — ia tetap berjalan
+-- di atas saldo awalnya. Jadi menyetel saldo per 31 Agustus hari ini
+-- tidak menghapus penjualan September.
+
+-- ─────────────────────────────────────────────────────────────────────
+-- 1. Akun penyeimbangnya
+-- ─────────────────────────────────────────────────────────────────────
+--
+-- Penyesuaiannya butuh lawan akun, kalau tidak jurnalnya timpang dan
+-- Jurnal GL berhenti bisa dibaca sebagai pasangan debit-kredit. Akun
+-- ini menampung "uang yang sudah ada sebelum aplikasi ini mencatat" —
+-- dan saldonya sendiri memang tidak berarti apa-apa selain itu.
+
+begin;
+
+alter table gl_accounts drop constraint if exists gl_accounts_payment_method_check;
+alter table gl_accounts add constraint gl_accounts_payment_method_check
+  check (
+    payment_method in
+    ('cash', 'qris', 'qris_static', 'transfer', 'petty_cash',
+     'income_aggregate', 'total_balance',
+     'ppn', 'service', 'suspense', 'suspense_petty', 'gateway_fee', 'discount',
+     'subscription', 'subscription_discount', 'voucher', 'voucher_redeem',
+     'capital', 'cash_variance', 'other_income',
+     'cash_pickup', 'company_cash', 'company_bank', 'opening_balance'));
+
+insert into gl_accounts (resto_id, payment_method, gl_code, gl_name)
+select r.id, 'opening_balance', '1990004', 'GL Saldo Awal'
+from restaurants r
+on conflict (resto_id, payment_method) do nothing;
+
+alter table gl_journal_entries drop constraint if exists gl_journal_entries_reference_type_check;
+alter table gl_journal_entries add constraint gl_journal_entries_reference_type_check
+  check (
+    reference_type in
+    ('order', 'order_discount', 'expense', 'petty_cash', 'cash_deposit',
+     'billing', 'billing_discount', 'voucher', 'capital', 'cash_variance',
+     'other_income', 'company_deposit', 'opening_balance'));
+
+commit;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- 2. Menyetelnya
+-- ─────────────────────────────────────────────────────────────────────
+
+begin;
+
+create or replace function setel_saldo_awal(
+  p_resto_id text,
+  p_kantong text,
+  p_saldo bigint,
+  p_tanggal date,
+  p_note text default null
+)
+returns bigint
+language plpgsql
+security definer
+set search_path = public
+as $fn$
+declare
+  v_email text := auth.jwt() ->> 'email';
+  v_jenis text;
+  v_akun record;
+  v_lawan record;
+  v_tercatat bigint;
+  v_selisih bigint;
+  v_sebut text;
+begin
+  if v_email is null then
+    raise exception 'Harus masuk dulu.';
+  end if;
+
+  -- Menyatakan berapa isi rekening perusahaan adalah pernyataan
+  -- pembukuan, bukan pekerjaan operasional.
+  if not (is_super_admin()
+          or is_resto_employee(p_resto_id, array['owner', 'finance'])) then
+    raise exception 'Hanya Owner dan Finance yang bisa menyetel saldo awal.';
+  end if;
+
+  if p_kantong not in ('cash', 'bank') then
+    raise exception 'Kantongnya harus cash atau bank.';
+  end if;
+
+  if p_saldo is null or p_saldo < 0 then
+    raise exception 'Saldo awal tidak boleh kosong atau minus.';
+  end if;
+
+  if p_tanggal is null then
+    raise exception 'Tanggalnya wajib disebut.';
+  end if;
+
+  -- Tanggal yang belum terjadi tidak punya mutasi bank untuk
+  -- dibandingkan — yang disetel dengannya cuma angan-angan.
+  if p_tanggal > (now() at time zone 'Asia/Jakarta')::date then
+    raise exception 'Tanggalnya belum terjadi.';
+  end if;
+
+  v_jenis := case p_kantong when 'cash' then 'company_cash'
+                            else 'company_bank' end;
+  v_sebut := case p_kantong when 'cash' then 'Saldo Cash Perusahaan'
+                            else 'Saldo Bank Perusahaan' end;
+
+  select * into v_akun from _gl_account_for(p_resto_id, v_jenis);
+  if v_akun.gl_code is null or v_akun.gl_code = '' then
+    raise exception 'Akun % belum dipetakan di Mapping GL Account.', v_sebut;
+  end if;
+
+  select * into v_lawan from _gl_account_for(p_resto_id, 'opening_balance');
+  if v_lawan.gl_code is null or v_lawan.gl_code = '' then
+    raise exception 'GL Saldo Awal belum dipetakan di Mapping GL Account.';
+  end if;
+
+  -- Yang tercatat SAMPAI tanggal itu, bukan sampai hari ini. Pergerakan
+  -- sesudahnya berjalan di atas saldo awalnya dan tidak ikut disetel.
+  select coalesce(sum(case when j.entry_type = 'credit'
+                           then j.amount else -j.amount end), 0)
+    into v_tercatat
+  from gl_journal_entries j
+  where j.resto_id = p_resto_id
+    and j.gl_code = v_akun.gl_code
+    and j.entry_date <= p_tanggal
+    and coalesce(j.is_reversal, false) = false;
+
+  v_selisih := p_saldo - v_tercatat;
+
+  -- Sudah cocok: tidak ada yang perlu ditulis. Baris penyesuaian
+  -- bernilai nol cuma menambah baris yang harus dibaca orang nanti.
+  if v_selisih = 0 then
+    return 0;
+  end if;
+
+  insert into gl_journal_entries (
+    resto_id, entry_date, entry_time, gl_code, gl_name,
+    reference_type, reference_id, amount, entry_type, description
+  ) values (
+    p_resto_id, p_tanggal, '00:00:00',
+    v_akun.gl_code, v_akun.gl_name, 'opening_balance',
+    p_resto_id || ':' || p_kantong || ':' || p_tanggal::text,
+    abs(v_selisih),
+    case when v_selisih > 0 then 'credit' else 'debit' end,
+    'Penyesuaian saldo awal ' || v_sebut ||
+      coalesce(' — ' || nullif(btrim(coalesce(p_note, '')), ''), '')
+  );
+
+  -- Sisi penyeimbangnya, arah kebalikannya.
+  insert into gl_journal_entries (
+    resto_id, entry_date, entry_time, gl_code, gl_name,
+    reference_type, reference_id, amount, entry_type, description
+  ) values (
+    p_resto_id, p_tanggal, '00:00:00',
+    v_lawan.gl_code, v_lawan.gl_name, 'opening_balance',
+    p_resto_id || ':' || p_kantong || ':' || p_tanggal::text,
+    abs(v_selisih),
+    case when v_selisih > 0 then 'debit' else 'credit' end,
+    'Lawan penyesuaian saldo awal ' || v_sebut
+  );
+
+  return v_selisih;
+end;
+$fn$;
+
+revoke all on function setel_saldo_awal(text, text, bigint, date, text)
+  from public, anon;
+grant execute on function setel_saldo_awal(text, text, bigint, date, text)
+  to authenticated;
+
+commit;
+
+
+-- ═══════════════════════════════════════════════════════════════════
+-- BAGIAN 87 dari 100 — periksa_pembukuan.sql
+-- ═══════════════════════════════════════════════════════════════════
+
+-- KaataGo - pemeriksa konsistensi pembukuan.
+--
+-- Jalankan SETELAH saldo_perusahaan.sql. Aman diulang.
+--
+-- Dalam beberapa hari terakhir ditemukan lima kekeliruan yang bentuknya
+-- sama persis: satu uang terhitung di dua tempat, atau satu angka
+-- berbeda tergantung siapa yang melihatnya. Semuanya ketemu karena ada
+-- orang yang kebetulan memperhatikan sebuah angka yang ganjil.
+--
+-- Itu cara menemukan yang tidak bisa diandalkan. Angka yang salah
+-- sebesar seratus ribu memang terlihat; yang salah sebesar dua ribu
+-- tidak, dan yang salah pada merchant yang jarang dibuka tidak akan
+-- pernah dilihat siapa pun.
+--
+-- Fungsi ini memeriksa aturan-aturan yang TIDAK BOLEH dilanggar, dan
+-- mengembalikan yang dilanggar saja. Tiap barisnya menyebut apa yang
+-- salah, seberapa besar, dan ke mana harus melihat.
+--
+-- Sengaja tidak memperbaiki apa pun. Pemeriksa yang sekaligus
+-- membetulkan akan menyembunyikan sebab kesalahannya — dan yang perlu
+-- diperbaiki hampir selalu kodenya, bukan barisnya.
+
+begin;
+
+create or replace function periksa_pembukuan(p_resto_id text)
+returns table (
+  aturan text,
+  keterangan text,
+  selisih bigint,
+  petunjuk text
+)
+language plpgsql
+stable
+security definer
+set search_path = public
+as $fn$
+declare
+  v_nilai bigint;
+begin
+  if not (is_super_admin()
+          or is_resto_employee(p_resto_id, array['owner', 'finance'])) then
+    raise exception 'Hanya Owner dan Finance yang bisa memeriksa pembukuan.';
+  end if;
+
+  -- ── 1. Titipan setoran harus habis ────────────────────────────────
+  --
+  -- Tiap setoran masuk GL Suspense saat diajukan dan keluar saat
+  -- diputuskan. Yang tersisa berarti ada setoran yang tidak pernah
+  -- diputuskan — atau, lebih buruk, sepasang jurnal yang tidak
+  -- berpasangan.
+  select coalesce(sum(case when j.entry_type = 'credit'
+                           then j.amount else -j.amount end), 0)
+    into v_nilai
+  from gl_journal_entries j
+  join gl_accounts a
+    on a.resto_id = j.resto_id
+   and a.gl_code = j.gl_code
+   and a.payment_method = 'suspense'
+  where j.resto_id = p_resto_id
+    and coalesce(j.is_reversal, false) = false;
+
+  if v_nilai <> 0 then
+    -- Sisa positif wajar kalau memang ada setoran yang menunggu
+    -- diperiksa; yang tidak wajar adalah sisa NEGATIF, yang berarti
+    -- titipan dilepas tanpa pernah dititipkan.
+    aturan := 'GL Suspense Setoran tidak nol';
+    keterangan := case when v_nilai > 0
+      then 'Ada setoran yang belum diputuskan Finance'
+      else 'Titipan dilepas tanpa pernah dicatat masuk' end;
+    selisih := v_nilai;
+    petunjuk := 'Setor Saldo Cash — periksa yang statusnya Pending';
+    return next;
+  end if;
+
+  -- ── 2. Titipan cash pickup harus habis ────────────────────────────
+  select coalesce(sum(case when j.entry_type = 'credit'
+                           then j.amount else -j.amount end), 0)
+    into v_nilai
+  from gl_journal_entries j
+  join gl_accounts a
+    on a.resto_id = j.resto_id
+   and a.gl_code = j.gl_code
+   and a.payment_method = 'cash_pickup'
+  where j.resto_id = p_resto_id
+    and coalesce(j.is_reversal, false) = false;
+
+  if v_nilai <> 0 then
+    aturan := 'GL Cash Pickup tidak nol';
+    keterangan := case when v_nilai > 0
+      then 'Ada uang yang dijemput dan belum diserahterimakan'
+      else 'Serah terima tercatat tanpa pickup yang mendahuluinya' end;
+    selisih := v_nilai;
+    petunjuk := 'Terima Cash Pickup — periksa yang statusnya Pending';
+    return next;
+  end if;
+
+  -- ── 3. Saldo perusahaan tidak boleh minus ─────────────────────────
+  --
+  -- Uang yang dipegang tidak bisa kurang dari nol. Kalau minus, ada
+  -- pengeluaran yang dicatat dari kantong yang tidak pernah diisi.
+  for aturan, keterangan, selisih, petunjuk in
+    select
+      'Saldo ' || case a.payment_method when 'company_cash'
+        then 'Cash' else 'Bank' end || ' Perusahaan minus',
+      'Uang yang dipegang tidak bisa kurang dari nol',
+      sum(case when j.entry_type = 'credit' then j.amount else -j.amount end),
+      'Saldo Perusahaan — periksa pengeluaran dan setorannya'
+    from gl_journal_entries j
+    join gl_accounts a
+      on a.resto_id = j.resto_id
+     and a.gl_code = j.gl_code
+     and a.payment_method in ('company_cash', 'company_bank')
+    where j.resto_id = p_resto_id
+      and coalesce(j.is_reversal, false) = false
+    group by a.payment_method
+    having sum(case when j.entry_type = 'credit'
+                    then j.amount else -j.amount end) < 0
+  loop
+    return next;
+  end loop;
+
+  -- ── 4. Isi laci tidak boleh minus ─────────────────────────────────
+  --
+  -- Laci yang berbunyi minus berarti ada uang keluar yang tidak pernah
+  -- masuk — setoran melebihi penjualan tunai, atau pickup dicatat dua
+  -- kali.
+  v_nilai := saldo_cash_laci(p_resto_id);
+  if v_nilai < 0 then
+    aturan := 'Saldo Cash laci minus';
+    keterangan := 'Uang keluar laci melebihi yang pernah masuk';
+    selisih := v_nilai;
+    petunjuk := 'Setor Saldo Cash — periksa setoran dan pickup ganda';
+    return next;
+  end if;
+
+  -- ── 5. Pesanan lunas non-tunai harus punya barisnya di Saldo Bank ──
+  --
+  -- Kecuali yang hari ini: tugas jam 5 pagi belum menjalaninya.
+  select coalesce(sum(o.total), 0) into v_nilai
+  from orders o
+  join gl_accounts a
+    on a.resto_id = o.resto_id
+   and a.payment_method = 'company_bank'
+   and coalesce(a.gl_code, '') <> ''
+  where o.resto_id = p_resto_id
+    and o.payment_status = 'paid'
+    and _normalize_payment_method(o.source, o.payment_method)
+          in ('qris', 'qris_static', 'transfer')
+    and o.created_at < date_trunc('day', now() at time zone 'Asia/Jakarta')
+                         at time zone 'Asia/Jakarta'
+    and not exists (
+      select 1 from gl_journal_entries j
+      where j.resto_id = o.resto_id
+        and j.reference_type = 'order'
+        and j.reference_id = o.id::text
+        and j.gl_code = a.gl_code
+    );
+
+  if v_nilai > 0 then
+    aturan := 'Penjualan non-tunai belum masuk Saldo Bank';
+    keterangan := 'Tugas jam 5 pagi belum menjalaninya, atau pernah gagal';
+    selisih := v_nilai;
+    petunjuk := 'Periksa cron.job jurnal-pendapatan-bank';
+    return next;
+  end if;
+
+  -- ── 6. Pengeluaran harus punya lawan akunnya ──────────────────────
+  --
+  -- Tiap pengeluaran menulis dua baris: akun biayanya dan kantong
+  -- sumbernya. Yang cuma punya satu berarti pemetaan GL-nya kosong, dan
+  -- saldo kantongnya berhenti berkurang tanpa ada yang menyadari.
+  select coalesce(sum(e.amount), 0) into v_nilai
+  from expenses e
+  where e.resto_id = p_resto_id
+    and (select count(*) from gl_journal_entries j
+         where j.resto_id = e.resto_id
+           and j.reference_type = 'expense'
+           and j.reference_id = e.id::text
+           and coalesce(j.is_reversal, false) = false) < 2;
+
+  if v_nilai > 0 then
+    aturan := 'Pengeluaran tanpa lawan akun';
+    keterangan := 'Kantong sumbernya tidak ikut berkurang di jurnal';
+    selisih := v_nilai;
+    petunjuk := 'Mapping GL Account — pastikan akun sumbernya terisi';
+    return next;
+  end if;
+
+  return;
+end;
+$fn$;
+
+revoke all on function periksa_pembukuan(text) from public, anon;
+grant execute on function periksa_pembukuan(text) to authenticated;
+
+commit;
+
+
+-- ═══════════════════════════════════════════════════════════════════
+-- BAGIAN 88 dari 100 — layar_pelanggan_rincian_biaya.sql
+-- ═══════════════════════════════════════════════════════════════════
+
+-- KaataGo - layar pelanggan menyebut dari mana totalnya berasal.
+--
+-- Jalankan SETELAH layar_pelanggan_rinci.sql. Aman diulang.
+--
+-- Layar depan sudah menampilkan apa yang dipesan dan berapa totalnya.
+-- Yang belum: jarak di antara keduanya. Pelanggan yang menjumlahkan
+-- sendiri baris-baris pesanannya mendapat angka yang lebih kecil
+-- daripada yang tertulis besar-besar di bawahnya, dan selisihnya —
+-- service sepuluh persen, PPN sebelas — tidak disebut di mana pun.
+--
+-- Yang terjadi berikutnya selalu sama: pelanggan bertanya ke kasir, dan
+-- kasir menjelaskan dengan mulut hal yang seharusnya sudah tertulis.
+-- Pada jam ramai, pertanyaan itu tidak ditanyakan — dibayar saja dengan
+-- perasaan ditagih lebih.
+--
+-- Satu kolom, bukan empat.
+--
+-- Rinciannya selalu ditulis dan dibaca sekaligus; memecahnya jadi empat
+-- kolom cuma menambah empat parameter yang harus diteruskan utuh di
+-- setiap pemanggilan, dan baris ini memang bukan catatan uang yang
+-- dipakai membukukan apa pun.
+
+begin;
+
+-- {"subtotal": 111000, "service": 10000, "ppn": 12100,
+--  "discount": 5000, "discount_name": "Promo Jumat",
+--  "ppn_percent": 11, "service_percent": 10}
+--
+-- Null untuk baris lama dan untuk tagihan tanpa biaya tambahan sama
+-- sekali — layar depannya menampilkan totalnya saja, tanpa daftar berisi
+-- satu baris yang mengulang angka yang sama.
+alter table customer_displays add column if not exists breakdown jsonb;
+
+commit;
+
+begin;
+
+-- Fungsi lamanya dibuang lebih dulu, bukan ditimpa.
+--
+-- `create or replace` dengan daftar parameter yang berbeda TIDAK
+-- menimpa apa pun — ia membuat fungsi KEDUA dengan nama yang sama.
+drop function if exists set_customer_display(
+  text, text, bigint, text, text, text, jsonb, text, text, text, text);
+
+create or replace function set_customer_display(
+  p_resto_id text,
+  p_status text,
+  p_amount bigint default null,
+  p_qr_string text default null,
+  p_label text default null,
+  p_payment_method text default null,
+  p_items jsonb default null,
+  p_qr_image_url text default null,
+  p_bank_name text default null,
+  p_account_number text default null,
+  p_account_holder text default null,
+  p_breakdown jsonb default null
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $fn$
+begin
+  if not (is_super_admin()
+          or is_resto_employee(p_resto_id, array['owner', 'admin', 'kasir'])) then
+    raise exception 'Tidak berwenang atas layar merchant ini';
+  end if;
+
+  insert into customer_displays (
+    resto_id, status, amount, qr_string, label,
+    payment_method, items, qr_image_url,
+    bank_name, account_number, account_holder, breakdown,
+    updated_by, updated_at
+  ) values (
+    p_resto_id, coalesce(p_status, 'idle'), p_amount, p_qr_string, p_label,
+    p_payment_method, p_items, p_qr_image_url,
+    p_bank_name, p_account_number, p_account_holder, p_breakdown,
+    auth.jwt() ->> 'email', now()
+  )
+  -- Pembaruan susulan tidak menghapus rincian yang sudah ada.
+  --
+  -- Layar QRIS dinamis memanggil fungsi ini untuk kedua kalinya begitu
+  -- QR-nya terbit dari penyedia pembayaran, dan yang dibawanya cuma
+  -- nominal dan QR — ia tidak memegang isi keranjangnya.
+  --
+  -- Kecuali saat dipadamkan: 'idle' mengosongkan semuanya, karena
+  -- tagihan orang sebelumnya tidak boleh tertinggal di depan pelanggan
+  -- berikutnya.
+  on conflict (resto_id) do update
+    set status = excluded.status,
+        amount = excluded.amount,
+        qr_string = excluded.qr_string,
+        label = excluded.label,
+        payment_method = case when excluded.status = 'idle' then null
+          else coalesce(excluded.payment_method, customer_displays.payment_method) end,
+        items = case when excluded.status = 'idle' then null
+          else coalesce(excluded.items, customer_displays.items) end,
+        qr_image_url = case when excluded.status = 'idle' then null
+          else coalesce(excluded.qr_image_url, customer_displays.qr_image_url) end,
+        bank_name = case when excluded.status = 'idle' then null
+          else coalesce(excluded.bank_name, customer_displays.bank_name) end,
+        account_number = case when excluded.status = 'idle' then null
+          else coalesce(excluded.account_number, customer_displays.account_number) end,
+        account_holder = case when excluded.status = 'idle' then null
+          else coalesce(excluded.account_holder, customer_displays.account_holder) end,
+        breakdown = case when excluded.status = 'idle' then null
+          else coalesce(excluded.breakdown, customer_displays.breakdown) end,
+        updated_by = excluded.updated_by,
+        updated_at = now();
+end;
+$fn$;
+
+revoke all on function set_customer_display(
+  text, text, bigint, text, text, text, jsonb, text, text, text, text, jsonb)
+  from public, anon;
+grant execute on function set_customer_display(
+  text, text, bigint, text, text, text, jsonb, text, text, text, text, jsonb)
+  to authenticated;
+
+commit;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- Memeriksanya
+-- ─────────────────────────────────────────────────────────────────────
+--
+--   select resto_id, status, amount, breakdown, updated_at
+--   from customer_displays;
+
+
+-- ═══════════════════════════════════════════════════════════════════
+-- BAGIAN 89 dari 100 — merchant_report.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — laporan penjualan untuk merchant sendiri.
@@ -13672,7 +14212,2129 @@ grant execute on function report_sales_summary(text, date, date) to authenticate
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 87 dari 93 — shift_opening_check.sql
+-- BAGIAN 90 dari 100 — laporan_grafik.sql
+-- ═══════════════════════════════════════════════════════════════════
+
+-- KaataGo - deret waktu dan pembagian untuk grafik Laporan Penjualan.
+--
+-- Jalankan SETELAH merchant_report.sql. Aman diulang.
+--
+-- Laporan Penjualan sudah menjawab "menu mana yang laku" dan "jam berapa
+-- ramai". Yang belum dijawabnya justru pertanyaan pertama yang diajukan
+-- orang saat membuka laporan: naik atau turun.
+--
+-- Angka satu rentang tidak bisa menjawab itu. Omzet tiga puluh juta
+-- sebulan terbaca bagus atau buruk hanya kalau terlihat bentuknya dari
+-- hari ke hari — dan bentuk itu tidak bisa dibayangkan dari satu angka
+-- betapa pun besarnya.
+--
+-- ── Kenapa lubangnya diisi nol ──────────────────────────────────────
+--
+-- Hari tanpa penjualan tidak punya baris di `orders`. Grafik yang cuma
+-- menggambar hari-hari yang ada barisnya menyambung Senin langsung ke
+-- Rabu dengan garis yang naik mulus — dan hari Selasa yang tutup total
+-- terbaca sebagai hari biasa. Deret di bawah membuat setiap hari dalam
+-- rentangnya punya barisnya sendiri, termasuk yang nol.
+--
+-- ── Siapa yang boleh membacanya ─────────────────────────────────────
+--
+-- Owner dan Admin, sama seperti sisa laporannya. Syaratnya ditulis
+-- sebagai bagian WHERE, bukan `raise`: yang tidak berhak menerima
+-- daftar kosong, karena pesan galat justru mengonfirmasi datanya ada.
+--
+-- Merchantnya sendiri yang dibaca, bukan yang diminta pemanggilnya
+-- begitu saja: `is_resto_employee` memeriksa bahwa yang bertanya memang
+-- bekerja di resto itu, jadi id merchant yang ditukar di aplikasi tetap
+-- tidak membuka angka merchant lain.
+
+-- ─────────────────────────────────────────────────────────────────────
+-- Deret waktu
+-- ─────────────────────────────────────────────────────────────────────
+--
+-- Harian, mingguan, atau bulanan. Rentang setahun yang digambar harian
+-- menjadi 365 batang selebar rambut di layar HP; yang sama digambar
+-- bulanan menjadi dua belas batang yang bisa dibaca sekilas.
+--
+-- Mingguannya mulai Senin — minggu kerja, bukan minggu kalender yang
+-- memotong akhir pekan jadi dua bagian di dua batang berbeda.
+create or replace function report_sales_series(
+  p_resto_id text,
+  p_from date,
+  p_to date,
+  p_bucket text default 'day')
+returns table (
+  periode date,
+  orders_count bigint,
+  omzet bigint,
+  qty bigint
+)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  with satuan as (
+    select case lower(coalesce(p_bucket, 'day'))
+             when 'week' then 'week'
+             when 'month' then 'month'
+             else 'day'
+           end as b
+  ),
+  kerangka as (
+    select date_trunc((select b from satuan), d)::date as periode
+    from generate_series(p_from::timestamp, p_to::timestamp, interval '1 day') d
+    group by 1
+  ),
+  isi as (
+    select date_trunc((select b from satuan),
+             (o.created_at at time zone 'Asia/Jakarta'))::date as periode,
+           count(*) as orders_count,
+           coalesce(sum(o.total), 0)::bigint as omzet,
+           coalesce(sum((
+             select sum((item ->> 'quantity')::bigint)
+             from jsonb_array_elements(o.items) item
+           )), 0)::bigint as qty
+    from orders o
+    where o.resto_id = p_resto_id
+      and o.payment_status = 'paid'
+      and is_resto_employee(p_resto_id, array['owner', 'admin'])
+      and (o.created_at at time zone 'Asia/Jakarta')::date
+          between p_from and p_to
+    group by 1
+  )
+  select k.periode,
+         coalesce(i.orders_count, 0),
+         coalesce(i.omzet, 0),
+         coalesce(i.qty, 0)
+  from kerangka k
+  left join isi i on i.periode = k.periode
+  order by k.periode;
+$$;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- Pembagian
+-- ─────────────────────────────────────────────────────────────────────
+--
+-- Satu fungsi untuk empat sudut pandang, bukan empat fungsi.
+--
+-- Keempatnya menjawab pertanyaan berbentuk sama — "dari mana omzet ini
+-- datang" — dan cuma berbeda pada kolom yang dikelompokkan. Memecahnya
+-- jadi empat fungsi berarti empat tempat yang harus ikut berubah setiap
+-- kali aturan "pesanan mana yang dihitung" berubah, dan yang terjadi
+-- berikutnya selalu sama: satu di antaranya ketinggalan.
+--
+-- Nilai p_dimensi yang tidak dikenal jatuh ke cara bayar, bukan galat.
+create or replace function report_sales_breakdown(
+  p_resto_id text,
+  p_from date,
+  p_to date,
+  p_dimensi text default 'payment_method')
+returns table (
+  kunci text,
+  orders_count bigint,
+  omzet bigint
+)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select coalesce(nullif(btrim(
+           case lower(coalesce(p_dimensi, 'payment_method'))
+             when 'order_type' then o.order_type
+             when 'source' then o.source
+             when 'cashier' then coalesce(o.cashier_name, o.customer_label)
+             else o.payment_method
+           end), ''), 'lainnya'),
+         count(*),
+         coalesce(sum(o.total), 0)::bigint
+  from orders o
+  where o.resto_id = p_resto_id
+    and o.payment_status = 'paid'
+    and is_resto_employee(p_resto_id, array['owner', 'admin'])
+    and (o.created_at at time zone 'Asia/Jakarta')::date
+        between p_from and p_to
+  group by 1
+  order by 3 desc;
+$$;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- Pembagian per kategori menu
+-- ─────────────────────────────────────────────────────────────────────
+--
+-- Terpisah dari yang di atas karena bentuk datanya memang lain: yang
+-- dikelompokkan baris menu di dalam pesanan, bukan pesanannya. Satu
+-- pesanan berisi minuman dan makanan masuk ke dua kategori sekaligus,
+-- dan menjumlahkan `orders.total` ke keduanya akan menghitung uang yang
+-- sama dua kali.
+--
+-- Jadi yang dijumlahkan harga barisnya, dan jumlahnya memang tidak
+-- persis sama dengan omzet — service per tagihan dan potongan tidak
+-- menempel di baris mana pun. Itu disebut di layarnya.
+--
+-- Kategorinya dibaca dari katalog lewat productId. Menu yang sudah
+-- dihapus dari katalog tetap punya sejarah penjualan: ia jatuh ke
+-- "Tanpa kategori", bukan hilang dari jumlahnya.
+create or replace function report_sales_by_category(
+  p_resto_id text,
+  p_from date,
+  p_to date)
+returns table (
+  kunci text,
+  qty bigint,
+  omzet bigint
+)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select coalesce(nullif(btrim(p.category), ''), 'Tanpa kategori'),
+         sum((item ->> 'quantity')::bigint),
+         sum((item ->> 'price')::bigint * (item ->> 'quantity')::bigint)
+  from orders o
+       cross join lateral jsonb_array_elements(o.items) item
+       left join products p
+              on p.id = item ->> 'productId' and p.resto_id = o.resto_id
+  where o.resto_id = p_resto_id
+    and o.payment_status = 'paid'
+    and is_resto_employee(p_resto_id, array['owner', 'admin'])
+    and (o.created_at at time zone 'Asia/Jakarta')::date
+        between p_from and p_to
+  group by 1
+  order by 3 desc;
+$$;
+
+grant execute on function report_sales_series(text, date, date, text)
+  to authenticated;
+grant execute on function report_sales_breakdown(text, date, date, text)
+  to authenticated;
+grant execute on function report_sales_by_category(text, date, date)
+  to authenticated;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- Memeriksanya
+-- ─────────────────────────────────────────────────────────────────────
+--
+--   select * from report_sales_series('<resto_id>', '2026-08-01', '2026-08-31', 'day');
+--   select * from report_sales_breakdown('<resto_id>', '2026-08-01', '2026-08-31', 'payment_method');
+--   select * from report_sales_by_category('<resto_id>', '2026-08-01', '2026-08-31');
+
+
+-- ═══════════════════════════════════════════════════════════════════
+-- BAGIAN 91 dari 100 — absensi_payroll.sql
+-- ═══════════════════════════════════════════════════════════════════
+
+-- KaataGo - absensi wajah berlokasi, dan payroll yang menghitung darinya.
+--
+-- Jalankan kapan saja setelah schema.sql dan resto_location. Aman diulang.
+--
+-- ── Kenapa pencocokan wajahnya di server ─────────────────────────────
+--
+-- Yang mudah dibuat adalah aplikasi yang mencocokkan wajah di HP lalu
+-- mengirim "cocok" ke server. Itu tidak menahan apa pun: yang bisa
+-- mengirim "cocok" bisa mengirimnya tanpa membuka kamera sama sekali,
+-- dan seluruh absensi jadi kata-kata aplikasi tentang dirinya sendiri.
+--
+-- Jadi yang dikirim HP adalah sidik wajahnya — deret angka hasil model
+-- di perangkat — dan server yang membandingkannya dengan sidik yang
+-- terdaftar. Sidik terdaftarnya sendiri tidak pernah boleh dibaca siapa
+-- pun dari aplikasi (lihat RLS di bawah), jadi tidak ada yang bisa
+-- mengirim balik sidik orang lain yang dia salin dari layarnya.
+--
+-- Ini tetap bukan jaminan mutlak — orang yang membongkar aplikasinya
+-- masih bisa menyuapkan foto ke modelnya. Yang dijamin cuma satu hal,
+-- dan itu yang diminta: absen tidak bisa dititipkan ke teman yang
+-- membuka aplikasi dengan akunnya sendiri.
+--
+-- ── Kenapa jaraknya juga dihitung server ─────────────────────────────
+--
+-- Alasan yang sama. Titik GPS yang diperiksa di HP adalah titik yang
+-- ditentukan HP. Yang diperiksa di sini bukan kejujuran perangkatnya,
+-- melainkan bahwa angka yang dikirimnya memang jatuh di sekitar
+-- merchant — dan itu tetap menutup cara paling umum orang mengakalinya:
+-- absen dari rumah.
+
+-- ─────────────────────────────────────────────────────────────────────
+-- 1. Sidik wajah
+-- ─────────────────────────────────────────────────────────────────────
+
+begin;
+
+create table if not exists employee_faces (
+  resto_id text not null references restaurants (id) on delete cascade,
+  employee_email text not null,
+
+  -- Keluaran model pengenal wajah di perangkat. Panjangnya ikut
+  -- modelnya (MobileFaceNet: 192), disimpan apa adanya supaya mengganti
+  -- model nanti tidak menuntut mengubah bentuk tabelnya.
+  embedding double precision[] not null,
+
+  -- Nama model yang menghasilkannya. Sidik dari dua model berbeda tidak
+  -- bisa dibandingkan sama sekali — angkanya tetap keluar, dan yang
+  -- keluar adalah penolakan yang tidak bisa dijelaskan ke orangnya.
+  model text not null default 'mobilefacenet-192',
+
+  -- Foto saat mendaftar, untuk diperiksa manusia kalau ada sengketa.
+  foto_url text,
+
+  registered_at timestamptz not null default now(),
+
+  -- Berapa kali wajahnya direset Owner/Admin. Reset yang sering pada
+  -- satu orang adalah pola yang pantas dilihat, bukan angka iseng.
+  reset_count integer not null default 0,
+
+  primary key (resto_id, employee_email)
+);
+
+alter table employee_faces enable row level security;
+
+-- Tidak ada satu pun kebijakan SELECT. Itu disengaja.
+--
+-- Sidik wajah yang bisa dibaca aplikasi adalah sidik yang bisa dikirim
+-- balik sebagai "hasil pemindaian" — dan seluruh gunanya hilang.
+-- Satu-satunya yang menyentuhnya adalah fungsi SECURITY DEFINER di
+-- bawah, yang membandingkannya tanpa pernah mengembalikan isinya.
+--
+-- Yang boleh diketahui aplikasi cuma "sudah terdaftar atau belum", dan
+-- itu dijawab fungsi tersendiri.
+drop policy if exists "employee_faces: none" on employee_faces;
+
+commit;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- 2. Absensi
+-- ─────────────────────────────────────────────────────────────────────
+
+begin;
+
+create table if not exists attendance (
+  id uuid primary key default gen_random_uuid(),
+  resto_id text not null references restaurants (id) on delete cascade,
+  employee_email text not null,
+
+  -- Tanggal WIB, bukan UTC. Absen jam tujuh pagi WIB adalah hari itu;
+  -- disimpan UTC ia jatuh ke tanggal kemarin, dan rekap bulanannya
+  -- meleset satu hari untuk setiap orang yang masuk pagi.
+  tanggal date not null,
+
+  -- 'hadir' | 'izin' | 'sakit' | 'cuti' | 'alpa'
+  status text not null default 'hadir'
+    check (status in ('hadir', 'izin', 'sakit', 'cuti', 'alpa')),
+
+  masuk_at timestamptz,
+  masuk_lat double precision,
+  masuk_lng double precision,
+  masuk_jarak_m integer,
+  masuk_skor double precision,
+  masuk_foto_url text,
+
+  pulang_at timestamptz,
+  pulang_lat double precision,
+  pulang_lng double precision,
+  pulang_jarak_m integer,
+  pulang_skor double precision,
+  pulang_foto_url text,
+
+  -- Diisi saat tidak masuk.
+  alasan text,
+  bukti_url text,
+
+  -- Hari ini memotong gaji atau tidak.
+  --
+  -- Disimpan di barisnya, bukan disimpulkan dari statusnya saat
+  -- menghitung gaji. Aturannya berubah — sakit berhari-hari yang
+  -- awalnya dipotong bisa dimaafkan kemudian — dan gaji bulan lalu yang
+  -- ikut berubah sendiri karena aturannya diganti adalah angka yang
+  -- tidak bisa dipertanggungjawabkan ke siapa pun.
+  potong_gaji boolean not null default false,
+
+  diputuskan_oleh text,
+  created_at timestamptz not null default now(),
+
+  -- Satu baris per orang per hari. Tanpa ini, tombol yang ditekan dua
+  -- kali karena jaringannya lambat menjadi dua kali hadir — dan orang
+  -- itu dibayar untuk hari yang sama dua kali.
+  unique (resto_id, employee_email, tanggal)
+);
+
+create index if not exists idx_attendance_resto_tgl
+  on attendance (resto_id, tanggal);
+
+alter table attendance enable row level security;
+
+-- Karyawan membaca absensinya sendiri. Atasan membaca semuanya.
+--
+-- Kasir tidak boleh melihat absensi kasir lain: jam datang dan jam
+-- pulang orang lain bukan urusan yang perlu beredar di antara semua
+-- orang yang memegang HP, dan yang menumpuk dari situ adalah
+-- perbandingan yang tidak ada gunanya bagi pekerjaannya.
+drop policy if exists "attendance: read" on attendance;
+create policy "attendance: read" on attendance
+  for select using (
+    is_super_admin()
+    or lower(employee_email) = lower(coalesce(auth.jwt() ->> 'email', ''))
+    or is_resto_employee(resto_id, array['owner', 'admin', 'finance'])
+  );
+
+-- Ditulis lewat fungsi, bukan langsung.
+--
+-- Baris absensi yang bisa disisipkan aplikasi adalah baris yang bisa
+-- disisipkan tanpa wajah, tanpa GPS, dan bertanggal kapan saja.
+drop policy if exists "attendance: insert" on attendance;
+
+-- Atasan boleh membetulkan keputusan potong gaji dan statusnya.
+drop policy if exists "attendance: atasan ubah" on attendance;
+create policy "attendance: atasan ubah" on attendance
+  for update using (
+    is_super_admin()
+    or is_resto_employee(resto_id, array['owner', 'admin', 'finance'])
+  ) with check (
+    is_super_admin()
+    or is_resto_employee(resto_id, array['owner', 'admin', 'finance'])
+  );
+
+commit;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- 3. Aturan gaji
+-- ─────────────────────────────────────────────────────────────────────
+
+begin;
+
+create table if not exists payroll_settings (
+  resto_id text primary key references restaurants (id) on delete cascade,
+
+  -- Tanggal gajian. Periodenya berakhir sehari sebelum tanggal ini di
+  -- bulan berikutnya: gajian tanggal 25 berarti periode 26 Mei - 25 Juni.
+  tanggal_gajian integer not null default 25
+    check (tanggal_gajian between 1 and 28),
+
+  -- Hari kerja dalam satu periode. Inilah pembagi gaji sebulan, bukan
+  -- jumlah hari kalender — yang libur memang tidak dibayar per hari,
+  -- dan membaginya dengan 30 membuat potongan sehari jadi lebih kecil
+  -- daripada yang disepakati.
+  hari_kerja_periode integer not null default 25
+    check (hari_kerja_periode between 1 and 31),
+
+  -- Persen dari gaji pokok. Nol berarti merchant ini memang tidak
+  -- memotongnya.
+  bpjs_kesehatan_persen numeric(5, 2) not null default 0
+    check (bpjs_kesehatan_persen >= 0 and bpjs_kesehatan_persen <= 100),
+  bpjs_tk_persen numeric(5, 2) not null default 0
+    check (bpjs_tk_persen >= 0 and bpjs_tk_persen <= 100),
+
+  -- Sejauh mana dari titik merchant absen masih diterima.
+  --
+  -- Bawaannya 150 meter, bukan 20. GPS ponsel di dalam ruko berdinding
+  -- beton meleset puluhan meter dengan sendirinya, dan radius yang
+  -- terlalu rapat menolak orang yang benar-benar berdiri di dapur.
+  radius_absen_m integer not null default 150
+    check (radius_absen_m between 20 and 5000),
+
+  updated_at timestamptz not null default now(),
+  updated_by text
+);
+
+alter table payroll_settings enable row level security;
+
+drop policy if exists "payroll_settings: baca" on payroll_settings;
+create policy "payroll_settings: baca" on payroll_settings
+  for select using (
+    is_super_admin()
+    or is_resto_employee(resto_id,
+         array['owner', 'admin', 'finance', 'kasir', 'chef'])
+  );
+
+-- Yang menetapkan gaji hanya Owner dan Finance.
+--
+-- Admin sengaja tidak. Ia mengurus operasional merchant, dan besaran
+-- gaji bukan angka yang perlu bisa diubah oleh setiap orang yang bisa
+-- menambah menu.
+drop policy if exists "payroll_settings: ubah" on payroll_settings;
+create policy "payroll_settings: ubah" on payroll_settings
+  for all using (
+    is_super_admin() or is_resto_employee(resto_id, array['owner', 'finance'])
+  ) with check (
+    is_super_admin() or is_resto_employee(resto_id, array['owner', 'finance'])
+  );
+
+create table if not exists employee_payroll (
+  resto_id text not null references restaurants (id) on delete cascade,
+  employee_email text not null,
+
+  gaji_pokok bigint not null default 0 check (gaji_pokok >= 0),
+
+  -- Tunjangan tetap yang tidak ikut dipotong kehadiran.
+  tunjangan bigint not null default 0 check (tunjangan >= 0),
+
+  bank_name text,
+  account_number text,
+  account_holder text,
+
+  updated_at timestamptz not null default now(),
+  updated_by text,
+
+  primary key (resto_id, employee_email)
+);
+
+alter table employee_payroll enable row level security;
+
+-- Karyawan boleh melihat barisnya sendiri — itu slip gajinya. Gaji
+-- orang lain tidak.
+drop policy if exists "employee_payroll: baca" on employee_payroll;
+create policy "employee_payroll: baca" on employee_payroll
+  for select using (
+    is_super_admin()
+    or lower(employee_email) = lower(coalesce(auth.jwt() ->> 'email', ''))
+    or is_resto_employee(resto_id, array['owner', 'finance'])
+  );
+
+drop policy if exists "employee_payroll: ubah" on employee_payroll;
+create policy "employee_payroll: ubah" on employee_payroll
+  for all using (
+    is_super_admin() or is_resto_employee(resto_id, array['owner', 'finance'])
+  ) with check (
+    is_super_admin() or is_resto_employee(resto_id, array['owner', 'finance'])
+  );
+
+commit;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- 4. Jarak dan kemiripan
+-- ─────────────────────────────────────────────────────────────────────
+
+begin;
+
+-- Jarak dua titik bumi dalam meter.
+--
+-- Haversine, bukan PostGIS. Yang dibutuhkan cuma "masih di sekitar
+-- merchant atau tidak" pada jarak ratusan meter; menambah satu ekstensi
+-- ke basis data demi ketelitian sentimeter yang tidak dipakai siapa pun
+-- adalah ongkos yang dibayar tiap kali basis datanya dipindah.
+create or replace function _jarak_meter(
+  lat1 double precision, lng1 double precision,
+  lat2 double precision, lng2 double precision)
+returns double precision
+language sql
+immutable
+as $$
+  select 2 * 6371000 * asin(sqrt(
+    power(sin(radians(lat2 - lat1) / 2), 2) +
+    cos(radians(lat1)) * cos(radians(lat2)) *
+    power(sin(radians(lng2 - lng1) / 2), 2)
+  ));
+$$;
+
+-- Kemiripan kosinus dua sidik wajah, -1 sampai 1.
+--
+-- Nol panjang dijaga: sidik yang seluruhnya nol — yang keluar dari
+-- model saat gambarnya gagal dibaca — akan membagi dengan nol, dan
+-- galat pembagian di tengah absen pagi hari terbaca sebagai aplikasi
+-- yang rusak.
+create or replace function _mirip_wajah(
+  a double precision[], b double precision[])
+returns double precision
+language sql
+immutable
+as $$
+  select case
+    when a is null or b is null or array_length(a, 1) is distinct from array_length(b, 1)
+      then -1
+    when sqrt(coalesce((select sum(x * x) from unnest(a) x), 0)) = 0
+      or sqrt(coalesce((select sum(y * y) from unnest(b) y), 0)) = 0
+      then -1
+    else (
+      select sum(x * y)
+      from unnest(a, b) as t(x, y)
+    ) / (
+      sqrt((select sum(x * x) from unnest(a) x)) *
+      sqrt((select sum(y * y) from unnest(b) y))
+    )
+  end;
+$$;
+
+commit;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- 5. Mendaftarkan wajah
+-- ─────────────────────────────────────────────────────────────────────
+
+begin;
+
+-- Sudah terdaftar atau belum. Ini satu-satunya hal tentang sidiknya yang
+-- boleh diketahui aplikasi.
+create or replace function wajah_terdaftar(p_resto_id text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from employee_faces
+    where resto_id = p_resto_id
+      and lower(employee_email) = lower(coalesce(auth.jwt() ->> 'email', ''))
+  );
+$$;
+
+-- Didaftarkan sendiri, sekali.
+--
+-- Pendaftaran ulang ditolak, dan itu inti seluruh fiturnya: kalau
+-- siapa pun bisa mendaftar ulang kapan saja, titip absen cuma butuh
+-- mendaftar ulang dengan wajah temannya pagi itu lalu mengembalikannya
+-- sore hari. Yang bisa membuka kuncinya cuma Owner dan Admin.
+create or replace function daftar_wajah(
+  p_resto_id text,
+  p_embedding double precision[],
+  p_model text default 'mobilefacenet-192',
+  p_foto_url text default null)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $fn$
+declare
+  v_email text := auth.jwt() ->> 'email';
+begin
+  if v_email is null then
+    raise exception 'Harus masuk dulu.';
+  end if;
+
+  if not is_resto_employee(p_resto_id,
+       array['owner', 'admin', 'finance', 'kasir', 'chef']) then
+    raise exception 'Kamu bukan karyawan merchant ini.';
+  end if;
+
+  if p_embedding is null or array_length(p_embedding, 1) is null then
+    raise exception 'Sidik wajahnya kosong. Ulangi pemindaian.';
+  end if;
+
+  if exists (select 1 from employee_faces
+             where resto_id = p_resto_id
+               and lower(employee_email) = lower(v_email)) then
+    raise exception 'Wajahmu sudah terdaftar. Minta Owner atau Admin '
+                    'mereset dulu kalau memang perlu didaftar ulang.';
+  end if;
+
+  insert into employee_faces (
+    resto_id, employee_email, embedding, model, foto_url)
+  values (p_resto_id, lower(v_email), p_embedding,
+          coalesce(p_model, 'mobilefacenet-192'), p_foto_url);
+end;
+$fn$;
+
+-- Jejak siapa yang pernah membuka kuncinya.
+create table if not exists employee_face_resets (
+  id uuid primary key default gen_random_uuid(),
+  resto_id text not null,
+  employee_email text not null,
+  oleh text,
+  created_at timestamptz not null default now()
+);
+
+alter table employee_face_resets enable row level security;
+
+drop policy if exists "face_resets: atasan" on employee_face_resets;
+create policy "face_resets: atasan" on employee_face_resets
+  for select using (
+    is_super_admin()
+    or is_resto_employee(resto_id, array['owner', 'admin', 'finance'])
+  );
+
+-- Membuka kuncinya. Owner dan Admin saja.
+create or replace function reset_wajah(p_resto_id text, p_email text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $fn$
+begin
+  if not (is_super_admin()
+          or is_resto_employee(p_resto_id, array['owner', 'admin'])) then
+    raise exception 'Hanya Owner dan Admin yang bisa mereset wajah.';
+  end if;
+
+  -- Hitungannya dibawa ke baris berikutnya lewat tabel terpisah supaya
+  -- tidak hilang saat barisnya dihapus. Reset yang sering pada satu
+  -- orang adalah pola yang pantas dilihat.
+  insert into employee_face_resets (resto_id, employee_email, oleh)
+  values (p_resto_id, lower(p_email), auth.jwt() ->> 'email');
+
+  delete from employee_faces
+  where resto_id = p_resto_id and lower(employee_email) = lower(p_email);
+end;
+$fn$;
+
+commit;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- 6. Absen
+-- ─────────────────────────────────────────────────────────────────────
+
+begin;
+
+-- Ambang kemiripan.
+--
+-- 0,75 pada kosinus MobileFaceNet: cukup longgar untuk orang yang sama
+-- dengan rambut basah dan masker dilepas buru-buru, cukup rapat untuk
+-- menolak orang lain. Ditulis sebagai konstanta di satu tempat supaya
+-- menyetelnya nanti tidak menuntut mencarinya di dua fungsi.
+create or replace function _ambang_wajah()
+returns double precision language sql immutable as $$ select 0.75::double precision $$;
+
+create or replace function _absen(
+  p_resto_id text,
+  p_embedding double precision[],
+  p_lat double precision,
+  p_lng double precision,
+  p_foto_url text,
+  p_pulang boolean)
+returns table (jarak_m integer, skor double precision, waktu timestamptz)
+language plpgsql
+security definer
+set search_path = public
+as $fn$
+declare
+  v_email text := lower(coalesce(auth.jwt() ->> 'email', ''));
+  v_resto record;
+  v_setelan record;
+  v_wajah record;
+  v_skor double precision;
+  v_jarak double precision;
+  v_tanggal date := (now() at time zone 'Asia/Jakarta')::date;
+  v_sekarang timestamptz := now();
+begin
+  if v_email = '' then
+    raise exception 'Harus masuk dulu.';
+  end if;
+
+  if not is_resto_employee(p_resto_id,
+       array['owner', 'admin', 'finance', 'kasir', 'chef']) then
+    raise exception 'Kamu bukan karyawan merchant ini.';
+  end if;
+
+  select latitude, longitude, name into v_resto
+  from restaurants where id = p_resto_id;
+
+  if v_resto.latitude is null or v_resto.longitude is null then
+    raise exception 'Titik lokasi merchant belum disetel. Minta Admin '
+                    'menyetelnya di menu Profil Merchant dulu.';
+  end if;
+
+  if p_lat is null or p_lng is null then
+    raise exception 'Lokasimu tidak terbaca. Nyalakan GPS lalu coba lagi.';
+  end if;
+
+  select * into v_setelan from payroll_settings where resto_id = p_resto_id;
+
+  v_jarak := _jarak_meter(v_resto.latitude, v_resto.longitude, p_lat, p_lng);
+
+  -- Jaraknya disebut angka, bukan cuma "terlalu jauh". Yang berdiri 30
+  -- meter di luar radius dan yang absen dari rumah menerima penolakan
+  -- yang sama, dan cuma yang pertama yang bisa memperbaikinya sendiri.
+  if v_jarak > coalesce(v_setelan.radius_absen_m, 150) then
+    raise exception 'Kamu % meter dari %. Absen hanya bisa dalam radius % meter.',
+      round(v_jarak), coalesce(v_resto.name, 'merchant'),
+      coalesce(v_setelan.radius_absen_m, 150);
+  end if;
+
+  select * into v_wajah from employee_faces
+  where resto_id = p_resto_id and lower(employee_email) = v_email;
+
+  if v_wajah is null then
+    raise exception 'Wajahmu belum terdaftar. Daftarkan dulu di menu Absensi.';
+  end if;
+
+  v_skor := _mirip_wajah(v_wajah.embedding, p_embedding);
+
+  if v_skor < _ambang_wajah() then
+    raise exception 'Wajahnya tidak cocok dengan yang terdaftar. '
+                    'Pastikan wajahmu terlihat jelas dan cahayanya cukup.';
+  end if;
+
+  if p_pulang then
+    update attendance
+    set pulang_at = v_sekarang,
+        pulang_lat = p_lat,
+        pulang_lng = p_lng,
+        pulang_jarak_m = round(v_jarak),
+        pulang_skor = v_skor,
+        pulang_foto_url = coalesce(p_foto_url, pulang_foto_url)
+    where resto_id = p_resto_id
+      and lower(employee_email) = v_email
+      and tanggal = v_tanggal
+      and masuk_at is not null;
+
+    if not found then
+      raise exception 'Belum ada absen masuk hari ini.';
+    end if;
+  else
+    insert into attendance (
+      resto_id, employee_email, tanggal, status,
+      masuk_at, masuk_lat, masuk_lng, masuk_jarak_m, masuk_skor,
+      masuk_foto_url)
+    values (
+      p_resto_id, v_email, v_tanggal, 'hadir',
+      v_sekarang, p_lat, p_lng, round(v_jarak), v_skor, p_foto_url)
+    -- Hari yang sudah diajukan sebagai izin lalu ternyata masuk juga
+    -- berubah jadi hadir. Yang tidak berubah: absen masuk yang sudah
+    -- ada, supaya jam datang yang tercatat tetap jam datang pertama.
+    on conflict (resto_id, employee_email, tanggal) do update
+      set status = 'hadir',
+          masuk_at = coalesce(attendance.masuk_at, excluded.masuk_at),
+          masuk_lat = coalesce(attendance.masuk_lat, excluded.masuk_lat),
+          masuk_lng = coalesce(attendance.masuk_lng, excluded.masuk_lng),
+          masuk_jarak_m =
+            coalesce(attendance.masuk_jarak_m, excluded.masuk_jarak_m),
+          masuk_skor = coalesce(attendance.masuk_skor, excluded.masuk_skor),
+          masuk_foto_url =
+            coalesce(attendance.masuk_foto_url, excluded.masuk_foto_url),
+          potong_gaji = false,
+          alasan = null;
+  end if;
+
+  return query select round(v_jarak)::integer, v_skor, v_sekarang;
+end;
+$fn$;
+
+create or replace function absen_masuk(
+  p_resto_id text,
+  p_embedding double precision[],
+  p_lat double precision,
+  p_lng double precision,
+  p_foto_url text default null)
+returns table (jarak_m integer, skor double precision, waktu timestamptz)
+language sql
+security definer
+set search_path = public
+as $$
+  select * from _absen(p_resto_id, p_embedding, p_lat, p_lng, p_foto_url, false);
+$$;
+
+create or replace function absen_pulang(
+  p_resto_id text,
+  p_embedding double precision[],
+  p_lat double precision,
+  p_lng double precision,
+  p_foto_url text default null)
+returns table (jarak_m integer, skor double precision, waktu timestamptz)
+language sql
+security definer
+set search_path = public
+as $$
+  select * from _absen(p_resto_id, p_embedding, p_lat, p_lng, p_foto_url, true);
+$$;
+
+-- Tidak masuk, berikut alasannya.
+--
+-- Tidak butuh wajah maupun GPS: yang sedang sakit di rumah memang tidak
+-- bisa berdiri di depan merchant, dan menuntutnya begitu berarti
+-- menuntut orang sakit datang hanya untuk menyatakan dirinya tidak
+-- datang.
+create or replace function ajukan_tidak_masuk(
+  p_resto_id text,
+  p_tanggal date,
+  p_status text,
+  p_alasan text,
+  p_bukti_url text default null)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $fn$
+declare
+  v_email text := lower(coalesce(auth.jwt() ->> 'email', ''));
+begin
+  if v_email = '' then
+    raise exception 'Harus masuk dulu.';
+  end if;
+
+  if not is_resto_employee(p_resto_id,
+       array['owner', 'admin', 'finance', 'kasir', 'chef']) then
+    raise exception 'Kamu bukan karyawan merchant ini.';
+  end if;
+
+  if p_status not in ('izin', 'sakit', 'cuti') then
+    raise exception 'Statusnya harus izin, sakit, atau cuti.';
+  end if;
+
+  if p_tanggal > (now() at time zone 'Asia/Jakarta')::date then
+    raise exception 'Belum bisa mengajukan untuk tanggal yang belum tiba.';
+  end if;
+
+  -- Hari yang sudah terlanjur absen masuk tidak bisa diubah jadi izin
+  -- oleh yang bersangkutan sendiri. Kalau memang keliru, atasannya yang
+  -- membetulkan — dan itu meninggalkan jejak siapa yang mengubahnya.
+  if exists (select 1 from attendance
+             where resto_id = p_resto_id
+               and lower(employee_email) = v_email
+               and tanggal = p_tanggal
+               and masuk_at is not null) then
+    raise exception 'Hari itu sudah tercatat masuk. Minta Admin yang '
+                    'membetulkannya.';
+  end if;
+
+  insert into attendance (
+    resto_id, employee_email, tanggal, status, alasan, bukti_url)
+  values (p_resto_id, v_email, p_tanggal, p_status, p_alasan, p_bukti_url)
+  on conflict (resto_id, employee_email, tanggal) do update
+    set status = excluded.status,
+        alasan = excluded.alasan,
+        bukti_url = coalesce(excluded.bukti_url, attendance.bukti_url);
+end;
+$fn$;
+
+revoke all on function absen_masuk(text, double precision[], double precision,
+  double precision, text) from public, anon;
+revoke all on function absen_pulang(text, double precision[], double precision,
+  double precision, text) from public, anon;
+grant execute on function absen_masuk(text, double precision[], double precision,
+  double precision, text) to authenticated;
+grant execute on function absen_pulang(text, double precision[], double precision,
+  double precision, text) to authenticated;
+grant execute on function ajukan_tidak_masuk(text, date, text, text, text)
+  to authenticated;
+grant execute on function daftar_wajah(text, double precision[], text, text)
+  to authenticated;
+grant execute on function reset_wajah(text, text) to authenticated;
+grant execute on function wajah_terdaftar(text) to authenticated;
+
+-- Pembantu absen. Ia sudah memeriksa wajah, jarak, dan keanggotaan
+-- sendiri, jadi tidak ada yang jebol lewat sini — tapi permukaan yang
+-- tidak dibutuhkan sebaiknya tidak ada. absen_masuk dan absen_pulang
+-- tetap bisa memanggilnya: SECURITY DEFINER berjalan sebagai pemiliknya.
+revoke all on function _absen(text, double precision[], double precision,
+  double precision, text, boolean) from public, anon, authenticated;
+revoke all on function _ambang_wajah() from public, anon;
+
+commit;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- 7. Rekap gaji satu periode
+-- ─────────────────────────────────────────────────────────────────────
+--
+-- Dihitung di server, sekali jalan, untuk seluruh karyawan.
+--
+-- Menghitungnya di aplikasi berarti menarik seluruh baris absensi satu
+-- bulan ke sebuah HP lalu menjumlahkannya di sana — dan dua perangkat
+-- yang menjumlahkan sendiri akan suatu hari menyebut dua angka gaji
+-- yang berbeda untuk orang yang sama. Angka gaji bukan tempat yang
+-- pantas untuk perbedaan semacam itu.
+
+begin;
+
+create or replace function rekap_payroll(
+  p_resto_id text,
+  p_mulai date,
+  p_akhir date)
+returns table (
+  employee_email text,
+  nama text,
+  peran text,
+  gaji_pokok bigint,
+  tunjangan bigint,
+  hari_kerja integer,
+  hadir integer,
+  izin integer,
+  sakit integer,
+  cuti integer,
+  alpa integer,
+  hari_potong integer,
+  potongan_absen bigint,
+  potongan_bpjs_kesehatan bigint,
+  potongan_bpjs_tk bigint,
+  gaji_bersih bigint,
+  bank_name text,
+  account_number text,
+  account_holder text
+)
+language plpgsql
+stable
+security definer
+set search_path = public
+as $fn$
+declare
+  v_setelan record;
+begin
+  if not (is_super_admin()
+          or is_resto_employee(p_resto_id, array['owner', 'finance'])) then
+    raise exception 'Hanya Owner dan Finance yang bisa membuka payroll.';
+  end if;
+
+  select * into v_setelan from payroll_settings where resto_id = p_resto_id;
+
+  return query
+  with orang as (
+    select e.email, e.name, e.role
+    from employees e
+    where e.resto_id = p_resto_id
+      and coalesce(e.active, true)
+      and e.role <> 'super_admin'
+  ),
+  hitung as (
+    select a.employee_email as em,
+           count(*) filter (where a.status = 'hadir')::integer as h,
+           count(*) filter (where a.status = 'izin')::integer as i,
+           count(*) filter (where a.status = 'sakit')::integer as s,
+           count(*) filter (where a.status = 'cuti')::integer as c,
+           count(*) filter (where a.status = 'alpa')::integer as al,
+           count(*) filter (where a.potong_gaji)::integer as p
+    from attendance a
+    where a.resto_id = p_resto_id
+      and a.tanggal between p_mulai and p_akhir
+    group by 1
+  )
+  select o.email,
+         coalesce(o.name, o.email),
+         o.role,
+         coalesce(ep.gaji_pokok, 0),
+         coalesce(ep.tunjangan, 0),
+         coalesce(v_setelan.hari_kerja_periode, 25),
+         coalesce(g.h, 0),
+         coalesce(g.i, 0),
+         coalesce(g.s, 0),
+         coalesce(g.c, 0),
+         coalesce(g.al, 0),
+         coalesce(g.p, 0),
+         -- Potongan dibulatkan ke bawah, sejalan dengan seluruh angka
+         -- rupiah di aplikasi ini. Dibulatkan ke atas, yang menanggung
+         -- selisihnya karyawan.
+         floor(coalesce(ep.gaji_pokok, 0)::numeric
+               / greatest(coalesce(v_setelan.hari_kerja_periode, 25), 1)
+               * least(coalesce(g.p, 0),
+                       coalesce(v_setelan.hari_kerja_periode, 25))
+              )::bigint,
+         floor(coalesce(ep.gaji_pokok, 0)::numeric
+               * coalesce(v_setelan.bpjs_kesehatan_persen, 0) / 100)::bigint,
+         floor(coalesce(ep.gaji_pokok, 0)::numeric
+               * coalesce(v_setelan.bpjs_tk_persen, 0) / 100)::bigint,
+         -- Tidak pernah minus. Potongan yang melebihi gajinya sendiri —
+         -- tidak masuk sebulan penuh berikut BPJS — akan menghasilkan
+         -- angka merah yang dibaca sebagai utang karyawan ke merchant,
+         -- dan itu bukan yang dimaksud siapa pun.
+         greatest(
+           coalesce(ep.gaji_pokok, 0) + coalesce(ep.tunjangan, 0)
+           - floor(coalesce(ep.gaji_pokok, 0)::numeric
+                   / greatest(coalesce(v_setelan.hari_kerja_periode, 25), 1)
+                   * least(coalesce(g.p, 0),
+                           coalesce(v_setelan.hari_kerja_periode, 25))
+                  )::bigint
+           - floor(coalesce(ep.gaji_pokok, 0)::numeric
+                   * coalesce(v_setelan.bpjs_kesehatan_persen, 0) / 100)::bigint
+           - floor(coalesce(ep.gaji_pokok, 0)::numeric
+                   * coalesce(v_setelan.bpjs_tk_persen, 0) / 100)::bigint,
+           0)::bigint,
+         ep.bank_name,
+         ep.account_number,
+         ep.account_holder
+  from orang o
+  left join employee_payroll ep
+         on ep.resto_id = p_resto_id
+        and lower(ep.employee_email) = lower(o.email)
+  left join hitung g on lower(g.em) = lower(o.email)
+  order by o.name nulls last, o.email;
+end;
+$fn$;
+
+-- Slip gaji karyawan sendiri.
+--
+-- Fungsi terpisah, bukan rekap yang disaring: rekapnya menolak siapa
+-- pun selain Owner dan Finance, dan melonggarkan syarat itu supaya
+-- karyawan bisa masuk berarti melonggarkannya untuk seluruh baris
+-- sekaligus.
+create or replace function slip_gaji_saya(
+  p_resto_id text,
+  p_mulai date,
+  p_akhir date)
+returns table (
+  gaji_pokok bigint,
+  tunjangan bigint,
+  hari_kerja integer,
+  hadir integer,
+  izin integer,
+  sakit integer,
+  cuti integer,
+  alpa integer,
+  hari_potong integer,
+  potongan_absen bigint,
+  potongan_bpjs_kesehatan bigint,
+  potongan_bpjs_tk bigint,
+  gaji_bersih bigint,
+  bank_name text,
+  account_number text,
+  account_holder text
+)
+language plpgsql
+stable
+security definer
+set search_path = public
+as $fn$
+declare
+  v_email text := lower(coalesce(auth.jwt() ->> 'email', ''));
+  v_setelan record;
+  v_gaji record;
+  v_h record;
+  v_potong_absen bigint;
+  v_bpjs_kes bigint;
+  v_bpjs_tk bigint;
+begin
+  if v_email = '' then
+    raise exception 'Harus masuk dulu.';
+  end if;
+
+  if not is_resto_employee(p_resto_id,
+       array['owner', 'admin', 'finance', 'kasir', 'chef']) then
+    raise exception 'Kamu bukan karyawan merchant ini.';
+  end if;
+
+  select * into v_setelan from payroll_settings where resto_id = p_resto_id;
+  select * into v_gaji from employee_payroll
+  where resto_id = p_resto_id and lower(employee_email) = v_email;
+
+  select count(*) filter (where status = 'hadir')::integer as h,
+         count(*) filter (where status = 'izin')::integer as i,
+         count(*) filter (where status = 'sakit')::integer as s,
+         count(*) filter (where status = 'cuti')::integer as c,
+         count(*) filter (where status = 'alpa')::integer as al,
+         count(*) filter (where potong_gaji)::integer as p
+    into v_h
+  from attendance
+  where resto_id = p_resto_id
+    and lower(employee_email) = v_email
+    and tanggal between p_mulai and p_akhir;
+
+  v_potong_absen := floor(coalesce(v_gaji.gaji_pokok, 0)::numeric
+    / greatest(coalesce(v_setelan.hari_kerja_periode, 25), 1)
+    * least(coalesce(v_h.p, 0), coalesce(v_setelan.hari_kerja_periode, 25))
+  )::bigint;
+  v_bpjs_kes := floor(coalesce(v_gaji.gaji_pokok, 0)::numeric
+    * coalesce(v_setelan.bpjs_kesehatan_persen, 0) / 100)::bigint;
+  v_bpjs_tk := floor(coalesce(v_gaji.gaji_pokok, 0)::numeric
+    * coalesce(v_setelan.bpjs_tk_persen, 0) / 100)::bigint;
+
+  return query select
+    coalesce(v_gaji.gaji_pokok, 0)::bigint,
+    coalesce(v_gaji.tunjangan, 0)::bigint,
+    coalesce(v_setelan.hari_kerja_periode, 25),
+    coalesce(v_h.h, 0), coalesce(v_h.i, 0), coalesce(v_h.s, 0),
+    coalesce(v_h.c, 0), coalesce(v_h.al, 0), coalesce(v_h.p, 0),
+    v_potong_absen, v_bpjs_kes, v_bpjs_tk,
+    greatest(coalesce(v_gaji.gaji_pokok, 0) + coalesce(v_gaji.tunjangan, 0)
+             - v_potong_absen - v_bpjs_kes - v_bpjs_tk, 0)::bigint,
+    v_gaji.bank_name, v_gaji.account_number, v_gaji.account_holder;
+end;
+$fn$;
+
+grant execute on function rekap_payroll(text, date, date) to authenticated;
+grant execute on function slip_gaji_saya(text, date, date) to authenticated;
+
+commit;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- Memeriksanya
+-- ─────────────────────────────────────────────────────────────────────
+--
+--   select * from rekap_payroll('<resto_id>', '2026-08-26', '2026-09-25');
+--   select employee_email, tanggal, status, masuk_at, masuk_jarak_m
+--   from attendance where resto_id = '<resto_id>' order by tanggal desc;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- 8. Ember penyimpanan foto absen dan surat sakit
+-- ─────────────────────────────────────────────────────────────────────
+--
+-- TIDAK publik, berbeda dari ember foto menu.
+--
+-- Isinya foto wajah karyawan dan surat keterangan sakit — dua hal yang
+-- tidak boleh bisa dibuka siapa pun yang kebetulan menebak URL-nya.
+-- Foto menu memang dipasang di etalase; ini tidak.
+--
+-- Nama berkasnya `<resto_id>/<jenis>/<email>_<waktu>.jpg`, dan segmen
+-- pertama itu yang dipakai policy menentukan siapa boleh menulis.
+-- Tanpa itu, karyawan merchant mana pun bisa menimpa berkas merchant
+-- lain.
+
+insert into storage.buckets (id, name, public)
+values ('absensi', 'absensi', false)
+on conflict (id) do update set public = false;
+
+-- Menulis: karyawan merchant itu sendiri, peran apa pun. Semua orang
+-- absen, termasuk Owner.
+drop policy if exists "absensi: tulis karyawan" on storage.objects;
+create policy "absensi: tulis karyawan" on storage.objects
+  for insert with check (
+    bucket_id = 'absensi'
+    -- Disebut lengkap dengan skemanya. Policy pada storage.objects
+    -- tidak dijalankan PostgREST melainkan layanan Storage, yang
+    -- menyambung dengan search_path-nya sendiri — dan nama tanpa skema
+    -- di sana bisa tidak ditemukan. Galatnya baru muncul saat seseorang
+    -- benar-benar mengunggah, bukan saat policy-nya dibuat.
+    and public.is_resto_employee((storage.foldername(name))[1],
+          array['owner', 'admin', 'finance', 'kasir', 'chef'])
+  );
+
+-- Membaca: yang memeriksa absensi, bukan semua karyawan.
+--
+-- Kasir tidak perlu bisa membuka foto wajah dan surat sakit rekannya.
+-- Yang membutuhkannya saat memutuskan potong gaji adalah Owner, Admin,
+-- dan Finance — dan itu memang pekerjaan mereka.
+drop policy if exists "absensi: baca atasan" on storage.objects;
+create policy "absensi: baca atasan" on storage.objects
+  for select using (
+    bucket_id = 'absensi'
+    and public.is_resto_employee((storage.foldername(name))[1],
+          array['owner', 'admin', 'finance'])
+  );
+
+-- Menimpa berkas yang sudah ada. Layanan Storage membaca lalu menulis
+-- baris objeknya saat upsert, jadi tanpa ini penggantian foto gagal
+-- dengan galat yang tidak menyebut izin sama sekali.
+drop policy if exists "absensi: ubah karyawan" on storage.objects;
+create policy "absensi: ubah karyawan" on storage.objects
+  for update using (
+    bucket_id = 'absensi'
+    and public.is_resto_employee((storage.foldername(name))[1],
+          array['owner', 'admin', 'finance', 'kasir', 'chef'])
+  );
+
+-- Menghapus sengaja tidak diberikan ke siapa pun.
+--
+-- Foto absen adalah bukti. Yang bisa menghapusnya adalah yang bisa
+-- menghapus bukti bahwa dirinya tidak berada di tempat kerja — dan
+-- seluruh guna menyimpannya hilang di situ.
+
+
+-- ═══════════════════════════════════════════════════════════════════
+-- BAGIAN 92 dari 100 — paket_langganan.sql
+-- ═══════════════════════════════════════════════════════════════════
+
+-- KaataGo - paket langganan Basic dan Premium, berikut masa percobaan.
+--
+-- Jalankan SETELAH billing.sql, uam_menu.sql, dan cara_tagih.sql.
+-- Aman diulang.
+--
+-- ── Yang sudah ada dan tidak diulang di sini ─────────────────────────
+--
+-- Penagihan bulanan, tagihan berikut unggah bukti, pemeriksaan oleh
+-- KaataGo, dan penguncian saat lewat tenggang — semuanya sudah berdiri
+-- di billing.sql. Berkas ini tidak membangun ulang satu pun di antaranya.
+-- Yang ditambahkan cuma tiga hal: paketnya, masa percobaannya, dan
+-- pengajuan berlangganan yang menjembatani keduanya.
+--
+-- ── Kenapa merchant lama tidak ikut terkunci ─────────────────────────
+--
+-- Semua merchant yang sudah berjalan hari ini tidak punya paket. Kalau
+-- "tidak punya paket" langsung berarti terkunci, memasang berkas ini
+-- mengunci seluruh merchant sekaligus — pada hari yang tidak mereka
+-- ketahui, karena harga apa pun.
+--
+-- Jadi penguncian paket hanya berlaku bagi merchant yang memang sudah
+-- dimasukkan ke jalurnya, yaitu yang pernah diberi masa percobaan oleh
+-- KaataGo Admin (`trial_until` terisi). Yang belum pernah disentuh
+-- berjalan persis seperti kemarin. Prinsipnya sama dengan menu_access:
+-- baris yang tidak ada berarti tidak ada pembatasan.
+
+-- ─────────────────────────────────────────────────────────────────────
+-- 1. Paket dan harganya
+-- ─────────────────────────────────────────────────────────────────────
+
+begin;
+
+create table if not exists paket_langganan (
+  kode text primary key check (kode in ('basic', 'premium')),
+  nama text not null,
+  harga_bulanan bigint not null check (harga_bulanan >= 0),
+  keterangan text,
+  urutan smallint not null default 0,
+  updated_at timestamptz not null default now(),
+  updated_by text
+);
+
+-- Harganya disimpan di basis data, bukan ditulis di aplikasi.
+--
+-- Harga yang tertanam di kode berarti menaikkannya menuntut merilis
+-- APK baru — dan selama sebagian merchant belum memperbarui
+-- aplikasinya, dua merchant akan melihat dua harga berbeda untuk paket
+-- yang sama.
+insert into paket_langganan (kode, nama, harga_bulanan, keterangan, urutan)
+values
+  ('basic', 'Basic', 99000,
+   'Penjualan, shift kasir, dan keuangan harian. Cukup untuk warung yang '
+   'ingin kasirnya rapi tanpa pembukuan penuh.', 1),
+  ('premium', 'Premium', 249000,
+   'Seluruh fitur KaataGo: pembukuan lengkap, laporan bergrafik, absensi '
+   'wajah, payroll, dan semua yang menyusul.', 2)
+on conflict (kode) do nothing;
+
+alter table paket_langganan enable row level security;
+
+-- Dibaca siapa pun yang sudah masuk. Merchant yang sedang memilih paket
+-- perlu melihat harganya, dan harga langganan bukan rahasia.
+drop policy if exists "paket: baca" on paket_langganan;
+create policy "paket: baca" on paket_langganan
+  for select using (auth.uid() is not null);
+
+drop policy if exists "paket: super admin ubah" on paket_langganan;
+create policy "paket: super admin ubah" on paket_langganan
+  for all using (is_super_admin()) with check (is_super_admin());
+
+commit;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- 2. Paket dan masa percobaan menempel di setelan langganannya
+-- ─────────────────────────────────────────────────────────────────────
+
+begin;
+
+-- Null berarti belum berlangganan paket mana pun.
+alter table resto_billing add column if not exists paket text;
+
+alter table resto_billing drop constraint if exists resto_billing_paket_check;
+alter table resto_billing add constraint resto_billing_paket_check
+  check (paket is null or paket in ('basic', 'premium'));
+
+-- Hari terakhir masa percobaan, sudah termasuk. Null berarti merchant
+-- ini memang tidak pernah dimasukkan ke jalur paket.
+alter table resto_billing add column if not exists trial_until date;
+
+-- Berapa hari yang diberikan waktu itu. Disimpan supaya layar KaataGo
+-- Admin bisa menyebut "14 hari" alih-alih menghitung mundur sendiri
+-- dari tanggal yang sudah lewat.
+alter table resto_billing add column if not exists trial_days integer;
+
+-- Siapa yang menulis baris menu_access-nya.
+--
+-- Dibutuhkan supaya menaikkan paket ke Premium bisa membersihkan
+-- pembatasan yang dipasang paket, tanpa ikut menghapus pengaturan yang
+-- disetel tangan KaataGo Admin untuk merchant itu.
+alter table menu_access add column if not exists sumber text not null
+  default 'manual';
+
+alter table menu_access drop constraint if exists menu_access_sumber_check;
+alter table menu_access add constraint menu_access_sumber_check
+  check (sumber in ('manual', 'paket'));
+
+commit;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- 3. Pengajuan berlangganan
+-- ─────────────────────────────────────────────────────────────────────
+
+begin;
+
+create table if not exists subscription_requests (
+  id uuid primary key default gen_random_uuid(),
+  resto_id text not null references restaurants (id) on delete cascade,
+
+  paket text not null check (paket in ('basic', 'premium')),
+
+  -- Harga saat diajukan, disalin.
+  --
+  -- Bukan dibaca ulang dari paket_langganan saat disetujui: harga bisa
+  -- naik di antara merchant menekan tombol dan KaataGo memeriksanya,
+  -- dan yang sudah mentransfer sesuai angka di layarnya tidak pantas
+  -- ditagih selisihnya.
+  harga bigint not null check (harga >= 0),
+
+  -- 'verifikasi' → bukti sudah diunggah, menunggu diperiksa KaataGo
+  -- 'selesai'    → diterima, paketnya berjalan
+  -- 'ditolak'    → buktinya tidak cocok, merchant bisa mengajukan lagi
+  status text not null default 'verifikasi'
+    check (status in ('verifikasi', 'selesai', 'ditolak')),
+
+  -- Wajib. Pengajuan tanpa bukti transfer adalah pengajuan yang tidak
+  -- bisa diperiksa siapa pun, dan yang menumpuk dari situ adalah
+  -- antrean berisi permintaan yang harus ditanyakan satu per satu.
+  bukti_url text not null,
+
+  catatan text,
+
+  diajukan_oleh text,
+  diajukan_at timestamptz not null default now(),
+
+  diputuskan_oleh text,
+  diputuskan_at timestamptz,
+  alasan_tolak text
+);
+
+create index if not exists idx_subscription_requests_status
+  on subscription_requests (status, diajukan_at desc);
+create index if not exists idx_subscription_requests_resto
+  on subscription_requests (resto_id, diajukan_at desc);
+
+-- Satu pengajuan menunggu per merchant.
+--
+-- Tanpa ini, tombol yang ditekan dua kali karena jaringannya lambat
+-- menjadi dua antrean untuk uang yang sama — dan yang memeriksanya
+-- menyetujui keduanya.
+create unique index if not exists idx_subscription_requests_satu_aktif
+  on subscription_requests (resto_id) where status = 'verifikasi';
+
+alter table subscription_requests enable row level security;
+
+-- Merchant membaca pengajuannya sendiri; KaataGo Admin membaca semua.
+drop policy if exists "subscription_requests: baca" on subscription_requests;
+create policy "subscription_requests: baca" on subscription_requests
+  for select using (
+    is_super_admin()
+    or is_resto_employee(resto_id, array['owner', 'admin', 'finance'])
+  );
+
+-- Ditulis lewat fungsi, bukan langsung: barisnya menentukan uang dan
+-- akses, dan yang bisa menyisipkannya sendiri bisa menyisipkan yang
+-- statusnya sudah 'selesai'.
+drop policy if exists "subscription_requests: tulis" on subscription_requests;
+
+commit;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- 4. Menu apa saja yang dibuka paket Basic
+-- ─────────────────────────────────────────────────────────────────────
+--
+-- Ditulis sebagai daftar putih, bukan daftar hitam. Fitur baru muncul
+-- terus di aplikasi ini; daftar hitam berarti tiap fitur baru otomatis
+-- ikut terbuka untuk Basic sampai ada yang ingat menambahkannya ke
+-- daftar — dan yang menemukannya adalah merchant Basic yang memakai
+-- fitur Premium tanpa membayarnya.
+--
+-- Kotak Masuk, Tampilan, Penilaian Pelanggan, KaataGo Support, dan
+-- Keluar tidak ada di sini karena memang tidak pernah ada di
+-- menu_access: kelimanya selalu tersedia untuk semua orang.
+
+begin;
+
+create or replace function _menu_paket_basic()
+returns text[]
+language sql
+immutable
+as $$
+  select array[
+    -- Penjualan
+    'Kasir / Input Pesanan',
+    'Layar Pelanggan',
+    'Pending Payment',
+    'Riwayat Kasir',
+    'Pesanan Masuk',
+    -- Shift kasir
+    'Shift Kasir',
+    -- Keuangan harian
+    'Saldo & Pengeluaran',
+    'Setor Saldo Cash',
+    -- Info merchant dan info pembayaran
+    'Info Merchant',
+    'Pengaturan Pembayaran',
+    -- Absensi dirinya sendiri tetap dibuka: ia bukan fitur pembukuan,
+    -- dan mengunci orang dari menyatakan dirinya sudah datang bekerja
+    -- adalah pembatasan yang menyakiti orang yang salah.
+    'Absensi'
+  ];
+$$;
+
+-- Menuliskan pembatasan paket ke menu_access.
+--
+-- Premium tidak menulis apa pun — ia justru menghapus pembatasan yang
+-- pernah dipasang paket, dan membiarkan pengaturan tangan KaataGo Admin
+-- berdiri seperti semula.
+create or replace function terapkan_paket(
+  p_resto_id text,
+  p_paket text,
+  p_oleh text default null)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $fn$
+declare
+  v_oleh text := coalesce(p_oleh, auth.jwt() ->> 'email', 'sistem');
+begin
+  -- Yang dipasang paket dibuang dulu, apa pun paketnya. Menumpuknya
+  -- berarti merchant yang turun dari Premium ke Basic tetap membawa
+  -- pembukaan yang diberikan Premium.
+  delete from menu_access
+  where resto_id = p_resto_id and sumber = 'paket';
+
+  if p_paket <> 'basic' then
+    return;
+  end if;
+
+  -- Semua menu yang dikenal, per peran, yang TIDAK ada di daftar putih
+  -- ditutup. Daftar menunya diambil dari baris yang sudah pernah ada
+  -- ditambah katalog tetap di bawah — karena basis data tidak tahu
+  -- katalog menu aplikasi, daftarnya disebut di sini.
+  insert into menu_access (resto_id, role, menu_key, level, sumber,
+                           updated_by, updated_at)
+  select p_resto_id, peran, menu, 'none', 'paket', v_oleh, now()
+  from unnest(array['owner', 'admin', 'finance', 'kasir', 'chef']) peran
+  cross join unnest(_menu_semua()) menu
+  where not (menu = any (_menu_paket_basic()))
+  on conflict (resto_id, role, menu_key) do update
+    set level = 'none', sumber = 'paket',
+        updated_by = excluded.updated_by, updated_at = now();
+end;
+$fn$;
+
+-- Seluruh menu yang dikenal aplikasi.
+--
+-- Disebut di sini, bukan dibaca dari mana-mana: basis data tidak bisa
+-- melihat katalog menu di dalam APK. Yang menjaga keduanya tetap sama
+-- adalah pengujian di sisi aplikasi (`test/paket_langganan_test.dart`),
+-- yang gagal begitu ada menu di katalog yang belum disebut di sini.
+create or replace function _menu_semua()
+returns text[]
+language sql
+immutable
+as $$
+  select array[
+    'Shift Kasir', 'Kasir / Input Pesanan', 'Layar Pelanggan',
+    'Pending Payment', 'Riwayat Kasir', 'Pesanan Masuk', 'Layar Dapur',
+    'Laporan Penjualan', 'Pemasukan', 'Saldo & Pengeluaran',
+    'Setor Saldo Cash', 'Terima Cash Pickup', 'Saldo Perusahaan',
+    'Pembayaran dari KaataGo', 'Periksa Pembukuan', 'Tutup Buku',
+    'Rekonsiliasi Bank', 'Mapping GL Account', 'Jurnal GL',
+    'Laporan Transaksi', 'Pencairan Gateway', 'Tagihan Langganan',
+    'Kelola Produk', 'Kelola Karyawan', 'Diskon', 'Kirim Pengumuman',
+    'Kategori', 'Level', 'Info Merchant', 'QR Meja',
+    'Pengaturan Pembayaran', 'Rekening Perusahaan',
+    'Absensi', 'Absensi Karyawan', 'Payroll'
+  ];
+$$;
+
+commit;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- 5. KaataGo Admin menyetel paket dan masa percobaan
+-- ─────────────────────────────────────────────────────────────────────
+
+begin;
+
+create or replace function set_paket_resto(
+  p_resto_id text,
+  p_paket text,
+  p_harga bigint default null)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $fn$
+declare
+  v_harga bigint;
+begin
+  if not is_super_admin() then
+    raise exception 'Hanya KaataGo Admin yang bisa menyetel paket.';
+  end if;
+
+  if p_paket is not null and p_paket not in ('basic', 'premium') then
+    raise exception 'Paketnya harus basic atau premium.';
+  end if;
+
+  v_harga := coalesce(
+    p_harga,
+    (select harga_bulanan from paket_langganan where kode = p_paket),
+    0);
+
+  insert into resto_billing (resto_id, paket, monthly_price, active)
+  values (p_resto_id, p_paket, v_harga, p_paket is not null)
+  on conflict (resto_id) do update
+    set paket = excluded.paket,
+        monthly_price = excluded.monthly_price,
+        -- Melepas paket tidak mematikan penagihannya diam-diam: yang
+        -- dimatikan cuma kalau memang tidak ada paket sama sekali.
+        active = case when excluded.paket is null then resto_billing.active
+                      else true end,
+        updated_at = now();
+
+  perform terapkan_paket(p_resto_id, coalesce(p_paket, 'premium'));
+end;
+$fn$;
+
+-- Memberi masa percobaan, dihitung dari hari ini.
+create or replace function set_trial_resto(
+  p_resto_id text,
+  p_hari integer)
+returns date
+language plpgsql
+security definer
+set search_path = public
+as $fn$
+declare
+  v_sampai date;
+begin
+  if not is_super_admin() then
+    raise exception 'Hanya KaataGo Admin yang bisa memberi masa percobaan.';
+  end if;
+
+  if p_hari is null or p_hari < 1 or p_hari > 365 then
+    raise exception 'Lama percobaannya antara 1 dan 365 hari.';
+  end if;
+
+  v_sampai := (now() at time zone 'Asia/Jakarta')::date + p_hari;
+
+  insert into resto_billing (resto_id, trial_until, trial_days, monthly_price)
+  values (p_resto_id, v_sampai, p_hari, 0)
+  on conflict (resto_id) do update
+    set trial_until = excluded.trial_until,
+        trial_days = excluded.trial_days,
+        updated_at = now();
+
+  -- Selama percobaan, semuanya terbuka. Percobaan yang separuh terkunci
+  -- tidak memperlihatkan apa yang sedang ditawarkan.
+  perform terapkan_paket(p_resto_id, 'premium');
+
+  return v_sampai;
+end;
+$fn$;
+
+grant execute on function set_paket_resto(text, text, bigint) to authenticated;
+grant execute on function set_trial_resto(text, integer) to authenticated;
+
+-- Pembantu, bukan pintu.
+--
+-- Postgres memberi EXECUTE ke PUBLIC secara bawaan, dan terapkan_paket
+-- adalah SECURITY DEFINER tanpa pemeriksaan izin di dalamnya — ia memang
+-- mengandalkan ketiga pemanggilnya yang sudah memeriksa KaataGo Admin
+-- lebih dulu. Tanpa pencabutan ini, siapa pun yang sudah masuk bisa
+-- memanggilnya sendiri dan menghapus seluruh pembatasan paket sebuah
+-- merchant.
+--
+-- Mencabutnya tidak mematahkan pemanggilnya: fungsi SECURITY DEFINER
+-- berjalan sebagai pemiliknya, bukan sebagai pemanggilnya.
+revoke all on function terapkan_paket(text, text, text)
+  from public, anon, authenticated;
+revoke all on function _menu_semua() from public, anon;
+revoke all on function _menu_paket_basic() from public, anon;
+
+commit;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- 6. Merchant mengajukan, KaataGo memutuskan
+-- ─────────────────────────────────────────────────────────────────────
+
+begin;
+
+create or replace function ajukan_langganan(
+  p_resto_id text,
+  p_paket text,
+  p_bukti_url text,
+  p_catatan text default null)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $fn$
+declare
+  v_email text := auth.jwt() ->> 'email';
+  v_harga bigint;
+  v_id uuid;
+begin
+  if v_email is null then
+    raise exception 'Harus masuk dulu.';
+  end if;
+
+  -- Owner saja. Berlangganan adalah keputusan yang mengikat merchantnya
+  -- pada pembayaran bulanan, dan itu bukan keputusan yang pantas bisa
+  -- diambil setiap orang yang bisa menambah menu.
+  if not (is_super_admin() or is_resto_employee(p_resto_id, array['owner'])) then
+    raise exception 'Hanya Owner yang bisa berlangganan.';
+  end if;
+
+  if p_paket not in ('basic', 'premium') then
+    raise exception 'Paketnya harus Basic atau Premium.';
+  end if;
+
+  if p_bukti_url is null or btrim(p_bukti_url) = '' then
+    raise exception 'Bukti transfernya wajib diunggah.';
+  end if;
+
+  if exists (select 1 from subscription_requests
+             where resto_id = p_resto_id and status = 'verifikasi') then
+    raise exception 'Pengajuanmu yang sebelumnya masih diperiksa.';
+  end if;
+
+  select harga_bulanan into v_harga from paket_langganan where kode = p_paket;
+  if v_harga is null then
+    raise exception 'Paket % tidak dikenal.', p_paket;
+  end if;
+
+  insert into subscription_requests (
+    resto_id, paket, harga, bukti_url, catatan, diajukan_oleh)
+  values (p_resto_id, p_paket, v_harga, btrim(p_bukti_url), p_catatan, v_email)
+  returning id into v_id;
+
+  return v_id;
+end;
+$fn$;
+
+create or replace function putuskan_langganan(
+  p_request_id uuid,
+  p_setuju boolean,
+  p_alasan text default null)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $fn$
+declare
+  v_email text := auth.jwt() ->> 'email';
+  v_req record;
+  v_hari smallint;
+  v_mulai date;
+  v_jatuh date;
+begin
+  if not is_super_admin() then
+    raise exception 'Hanya KaataGo Admin yang bisa memutuskan pengajuan.';
+  end if;
+
+  select * into v_req from subscription_requests where id = p_request_id;
+  if v_req is null then
+    raise exception 'Pengajuannya tidak ditemukan.';
+  end if;
+  if v_req.status <> 'verifikasi' then
+    raise exception 'Pengajuan ini sudah diputuskan.';
+  end if;
+
+  if not p_setuju then
+    if p_alasan is null or btrim(p_alasan) = '' then
+      raise exception 'Sebutkan alasannya — merchant perlu tahu apa yang '
+                      'harus diperbaiki.';
+    end if;
+    update subscription_requests
+    set status = 'ditolak',
+        diputuskan_oleh = v_email,
+        diputuskan_at = now(),
+        alasan_tolak = btrim(p_alasan)
+    where id = p_request_id;
+    return;
+  end if;
+
+  -- Disetujui: paketnya berjalan mulai hari ini.
+  v_mulai := (now() at time zone 'Asia/Jakarta')::date;
+  v_hari := least(greatest(extract(day from v_mulai)::smallint, 1), 28);
+
+  insert into resto_billing (
+    resto_id, paket, monthly_price, billing_day, active, started_on,
+    trial_until)
+  values (v_req.resto_id, v_req.paket, v_req.harga, v_hari, true, v_mulai, null)
+  on conflict (resto_id) do update
+    set paket = excluded.paket,
+        monthly_price = excluded.monthly_price,
+        billing_day = excluded.billing_day,
+        active = true,
+        started_on = excluded.started_on,
+        -- Masa percobaannya dilepas: ia sudah berlangganan, dan
+        -- membiarkannya membuat layar merchant tetap menghitung mundur
+        -- sesuatu yang sudah tidak berlaku.
+        trial_until = null,
+        updated_at = now();
+
+  perform terapkan_paket(v_req.resto_id, v_req.paket, v_email);
+
+  -- Bulan pertama sudah dibayar — itulah yang barusan diperiksa. Jadi
+  -- tagihannya dicatat lunas, bukan diterbitkan sebagai utang baru.
+  -- Tanpa ini merchant yang baru saja transfer langsung melihat tagihan
+  -- yang menuntutnya membayar lagi.
+  v_jatuh := v_mulai;
+  insert into billing_invoices (
+    id, resto_id, period_start, period_end, due_date, amount,
+    status, submitted_at, confirmed_by, confirmed_at, paid_note)
+  values (
+    v_req.resto_id || '-' || to_char(v_mulai, 'YYYYMM') || '-langganan',
+    v_req.resto_id, v_mulai, (v_mulai + interval '1 month' - interval '1 day')::date,
+    v_jatuh, v_req.harga, 'paid', v_req.diajukan_at, v_email, now(),
+    'Pembayaran paket ' || v_req.paket || ' saat berlangganan')
+  on conflict (resto_id, period_start) do update
+    set status = 'paid',
+        confirmed_by = excluded.confirmed_by,
+        confirmed_at = now();
+
+  update subscription_requests
+  set status = 'selesai',
+      diputuskan_oleh = v_email,
+      diputuskan_at = now()
+  where id = p_request_id;
+end;
+$fn$;
+
+grant execute on function ajukan_langganan(text, text, text, text)
+  to authenticated;
+grant execute on function putuskan_langganan(uuid, boolean, text)
+  to authenticated;
+
+commit;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- 7. Keadaan langganan satu merchant
+-- ─────────────────────────────────────────────────────────────────────
+--
+-- Fungsi tersendiri, bukan menambah kolom ke `resto_billing_state`.
+--
+-- Mengubah tipe kembalian fungsi yang sudah ada menuntut membuangnya
+-- dulu, dan berkas yang harus dijalankan dalam urutan tertentu supaya
+-- tidak gagal berhenti jadi berkas yang aman diulang — persis jebakan
+-- yang sudah dicatat billing.sql tentang dirinya sendiri.
+
+begin;
+
+create or replace function keadaan_langganan(p_resto_id text)
+returns table (
+  paket text,
+  nama_paket text,
+  harga bigint,
+  trial_until date,
+  trial_days integer,
+  sisa_hari integer,
+  dalam_percobaan boolean,
+  percobaan_habis boolean,
+  status_pengajuan text,
+  alasan_tolak text,
+  terkunci_paket boolean
+)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  -- Hanya untuk merchant sendiri.
+  --
+  -- Tanpa ini, id resto yang ditebak orang menjawab paket, harga, dan
+  -- masa percobaan merchant lain. Yang tidak berhak menerima baris
+  -- kosong, bukan galat: pesan galat justru mengonfirmasi restonya ada.
+  with boleh as (
+    select is_super_admin()
+        or is_resto_employee(p_resto_id,
+             array['owner', 'admin', 'finance', 'kasir', 'chef']) as ya
+  ),
+  s as (
+    select * from resto_billing where resto_id = p_resto_id
+  ),
+  r as (
+    select status, alasan_tolak
+    from subscription_requests
+    where resto_id = p_resto_id
+    order by diajukan_at desc
+    limit 1
+  ),
+  hari as (
+    select (now() at time zone 'Asia/Jakarta')::date as ini
+  )
+  select
+    s.paket,
+    p.nama,
+    coalesce(p.harga_bulanan, s.monthly_price, 0),
+    s.trial_until,
+    s.trial_days,
+    (s.trial_until - h.ini)::integer,
+    coalesce(s.paket is null and s.trial_until is not null
+             and h.ini <= s.trial_until, false),
+    coalesce(s.paket is null and s.trial_until is not null
+             and h.ini > s.trial_until, false),
+    r.status,
+    case when r.status = 'ditolak' then r.alasan_tolak end,
+    -- Terkunci karena paket: percobaannya habis dan belum berlangganan.
+    --
+    -- Pengajuan yang sedang diperiksa TIDAK membuka kuncinya, dan itu
+    -- memang yang diminta — tapi ia juga tidak menguncinya sendiri.
+    -- Merchant yang masih dalam masa percobaan lalu mengajukan lebih
+    -- awal tetap bisa bekerja sampai percobaannya benar-benar habis.
+    coalesce(s.paket is null and s.trial_until is not null
+             and h.ini > s.trial_until, false)
+  from hari h
+  cross join boleh b
+  left join s on true
+  left join paket_langganan p on p.kode = s.paket
+  left join r on true
+  where b.ya;
+$$;
+
+-- Penguncian paket ikut ditegakkan RLS, bukan cuma oleh layar.
+--
+-- Layar yang terkunci hanyalah layar. Tanpa baris ini, merchant yang
+-- masa percobaannya habis tetap bisa menyimpan pesanan lewat versi
+-- aplikasi lama — dan yang menemukannya bukan kita.
+create or replace function is_resto_billing_locked(p_resto_id text)
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select case
+    when is_super_admin() then false
+    else coalesce((select locked from resto_billing_state(p_resto_id)), false)
+      or coalesce((select terkunci_paket from keadaan_langganan(p_resto_id)),
+                  false)
+  end;
+$$;
+
+grant execute on function keadaan_langganan(text) to authenticated;
+
+commit;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- 8. Pemberitahuan H-2
+-- ─────────────────────────────────────────────────────────────────────
+--
+-- Pengumuman yang ditujukan ke satu merchant, bukan ke semua.
+--
+-- `app_announcements` selama ini selalu untuk semua orang. Kolom di
+-- bawah membuatnya bisa disempitkan — null tetap berarti semua, jadi
+-- seluruh pengumuman yang sudah ada tidak berubah artinya.
+
+begin;
+
+alter table app_announcements add column if not exists resto_id text;
+
+drop policy if exists "announcements: public read" on app_announcements;
+create policy "announcements: public read" on app_announcements
+  for select using (
+    resto_id is null
+    or is_super_admin()
+    or is_resto_employee(resto_id,
+         array['owner', 'admin', 'finance', 'kasir', 'chef'])
+  );
+
+commit;
+
+begin;
+
+-- Dijalankan sekali sehari. Menyapa merchant yang masa percobaannya
+-- tinggal dua hari lagi dan belum berlangganan.
+create or replace function ingatkan_percobaan_habis()
+returns integer
+language plpgsql
+security definer
+set search_path = public
+as $fn$
+declare
+  v_jumlah integer := 0;
+  v_resto record;
+  v_ini date := (now() at time zone 'Asia/Jakarta')::date;
+begin
+  for v_resto in
+    select b.resto_id, b.trial_until, r.name
+    from resto_billing b
+    join restaurants r on r.id = b.resto_id
+    where b.paket is null
+      and b.trial_until is not null
+      and b.trial_until - v_ini = 2
+  loop
+    -- Sekali per merchant per masa percobaan. Pengumuman yang sama
+    -- dikirim ulang tiap kali cron-nya jalan akan memenuhi kotak masuk
+    -- dengan kalimat yang sama persis.
+    if exists (
+      select 1 from app_announcements
+      where resto_id = v_resto.resto_id
+        and title = 'Masa percobaan tinggal 2 hari'
+        and created_at > now() - interval '7 days'
+    ) then
+      continue;
+    end if;
+
+    insert into app_announcements (title, body, audience, resto_id, created_by)
+    values (
+      'Masa percobaan tinggal 2 hari',
+      'Masa percobaan ' || coalesce(v_resto.name, 'merchant Anda') ||
+      ' berakhir ' || to_char(v_resto.trial_until, 'DD Mon YYYY') || '. ' ||
+      'Pilih paket langganan sekarang supaya aplikasinya tidak berhenti ' ||
+      'bisa dipakai — buka menu Langganan di aplikasi.',
+      'employees', v_resto.resto_id, 'sistem');
+
+    v_jumlah := v_jumlah + 1;
+  end loop;
+
+  return v_jumlah;
+end;
+$fn$;
+
+-- Dipanggil pg_cron sebagai pemilik jadwalnya, bukan oleh aplikasi.
+revoke all on function ingatkan_percobaan_habis()
+  from public, anon, authenticated;
+
+commit;
+
+-- Dijadwalkan jam 9 pagi WIB (02:00 UTC): jam kerja, bukan tengah malam
+-- saat tidak ada yang membuka aplikasinya.
+select cron.unschedule('kaatago-ingat-percobaan')
+where exists (
+  select 1 from cron.job where jobname = 'kaatago-ingat-percobaan');
+
+select cron.schedule('kaatago-ingat-percobaan', '0 2 * * *',
+  $cron$ select ingatkan_percobaan_habis(); $cron$);
+
+-- ─────────────────────────────────────────────────────────────────────
+-- Memeriksanya
+-- ─────────────────────────────────────────────────────────────────────
+--
+--   select * from keadaan_langganan('<resto_id>');
+--   select resto_id, paket, trial_until, monthly_price from resto_billing;
+--   select * from subscription_requests where status = 'verifikasi';
+
+
+-- ═══════════════════════════════════════════════════════════════════
+-- BAGIAN 93 dari 100 — perbaikan_hak_fungsi.sql
+-- ═══════════════════════════════════════════════════════════════════
+
+-- KaataGo - menutup fungsi bantu yang tidak seharusnya bisa dipanggil
+-- aplikasi.
+--
+-- Jalankan SETELAH absensi_payroll.sql dan paket_langganan.sql.
+-- Aman diulang.
+--
+-- ── Apa yang keliru ──────────────────────────────────────────────────
+--
+-- Postgres memberikan EXECUTE kepada PUBLIC secara bawaan untuk setiap
+-- fungsi baru. Selama ini itu tidak menimbulkan apa-apa karena hampir
+-- semua fungsi SECURITY DEFINER di aplikasi ini memeriksa sendiri siapa
+-- pemanggilnya di baris pertama.
+--
+-- Dua fungsi tidak melakukannya, karena keduanya memang tidak dirancang
+-- untuk dipanggil dari luar:
+--
+--   terapkan_paket()           dipanggil set_paket_resto, set_trial_resto,
+--                              dan putuskan_langganan — ketiganya sudah
+--                              memeriksa KaataGo Admin lebih dulu
+--   ingatkan_percobaan_habis() dipanggil pg_cron
+--
+-- Akibatnya nyata, dan yang paling serius adalah yang pertama: siapa pun
+-- yang sudah masuk bisa memanggil
+--
+--   select terapkan_paket('<resto_id>', 'premium');
+--
+-- dan seluruh pembatasan paket untuk resto itu terhapus. Merchant Basic
+-- membuka sendiri setiap menu Premium, tanpa membayar dan tanpa satu pun
+-- galat yang memberitahukannya.
+--
+-- Perlu disebut apa adanya: itu tidak membuka DATA yang tidak boleh dia
+-- buka. RLS tetap lantai keamanannya, dan menu yang terbuka lewat cara
+-- itu akan ditolak servernya begitu dipakai. Yang jebol adalah batas
+-- paketnya — dan batas paket itulah seluruh isi fiturnya.
+--
+-- ── Kenapa mencabutnya tidak mematahkan pemanggilnya ─────────────────
+--
+-- Fungsi SECURITY DEFINER berjalan sebagai pemiliknya, bukan sebagai
+-- pemanggilnya. Jadi set_paket_resto tetap bisa memanggil terapkan_paket
+-- meskipun `authenticated` sudah tidak boleh menyentuhnya langsung, dan
+-- pg_cron tetap bisa menjalankan pengingatnya.
+
+begin;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- 1. Fungsi bantu ditutup dari aplikasi
+-- ─────────────────────────────────────────────────────────────────────
+
+revoke all on function terapkan_paket(text, text, text)
+  from public, anon, authenticated;
+
+revoke all on function ingatkan_percobaan_habis()
+  from public, anon, authenticated;
+
+-- Pembantu absen. Ia sudah memeriksa wajah, jarak, dan keanggotaan
+-- sendiri, jadi tidak ada yang jebol lewat sini — tapi tidak ada juga
+-- yang membutuhkannya, dan permukaan yang tidak dibutuhkan sebaiknya
+-- tidak ada.
+revoke all on function _absen(text, double precision[], double precision,
+  double precision, text, boolean) from public, anon, authenticated;
+
+-- Fungsi murni tanpa data. Dicabut demi kerapian, bukan keamanan.
+revoke all on function _menu_semua() from public, anon;
+revoke all on function _menu_paket_basic() from public, anon;
+revoke all on function _ambang_wajah() from public, anon;
+
+commit;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- 2. Keadaan langganan hanya untuk merchant sendiri
+-- ─────────────────────────────────────────────────────────────────────
+--
+-- Sebelumnya fungsi ini menjawab pertanyaan tentang resto mana pun yang
+-- id-nya ditebak orang: paketnya apa, harganya berapa, masa
+-- percobaannya sampai kapan. Bukan uang, tapi tetap keterangan tentang
+-- merchant lain yang tidak ada urusannya dengan penanyanya.
+--
+-- Yang tidak berhak menerima baris kosong, bukan galat: pesan galat
+-- justru mengonfirmasi bahwa restonya ada.
+
+begin;
+
+create or replace function keadaan_langganan(p_resto_id text)
+returns table (
+  paket text,
+  nama_paket text,
+  harga bigint,
+  trial_until date,
+  trial_days integer,
+  sisa_hari integer,
+  dalam_percobaan boolean,
+  percobaan_habis boolean,
+  status_pengajuan text,
+  alasan_tolak text,
+  terkunci_paket boolean
+)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  with boleh as (
+    select is_super_admin()
+        or is_resto_employee(p_resto_id,
+             array['owner', 'admin', 'finance', 'kasir', 'chef']) as ya
+  ),
+  s as (
+    select * from resto_billing where resto_id = p_resto_id
+  ),
+  r as (
+    select status, alasan_tolak
+    from subscription_requests
+    where resto_id = p_resto_id
+    order by diajukan_at desc
+    limit 1
+  ),
+  hari as (
+    select (now() at time zone 'Asia/Jakarta')::date as ini
+  )
+  select
+    s.paket,
+    p.nama,
+    coalesce(p.harga_bulanan, s.monthly_price, 0),
+    s.trial_until,
+    s.trial_days,
+    (s.trial_until - h.ini)::integer,
+    coalesce(s.paket is null and s.trial_until is not null
+             and h.ini <= s.trial_until, false),
+    coalesce(s.paket is null and s.trial_until is not null
+             and h.ini > s.trial_until, false),
+    r.status,
+    case when r.status = 'ditolak' then r.alasan_tolak end,
+    coalesce(s.paket is null and s.trial_until is not null
+             and h.ini > s.trial_until, false)
+  from hari h
+  cross join boleh b
+  left join s on true
+  left join paket_langganan p on p.kode = s.paket
+  left join r on true
+  where b.ya;
+$$;
+
+grant execute on function keadaan_langganan(text) to authenticated;
+
+commit;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- Memeriksanya
+-- ─────────────────────────────────────────────────────────────────────
+--
+--   select p.proname,
+--          has_function_privilege('authenticated', p.oid, 'EXECUTE') as boleh
+--   from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+--   where n.nspname = 'public'
+--     and p.proname in ('terapkan_paket', 'ingatkan_percobaan_habis',
+--                       '_absen', 'keadaan_langganan');
+--
+-- Yang benar: keadaan_langganan boleh, tiga sisanya tidak.
+
+
+-- ═══════════════════════════════════════════════════════════════════
+-- BAGIAN 94 dari 100 — shift_opening_check.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — perkiraan modal awal saat shift dibuka.
@@ -13767,7 +16429,7 @@ grant execute on function expected_opening_cash(text) to authenticated;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 88 dari 93 — support_tickets.sql
+-- BAGIAN 95 dari 100 — support_tickets.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pengaduan, tiket, dan percakapannya.
@@ -14195,7 +16857,7 @@ grant execute on function mark_support_read(uuid) to authenticated;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 89 dari 93 — support_push.sql
+-- BAGIAN 96 dari 100 — support_push.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — notifikasi untuk KaataGo Support.
@@ -14309,7 +16971,7 @@ create trigger trg_queue_push_support
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 90 dari 93 — support_auto_reply.sql
+-- BAGIAN 97 dari 100 — support_auto_reply.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — sapaan otomatis, dan penanda belum dibaca yang tahan
@@ -14550,7 +17212,7 @@ $$;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 91 dari 93 — support_chat_rules.sql
+-- BAGIAN 98 dari 100 — support_chat_rules.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — chat bebas bukan pengaduan, dan tiket kembar tidak lahir
@@ -14742,7 +17404,7 @@ where id in (select id from kembar where urutan > 1);
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 92 dari 93 — support_pesan_kembar.sql
+-- BAGIAN 99 dari 100 — support_pesan_kembar.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pesan kembar di dalam satu percakapan.
@@ -14832,7 +17494,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 93 dari 93 — support_push_wording.sql
+-- BAGIAN 100 dari 100 — support_push_wording.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — judul notifikasi chat tidak menyebut "pengaduan".

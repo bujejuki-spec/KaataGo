@@ -209,6 +209,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.3.1"
+  equatable:
+    dependency: transitive
+    description:
+      name: equatable
+      sha256: "3bce007a596ff8b3119c45d68aaef631272537c03d30e5d4534dd24bf4c5eaa2"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.1.0"
   fake_async:
     dependency: transitive
     description:
@@ -321,6 +329,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.1"
+  fl_chart:
+    dependency: "direct main"
+    description:
+      name: fl_chart
+      sha256: "74959b99b92b9eebeed1a4049426fd67c4abc3c5a0f4d12e2877097d6a11ae08"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.69.2"
   flutter:
     dependency: "direct main"
     description: flutter
@@ -477,6 +493,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.3.3+1"
+  google_mlkit_commons:
+    dependency: transitive
+    description:
+      name: google_mlkit_commons
+      sha256: "8f40fbac10685cad4715d11e6a0d86837d9ad7168684dfcad29610282a88e67a"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.11.0"
+  google_mlkit_face_detection:
+    dependency: "direct main"
+    description:
+      name: google_mlkit_face_detection
+      sha256: f336737d5b8a86797fd4368f42a5c26aeaa9c6dcc5243f0a16b5f6f663cfb70a
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.13.1"
   google_sign_in:
     dependency: "direct main"
     description:
@@ -1053,6 +1085,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.1.0"
+  quiver:
+    dependency: transitive
+    description:
+      name: quiver
+      sha256: ea0b925899e64ecdfbf9c7becb60d5b50e706ade44a85b2363be2a22d88117d2
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.2.2"
   realtime_client:
     dependency: transitive
     description:
@@ -1298,6 +1338,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.7.2"
+  tflite_flutter:
+    dependency: "direct main"
+    description:
+      name: tflite_flutter
+      sha256: "0bba9040d8decda0960d7abf8eabf32243bf092bc7d0084e8e19681866b0bdbe"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.12.1"
   timezone:
     dependency: transitive
     description:

@@ -1,4 +1,7 @@
 import 'rekonsiliasi_screen.dart';
+import 'absensi_screen.dart';
+import 'absensi_report_screen.dart';
+import 'payroll_screen.dart';
 import 'tutup_buku_screen.dart';
 import '../widgets/support_fab.dart';
 import '../widgets/penilaian_tile.dart';
@@ -14,13 +17,13 @@ import '../utils/logout_confirm.dart';
 import '../widgets/badged_hub_tile.dart';
 import '../widgets/hub_group_tile.dart';
 import '../widgets/hub_menu_tile.dart';
-import '../widgets/language_theme_toggle.dart';
 import '../widgets/inbox_tile.dart';
 import '../widgets/responsive.dart';
 import '../widgets/resto_switcher.dart';
 import '../widgets/kaata_logo.dart';
 import 'cash_deposit_screen.dart';
 import 'pembayaran_kaatago_screen.dart';
+import 'periksa_pembukuan_screen.dart';
 import 'saldo_perusahaan_screen.dart';
 import 'terima_pickup_screen.dart';
 import 'cashier_shift_screen.dart';
@@ -72,6 +75,8 @@ class FinanceHomeScreen extends StatelessWidget {
             subtitle: email == null ? 'Finance' : 'Finance • $email',
             colorA: KaataTheme.brand,
             colorB: KaataTheme.brandDark,
+            tampilkanTema: true,
+            tampilkanPaket: true,
             trailing: const RestoSwitcher(),
           ),
           Expanded(
@@ -175,6 +180,16 @@ class FinanceHomeScreen extends StatelessWidget {
                   color: const Color(0xFF14B8A6),
                   tiles: () => [
                     HubMenuTile(
+                      icon: Icons.rule_folder_outlined,
+                      title: 'Periksa Pembukuan',
+                      subtitle: 'Cari angka yang tidak bisa dijelaskan',
+                      color: const Color(0xFF14B8A6),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                            builder: (_) => const PeriksaPembukuanScreen()),
+                      ),
+                    ),
+                    HubMenuTile(
                       icon: Icons.event_available_outlined,
                       title: 'Tutup Buku',
                       subtitle: 'Kunci angka sebuah hari, per metode bayar',
@@ -259,14 +274,35 @@ class FinanceHomeScreen extends StatelessWidget {
                     ),
                   ),
                 const PenilaianTile(),
-                const InboxTile(),
                 HubMenuTile(
-                    icon: Icons.brightness_6_outlined,
-                    title: 'Tampilan',
-                    subtitle: 'Mode terang, gelap, atau ikut setelan HP',
-                    color: const Color(0xFF0EA5E9),
-                    onTap: () => showAppearanceDialog(context),
+                  icon: Icons.fingerprint,
+                  title: 'Absensi',
+                  subtitle: 'Absen masuk dan pulang, ajukan izin, slip gaji',
+                  color: const Color(0xFF8B5CF6),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const AbsensiScreen()),
                   ),
+                ),
+                HubMenuTile(
+                  icon: Icons.badge_outlined,
+                  title: 'Absensi Karyawan',
+                  subtitle: 'Rekap kehadiran per periode gaji, cetak PDF & XLSX',
+                  color: const Color(0xFF0EA5E9),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                        builder: (_) => const AbsensiReportScreen()),
+                  ),
+                ),
+                HubMenuTile(
+                  icon: Icons.payments_outlined,
+                  title: 'Payroll',
+                  subtitle: 'Gaji karyawan, tanggal gajian, potongan & BPJS',
+                  color: const Color(0xFF10B981),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const PayrollScreen()),
+                  ),
+                ),
+                const InboxTile(),
                 HubMenuTile(
                     icon: Icons.logout,
                     title: 'Keluar',

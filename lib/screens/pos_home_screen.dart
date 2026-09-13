@@ -1,4 +1,5 @@
 import '../widgets/side_cart_dialog.dart';
+import '../utils/akses_menu.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -195,7 +196,7 @@ class _PosHomeScreenState extends State<PosHomeScreen> {
     final auth = context.watch<AuthProvider>();
     final employeeName = auth.employeeName?.isNotEmpty == true ? auth.employeeName! : 'Kasir';
 
-    return Scaffold(
+    return berdasarkanAkses(context, 'Kasir / Input Pesanan', Scaffold(
       appBar: AppBar(
         toolbarHeight: 60,
         title: Column(
@@ -273,7 +274,7 @@ class _PosHomeScreenState extends State<PosHomeScreen> {
                 );
               },
             ),
-    );
+    ));
   }
 }
 

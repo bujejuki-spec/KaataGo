@@ -24,8 +24,18 @@ class ShiftBerjalan extends ChangeNotifier {
   /// dipegang orang ini.
   DateTime? _dibuka;
 
+  /// Sudah pernah berhasil bertanya ke server atau belum.
+  ///
+  /// Dibedakan dari [aktif] karena keduanya berbeda arti: "tidak ada
+  /// shift" adalah jawaban, "belum sempat bertanya" bukan. Penanda
+  /// "buka shift dulu" hanya boleh muncul kalau jawabannya memang sudah
+  /// datang — kalau tidak, kasir yang jaringannya lambat disuruh membuka
+  /// shift yang sebetulnya sudah dibukanya.
+  bool _diketahui = false;
+
   DateTime? get dibuka => _dibuka;
   bool get aktif => _dibuka != null;
+  bool get diketahui => _diketahui;
 
   /// Menanyakan ulang ke server.
   ///
@@ -54,8 +64,9 @@ class ShiftBerjalan extends ChangeNotifier {
   void tandaiTutup() => _set(null);
 
   void _set(DateTime? nilai) {
-    if (_dibuka == nilai) return;
+    final berubah = _dibuka != nilai || !_diketahui;
     _dibuka = nilai;
-    notifyListeners();
+    _diketahui = true;
+    if (berubah) notifyListeners();
   }
 }

@@ -1,4 +1,5 @@
 import '../models/opening_hours.dart';
+import '../utils/akses_menu.dart';
 import 'dart:convert';
 import 'dart:io';
 
@@ -428,7 +429,7 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return berdasarkanAkses(context, 'Info Merchant', Scaffold(
       appBar: AppBar(
         title: const Text('Info Merchant'),
         actions: [
@@ -436,7 +437,11 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
             IconButton(
               icon: const Icon(Icons.edit_outlined),
               tooltip: 'Edit',
-              onPressed: _startEdit,
+              // Menu yang cuma boleh dilihat tidak menawarkan pintu
+              // masuk ke mode ubah sama sekali. Membiarkan tombolnya lalu
+              // mematikan simpannya membuat orang mengisi formulir penuh
+              // sebelum tahu ia tidak bisa disimpan.
+              onPressed: bolehUbahDiSini(context) ? _startEdit : null,
             ),
         ],
       ),
@@ -737,7 +742,7 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
                 ),
               ),
             ),
-    );
+    ));
   }
 }
 

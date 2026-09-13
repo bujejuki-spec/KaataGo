@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'pengajuan_langganan_screen.dart';
+import 'absensi_report_screen.dart';
+import 'payroll_screen.dart';
 import 'package:provider/provider.dart';
 
 import '../db/announcement_repository.dart';
@@ -14,6 +17,7 @@ import 'category_management_screen.dart';
 import 'discount_screen.dart';
 import 'bank_account_screen.dart';
 import 'pembayaran_kaatago_screen.dart';
+import 'periksa_pembukuan_screen.dart';
 import 'saldo_perusahaan_screen.dart';
 import 'super_admin_uam_screen.dart';
 import 'terima_pickup_screen.dart';
@@ -254,6 +258,11 @@ const _superAdmin = <MenuWeb>[
     layar: _rekeningKaataGo,
   ),
   MenuWeb(
+    ikon: Icons.workspace_premium_outlined,
+    judul: 'Pengajuan Langganan',
+    layar: PengajuanLanggananScreen.new,
+  ),
+  MenuWeb(
     ikon: Icons.receipt_long_outlined,
     judul: 'Billing Merchant',
     layar: SuperAdminBillingScreen.new,
@@ -361,6 +370,11 @@ const _owner = <MenuWeb>[
     layar: FinanceIncomeScreen.new,
   ),
   MenuWeb(
+    ikon: Icons.payments_outlined,
+    judul: 'Payroll',
+    layar: PayrollScreen.new,
+  ),
+  MenuWeb(
     ikon: Icons.account_balance_wallet_outlined,
     judul: 'Saldo & Pengeluaran',
     layar: FinanceBalanceScreen.new,
@@ -402,6 +416,11 @@ const _owner = <MenuWeb>[
     layar: ProductListScreen.new,
   ),
   MenuWeb(
+    ikon: Icons.badge_outlined,
+    judul: 'Absensi Karyawan',
+    layar: AbsensiReportScreen.new,
+  ),
+  MenuWeb(
     ikon: Icons.category_outlined,
     judul: 'Kategori',
     layar: _kategori,
@@ -441,6 +460,11 @@ const _owner = <MenuWeb>[
     ikon: Icons.event_available_outlined,
     judul: 'Tutup Buku',
     layar: TutupBukuScreen.new,
+  ),
+  MenuWeb(
+    ikon: Icons.rule_folder_outlined,
+    judul: 'Periksa Pembukuan',
+    layar: PeriksaPembukuanScreen.new,
   ),
   MenuWeb(
     ikon: Icons.compare_arrows,
@@ -536,6 +560,11 @@ const _admin = <MenuWeb>[
     layar: ProductListScreen.new,
   ),
   MenuWeb(
+    ikon: Icons.badge_outlined,
+    judul: 'Absensi Karyawan',
+    layar: AbsensiReportScreen.new,
+  ),
+  MenuWeb(
     ikon: Icons.category_outlined,
     judul: 'Kategori',
     layar: _kategori,
@@ -626,6 +655,16 @@ const _finance = <MenuWeb>[
     layar: FinanceGlMappingScreen.new,
   ),
   MenuWeb(
+    ikon: Icons.badge_outlined,
+    judul: 'Absensi Karyawan',
+    layar: AbsensiReportScreen.new,
+  ),
+  MenuWeb(
+    ikon: Icons.payments_outlined,
+    judul: 'Payroll',
+    layar: PayrollScreen.new,
+  ),
+  MenuWeb(
     ikon: Icons.menu_book_outlined,
     judul: 'Jurnal GL',
     layar: FinanceJournalScreen.new,
@@ -666,6 +705,11 @@ const _finance = <MenuWeb>[
     ikon: Icons.event_available_outlined,
     judul: 'Tutup Buku',
     layar: TutupBukuScreen.new,
+  ),
+  MenuWeb(
+    ikon: Icons.rule_folder_outlined,
+    judul: 'Periksa Pembukuan',
+    layar: PeriksaPembukuanScreen.new,
   ),
   MenuWeb(
     ikon: Icons.compare_arrows,

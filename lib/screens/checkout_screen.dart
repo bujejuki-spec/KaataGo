@@ -77,6 +77,23 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           ),
       ];
 
+      // Service dan potongan tidak menempel di baris mana pun — yang
+      // satu ditambahkan per tagihan, yang lain dikurangkan dari
+      // totalnya. Tanpa disebut, pelanggan yang menjumlahkan sendiri
+      // barisnya mendapat angka lain daripada yang tertulis besar di
+      // bawahnya.
+      final biaya = cart.chargesFor(_orderType);
+      final potongan = cart.discountFor(_orderType);
+      final rincian = RincianBiaya(
+        subtotal: cart.total,
+        service: biaya.service,
+        ppn: biaya.ppn,
+        discount: potongan?.amount ?? 0,
+        discountName: potongan?.discount.name,
+        ppnPercent: cart.ppnPercent,
+        servicePercent: cart.servicePercent,
+      );
+
       BankAccount? rekening;
       if (method == PaymentMethod.transfer) {
         rekening = await BankAccountRepository().utama(restoId);
@@ -97,6 +114,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         bankName: rekening?.bankName,
         accountNumber: rekening?.accountNumber,
         accountHolder: rekening?.accountHolder,
+        rincian: rincian.kosong ? null : rincian,
       );
     } catch (_) {}
   }
@@ -583,10 +601,28 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       await context.read<ProductProvider>().load();
     }
 
+    // Layar depan dinyatakan lunas di sini, bukan dibiarkan sampai
+    // kasir menutup layarnya.
+    //
+    // Selama tidak dinyatakan, yang terpampang di depan pelanggan tetap
+    // QR yang sudah dibayar — dan QR yang masih bisa dipindai sesudah
+    // pembayarannya diakui kasir adalah ajakan membayar dua kali.
+    if (restoUntukLayar != null) {
+      unawaited(_layarDepan
+          .lunas(restoUntukLayar, amount: amount)
+          .catchError((_) {}));
+    }
+
     if (!context.mounted) return;
     await Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => ReceiptScreen(transaction: tx)),
     );
+
+    // Struknya sudah ditutup: pelanggan berikutnya yang berdiri di depan
+    // layar itu tidak perlu melihat tagihan orang sebelumnya.
+    if (restoUntukLayar != null) {
+      unawaited(_layarDepan.kosongkan(restoUntukLayar).catchError((_) {}));
+    }
   }
 }
 

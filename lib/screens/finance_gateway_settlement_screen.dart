@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../db/gateway_settlement_repository.dart';
+import '../utils/akses_menu.dart';
 import '../models/gateway_settlement.dart';
 import '../providers/auth_provider.dart';
 import '../theme.dart';
@@ -89,7 +90,7 @@ class _FinanceGatewaySettlementScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return berdasarkanAkses(context, 'Pencairan Gateway', Scaffold(
       backgroundColor: KaataTheme.backgroundOf(context),
       appBar: AppBar(title: const Text('Pencairan Gateway')),
       body: _loading
@@ -133,7 +134,8 @@ class _FinanceGatewaySettlementScreenState
                             const Text('Riwayat Pencairan',
                                 style: TextStyle(fontWeight: FontWeight.bold)),
                             FilledButton.icon(
-                              onPressed: _add,
+                              onPressed:
+                                  bolehUbahDiSini(context) ? _add : null,
                               icon: const Icon(Icons.add, size: 18),
                               label: const Text('Catat Pencairan'),
                               style: FilledButton.styleFrom(
@@ -160,7 +162,7 @@ class _FinanceGatewaySettlementScreenState
                     ),
                   ),
                 ),
-    );
+    ));
   }
 
   Widget _tile(GatewaySettlement item) {

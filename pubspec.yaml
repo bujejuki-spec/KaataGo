@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 3.8.0+154
+version: 3.9.0+155
 
 environment:
   sdk: ^3.5.4
@@ -119,6 +119,19 @@ dependencies:
   sqflite_common_ffi_web: ^0.4.5+4
   archive: ^4.0.9
 
+  # Grafik di Laporan Penjualan. Murni Dart di atas CustomPaint — tidak
+  # ada kode platform, jadi ia ikut apa adanya ke Android maupun web
+  # tanpa menambah satu pun izin atau berkas build.
+  #
+  # Ditahan di 0.69, bukan versi terbarunya: 0.70 ke atas memakai
+  # `Color.a/.r/.g/.b` dan `withValues()` yang baru ada di Flutter 3.27,
+  # sedangkan toolchain proyek ini dipatok 3.24.5. Naik versinya gagal
+  # saat dikompilasi, bukan saat dianalisis — `flutter analyze` tetap
+  # bersih dan yang menemukannya baru `flutter test`.
+  fl_chart: ^0.69.0
+  tflite_flutter: ^0.12.1
+  google_mlkit_face_detection: ^0.13.1
+
 dependency_overrides:
   # app_links 6.4.x's Android build.gradle references `flutter.compileSdkVersion`
   # in a way our Flutter 3.24.5 toolchain's Gradle plugin doesn't inject into
@@ -159,6 +172,9 @@ flutter:
 
   assets:
     - assets/icon/
+    # Model pengenal wajah untuk absensi. Berkasnya sengaja tidak ikut
+    # di repo — lihat assets/face/LETAKKAN-MODEL-DI-SINI.md.
+    - assets/face/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

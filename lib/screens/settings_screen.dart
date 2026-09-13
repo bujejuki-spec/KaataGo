@@ -1,4 +1,5 @@
 import '../widgets/bagian_metode_bayar.dart';
+import '../utils/akses_menu.dart';
 import '../db/bank_account_repository.dart';
 import '../models/bank_account.dart';
 import 'bank_account_screen.dart';
@@ -171,7 +172,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return berdasarkanAkses(context, 'Pengaturan Pembayaran', Scaffold(
       appBar: AppBar(
         title: const Text('Pengaturan Pembayaran'),
         actions: [
@@ -190,7 +191,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             IconButton(
               icon: const Icon(Icons.edit_outlined),
               tooltip: 'Edit',
-              onPressed: _startEdit,
+              // Menu yang cuma boleh dilihat tidak menawarkan pintu
+              // masuk ke mode ubah sama sekali. Membiarkan tombolnya lalu
+              // mematikan simpannya membuat orang mengisi formulir penuh
+              // sebelum tahu ia tidak bisa disimpan.
+              onPressed: bolehUbahDiSini(context) ? _startEdit : null,
             ),
         ],
       ),
@@ -304,6 +309,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ),
       ),
-    );
+    ));
   }
 }

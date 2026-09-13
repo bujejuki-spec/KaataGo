@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme.dart';
+import '../utils/akses_menu.dart';
 import 'package:provider/provider.dart';
 
 import '../models/level_option.dart';
@@ -78,7 +79,7 @@ class LevelManagementScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return berdasarkanAkses(context, 'Level', Scaffold(
       body: Consumer<LevelGroupProvider>(
         builder: (context, provider, _) {
           if (provider.loading && provider.groups.isEmpty) {
@@ -158,11 +159,13 @@ class LevelManagementScreen extends StatelessWidget {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: !bolehUbahDiSini(context)
+          ? null
+          : FloatingActionButton(
         onPressed: () => _edit(context),
         child: const Icon(Icons.add),
       ),
-    );
+    ));
   }
 }
 

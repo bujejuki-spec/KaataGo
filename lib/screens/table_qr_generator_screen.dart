@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../db/restaurant_repository.dart';
+import '../utils/akses_menu.dart';
 import '../providers/auth_provider.dart';
 import '../theme.dart';
 import '../utils/table_qr_image.dart';
@@ -160,10 +161,10 @@ class _TableQrGeneratorScreenState extends State<TableQrGeneratorScreen> {
     final restoId = context.watch<AuthProvider>().restoId;
 
     if (restoId == null) {
-      return Scaffold(
+      return berdasarkanAkses(context, 'QR Meja', Scaffold(
         appBar: AppBar(title: const Text('Generator QR Meja')),
         body: const Center(child: Text('Akun ini belum punya Merchant ID.')),
-      );
+      ));
     }
 
     final tables = _tables;

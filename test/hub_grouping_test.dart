@@ -10,12 +10,21 @@ import 'package:pos_app/widgets/hub_menu_tile.dart';
 /// Menumpuknya jadi beberapa pintu membuat halaman awalnya bisa dibaca
 /// sekali lihat — asal tidak ada yang hilang di dalam pintunya.
 void main() {
+  // Turun satu di kasir, finance, dan super_admin sejak menu "Tampilan"
+  // pindah ke tiga tombol di headernya. Admin dan owner tidak berubah:
+  // keduanya mengaturnya lewat layar Pengaturan sendiri.
+  //
+  // Lalu naik lagi oleh Absensi: satu menu untuk semua peran, ditambah
+  // "Absensi Karyawan" bagi yang membaca rekapnya (admin, finance,
+  // owner) dan "Payroll" bagi yang menyetel gajinya (finance, owner).
+  //
+  // Super Admin naik satu oleh "Pengajuan Langganan".
   const jumlahMenu = {
     'kasir': 11,
-    'admin': 17,
-    'finance': 18,
+    'admin': 19,
+    'finance': 21,
     'super_admin': 12,
-    'owner': 28,
+    'owner': 32,
   };
 
   String isi(String peran) =>

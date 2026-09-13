@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../db/order_repository.dart';
+import '../utils/akses_menu.dart';
 import '../models/customer_order.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/grouped_order_list.dart';
@@ -20,7 +21,7 @@ class EmployeeOrdersScreen extends StatelessWidget {
     final repo = OrderRepository();
     final restoId = context.watch<AuthProvider>().restoId!;
 
-    return Scaffold(
+    return berdasarkanAkses(context, 'Pesanan Masuk', Scaffold(
       appBar: AppBar(title: const Text('Pesanan Masuk')),
       body: StreamBuilder<List<CustomerOrder>>(
         stream: repo.watchAktif(restoId),
@@ -54,6 +55,6 @@ class EmployeeOrdersScreen extends StatelessWidget {
           );
         },
       ),
-    );
+    ));
   }
 }

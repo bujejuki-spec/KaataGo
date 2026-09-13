@@ -1,4 +1,6 @@
 
+import '../db/paket_langganan_repository.dart';
+import 'pengajuan_langganan_screen.dart';
 import '../providers/auth_provider.dart';
 import '../theme.dart';
 import '../utils/logout_confirm.dart';
@@ -7,7 +9,6 @@ import '../widgets/hub_group_tile.dart';
 import '../widgets/hub_menu_tile.dart';
 import '../widgets/inbox_tile.dart';
 import '../widgets/kaata_logo.dart';
-import '../widgets/language_theme_toggle.dart';
 import '../widgets/responsive.dart';
 import 'employee_management_screen.dart';
 import '../db/support_repository.dart';
@@ -58,6 +59,7 @@ class SuperAdminHomeScreen extends StatelessWidget {
             subtitle: email == null ? 'KaataGo Admin' : 'KaataGo Admin • $email',
             colorA: KaataTheme.brand,
             colorB: KaataTheme.brandDark,
+            tampilkanTema: true,
           ),
           Expanded(
             child: HubMenuLayout(
@@ -103,6 +105,20 @@ class SuperAdminHomeScreen extends StatelessWidget {
                   subtitle: 'Billing merchant, pendapatan, pembukuan KaataGo',
                   color: const Color(0xFF10B981),
                   tiles: () => [
+                    // Pengajuan dari merchant yang sudah transfer dan
+                    // sedang menunggu. Ditaruh di atas Billing Merchant
+                    // karena yang menunggu di sini sedang tidak bisa
+                    // memakai aplikasinya sama sekali.
+                    BadgedHubTile(
+                      icon: Icons.workspace_premium_outlined,
+                      title: 'Pengajuan Langganan',
+                      subtitle:
+                          'Paket yang diajukan merchant, berikut bukti transfernya',
+                      color: const Color(0xFFF59E0B),
+                      loadCount: () =>
+                          PaketLanggananRepository().jumlahMenunggu(),
+                      destination: () => const PengajuanLanggananScreen(),
+                    ),
                     HubMenuTile(
                       icon: Icons.receipt_long_outlined,
                       title: 'Billing Merchant',
@@ -175,13 +191,6 @@ class SuperAdminHomeScreen extends StatelessWidget {
                     ),
                   ),
                 const InboxTile(),
-                HubMenuTile(
-                    icon: Icons.brightness_6_outlined,
-                    title: 'Tampilan',
-                    subtitle: 'Mode terang, gelap, atau ikut setelan HP',
-                    color: const Color(0xFF0EA5E9),
-                    onTap: () => showAppearanceDialog(context),
-                  ),
                 HubMenuTile(
                     icon: Icons.logout,
                     title: 'Keluar',

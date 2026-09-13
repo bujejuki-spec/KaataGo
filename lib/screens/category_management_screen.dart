@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/category_provider.dart';
+import '../utils/akses_menu.dart';
 import '../widgets/dialog_actions.dart';
 import '../utils/field_rules.dart';
 import '../widgets/responsive.dart';
@@ -45,7 +46,7 @@ class CategoryManagementScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return berdasarkanAkses(context, 'Kategori', Scaffold(
       body: Consumer<CategoryProvider>(
         builder: (context, provider, _) {
           final categories = provider.categories;
@@ -104,10 +105,12 @@ class CategoryManagementScreen extends StatelessWidget {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: !bolehUbahDiSini(context)
+          ? null
+          : FloatingActionButton(
         onPressed: () => _addCategory(context),
         child: const Icon(Icons.add),
       ),
-    );
+    ));
   }
 }

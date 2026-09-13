@@ -1,4 +1,6 @@
 import 'customer_display_screen.dart';
+import 'absensi_screen.dart';
+import 'absensi_report_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -72,6 +74,8 @@ class AdminHomeScreen extends StatelessWidget {
             subtitle: email == null ? 'Admin' : 'Admin • $email',
             colorA: KaataTheme.brand,
             colorB: KaataTheme.brandDark,
+            tampilkanTema: true,
+            tampilkanPaket: true,
             trailing: const RestoSwitcher(),
           ),
           Expanded(
@@ -246,6 +250,25 @@ class AdminHomeScreen extends StatelessWidget {
                       ),
                     ),
                   ],
+                ),
+                HubMenuTile(
+                  icon: Icons.fingerprint,
+                  title: 'Absensi',
+                  subtitle: 'Absen masuk dan pulang, ajukan izin, slip gaji',
+                  color: const Color(0xFF8B5CF6),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const AbsensiScreen()),
+                  ),
+                ),
+                HubMenuTile(
+                  icon: Icons.badge_outlined,
+                  title: 'Absensi Karyawan',
+                  subtitle: 'Rekap kehadiran per periode gaji, cetak PDF & XLSX',
+                  color: const Color(0xFF0EA5E9),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                        builder: (_) => const AbsensiReportScreen()),
+                  ),
                 ),
                 const InboxTile(),
                 HubMenuTile(

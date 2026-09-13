@@ -65,10 +65,10 @@ void main() {
   group('beranda kasir menunggu shift dibuka', () {
     test('hanya tiga hal sebelum shiftnya ada', () {
       expect(beranda, contains('bool? _shiftSaya'));
-      expect(beranda, contains('if (_shiftSaya != true)'));
+      expect(beranda, contains('if (_shiftSaya == true)'));
       // Kotak masuk dan keluar berada di luar gerbangnya.
       final gerbang = beranda.substring(
-          beranda.indexOf('if (_shiftSaya != true)'),
+          beranda.indexOf('if (_shiftSaya == true)'),
           beranda.indexOf('const InboxTile()'));
       expect(gerbang, isNot(contains("title: 'Keluar'")));
     });
@@ -86,8 +86,13 @@ void main() {
       expect(blok, contains('_shiftSaya = true'));
     });
 
-    test('alasannya dijelaskan di berandanya', () {
-      expect(beranda, contains('Buka shift dulu'));
+    // Keterangannya pindah ke pil mengambang: keterangan yang ikut
+    // tergulir hilang bersama daftarnya, padahal ia yang menjelaskan
+    // kenapa daftarnya pendek.
+    test('alasannya dijelaskan di pil mengambangnya', () {
+      final pil =
+          File('lib/widgets/shift_berjalan_banner.dart').readAsStringSync();
+      expect(pil, contains('Buka shift dulu'));
     });
   });
 }

@@ -15,6 +15,7 @@
 /// menutup jalan keluar dari akun bukan pembatasan melainkan jebakan.
 const katalogMenu = <String, List<String>>{
   'kasir': [
+    'Absensi',
     'Shift Kasir',
     'Kasir / Input Pesanan',
     'Layar Pelanggan',
@@ -25,6 +26,8 @@ const katalogMenu = <String, List<String>>{
     'Diskon',
   ],
   'admin': [
+    'Absensi',
+    'Absensi Karyawan',
     'Shift Kasir',
     'Kasir / Input Pesanan',
     'Layar Pelanggan',
@@ -46,6 +49,9 @@ const katalogMenu = <String, List<String>>{
     'Pengaturan Pembayaran',
   ],
   'finance': [
+    'Absensi',
+    'Absensi Karyawan',
+    'Payroll',
     'Shift Kasir',
     'Pemasukan',
     'Saldo & Pengeluaran',
@@ -53,6 +59,7 @@ const katalogMenu = <String, List<String>>{
     'Terima Cash Pickup',
     'Saldo Perusahaan',
     'Pembayaran dari KaataGo',
+    'Periksa Pembukuan',
     'Tutup Buku',
     'Rekonsiliasi Bank',
     'Mapping GL Account',
@@ -64,6 +71,9 @@ const katalogMenu = <String, List<String>>{
     'Rekening Perusahaan',
   ],
   'owner': [
+    'Absensi',
+    'Absensi Karyawan',
+    'Payroll',
     'Shift Kasir',
     'Kasir / Input Pesanan',
     'Layar Pelanggan',
@@ -78,6 +88,7 @@ const katalogMenu = <String, List<String>>{
     'Terima Cash Pickup',
     'Saldo Perusahaan',
     'Pembayaran dari KaataGo',
+    'Periksa Pembukuan',
     'Tutup Buku',
     'Rekonsiliasi Bank',
     'Mapping GL Account',
@@ -97,6 +108,7 @@ const katalogMenu = <String, List<String>>{
     'Rekening Perusahaan',
   ],
   'chef': [
+    'Absensi',
     'Layar Dapur',
   ],
 };

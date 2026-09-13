@@ -1,4 +1,5 @@
 import '../models/bank_account.dart';
+import '../utils/akses_menu.dart';
 import '../db/bank_account_repository.dart';
 import '../db/restaurant_repository.dart';
 import '../utils/invoice_pdf.dart';
@@ -198,7 +199,7 @@ class _BillingScreenState extends State<BillingScreen> {
     final terbuka = _tagihan.where((t) => t.open).toList();
     final lunas = _tagihan.where((t) => !t.open).toList();
 
-    return Scaffold(
+    return berdasarkanAkses(context, 'Tagihan Langganan', Scaffold(
       backgroundColor: KaataTheme.backgroundOf(context),
       appBar: AppBar(title: const Text('Tagihan Langganan')),
       body: _memuat
@@ -234,7 +235,9 @@ class _BillingScreenState extends State<BillingScreen> {
                               invoice: t,
                               menerbitkanVa: _menerbitkanVa == t.id,
                               onMintaVa: () => _mintaVa(t),
-                              onBayar: () => _bayar(t),
+                              onBayar: bolehUbahDiSini(context)
+                                  ? () => _bayar(t)
+                                  : null,
                               onSimulasi:
                                   _modeUji && t.vaHidup ? () => _simulasi(t) : null,
                             ),
@@ -261,7 +264,7 @@ class _BillingScreenState extends State<BillingScreen> {
                     ),
                   ),
                 ),
-    );
+    ));
   }
 }
 
@@ -538,7 +541,9 @@ class _KartuTagihan extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
-                onPressed: menerbitkanVa ? null : onMintaVa,
+                onPressed: menerbitkanVa || !bolehUbahDiSini(context)
+                    ? null
+                    : onMintaVa,
                 icon: menerbitkanVa
                     ? const SizedBox(
                         width: 15,

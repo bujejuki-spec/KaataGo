@@ -1,5 +1,6 @@
 import '../widgets/penilaian_tile.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../theme.dart';
 
@@ -9,10 +10,12 @@ import 'package:provider/provider.dart';
 import '../db/order_repository.dart';
 import '../models/customer_order.dart';
 import '../providers/auth_provider.dart';
+import '../utils/id_time.dart';
 import '../widgets/inbox_icon_button.dart';
 import '../widgets/kitchen_checklist_dialog.dart';
 import '../utils/logout_confirm.dart';
 import '../widgets/grouped_order_list.dart';
+import 'absensi_screen.dart';
 import '../widgets/app_toast.dart';
 
 /// Chef's entire app: a live, tabbed feed of incoming orders — from both
@@ -90,6 +93,16 @@ class _ChefHomeScreenState extends State<ChefHomeScreen> {
             // mengulang — ia menawarkan pengaturan aplikasi di layar
             // yang dia buka untuk satu hal saja: mengintip dapur.
             if (!auth.isOwner) ...[
+              // Dapur juga absen. Layarnya berupa tab, bukan daftar
+              // menu, jadi pintunya ikon — dan ikon itu tetap ada
+              // meskipun tab yang sedang terbuka penuh pesanan.
+              IconButton(
+                icon: const Icon(Icons.fingerprint),
+                tooltip: 'Absensi',
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const AbsensiScreen()),
+                ),
+              ),
               const AppearanceIconButton(),
               const InboxIconButton(),
               // Tombol Tes Notifikasi dibuang: push-nya sudah berjalan,
@@ -143,6 +156,23 @@ class _ChefHomeScreenState extends State<ChefHomeScreen> {
 
             return TabBarView(
               children: _tabs.map((tab) {
+                // Tab Selesai punya tanggalnya sendiri.
+                //
+                // Isinya menumpuk tanpa batas — pesanan kemarin, minggu
+                // lalu, bulan lalu — dan yang dicari hampir selalu satu
+                // hari tertentu. Tiga tab lainnya adalah antrean kerja
+                // yang harus terbaca sekaligus, tanpa tanggal.
+                if (tab.$1 == KitchenStatus.done) {
+                  return _TabSelesai(
+                    restoId: restoId,
+                    hariIni: allOrders
+                        .where((o) =>
+                            o.kitchenStatus == KitchenStatus.done &&
+                            !_awaitingPayment(o) &&
+                            !o.dibatalkan)
+                        .toList(),
+                  );
+                }
                 final orders = tab.$1 == null
                     ? allOrders.where(_awaitingPayment).toList()
                     : allOrders
@@ -163,11 +193,6 @@ class _ChefHomeScreenState extends State<ChefHomeScreen> {
                         : 'Tidak ada pesanan "${tab.$2}".'),
                   );
                 }
-                // Tab Selesai menumpuk tanpa batas — pesanan kemarin,
-                // minggu lalu, bulan lalu — dan yang dicari hampir selalu
-                // satu hari tertentu. Dua tab lainnya adalah antrean
-                // kerja yang harus terbaca sekaligus.
-                final done = tab.$1 == KitchenStatus.done;
                 return GroupedOrderList(
                   // Kunci yang ikut berganti saat temanya berganti.
                   //
@@ -180,8 +205,6 @@ class _ChefHomeScreenState extends State<ChefHomeScreen> {
                   key: ValueKey(Theme.of(context).brightness),
                   orders: orders,
                   actionsFor: _buildActions,
-                  collapsibleDays: done,
-                  expandItems: !done,
                 );
               }).toList(),
             );
@@ -287,6 +310,199 @@ class _ChefHomeScreenState extends State<ChefHomeScreen> {
       case KitchenStatus.cancelled:
         return null;
     }
+  }
+}
+
+/// Tab "Selesai", satu tanggal pada satu waktu.
+///
+/// Bawaannya hari ini. Dulu tab ini menampilkan seluruh yang pernah
+/// selesai sekaligus: dapur yang ingin memastikan satu pesanan barusan
+/// sudah keluar harus melewati daftar berminggu-minggu lebih dulu, dan
+/// yang paling sering dicari justru yang paling atas.
+///
+/// Tanggal lampau dibaca sekali dari server, bukan disaring dari aliran
+/// realtime-nya: aliran itu dipotong 300 baris terakhir, dan pada
+/// merchant ramai hari kemarin sudah terdorong keluar dari 300 itu —
+/// yang tampil bukan hari yang sepi, melainkan hari yang tidak lengkap,
+/// tanpa satu pun tanda bahwa ada yang hilang.
+class _TabSelesai extends StatefulWidget {
+  final String restoId;
+
+  /// Yang selesai hari ini, ikut aliran realtime layarnya — supaya
+  /// pesanan yang baru saja ditutup dapur langsung muncul di sini.
+  final List<CustomerOrder> hariIni;
+
+  const _TabSelesai({required this.restoId, required this.hariIni});
+
+  @override
+  State<_TabSelesai> createState() => _TabSelesaiState();
+}
+
+class _TabSelesaiState extends State<_TabSelesai> {
+  static final _tanggalPanjang = DateFormat('EEEE, d MMM yyyy', 'id_ID');
+
+  final _repo = OrderRepository();
+
+  DateTime _tanggal = _hariIni();
+
+  /// Diisi hanya saat yang dilihat bukan hari ini.
+  Future<List<CustomerOrder>>? _lampau;
+
+  static DateTime _hariIni() {
+    final wib = DateTime.now().toWib();
+    return DateTime(wib.year, wib.month, wib.day);
+  }
+
+  bool get _iniHariIni => _tanggal == _hariIni();
+
+  bool _hariIniSaja(CustomerOrder o) {
+    final wib = o.createdAt.toWib();
+    return DateTime(wib.year, wib.month, wib.day) == _tanggal;
+  }
+
+  Future<void> _pilihTanggal() async {
+    final dipilih = await showDatePicker(
+      context: context,
+      initialDate: _tanggal,
+      firstDate: DateTime(2020),
+      // Hari yang belum terjadi tidak punya pesanan untuk ditampilkan.
+      lastDate: _hariIni(),
+      helpText: 'Lihat pesanan selesai tanggal',
+    );
+    if (dipilih == null || !mounted) return;
+    final hari = DateTime(dipilih.year, dipilih.month, dipilih.day);
+    setState(() {
+      _tanggal = hari;
+      _lampau = hari == _hariIni()
+          ? null
+          : _repo.padaTanggal(widget.restoId, tanggal: hari);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        _PemilihTanggal(
+          label: _iniHariIni
+              ? 'Hari ini · ${_tanggalPanjang.format(_tanggal)}'
+              : _tanggalPanjang.format(_tanggal),
+          iniHariIni: _iniHariIni,
+          onPilih: _pilihTanggal,
+          onKembaliKeHariIni: _iniHariIni
+              ? null
+              : () => setState(() {
+                    _tanggal = _hariIni();
+                    _lampau = null;
+                  }),
+        ),
+        Expanded(
+          child: _iniHariIni
+              // Aliran realtime-nya membawa 300 pesanan terakhir, bukan
+              // pesanan hari ini — pada merchant sepi isinya menjangkau
+              // berhari-hari ke belakang, dan tanpa saringan ini tab yang
+              // berjudul hari ini menampilkan minggu lalu juga.
+              ? _daftar(widget.hariIni.where(_hariIniSaja).toList())
+              : FutureBuilder<List<CustomerOrder>>(
+                  future: _lampau,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (snapshot.hasError) {
+                      return Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Text('Gagal memuat pesanan.\n${snapshot.error}',
+                              textAlign: TextAlign.center),
+                        ),
+                      );
+                    }
+                    // Disaring di sini dengan aturan yang sama seperti
+                    // hari ini: yang batal dan yang belum dibayar bukan
+                    // pekerjaan dapur yang selesai.
+                    final pesanan = (snapshot.data ?? [])
+                        .where((o) =>
+                            o.kitchenStatus == KitchenStatus.done &&
+                            !o.isVoid &&
+                            !o.isAwaitingPayment &&
+                            !o.dibatalkan)
+                        .toList();
+                    return _daftar(pesanan);
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _daftar(List<CustomerOrder> pesanan) {
+    if (pesanan.isEmpty) {
+      return Center(
+        child: Text(_iniHariIni
+            ? 'Belum ada pesanan yang selesai hari ini.'
+            : 'Tidak ada pesanan selesai pada tanggal ini.'),
+      );
+    }
+    return GroupedOrderList(
+      key: ValueKey('${Theme.of(context).brightness}|$_tanggal'),
+      orders: pesanan,
+      expandItems: false,
+    );
+  }
+}
+
+/// Bilah tanggal di atas daftarnya.
+///
+/// Tanggalnya disebut lengkap berikut nama harinya, bukan cuma angka.
+/// Yang membacanya sedang berdiri di dapur mencocokkan ingatan — "Rabu
+/// kemarin" jauh lebih mudah dikenali daripada "11/09".
+class _PemilihTanggal extends StatelessWidget {
+  final String label;
+  final bool iniHariIni;
+  final VoidCallback onPilih;
+  final VoidCallback? onKembaliKeHariIni;
+
+  const _PemilihTanggal({
+    required this.label,
+    required this.iniHariIni,
+    required this.onPilih,
+    this.onKembaliKeHariIni,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      decoration: BoxDecoration(
+        color: KaataTheme.softFillOf(context),
+        border: Border(
+            bottom: BorderSide(color: KaataTheme.borderOf(context))),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: OutlinedButton.icon(
+              icon: const Icon(Icons.calendar_today_outlined, size: 16),
+              label: Text(label,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 13)),
+              onPressed: onPilih,
+            ),
+          ),
+          // Jalan pulang yang tidak menuntut membuka kalender lagi.
+          // Tanpa ini, kembali ke antrean hari ini berarti menebak
+          // tanggal hari ini sendiri di dalam pemilih tanggal.
+          if (onKembaliKeHariIni != null) ...[
+            const SizedBox(width: 8),
+            TextButton(
+              onPressed: onKembaliKeHariIni,
+              child: const Text('Hari ini'),
+            ),
+          ],
+        ],
+      ),
+    );
   }
 }
 

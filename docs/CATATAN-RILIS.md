@@ -37,6 +37,42 @@ Formatnya dibaca `scripts/release.sh`: judul `## <versi>`, lalu
 poin-poinnya. Versi yang tidak punya bagiannya di sini tetap terbit,
 hanya pengumumannya memakai kalimat umum.
 
+## 3.9.0
+
+- **Absensi karyawan dengan wajah dan titik lokasi.** Semua peran absen
+  masuk dan pulang lewat kamera depan; wajahnya dicocokkan dengan yang
+  didaftarkan sekali di awal, dan absen di luar radius merchant ditolak
+  berikut jaraknya. Yang tidak masuk bisa mengajukan izin, sakit, atau
+  cuti — dengan lampiran surat kalau ada
+- **Payroll.** Owner dan Finance menyetel gaji tiap karyawan, tanggal
+  gajian, jumlah hari kerja per periode, dan potongan BPJS. Gaji
+  disesuaikan otomatis dengan hari yang tidak masuk, dan rekapnya bisa
+  dicetak jadi PDF atau XLSX berikut kode bank untuk daftar transfer
+- **Slip gaji** yang bisa diunduh sendiri oleh karyawan, dirinci sampai
+  ke asal tiap potongan
+- **Laporan Penjualan sekarang bergrafik.** Tren omzet, jumlah pesanan,
+  atau porsi terjual — harian, mingguan, atau bulanan — plus pembagian
+  omzet menurut cara bayar, jenis pesanan, asal pesanan, atau kategori
+  menu. Jam ramai ikut jadi grafik 24 jam
+- **Periksa Pembukuan** untuk Owner dan Finance: memeriksa enam aturan
+  yang tidak boleh dilanggar dan hanya melaporkan yang dilanggar
+- **Saldo awal** kas dan rekening perusahaan bisa dinyatakan per tanggal,
+  supaya angka yang tercatat cocok dengan mutasi bank sungguhan
+- Tab "Selesai" di layar dapur kini menampilkan satu hari saja, bawaannya
+  hari ini, dengan pemilih tanggal untuk hari-hari sebelumnya. Sebelumnya
+  seluruh riwayat menumpuk jadi satu daftar
+- Layar pelanggan kini menyebut dari mana totalnya berasal — subtotal,
+  biaya service, dan potongan — dan QR-nya hilang begitu kasir mengakui
+  pembayarannya selesai
+- Penanda shift berjalan pindah ke bawah layar dan bisa digeser ke mana
+  pun. Kasir yang belum membuka shift juga mendapat penandanya sendiri
+- Pilihan mode terang/gelap pindah ke header beranda sebagai tiga tombol,
+  menggantikan menu "Tampilan" yang dulu ada di daftar menu
+- Paket langganan Basic dan Premium mulai tersedia untuk merchant baru.
+  Tidak ada yang berubah bagi merchant yang sudah berjalan — akses dan
+  tagihannya tetap seperti sekarang sampai KaataGo menghubungi langsung
+- Perbaikan bug dan penyempurnaan tampilan
+
 ## 3.8.0
 
 - Shift yang sedang berjalan kini ditandai di atas layar, di halaman mana

@@ -10,15 +10,16 @@ import '../db/order_repository.dart';
 import '../db/petty_cash_repository.dart';
 import '../providers/auth_provider.dart';
 import '../theme.dart';
+import '../utils/shift_berjalan.dart';
 import '../utils/logout_confirm.dart';
 import '../widgets/badged_hub_tile.dart';
 import '../widgets/hub_group_tile.dart';
 import '../widgets/hub_menu_tile.dart';
 import 'discount_screen.dart';
-import '../widgets/language_theme_toggle.dart';
 import '../widgets/inbox_tile.dart';
 import '../widgets/responsive.dart';
 import '../widgets/kaata_logo.dart';
+import 'absensi_screen.dart';
 import 'cash_deposit_screen.dart';
 import 'cashier_shift_screen.dart';
 import 'finance_balance_screen.dart';
@@ -58,17 +59,45 @@ class _KasirHomeScreenState extends State<KasirHomeScreen> {
   @override
   void initState() {
     super.initState();
+    // Ikut penanda mengambang, bukan cuma memeriksa sendiri saat
+    // kembali dari layar Shift Kasir. Layar itu bisa dibuka dari
+    // pilnya — dan waktu itu layar ini tidak ikut dilewati saat
+    // kembali, jadi menunya tetap terbuka padahal shiftnya sudah
+    // ditutup.
+    ShiftBerjalan.instance.addListener(_ikutPenanda);
     WidgetsBinding.instance.addPostFrameCallback((_) => _periksaShift());
   }
 
+  @override
+  void dispose() {
+    ShiftBerjalan.instance.removeListener(_ikutPenanda);
+    super.dispose();
+  }
+
+  void _ikutPenanda() {
+    final shift = ShiftBerjalan.instance;
+    if (!shift.diketahui || !mounted) return;
+    setState(() => _shiftSaya = shift.aktif);
+  }
+
   Future<void> _periksaShift() async {
-    final restoId = context.read<AuthProvider>().restoId;
+    final auth = context.read<AuthProvider>();
+    final restoId = auth.restoId;
+    final emailSaya = auth.user?.email;
     if (restoId == null) {
       if (mounted) setState(() => _shiftSaya = false);
       return;
     }
     try {
       final ringkas = await CashierShiftRepository().ringkasTerbuka(restoId);
+      // Penandanya ikut disetel dari sini: kalau tidak, pil "buka shift
+      // dulu" baru muncul setelah layar Shift Kasir sempat dibuka —
+      // yaitu tepat saat ia sudah tidak diperlukan.
+      if (ringkas.milikSaya) {
+        await ShiftBerjalan.instance.segarkan(restoId, emailSaya);
+      } else {
+        ShiftBerjalan.instance.tandaiTutup();
+      }
       if (mounted) setState(() => _shiftSaya = ringkas.milikSaya);
     } catch (_) {
       // Gagal bertanya bukan alasan mengunci: kasir yang jaringannya
@@ -110,6 +139,8 @@ class _KasirHomeScreenState extends State<KasirHomeScreen> {
             subtitle: email == null ? 'Kasir' : 'Kasir • $email',
             colorA: KaataTheme.brand,
             colorB: KaataTheme.brandDark,
+            tampilkanTema: true,
+            tampilkanPaket: true,
           ),
           Expanded(
             child: HubMenuLayout(
@@ -134,9 +165,24 @@ class _KasirHomeScreenState extends State<KasirHomeScreen> {
                     _periksaShift();
                   },
                 ),
-                if (_shiftSaya != true)
-                  _MenungguShift()
-                else ...[
+                // Di luar gerbang shift, dan itu disengaja: absen masuk
+                // terjadi SEBELUM shift dibuka. Menaruhnya di dalam
+                // gerbang berarti menyuruh orang membuka shift dulu
+                // untuk bisa menyatakan dirinya sudah datang.
+                HubMenuTile(
+                  icon: Icons.fingerprint,
+                  title: 'Absensi',
+                  subtitle: 'Absen masuk dan pulang, ajukan izin, slip gaji',
+                  color: const Color(0xFF8B5CF6),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const AbsensiScreen()),
+                  ),
+                ),
+                // Keterangannya tidak lagi di sini melainkan di pil
+                // mengambang: keterangan yang ikut tergulir hilang
+                // bersama daftarnya, padahal ia yang menjelaskan kenapa
+                // daftarnya pendek.
+                if (_shiftSaya == true) ...[
                 HubGroupTile(
                   icon: Icons.point_of_sale_outlined,
                   title: 'Penjualan',
@@ -234,13 +280,6 @@ class _KasirHomeScreenState extends State<KasirHomeScreen> {
                 ],
                 const InboxTile(),
                 HubMenuTile(
-                    icon: Icons.brightness_6_outlined,
-                    title: 'Tampilan',
-                    subtitle: 'Mode terang, gelap, atau ikut setelan HP',
-                    color: const Color(0xFF0EA5E9),
-                    onTap: () => showAppearanceDialog(context),
-                  ),
-                HubMenuTile(
                     icon: Icons.logout,
                     title: 'Keluar',
                     subtitle: 'Logout dari akun ini',
@@ -269,48 +308,4 @@ Future<int> _penandaKeuangan(String? restoId) async {
     CashDepositRepository().pendingCount(restoId),
   ]);
   return hasil.fold<int>(0, (a, b) => a + b);
-}
-
-/// Keterangan saat berandanya masih sempit.
-///
-/// Tanpa ini, kasir yang menu-menunya belum muncul mengira aplikasinya
-/// belum selesai memuat — lalu menunggu sesuatu yang tidak akan datang
-/// sampai dia membuka shift.
-class _MenungguShift extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final muted = KaataTheme.mutedOf(context);
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: KaataTheme.softFillOf(context),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(Icons.lock_clock, size: 20, color: Color(0xFFF59E0B)),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Buka shift dulu',
-                    style:
-                        TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                const SizedBox(height: 4),
-                Text(
-                  'Menu kasir, pesanan, dan keuangan terbuka setelah shift '
-                  'dibuka — supaya uang di laci punya titik awal yang jelas '
-                  'dan selisihnya nanti bisa ditelusuri.',
-                  style: TextStyle(fontSize: 12.5, color: muted, height: 1.45),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }

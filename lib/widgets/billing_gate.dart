@@ -3,9 +3,12 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../db/billing_repository.dart';
+import '../db/paket_langganan_repository.dart';
 import '../models/billing.dart';
+import '../models/paket_langganan.dart';
 import '../providers/auth_provider.dart';
 import '../screens/billing_screen.dart';
+import '../screens/pilih_paket_screen.dart';
 import '../theme.dart';
 import '../utils/logout_confirm.dart';
 import '../widgets/responsive.dart';
@@ -39,7 +42,15 @@ class BillingGate extends StatefulWidget {
 
 class _BillingGateState extends State<BillingGate> {
   final _repo = BillingRepository();
+  final _paket = PaketLanggananRepository();
   BillingState _state = BillingState.tenang;
+
+  /// Keadaan paketnya, terpisah dari keadaan tagihan bulanannya.
+  ///
+  /// Dua hal yang berbeda, dan menggabungkannya jadi satu angka membuat
+  /// merchant yang masa percobaannya habis menerima kalimat tentang
+  /// tagihan yang belum pernah diterbitkan.
+  KeadaanLangganan _langganan = const KeadaanLangganan();
   bool _sudahMemeriksa = false;
 
   @override
@@ -59,10 +70,14 @@ class _BillingGateState extends State<BillingGate> {
     }
 
     try {
-      final s = await _repo.stateOf(restoId);
+      final hasil = await Future.wait([
+        _repo.stateOf(restoId),
+        _paket.keadaan(restoId),
+      ]);
       if (!mounted) return;
       setState(() {
-        _state = s;
+        _state = hasil[0] as BillingState;
+        _langganan = hasil[1] as KeadaanLangganan;
         _sudahMemeriksa = true;
       });
     } catch (_) {
@@ -81,8 +96,41 @@ class _BillingGateState extends State<BillingGate> {
     final restoId = context.read<AuthProvider>().restoId;
     if (restoId == null) return widget.child;
 
+    // Paket lebih dulu daripada tagihan bulanan.
+    //
+    // Merchant yang masa percobaannya habis belum punya tagihan sama
+    // sekali — yang dia butuhkan adalah memilih paket, bukan membayar
+    // tagihan yang tidak ada. Menaruh gerbang tagihan di depan akan
+    // menyodorkan halaman kosong yang tidak bisa diapa-apakan.
+    if (_langganan.terkunciPaket) {
+      return _LayarPilihPaket(
+        langganan: _langganan,
+        onSelesai: _periksa,
+      );
+    }
+
     if (_state.locked) {
       return _LayarTerkunci(state: _state, restoId: restoId);
+    }
+
+    Future<void> bukaPaket() async {
+      await Navigator.of(context)
+          .push(MaterialPageRoute(builder: (_) => const PilihPaketScreen()));
+      _periksa();
+    }
+
+    // Dua hari sebelum percobaan habis, dan seterusnya sampai habis.
+    //
+    // Diketuk membuka layar pemilihan paket langsung, bukan sekadar
+    // memberi tahu: pemberitahuan yang tidak membawa ke tempat
+    // menyelesaikannya cuma menambah satu langkah mencari sendiri.
+    if (_langganan.mendekatiHabis) {
+      return Column(
+        children: [
+          _PitaPercobaan(langganan: _langganan, onBuka: bukaPaket),
+          Expanded(child: widget.child),
+        ],
+      );
     }
 
     if (!_state.perluDiingatkan) return widget.child;
@@ -281,6 +329,169 @@ class _LayarTerkunci extends StatelessWidget {
                   },
                   icon: const Icon(Icons.logout, size: 17),
                   label: const Text('Keluar'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Pita pengingat masa percobaan, dua hari terakhir.
+///
+/// Warnanya merah pada hari terakhir, oranye sebelum itu. Satu warna
+/// untuk kedua keadaan membuat hari terakhir terbaca sama mendesaknya
+/// dengan dua hari lagi — dan yang membacanya menunda lagi.
+class _PitaPercobaan extends StatelessWidget {
+  final KeadaanLangganan langganan;
+  final VoidCallback onBuka;
+
+  const _PitaPercobaan({required this.langganan, required this.onBuka});
+
+  @override
+  Widget build(BuildContext context) {
+    final sisa = langganan.sisaHari ?? 0;
+    final mendesak = sisa <= 0;
+    final warna = mendesak ? Colors.red : Colors.orange;
+
+    return Material(
+      color: warna.withOpacity(0.12),
+      child: InkWell(
+        onTap: onBuka,
+        child: SafeArea(
+          bottom: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 9, 10, 9),
+            child: Row(
+              children: [
+                Icon(Icons.hourglass_bottom, size: 17, color: warna.shade800),
+                const SizedBox(width: 9),
+                Expanded(
+                  child: Text(
+                    langganan.sedangDiperiksa
+                        ? 'Pembayaran langgananmu sedang diperiksa KaataGo.'
+                        : mendesak
+                            ? 'Masa percobaan berakhir hari ini. Pilih paket '
+                                'sekarang.'
+                            : 'Masa percobaan tinggal $sisa hari. Pilih paket '
+                                'langgananmu.',
+                    style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                        color: warna.shade900),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text('Pilih',
+                    style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.bold,
+                        color: warna.shade900)),
+                Icon(Icons.chevron_right, size: 18, color: warna.shade800),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Seluruh layar diganti saat masa percobaan habis dan belum
+/// berlangganan.
+///
+/// Bukan pita di atas layar yang masih bisa dipakai: yang habis masa
+/// percobaannya memang sudah tidak boleh memakai aplikasinya, dan pita
+/// yang bisa diabaikan akan diabaikan sampai kasirnya menemukan
+/// sendiri bahwa pesanan tidak bisa disimpan.
+class _LayarPilihPaket extends StatelessWidget {
+  final KeadaanLangganan langganan;
+  final VoidCallback onSelesai;
+
+  const _LayarPilihPaket({required this.langganan, required this.onSelesai});
+
+  @override
+  Widget build(BuildContext context) {
+    final muted = KaataTheme.mutedOf(context);
+    final diperiksa = langganan.sedangDiperiksa;
+
+    return Scaffold(
+      backgroundColor: KaataTheme.backgroundOf(context),
+      body: SafeArea(
+        child: ResponsiveCenter(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  diperiksa ? Icons.hourglass_top : Icons.lock_clock,
+                  size: 56,
+                  color: diperiksa ? Colors.orange : Colors.red,
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  diperiksa
+                      ? 'Pembayaranmu sedang diperiksa'
+                      : 'Masa percobaan sudah berakhir',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                      fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  diperiksa
+                      ? 'Paling lama 1×24 jam. Begitu KaataGo memastikan '
+                          'pembayarannya masuk, aplikasinya bisa dipakai '
+                          'kembali.'
+                      : 'Pilih paket langgananmu untuk melanjutkan. Seluruh '
+                          'data merchantmu tetap utuh dan langsung bisa '
+                          'dipakai lagi setelah berlangganan.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 13.5, height: 1.5, color: muted),
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: FilledButton.icon(
+                    icon: Icon(
+                        diperiksa ? Icons.refresh : Icons.workspace_premium,
+                        size: 18),
+                    label: Text(diperiksa
+                        ? 'Periksa Status'
+                        : 'Pilih Paket Langganan'),
+                    onPressed: () async {
+                      if (diperiksa) {
+                        onSelesai();
+                        return;
+                      }
+                      await Navigator.of(context).push(MaterialPageRoute(
+                          builder: (_) => const PilihPaketScreen()));
+                      onSelesai();
+                    },
+                  ),
+                ),
+                if (diperiksa) ...[
+                  const SizedBox(height: 8),
+                  TextButton(
+                    onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                            builder: (_) => const PilihPaketScreen())),
+                    child: const Text('Lihat pengajuanku'),
+                  ),
+                ],
+                const SizedBox(height: 6),
+                TextButton.icon(
+                  icon: const Icon(Icons.logout, size: 16),
+                  label: const Text('Keluar'),
+                  onPressed: () async {
+                    if (!await confirmLogout(context)) return;
+                    if (!context.mounted) return;
+                    await context.read<AuthProvider>().signOut();
+                  },
                 ),
               ],
             ),

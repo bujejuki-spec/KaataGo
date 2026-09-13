@@ -243,6 +243,34 @@ class OrderRepository {
     return rows.map((r) => CustomerOrder.fromMap(r)).toList();
   }
 
+  /// Pesanan sebuah tanggal, sekali baca.
+  ///
+  /// Dipakai tab "Selesai" di layar dapur saat yang dilihat bukan hari
+  /// ini. Aliran realtime-nya dipotong 300 baris terakhir — cukup untuk
+  /// antrean yang sedang berjalan, dan justru menyesatkan untuk tanggal
+  /// lampau: pada merchant ramai, hari kemarin sudah terdorong keluar
+  /// dari 300 itu, dan yang terlihat adalah hari yang seolah sepi.
+  ///
+  /// Batasnya WIB, bukan UTC: pesanan jam sebelas malam tercatat hari
+  /// itu juga, bukan besok.
+  Future<List<CustomerOrder>> padaTanggal(
+    String restoId, {
+    required DateTime tanggal,
+  }) async {
+    final awalWib = DateTime(tanggal.year, tanggal.month, tanggal.day);
+    final mulai = awalWib.subtract(const Duration(hours: 7));
+    final akhir = mulai.add(const Duration(days: 1));
+
+    final rows = await _client
+        .from('orders')
+        .select()
+        .eq('resto_id', restoId)
+        .gte('created_at', mulai.toIso8601String())
+        .lt('created_at', akhir.toIso8601String())
+        .order('created_at', ascending: false);
+    return rows.map((r) => CustomerOrder.fromMap(r)).toList();
+  }
+
   /// Live stream of orders belonging to one customer session (the "parent"
   /// id assigned right after scanning a table QR) — used by the customer's
   /// own order-status screen so they can track progress without an account.

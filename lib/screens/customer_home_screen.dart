@@ -36,7 +36,6 @@ import '../widgets/loading_overlay.dart';
 import '../widgets/product_category_list.dart';
 import '../widgets/product_lines_sheet.dart';
 import '../widgets/promo_banner_carousel.dart';
-import '../widgets/language_theme_toggle.dart';
 import '../widgets/quantity_dialog.dart';
 import 'customer_cart_screen.dart';
 import 'customer_history_screen.dart';
@@ -624,6 +623,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
               subtitle: greeting,
               colorA: KaataTheme.brand,
               colorB: KaataTheme.brandDark,
+              tampilkanTema: true,
             ),
             Expanded(
               child: ListView(
@@ -680,19 +680,6 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                   ),
                   const SizedBox(height: 12),
                   const InboxTile(forCustomer: true),
-                  const SizedBox(height: 12),
-                  // Tampilan diatur dari menu utama, bukan dari bilah
-                  // atas layar menu resto. Yang sedang memilih makanan
-                  // tidak sedang memikirkan tema aplikasinya — dan
-                  // tombol di sana cuma menambah barang di bilah yang
-                  // sudah penuh.
-                  HubMenuTile(
-                    icon: Icons.brightness_6_outlined,
-                    title: 'Tampilan',
-                    subtitle: 'Mode terang, gelap, atau ikut setelan HP',
-                    color: const Color(0xFF0EA5E9),
-                    onTap: () => showAppearanceDialog(context),
-                  ),
                   // Tombol tes notifikasi disembunyikan: push-nya sudah
                   // berjalan, dan tombol uji yang tertinggal di layar
                   // pemakai akhirnya ditekan seseorang yang mengira itu

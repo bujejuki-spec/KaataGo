@@ -33,7 +33,7 @@ alter table gl_accounts add constraint gl_accounts_payment_method_check
      'ppn', 'service', 'suspense', 'suspense_petty', 'gateway_fee', 'discount',
      'subscription', 'subscription_discount', 'voucher', 'voucher_redeem',
      'capital', 'cash_variance', 'other_income',
-     'cash_pickup', 'company_cash', 'company_bank'));
+     'cash_pickup', 'company_cash', 'company_bank', 'opening_balance'));
 
 alter table gl_journal_entries drop constraint if exists gl_journal_entries_reference_type_check;
 alter table gl_journal_entries add constraint gl_journal_entries_reference_type_check
@@ -41,7 +41,7 @@ alter table gl_journal_entries add constraint gl_journal_entries_reference_type_
     reference_type in
     ('order', 'order_discount', 'expense', 'petty_cash', 'cash_deposit',
      'billing', 'billing_discount', 'voucher', 'capital', 'cash_variance',
-     'other_income', 'company_deposit'));
+     'other_income', 'company_deposit', 'opening_balance'));
 
 -- Untuk resto yang sudah ada.
 insert into gl_accounts (resto_id, payment_method, gl_code, gl_name)
@@ -71,6 +71,8 @@ as $$
     ('total_balance',    '1990001', 'GL Total Saldo'),
     -- Uang yang benar-benar sudah dipegang perusahaan
     ('company_cash',     '1990002', 'GL Saldo Cash Perusahaan'),
+    -- Lawan akun saat saldo disamakan dengan mutasi bank
+    ('opening_balance',  '1990004', 'GL Saldo Awal'),
     -- Suspense — titipan yang belum diakui masuk ke mana pun
     ('suspense',         '2100001', 'GL Suspense Setoran'),
     ('suspense_petty',   '2100002', 'GL Suspense Petty Cash'),

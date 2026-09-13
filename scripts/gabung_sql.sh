@@ -108,7 +108,14 @@ FILES=(
   jurnal_selisih_ke_bank.sql
   setoran_ke_saldo_bank.sql
   tutup_shift_sendiri.sql
+  saldo_awal.sql
+  periksa_pembukuan.sql
+  layar_pelanggan_rincian_biaya.sql
   merchant_report.sql
+  laporan_grafik.sql
+  absensi_payroll.sql
+  paket_langganan.sql
+  perbaikan_hak_fungsi.sql
   shift_opening_check.sql
   support_tickets.sql
   support_push.sql

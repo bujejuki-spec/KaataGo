@@ -92,3 +92,54 @@ class JamRamai {
         omzet: (map['omzet'] as num?)?.toInt() ?? 0,
       );
 }
+
+/// Satu titik pada deret waktu penjualan.
+///
+/// Titik yang nol tetap ada. Grafik yang cuma menggambar hari-hari yang
+/// punya penjualan menyambung Senin langsung ke Rabu dengan garis yang
+/// naik mulus — dan hari Selasa yang tutup total terbaca sebagai hari
+/// biasa.
+class TitikPenjualan {
+  final DateTime periode;
+  final int jumlahPesanan;
+  final int omzet;
+  final int porsi;
+
+  const TitikPenjualan({
+    required this.periode,
+    required this.jumlahPesanan,
+    required this.omzet,
+    required this.porsi,
+  });
+
+  factory TitikPenjualan.fromMap(Map<String, dynamic> map) => TitikPenjualan(
+        periode: DateTime.parse(map['periode'].toString()),
+        jumlahPesanan: (map['orders_count'] as num?)?.toInt() ?? 0,
+        omzet: (map['omzet'] as num?)?.toInt() ?? 0,
+        porsi: (map['qty'] as num?)?.toInt() ?? 0,
+      );
+}
+
+/// Satu potong pembagian omzet — cara bayar, jenis pesanan, asal
+/// pesanan, kasir, atau kategori menu.
+class PotongPenjualan {
+  final String kunci;
+  final int jumlahPesanan;
+  final int omzet;
+
+  const PotongPenjualan({
+    required this.kunci,
+    required this.jumlahPesanan,
+    required this.omzet,
+  });
+
+  factory PotongPenjualan.fromMap(Map<String, dynamic> map) => PotongPenjualan(
+        kunci: map['kunci']?.toString() ?? 'lainnya',
+        // Pembagian per kategori menghitung baris menu, bukan pesanan —
+        // jadi kolomnya `qty`, bukan `orders_count`.
+        jumlahPesanan: (map['orders_count'] as num?)?.toInt() ??
+            (map['qty'] as num?)?.toInt() ??
+            0,
+        omzet: (map['omzet'] as num?)?.toInt() ?? 0,
+      );
+}
