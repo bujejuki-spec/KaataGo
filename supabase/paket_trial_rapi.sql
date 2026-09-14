@@ -70,6 +70,23 @@ begin
     raise exception 'Paket percobaannya harus Basic atau Premium.';
   end if;
 
+  -- Yang sudah berlangganan tidak boleh diberi percobaan.
+  --
+  -- Fungsi ini menyetel paket jadi null dan harganya jadi nol. Dipanggil
+  -- untuk merchant yang sudah membayar, ia diam-diam membatalkan
+  -- langganannya dan menghentikan penagihannya — tanpa galat, tanpa
+  -- catatan, dan yang menemukannya bukan kita melainkan tagihan yang
+  -- berhenti datang.
+  --
+  -- Layarnya memang sudah menyembunyikan tombolnya, tapi layar yang
+  -- menyembunyikan tombol tidak menahan apa pun: fungsinya tetap bisa
+  -- dipanggil langsung.
+  if exists (select 1 from resto_billing
+             where resto_id = p_resto_id and paket is not null) then
+    raise exception 'Merchant ini sudah berlangganan. Lepas paketnya dulu '
+                    'kalau memang mau dikembalikan ke masa percobaan.';
+  end if;
+
   v_sampai := (now() at time zone 'Asia/Jakarta')::date + p_hari;
 
   -- Percobaan bukan langganan: `paket` sengaja dikosongkan, dan

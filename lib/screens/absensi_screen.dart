@@ -150,6 +150,7 @@ class _AbsensiScreenState extends State<AbsensiScreen> {
         sidik: wajah.sidik,
         model: MesinWajah.namaModel,
         fotoUrl: url,
+        setujuVersi: MesinWajah.versiPersetujuan,
       );
       if (!mounted) return;
       showAppToast(context, 'Wajahmu terdaftar. Sekarang bisa absen.');
@@ -163,25 +164,7 @@ class _AbsensiScreenState extends State<AbsensiScreen> {
 
   Future<bool?> _konfirmasiDaftar() => showDialog<bool>(
         context: context,
-        builder: (c) => AlertDialog(
-          title: const Text('Daftarkan wajahmu'),
-          content: const Text(
-            'Wajahmu difoto sekali, lalu diubah jadi deret angka yang '
-            'dipakai mencocokkan absenmu nanti. Fotonya sendiri disimpan '
-            'sebagai bukti kalau suatu hari ada sengketa.\n\n'
-            'Pendaftarannya cuma sekali. Kalau perlu didaftar ulang, '
-            'Owner atau Admin yang membukanya — supaya absenmu tidak bisa '
-            'dipindahkan ke wajah orang lain diam-diam.',
-          ),
-          actions: [
-            DialogActions(
-              confirmLabel: 'Daftarkan',
-              cancelLabel: 'Nanti',
-              onConfirm: () => Navigator.pop(c, true),
-              onCancel: () => Navigator.pop(c, false),
-            ),
-          ],
-        ),
+        builder: (c) => const _DialogPersetujuanWajah(),
       );
 
   Future<void> _absen({required bool pulang}) async {
@@ -926,6 +909,162 @@ class _DialogTidakMasukState extends State<_DialogTidakMasuk> {
                       bukti: _bukti,
                     ),
                   ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Syarat pemakaian data wajah, berikut centang yang wajib dicentang.
+///
+/// ── Kenapa tidak cukup satu tombol "Daftarkan" ───────────────────────
+///
+/// Wajah termasuk data pribadi yang bersifat spesifik menurut UU
+/// 27/2022. Persetujuan yang sah bukan sekadar orangnya menekan tombol:
+/// dia harus tahu apa yang diambil, untuk apa dipakai, siapa yang bisa
+/// melihatnya, berapa lama disimpan, dan bagaimana mencabutnya.
+///
+/// Karena itu tombolnya mati sampai centangnya dicentang. Bukan untuk
+/// menyulitkan — melainkan supaya "setuju" berarti seseorang benar-benar
+/// memilihnya, bukan melewatinya.
+///
+/// Versi teks yang disetujui ikut tercatat di basis data. Kalau suatu
+/// hari syaratnya berubah, yang pernah menyetujui teks lama tetap
+/// tercatat menyetujui teks lama — tanpa versinya, catatan persetujuan
+/// tidak membuktikan apa pun karena tidak ada yang tahu dia menyetujui
+/// apa.
+class _DialogPersetujuanWajah extends StatefulWidget {
+  const _DialogPersetujuanWajah();
+
+  @override
+  State<_DialogPersetujuanWajah> createState() =>
+      _DialogPersetujuanWajahState();
+}
+
+class _DialogPersetujuanWajahState extends State<_DialogPersetujuanWajah> {
+  bool _setuju = false;
+
+  static const _syarat = <(String, String)>[
+    (
+      'Yang diambil',
+      'Satu foto wajahmu. Dari foto itu dihitung deret angka — sidik '
+          'wajah — yang dipakai mencocokkan absenmu nanti. Fotonya sendiri '
+          'ikut disimpan sebagai bukti kalau suatu hari ada sengketa soal '
+          'kehadiran atau gaji.',
+    ),
+    (
+      'Untuk apa dipakai',
+      'Hanya untuk absensi dan perhitungan gaji di merchant ini. Tidak '
+          'dipakai untuk iklan, tidak dijual, dan tidak dibagikan ke '
+          'pihak lain.',
+    ),
+    (
+      'Fotonya diproses di HP-mu',
+      'Pencocokan wajahnya berjalan di HP ini, bukan dikirim ke server '
+          'luar. Yang tersimpan di penyimpanan merchant cuma foto dan '
+          'sidik angkanya.',
+    ),
+    (
+      'Siapa yang bisa melihat',
+      'Owner, Admin, dan Finance merchant ini. Rekan kerjamu tidak bisa, '
+          'dan foto absensi tidak bisa dibuka lewat tautan oleh siapa pun '
+          'yang tidak berhak.',
+    ),
+    (
+      'Berapa lama disimpan',
+      'Selama kamu masih tercatat sebagai karyawan merchant ini, '
+          'ditambah masa simpan catatan gaji sesuai aturan yang berlaku.',
+    ),
+    (
+      'Mencabutnya',
+      'Kamu bisa meminta wajahmu dihapus kapan saja ke Owner atau Admin. '
+          'Sesudah dihapus, absenmu dicatat dengan cara lain yang '
+          'disepakati merchant.',
+    ),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final muted = KaataTheme.mutedOf(context);
+
+    return AlertDialog(
+      title: const Text('Daftarkan wajahmu'),
+      content: SizedBox(
+        width: 340,
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Sebelum wajahmu didaftarkan, baca dulu bagaimana datanya '
+                'dipakai.',
+                style: TextStyle(fontSize: 12.5, height: 1.45, color: muted),
+              ),
+              const SizedBox(height: 14),
+              for (final (judul, isi) in _syarat) ...[
+                Text(judul,
+                    style: const TextStyle(
+                        fontSize: 12.5, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 3),
+                Text(isi,
+                    style:
+                        TextStyle(fontSize: 12, height: 1.45, color: muted)),
+                const SizedBox(height: 12),
+              ],
+              Text(
+                'Pendaftarannya cuma sekali. Kalau perlu didaftar ulang, '
+                'Owner atau Admin yang membukanya — supaya absenmu tidak '
+                'bisa dipindahkan ke wajah orang lain diam-diam.',
+                style: TextStyle(fontSize: 12, height: 1.45, color: muted),
+              ),
+              const SizedBox(height: 6),
+              // Seluruh barisnya bisa ditekan, bukan cuma kotak kecilnya.
+              // Sasaran sentuh sebesar 18 piksel di HP adalah alasan orang
+              // menekan tiga kali lalu mengira aplikasinya rusak.
+              InkWell(
+                onTap: () => setState(() => _setuju = !_setuju),
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Checkbox(
+                        value: _setuju,
+                        visualDensity: VisualDensity.compact,
+                        materialTapTargetSize:
+                            MaterialTapTargetSize.shrinkWrap,
+                        onChanged: (v) =>
+                            setState(() => _setuju = v ?? false),
+                      ),
+                      const SizedBox(width: 6),
+                      const Expanded(
+                        child: Padding(
+                          padding: EdgeInsets.only(top: 9),
+                          child: Text(
+                            'Saya sudah membaca dan setuju wajah saya '
+                            'dipakai untuk absensi di merchant ini.',
+                            style: TextStyle(fontSize: 12.5, height: 1.4),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        DialogActions(
+          confirmLabel: 'Daftarkan',
+          cancelLabel: 'Nanti',
+          // Mati sampai dicentang. Persetujuan yang bisa dilewati tanpa
+          // sengaja bukan persetujuan.
+          onConfirm: _setuju ? () => Navigator.pop(context, true) : null,
+          onCancel: () => Navigator.pop(context, false),
         ),
       ],
     );

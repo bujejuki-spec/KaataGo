@@ -37,6 +37,24 @@ Formatnya dibaca `scripts/release.sh`: judul `## <versi>`, lalu
 poin-poinnya. Versi yang tidak punya bagiannya di sini tetap terbit,
 hanya pengumumannya memakai kalimat umum.
 
+## 3.11.0
+
+- **Pengenalan wajah untuk absensi diganti dengan model terlatih.** Cara
+  sebelumnya membandingkan bentuk wajah, dan pada wajah sungguhan ia
+  meloloskan orang yang berbeda. **Semua karyawan yang sudah
+  mendaftarkan wajah harus mendaftar ulang sekali** — pendaftaran lama
+  tidak bisa dibandingkan dengan yang baru dan sudah dihapus
+- Sebelum wajahnya didaftarkan, karyawan membaca syarat pemakaian
+  datanya dan mencentang persetujuan. Tanpa centang itu pendaftarannya
+  tidak jalan, dan versi teks yang disetujui ikut tercatat
+- Pengenalannya berjalan di HP: foto wajah tidak dikirim ke pihak mana
+  pun
+- KaataGo Admin kini bisa membuka bukti transfer langganan, dan hanya
+  bukti transfer — bukan foto wajah atau surat sakit karyawan merchant
+- Masa percobaan tidak lagi ditawarkan untuk merchant yang sudah
+  berlangganan, karena memberikannya akan membatalkan langganannya
+- Perbaikan bug dan penyempurnaan tampilan
+
 ## 3.10.2
 
 - Kasir dan Chef kini bisa mendaftarkan wajah dan mengunggah foto absen.

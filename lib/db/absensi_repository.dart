@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/absensi.dart';
+import '../utils/mesin_wajah.dart';
 
 /// Absensi wajah berlokasi, dan aturan gaji yang menghitung darinya.
 ///
@@ -27,17 +28,23 @@ class AbsensiRepository {
     return hasil == true;
   }
 
+  /// [setujuVersi] adalah versi teks persetujuan yang dicentang
+  /// orangnya. Server menolak pendaftaran tanpa itu — kotak centang di
+  /// layar menghalangi orang yang memakai aplikasi, bukan apa pun yang
+  /// memanggil fungsinya langsung.
   Future<void> daftarWajah({
     required String restoId,
     required List<double> sidik,
     required String model,
     String? fotoUrl,
+    required String setujuVersi,
   }) =>
       _client.rpc('daftar_wajah', params: {
         'p_resto_id': restoId,
         'p_embedding': sidik,
         'p_model': model,
         'p_foto_url': fotoUrl,
+        'p_setuju_versi': setujuVersi,
       });
 
   Future<void> resetWajah(String restoId, String email) => _client
@@ -61,6 +68,12 @@ class AbsensiRepository {
         'p_lat': lat,
         'p_lng': lng,
         'p_foto_url': fotoUrl,
+        // Ikut dikirim supaya server bisa MENOLAK kalau wajahnya
+        // terdaftar dengan cara pengenalan yang lain. Sidik dari dua
+        // cara berbeda tetap menghasilkan angka kalau dibandingkan, dan
+        // angka itulah yang paling berbahaya: ia terlihat seperti
+        // jawaban padahal tidak membandingkan apa pun.
+        'p_model': MesinWajah.namaModel,
       },
     );
     final list = (rows as List?) ?? const [];

@@ -21,6 +21,7 @@ import 'billing_screen.dart';
 import 'discount_screen.dart';
 import '../widgets/inbox_tile.dart';
 import '../widgets/responsive.dart';
+import '../widgets/tampak_menu.dart';
 import '../widgets/kaata_logo.dart';
 import '../widgets/resto_switcher.dart';
 import 'cash_deposit_screen.dart';
@@ -103,7 +104,12 @@ class OwnerHomeScreen extends StatelessWidget {
                 // Support — beranda ini memakai ListView polos, bukan
                 // HubMenuLayout yang sudah menyediakannya sendiri.
                 padding: const EdgeInsets.fromLTRB(20, 20, 20, kFabSafeBottom),
-                children: [
+                // Jaraknya disisipkan SESUDAH menu yang dicabut UAM
+                // dibuang. Menuliskannya sendiri di antara kartu
+                // meninggalkan dua SizedBox mengapit kartu yang hilang,
+                // dan lubang selebar dua kali jarak biasa terbaca
+                // sebagai kartu yang gagal dimuat.
+                children: tileBerjarak(context, [
                   // Dibuka dua kali sehari pada dua saat tersibuk: awal shift
                   // ketika antrean mulai, dan akhir shift ketika sudah ingin
                   // pulang. Menu yang harus dicari di dalam grup pada dua saat
@@ -118,13 +124,6 @@ class OwnerHomeScreen extends StatelessWidget {
                       MaterialPageRoute(builder: (_) => const CashierShiftScreen()),
                     ),
                   ),
-                  // Beranda Owner memberi jarak antar tombolnya sendiri,
-                  // tidak seperti beranda peran lain yang menyerahkannya
-                  // ke HubMenuLayout. Tanpa baris ini, tombol yang baru
-                  // ditambahkan menempel pada tetangganya sementara yang
-                  // lain berjarak — dan yang menempel terbaca seperti
-                  // bagian dari tombol di bawahnya.
-                  const SizedBox(height: 12),
                   HubGroupTile(
                     icon: Icons.point_of_sale_outlined,
                     title: 'Penjualan',
@@ -189,7 +188,6 @@ class OwnerHomeScreen extends StatelessWidget {
                     ),
                     ],
                   ),
-                  const SizedBox(height: 12),
                   HubGroupTile(
                     icon: Icons.account_balance_wallet_outlined,
                     title: 'Keuangan',
@@ -325,7 +323,6 @@ class OwnerHomeScreen extends StatelessWidget {
                     ),
                     ],
                   ),
-                  const SizedBox(height: 12),
                   HubGroupTile(
                     icon: Icons.tune,
                     title: 'Pengelolaan',
@@ -385,7 +382,6 @@ class OwnerHomeScreen extends StatelessWidget {
                     ),
                     ],
                   ),
-                  const SizedBox(height: 12),
                   HubMenuTile(
                     icon: Icons.settings_outlined,
                     title: 'Pengaturan',
@@ -393,7 +389,6 @@ class OwnerHomeScreen extends StatelessWidget {
                     color: const Color(0xFF64748B),
                     onTap: () => _open(context, const SettingsMenuScreen()),
                   ),
-                  const SizedBox(height: 12),
                   HubMenuTile(
                     icon: Icons.fingerprint,
                     title: 'Absensi',
@@ -401,7 +396,6 @@ class OwnerHomeScreen extends StatelessWidget {
                     color: const Color(0xFF8B5CF6),
                     onTap: () => _open(context, const AbsensiScreen()),
                   ),
-                  const SizedBox(height: 12),
                   HubMenuTile(
                     icon: Icons.badge_outlined,
                     title: 'Absensi Karyawan',
@@ -410,7 +404,6 @@ class OwnerHomeScreen extends StatelessWidget {
                     color: const Color(0xFF0EA5E9),
                     onTap: () => _open(context, const AbsensiReportScreen()),
                   ),
-                  const SizedBox(height: 12),
                   HubMenuTile(
                     icon: Icons.payments_outlined,
                     title: 'Payroll',
@@ -418,9 +411,7 @@ class OwnerHomeScreen extends StatelessWidget {
                     color: const Color(0xFF10B981),
                     onTap: () => _open(context, const PayrollScreen()),
                   ),
-                  const SizedBox(height: 12),
                   const InboxTile(),
-                  const SizedBox(height: 12),
                   HubMenuTile(
                     icon: Icons.logout,
                     title: 'Keluar',
@@ -428,9 +419,8 @@ class OwnerHomeScreen extends StatelessWidget {
                     color: const Color(0xFFEF4444),
                     onTap: () => _logout(context),
                   ),
-                  const SizedBox(height: 12),
                   const SizedBox(height: 8),
-                ],
+                ]),
               ),
             ),
           ),

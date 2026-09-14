@@ -1208,6 +1208,24 @@ class _DialogPaketState extends State<_DialogPaket> {
                         ),
                       ],
                     ),
+                    // Masa percobaan cuma untuk yang BELUM berlangganan.
+                    //
+                    // set_trial_resto menyetel paket jadi null dan
+                    // harganya jadi nol — memberi percobaan ke merchant
+                    // yang sudah membayar diam-diam membatalkan
+                    // langganannya dan menghentikan penagihannya. Yang
+                    // menemukannya bukan kita, melainkan tagihan yang
+                    // berhenti datang.
+                    if (k?.paket != null) ...[
+                      const SizedBox(height: 18),
+                      Text(
+                        'Merchant ini sudah berlangganan, jadi masa '
+                        'percobaan tidak ditawarkan. Lepas paketnya dulu '
+                        'kalau memang mau dikembalikan ke percobaan.',
+                        style: TextStyle(
+                            fontSize: 11.5, height: 1.4, color: muted),
+                      ),
+                    ] else ...[
                     const SizedBox(height: 18),
                     _Bagian(
                       judul: 'Masa percobaan',
@@ -1277,6 +1295,7 @@ class _DialogPaketState extends State<_DialogPaket> {
                         'Memberi percobaan lagi menimpa yang sedang berjalan.',
                         style: TextStyle(fontSize: 11.5, color: muted),
                       ),
+                    ],
                     ],
                   ],
                 ),

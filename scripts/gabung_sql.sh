@@ -119,6 +119,8 @@ FILES=(
   paket_trial_rapi.sql
   wajah_tidak_kembar.sql
   wajah_geometri.sql
+  wajah_facenet.sql
+  absensi_baca_super_admin.sql
   shift_opening_check.sql
   support_tickets.sql
   support_push.sql

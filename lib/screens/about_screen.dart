@@ -194,6 +194,26 @@ class _AboutScreenState extends State<AboutScreen> {
               style: TextStyle(fontSize: 12, color: KaataTheme.mutedOf(context)),
             ),
           ),
+          const SizedBox(height: 18),
+          // Atribusi yang memang dituntut lisensinya.
+          //
+          // Apache-2.0 mengizinkan pemakaian komersial, dengan satu
+          // syarat yang tidak boleh dilewati: menyebut asalnya dan
+          // menyertakan salinan lisensinya. Salinannya ada di
+          // assets/face/LICENSE-facenet.txt, dan penyebutannya di sini.
+          Center(
+            child: Text(
+              'Pengenalan wajah untuk absensi memakai model FaceNet dari '
+              'shubham0204/FaceRecognition_With_FaceNet_Android, berlisensi '
+              'Apache License 2.0. Modelnya berjalan di HP ini — foto '
+              'wajah tidak dikirim ke pihak mana pun.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                  fontSize: 11,
+                  height: 1.4,
+                  color: KaataTheme.mutedOf(context)),
+            ),
+          ),
           // Ruang untuk tombol mengambang di bawah — tanpa ini baris
           // terakhirnya selalu tertutup.
           const SizedBox(height: 72),

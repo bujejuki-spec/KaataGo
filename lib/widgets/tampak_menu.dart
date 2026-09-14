@@ -29,3 +29,29 @@ bool tileTerlihat(BuildContext context, Widget tile) {
 /// Kartu yang tersisa sesudah yang dicabut dibuang, berikut jaraknya.
 List<Widget> tileTampak(BuildContext context, List<Widget> tiles) =>
     [for (final t in tiles) if (tileTerlihat(context, t)) t];
+
+/// Kartu yang tersisa, berikut jaraknya disisipkan SESUDAH penyaringan.
+///
+/// Beranda yang menuliskan jaraknya sendiri di antara kartu punya
+/// masalah yang tidak terlihat sampai ada menu yang dicabut UAM:
+/// kartunya hilang, tapi dua `SizedBox` pengapitnya tetap tinggal.
+/// Yang terlihat lubang selebar dua kali jarak biasa — dan itu terbaca
+/// sebagai kartu yang gagal dimuat, bukan sebagai kartu yang memang
+/// tidak boleh dilihat.
+///
+/// Jaraknya disisipkan di sini, sesudah yang dicabut dibuang, jadi tidak
+/// ada beranda yang perlu ingat menyaring sendiri — dan tidak ada yang
+/// bisa lupa.
+List<Widget> tileBerjarak(
+  BuildContext context,
+  List<Widget> tiles, {
+  double jarak = 12,
+}) {
+  final tampak = tileTampak(context, tiles);
+  return [
+    for (var i = 0; i < tampak.length; i++) ...[
+      if (i > 0) SizedBox(height: jarak),
+      tampak[i],
+    ],
+  ];
+}

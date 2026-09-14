@@ -955,8 +955,20 @@ drop policy if exists "absensi: baca atasan" on storage.objects;
 create policy "absensi: baca atasan" on storage.objects
   for select using (
     bucket_id = 'absensi'
-    and public.is_resto_employee((storage.foldername(name))[1],
-          array['owner', 'admin', 'finance'])
+    and (
+      -- KaataGo Admin ikut, dan itu bukan kelonggaran melainkan syarat:
+      -- bukti transfer langganan diunggah ke ember ini, dan yang wajib
+      -- memeriksanya sebelum menyetujui pembayaran justru dia — yang
+      -- bukan karyawan resto mana pun.
+      --
+      -- Sebatas map bukti transfernya. Ember ini juga menyimpan foto
+      -- wajah karyawan dan surat keterangan sakit, dan tidak ada yang
+      -- membutuhkan itu untuk menyetujui pembayaran.
+      (public.is_super_admin()
+        and (storage.foldername(name))[2] = 'langganan')
+      or public.is_resto_employee((storage.foldername(name))[1],
+           array['owner', 'admin', 'finance'])
+    )
   );
 
 -- Menimpa berkas yang sudah ada.

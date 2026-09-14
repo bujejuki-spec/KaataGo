@@ -379,72 +379,68 @@ void main() {
     });
   });
 
-  // Absen wajah sekarang memakai geometri dari ML Kit, bukan model
-  // terlatih. Tidak ada berkas model yang perlu ikut.
-  group('pencocokan wajah dari geometri', () {
+  // Absen wajah memakai FaceNet, model terlatih yang dijalankan di
+  // ponsel.
+  //
+  // Kelompok tes yang dulu berdiri di sini menjaga cara sebelumnya —
+  // mencocokkan BENTUK wajah dari kontur ML Kit. Semuanya hijau, dan
+  // semuanya salah: yang mereka periksa adalah apakah kodenya ditulis
+  // seperti yang saya niatkan, bukan apakah ia membedakan orang.
+  //
+  // Tiga wajah sungguhan membantahnya dalam satu query — tiga orang yang
+  // berbeda berjarak 0,85-0,88 dari skala 0-1. Tesnya tidak berkedip.
+  //
+  // Penggantinya ada di test/wajah_facenet_test.dart, dan yang dijaganya
+  // dipilih justru dari hal-hal yang pernah gagal DIAM-DIAM.
+  group('pencocokan wajah dengan model terlatih', () {
     final mesin =
         File('lib/utils/mesin_wajah_perangkat.dart').readAsStringSync();
-    final sql = File('supabase/wajah_geometri.sql').readAsStringSync();
+    final sql = File('supabase/wajah_facenet.sql').readAsStringSync();
 
-    test('tidak lagi bergantung pada model terlatih', () {
-      expect(File('pubspec.yaml').readAsStringSync(),
-          isNot(contains('tflite_flutter')));
-      expect(File('lib/utils/mesin_wajah_tflite.dart').existsSync(), isFalse);
-      expect(mesin, contains("namaModel = 'geometri-mlkit-v1'"));
+    test('modelnya dimuat dari bundel aplikasi, bukan diunduh', () {
+      // Diunduh berarti absen menunggu jaringan warung di pagi hari, dan
+      // gagal unduh berarti orangnya tidak bisa masuk kerja.
+      expect(mesin, contains('Interpreter.fromAsset'));
+      expect(mesin, contains("assets/face/facenet.tflite"));
     });
 
-    // Wajah yang sama pada jarak berbeda dari kamera menghasilkan angka
-    // yang sama sekali berbeda tanpa penyeragaman ini — dan yang
-    // dibandingkan bukan lagi wajahnya melainkan seberapa dekat orangnya
-    // berdiri.
-    test('diluruskan pada garis mata dan diseragamkan skalanya', () {
-      expect(mesin, contains('math.atan2(beda.dy, beda.dx)'));
-      expect(mesin, contains('/ jarakMata'));
+    // Bukan sekadar dibagi 255. Penyeragaman per gambar inilah yang
+    // membuat wajah yang sama di ruangan gelap dan di bawah matahari
+    // menghasilkan sidik yang berdekatan — tanpanya yang dibandingkan
+    // lebih banyak cahayanya daripada orangnya.
+    test('gambarnya diseragamkan sebelum masuk model', () {
+      expect(mesin, contains('(piksel[j] - rata) / simpangan'));
+      // Lantai bawahnya menjaga gambar satu warna — tutup lensa, ruangan
+      // gelap gulita — dari membagi dengan nol.
+      expect(mesin, contains('math.max(math.sqrt('));
     });
 
-    // Bibir berubah total antara tersenyum dan tidak; mata menyipit dan
-    // membuka. Orang yang absen sambil tersenyum akan ditolak oleh
-    // wajahnya sendiri kalau keduanya ikut dihitung.
-    test('bagian yang berubah oleh ekspresi tidak ikut', () {
-      final blok = mesin.substring(mesin.indexOf('static const _dipakai'));
-      final daftar = blok.substring(0, blok.indexOf('};'));
-      for (final jangan in ['Lip', 'leftEye:', 'rightEye:']) {
-        expect(daftar, isNot(contains(jangan)), reason: jangan);
-      }
-      expect(daftar, contains('FaceContourType.face'));
-      expect(daftar, contains('noseBridge'));
+    test('ukuran masukan dan panjang sidiknya sesuai modelnya', () {
+      expect(mesin, contains('_sisi = 160'));
+      expect(mesin, contains('_panjangSidik = 128'));
+      expect(mesin, contains('reshape([1, _sisi, _sisi, 3])'));
     });
 
-    // Deret yang panjangnya berbeda tidak bisa dibandingkan sama sekali.
-    test('panjang deretnya dipaksa tetap', () {
-      expect(mesin, contains('_ambilRata('));
-      final blok = mesin.substring(mesin.indexOf('_ambilRata(List<math.Point'));
-      expect(blok.substring(0, blok.indexOf('\n  }')), contains('berapa'));
-    });
-
-    // Kosinus atas koordinat mendekati 1 untuk siapa pun — semua wajah
-    // memang berbentuk wajah. Yang dibandingkan berhenti berarti apa-apa,
-    // dan semua orang lolos.
-    test('dibandingkan dengan jarak bentuk, bukan kosinus', () {
-      expect(sql, contains('create or replace function _mirip_geometri'));
-      expect(sql, contains('avg((x - y) * (x - y))'));
-      expect(sql, contains("like 'geometri-%' then _mirip_geometri"));
+    // Sidik FaceNet tidak dinormalkan panjangnya, jadi yang dipakai
+    // kosinus — bukan jarak bentuk seperti cara yang lama.
+    test('dibandingkan dengan kosinus', () {
+      expect(sql, contains("like 'facenet-%' then _mirip_wajah"));
     });
 
     // Ada pita di antara "jelas orangnya" dan "jelas bukan". Menolak
     // semua yang jatuh di situ mengunci orang dari pekerjaannya karena
     // cahaya pagi yang berbeda.
     test('yang ragu ditandai, bukan ditolak', () {
-      expect(sql, contains('_ambang_geo_yakin()'));
-      expect(sql, contains('masuk_ragu boolean'));
+      expect(sql, contains('_ambang_yakin(v_wajah.model)'));
       final blok = sql.substring(sql.indexOf('v_ragu := '));
-      expect(blok.substring(0, 200), contains('_ambang_geo_yakin()'));
+      expect(blok.substring(0, 120), contains('_ambang_yakin'));
     });
 
-    // Angka ambangnya belum diuji pada wajah sungguhan — ia harus bisa
-    // disetel tanpa merilis APK.
+    // Ambangnya masih akan disetel begitu terlihat sebaran nyatanya. Ia
+    // harus bisa disetel tanpa merilis APK — terutama karena angka yang
+    // ditebak dari laboratorium sudah sekali terbukti keliru.
     test('ambangnya berdiri sebagai fungsi yang bisa disetel', () {
-      for (final f in ['_skala_geo', '_ambang_geo', '_ambang_geo_yakin']) {
+      for (final f in ['_ambang_facenet', '_ambang_facenet_yakin']) {
         expect(sql, contains('create or replace function $f()'), reason: f);
       }
     });
@@ -479,9 +475,20 @@ void main() {
     expect(tulis.substring(0, 600), contains("'kasir', 'chef'"));
 
     final baca = sql.substring(sql.indexOf('create policy "absensi: baca'));
-    final blokBaca = baca.substring(0, 400);
+    final blokBaca = baca.substring(0, 900);
     expect(blokBaca, contains("'owner', 'admin', 'finance'"));
     expect(blokBaca, isNot(contains("'kasir'")));
+
+    // KaataGo Admin bukan karyawan resto mana pun, tapi dialah yang
+    // wajib memeriksa bukti transfer langganan sebelum menyetujui
+    // pembayaran. Tanpa ini yang dia lihat "Gagal dimuat", dan
+    // satu-satunya jalan yang tersisa menyetujui tanpa melihat bukti.
+    expect(blokBaca, contains('is_super_admin()'));
+
+    // Menulis dan menimpa tidak ikut: KaataGo Admin tidak perlu menaruh
+    // berkas di ember milik merchant.
+    final tulisBlok = sql.substring(sql.indexOf('create policy "absensi: tulis'));
+    expect(tulisBlok.substring(0, 600), isNot(contains('is_super_admin()')));
   });
 
   // Ember `absensi` sengaja tidak publik: isinya foto wajah karyawan dan

@@ -30,7 +30,9 @@ class WajahGagal implements Exception {
 class MesinWajah {
   static const tersedia = false;
 
-  static const namaModel = 'geometri-mlkit-v1';
+  static const namaModel = 'facenet-128-v1';
+
+  static const versiPersetujuan = 'wajah-v1-2026-09';
 
   static Future<bool> siap() async => false;
 

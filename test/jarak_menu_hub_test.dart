@@ -27,23 +27,23 @@ void main() {
         reason: 'celah dobel bikin satu tombol terlihat terpisah sendiri');
   });
 
-  /// Kebalikannya, dan sama-sama terlihat: tombol tanpa jarak sama
-  /// sekali di antara tetangga yang berjarak.
+  /// Beranda Owner menyusun daftarnya sendiri, bukan lewat
+  /// HubMenuLayout — dan dulu jaraknya ditulis tangan di antara tiap
+  /// kartu.
   ///
-  /// Beranda Owner memberi jaraknya sendiri lewat SizedBox, tidak
-  /// seperti beranda peran lain yang menyerahkannya ke HubMenuLayout.
-  /// Tombol baru yang ditambahkan tanpa SizedBox akan menempel pada
-  /// tetangganya, dan terbaca seperti bagian dari tombol di bawahnya.
-  test('di beranda Owner, tiap tombol dipisahkan jaraknya', () {
+  /// Itu rapi selama semua menunya muncul. Begitu paket Basic mencabut
+  /// beberapa menu, kartunya hilang tapi dua SizedBox pengapitnya tetap
+  /// tinggal, dan yang terlihat lubang selebar dua kali jarak biasa.
+  ///
+  /// Sekarang jaraknya disisipkan tileBerjarak, SESUDAH yang dicabut
+  /// dibuang. Hasilnya diuji dengan benar-benar dibangun di
+  /// jarak_menu_tercabut_test.dart — sumber yang benar tidak menjamin
+  /// hasil yang benar setelah disaring.
+  test('beranda Owner menyerahkan jaraknya ke tileBerjarak', () {
     final isi = File('lib/screens/owner_home_screen.dart').readAsStringSync();
-    // Hanya berlaku untuk yang berada di daftar teratas — yang di dalam
-    // `tiles: () => [` memang menempel satu sama lain dengan sengaja.
-    //
-    // Beranda ini memakai ListView polos, bukan HubMenuLayout seperti
-    // peran lain. Itu justru alasan jaraknya harus ditulis tangan.
-    final atas = isi.substring(
-        isi.indexOf('ListView('), isi.indexOf('HubGroupTile('));
-    expect(atas, contains('const SizedBox(height: 12)'),
-        reason: 'tombol pertama tidak dipisahkan dari kelompok di bawahnya');
+    expect(isi, contains('tileBerjarak(context, ['));
+    expect(isi, isNot(contains('const SizedBox(height: 12),')),
+        reason: 'jarak yang ditulis tangan tertinggal saat menunya dicabut '
+            'UAM — pakai tileBerjarak');
   });
 }

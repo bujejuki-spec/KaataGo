@@ -260,6 +260,27 @@ void main() {
           contains('paket = null'));
     });
 
+    // set_trial_resto menyetel paket jadi null dan harganya jadi nol.
+    // Dipanggil untuk merchant yang sudah membayar, ia membatalkan
+    // langganannya dan menghentikan penagihannya — tanpa galat, dan yang
+    // menemukannya adalah tagihan yang berhenti datang.
+    test('yang sudah berlangganan tidak bisa diberi percobaan', () {
+      final blok = rapi.substring(rapi.indexOf('function set_trial_resto'));
+      final badan = blok.substring(0, blok.indexOf(r'$fn$;'));
+      expect(badan, contains('paket is not null'));
+      expect(badan, contains('sudah berlangganan'));
+    });
+
+    // Layar yang menyembunyikan tombol tidak menahan apa pun kalau
+    // fungsinya tetap bisa dipanggil — tapi menyembunyikannya tetap
+    // benar, supaya tidak ada yang menekan tombol yang pasti ditolak.
+    test('layarnya menyembunyikan percobaan untuk yang berlangganan', () {
+      final layar = File('lib/screens/super_admin_billing_screen.dart')
+          .readAsStringSync();
+      expect(layar, contains('if (k?.paket != null) ...['));
+      expect(layar, contains('sudah berlangganan, jadi masa '));
+    });
+
     // Kolom yang melupakan angka yang barusan diisi orang membuat setiap
     // pembukaan berikutnya terlihat seperti perubahan yang gagal
     // tersimpan.

@@ -1,15 +1,16 @@
 import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
-import 'dart:ui' show Offset, Rect;
+import 'dart:ui' show Rect;
 
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:image/image.dart' as img;
+import 'package:tflite_flutter/tflite_flutter.dart';
 
 /// Hasil satu pemindaian wajah.
 class HasilWajah {
-  /// Tanda tangan bentuk wajahnya — deret angka yang dibandingkan
-  /// server dengan yang terdaftar.
+  /// Sidik wajahnya — 128 angka yang dibandingkan server dengan yang
+  /// terdaftar.
   final List<double> sidik;
 
   /// Wajah yang sudah dipotong, disimpan sebagai bukti yang dilihat
@@ -29,62 +30,102 @@ class WajahGagal implements Exception {
   String toString() => pesan;
 }
 
-/// Pencocok wajah di perangkat, tanpa model terlatih.
+/// Pengenal wajah di perangkat.
 ///
-/// ── Apa yang benar-benar dibandingkan ────────────────────────────────
+/// ── Kenapa bukan bentuk wajahnya ─────────────────────────────────────
 ///
-/// Bentuk wajahnya, bukan penampakannya. ML Kit — yang sudah ikut di
-/// APK, Apache-2.0, terbitan Google sendiri — memberi sekitar 133 titik
-/// kontur: garis rahang, alis, mata, hidung, pipi. Titik-titik itu
-/// diluruskan, diseragamkan skalanya, lalu dijadikan satu deret angka.
+/// Versi sebelumnya membandingkan BENTUK wajah: titik kontur dari ML
+/// Kit, diluruskan di garis mata dan diseragamkan skalanya. Idenya
+/// masuk akal dan hasilnya tidak: begitu ada tiga wajah sungguhan untuk
+/// diuji, tiga orang yang berbeda berjarak 0,85-0,88 dari skala 0-1 —
+/// jauh di atas ambang yang dianggap "yakin orangnya sama".
 ///
-/// Dua foto orang yang sama menghasilkan deret yang berdekatan. Dua
-/// orang yang bentuk wajahnya berbeda menghasilkan deret yang berjauhan.
+/// Sebabnya mendasar, bukan soal angka yang kurang pas. Penyeragaman
+/// skalanya membuang justru apa yang membedakan orang, dan yang tersisa
+/// cuma "berbentuk wajah" — dan semua orang berbentuk wajah.
+///
+/// ── Yang dipakai sekarang ────────────────────────────────────────────
+///
+/// FaceNet: model terlatih yang mengubah wajah jadi 128 angka, di mana
+/// wajah orang yang sama berdekatan dan wajah orang lain berjauhan.
+/// Berkasnya ikut di APK dan dijalankan TensorFlow Lite di ponsel.
+///
+/// Fotonya tidak ke mana-mana. Berkas `.tflite` bukan program: ia
+/// bundel angka dalam format data tertutup, tanpa kemampuan membuka
+/// jaringan atau membaca berkas. Yang masuk piksel di RAM, yang keluar
+/// 128 angka. Itu batas strukturnya, bukan janji niat baik.
+///
+/// ML Kit tetap dipakai, tapi untuk pekerjaan yang memang bisa
+/// dilakukannya: menemukan wajahnya di gambar, memastikan cuma ada
+/// satu, dan menolak mata terpejam atau kepala terlalu miring.
 ///
 /// ── Yang TIDAK dijanjikan ────────────────────────────────────────────
 ///
-/// Ini bukan pengenal wajah sekelas model terlatih, dan tidak boleh
-/// diperlakukan begitu. Dua orang yang kebetulan berbentuk wajah mirip —
-/// saudara kandung, misalnya — bisa lolos. Yang dijamin cuma satu: absen
-/// tidak bisa dititipkan ke orang yang bentuk wajahnya jelas berbeda.
-///
-/// Karena itu fotonya selalu disimpan, dan layar Admin menyandingkan
-/// foto acuan dengan foto absen hari itu. Pemeriksaan otomatis menangkap
-/// yang kasar; yang halus ditangkap mata orang saat memutuskan gaji —
-/// dan itu memang saat yang paling tepat untuk memeriksanya.
-///
-/// Menyebutnya "pengenal wajah" tanpa keterangan ini akan membuat orang
-/// mengandalkan jaminan yang tidak pernah diberikan.
+/// Tidak ada pengenal wajah yang tidak pernah keliru. Saudara kembar
+/// bisa lolos, dan cahaya yang sangat buruk bisa menolak orang yang
+/// benar. Karena itu fotonya selalu disimpan, skor yang jatuh di pita
+/// ragu-ragu ditandai, dan layar Absensi Karyawan menyandingkan foto
+/// acuan dengan foto absennya. Yang kasar ditangkap model; yang halus
+/// ditangkap mata orang saat memutuskan gaji.
 class MesinWajah {
   static const tersedia = true;
 
   /// Ikut tersimpan di basis data bersama sidiknya.
   ///
-  /// Server memilih cara membandingkan berdasarkan nama ini. Sidik dari
-  /// dua cara berbeda tidak sebanding sama sekali — angkanya tetap
-  /// keluar, dan yang keluar adalah penolakan yang tidak bisa
-  /// dijelaskan ke orangnya.
-  static const namaModel = 'geometri-mlkit-v1';
+  /// Server memilih cara membandingkan berdasarkan nama ini, dan
+  /// MENOLAK absen kalau namanya tidak sama dengan yang terdaftar.
+  /// Sidik dari dua cara berbeda tidak sebanding sama sekali — angkanya
+  /// tetap keluar, dan angka itulah yang paling berbahaya karena ia
+  /// terlihat seperti jawaban.
+  static const namaModel = 'facenet-128-v1';
+
+  /// Versi teks persetujuan yang sedang berlaku.
+  ///
+  /// Ikut tercatat saat wajahnya didaftarkan. Kalau teksnya suatu hari
+  /// berubah, yang pernah menyetujui teks lama tetap tercatat menyetujui
+  /// teks lama — tanpa versinya, catatan persetujuan tidak membuktikan
+  /// apa pun karena tidak ada yang tahu dia menyetujui apa.
+  static const versiPersetujuan = 'wajah-v1-2026-09';
+
+  static const _berkasModel = 'assets/face/facenet.tflite';
+
+  /// Sisi gambar yang diminta FaceNet, dan panjang sidik yang
+  /// dikeluarkannya.
+  static const _sisi = 160;
+  static const _panjangSidik = 128;
 
   static FaceDetector? _pendeteksi;
-
-  /// Selalu siap: tidak ada berkas model yang perlu dimuat.
-  static Future<bool> siap() async => true;
+  static Interpreter? _model;
 
   static FaceDetector get _detektor => _pendeteksi ??= FaceDetector(
         options: FaceDetectorOptions(
           performanceMode: FaceDetectorMode.accurate,
-          // Konturnya yang jadi bahan tanda tangannya. Tanpa ini yang
-          // tersedia cuma sepuluh titik, dan sepuluh titik tidak cukup
-          // membedakan siapa pun.
-          enableContours: true,
+          // Kontur tidak lagi dibutuhkan: yang mengenali wajahnya
+          // sekarang FaceNet, dan ML Kit cuma menemukan letaknya.
+          // Mematikannya membuat pendeteksiannya jauh lebih ringan.
+          enableContours: false,
           enableLandmarks: true,
           enableClassification: true,
           minFaceSize: 0.15,
         ),
       );
 
-  /// Memindai satu berkas gambar jadi tanda tangan wajah.
+  /// Memuat modelnya. Dipanggil sekali, lalu hasilnya dipakai ulang.
+  static Future<bool> siap() async {
+    if (_model != null) return true;
+    try {
+      _model = await Interpreter.fromAsset(_berkasModel);
+      return true;
+    } catch (_) {
+      // Tidak dilempar sebagai galat: layar absensi memakai ini untuk
+      // memutuskan apa yang ditawarkannya, dan izin tidak masuk tetap
+      // harus bisa diajukan meski modelnya gagal dimuat — server tidak
+      // menuntut wajah maupun GPS untuk yang satu itu.
+      return false;
+    }
+  }
+
+  /// Memindai satu berkas gambar jadi sidik wajah.
   static Future<HasilWajah> pindai(String jalurGambar) async {
     final wajah =
         await _detektor.processImage(InputImage.fromFilePath(jalurGambar));
@@ -112,123 +153,89 @@ class MesinWajah {
           'Matanya terpejam. Coba lagi sambil melihat kamera.');
     }
 
-    // Wajah miring mengubah bentuk yang terlihat kamera, bukan cuma
-    // memutarnya — dan tanda tangan yang dihitung darinya akan berbeda
-    // dari yang terdaftar meski orangnya sama. Batasnya lebih ketat
-    // daripada pengenal wajah terlatih justru karena metode ini lebih
-    // peka terhadap pose.
+    // Batasnya lebih longgar daripada cara yang lama. FaceNet dilatih
+    // pada wajah yang tidak selalu lurus ke kamera, jadi kemiringan
+    // sedang tidak lagi merusak sidiknya — dan menolak orang karena
+    // kepalanya agak miring cuma menyuruhnya mengulang tanpa alasan.
     final y = w.headEulerAngleY ?? 0;
     final z = w.headEulerAngleZ ?? 0;
-    if (y.abs() > 15 || z.abs() > 15) {
+    if (y.abs() > 25 || z.abs() > 25) {
       throw const WajahGagal(
-          'Hadapkan wajahmu lurus ke kamera, jangan miring.');
+          'Hadapkan wajahmu lurus ke kamera, jangan terlalu miring.');
     }
-
-    final sidik = _tandaTangan(w);
 
     final asli = img.decodeImage(await File(jalurGambar).readAsBytes());
     if (asli == null) {
       throw const WajahGagal('Gambarnya tidak terbaca. Coba foto ulang.');
     }
 
+    final potongan = _potong(asli, w.boundingBox);
+
     return HasilWajah(
-      sidik: sidik,
-      potongan: Uint8List.fromList(
-          img.encodeJpg(_potong(asli, w.boundingBox), quality: 82)),
+      sidik: await _sidik(potongan),
+      potongan: Uint8List.fromList(img.encodeJpg(potongan, quality: 82)),
     );
   }
 
-  // ── Tanda tangannya ────────────────────────────────────────────────
+  // ── Sidiknya ───────────────────────────────────────────────────────
 
-  /// Kontur yang dipakai, berikut berapa titik yang diambil dari
-  /// masing-masing.
-  ///
-  /// Bibir sengaja TIDAK ikut. Bentuknya berubah total antara tersenyum
-  /// dan tidak, dan orang yang absen sambil tersenyum akan ditolak oleh
-  /// wajahnya sendiri.
-  ///
-  /// Mata juga tidak: ia menyipit dan membuka, dan kelopak yang setengah
-  /// tertutup menggeser seluruh konturnya.
-  static const _dipakai = <FaceContourType, int>{
-    FaceContourType.face: 24,
-    FaceContourType.leftEyebrowTop: 5,
-    FaceContourType.rightEyebrowTop: 5,
-    FaceContourType.noseBridge: 2,
-    FaceContourType.noseBottom: 3,
-  };
-
-  static List<double> _tandaTangan(Face w) {
-    final mataKiri = w.landmarks[FaceLandmarkType.leftEye]?.position;
-    final mataKanan = w.landmarks[FaceLandmarkType.rightEye]?.position;
-    if (mataKiri == null || mataKanan == null) {
+  static Future<List<double>> _sidik(img.Image wajah) async {
+    if (!await siap()) {
       throw const WajahGagal(
-          'Mata tidak terbaca jelas. Coba lagi dengan cahaya yang lebih '
-          'terang.');
+          'Pengenal wajahnya gagal dimuat. Tutup aplikasinya lalu buka '
+          'lagi; kalau masih sama, perbarui aplikasinya lewat Kotak Masuk.');
     }
 
-    final kiri = Offset(mataKiri.x.toDouble(), mataKiri.y.toDouble());
-    final kanan = Offset(mataKanan.x.toDouble(), mataKanan.y.toDouble());
+    final kecil = img.copyResize(wajah,
+        width: _sisi, height: _sisi, interpolation: img.Interpolation.linear);
 
-    // Diluruskan pada garis mata: titik tengah kedua mata jadi pusat,
-    // garisnya diputar jadi mendatar, dan jarak antarmata jadi satuan
-    // ukurnya.
+    // FaceNet menuntut gambarnya DISERAGAMKAN dulu: tiap nilai dikurangi
+    // rata-ratanya lalu dibagi simpangan bakunya, dihitung per gambar.
     //
-    // Tanpa ini, wajah yang sama pada jarak berbeda dari kamera
-    // menghasilkan angka yang sama sekali berbeda — dan yang dibandingkan
-    // bukan lagi wajahnya melainkan seberapa dekat orangnya berdiri.
-    final pusat = Offset((kiri.dx + kanan.dx) / 2, (kiri.dy + kanan.dy) / 2);
-    final beda = kanan - kiri;
-    final jarakMata = beda.distance;
-    if (jarakMata < 1) {
-      throw const WajahGagal('Wajahnya terlalu kecil di bingkai. Mendekat '
-          'sedikit lalu coba lagi.');
-    }
-    final sudut = math.atan2(beda.dy, beda.dx);
-    final cos = math.cos(-sudut);
-    final sin = math.sin(-sudut);
-
-    final angka = <double>[];
-    for (final entri in _dipakai.entries) {
-      final titik = w.contours[entri.key]?.points;
-      if (titik == null || titik.isEmpty) {
-        throw const WajahGagal(
-            'Bentuk wajahnya tidak terbaca lengkap. Hadapkan wajahmu lurus '
-            'ke kamera dengan cahaya yang cukup.');
-      }
-      for (final p in _ambilRata(titik, entri.value)) {
-        final dx = (p.dx - pusat.dx) / jarakMata;
-        final dy = (p.dy - pusat.dy) / jarakMata;
-        angka.add(dx * cos - dy * sin);
-        angka.add(dx * sin + dy * cos);
+    // Bukan sekadar dibagi 255. Penyeragaman inilah yang membuat wajah
+    // yang sama di ruangan gelap dan di bawah matahari menghasilkan
+    // sidik yang berdekatan — tanpanya yang dibandingkan lebih banyak
+    // cahayanya daripada orangnya.
+    final piksel = Float32List(_sisi * _sisi * 3);
+    var i = 0;
+    for (var y = 0; y < _sisi; y++) {
+      for (var x = 0; x < _sisi; x++) {
+        final p = kecil.getPixel(x, y);
+        piksel[i++] = p.r.toDouble();
+        piksel[i++] = p.g.toDouble();
+        piksel[i++] = p.b.toDouble();
       }
     }
 
-    return angka;
-  }
-
-  /// Mengambil [berapa] titik yang jaraknya merata di sepanjang kontur.
-  ///
-  /// Jumlah titik yang dikembalikan ML Kit tidak selalu sama antara satu
-  /// foto dan foto berikutnya. Deret yang panjangnya berbeda tidak bisa
-  /// dibandingkan sama sekali, jadi panjangnya dipaksa tetap di sini.
-  static List<Offset> _ambilRata(List<math.Point<int>> titik, int berapa) {
-    final p = [
-      for (final t in titik) Offset(t.x.toDouble(), t.y.toDouble()),
-    ];
-    if (p.length == 1) return List.filled(berapa, p.first);
-
-    final hasil = <Offset>[];
-    for (var i = 0; i < berapa; i++) {
-      final pos = i * (p.length - 1) / (berapa - 1);
-      final bawah = pos.floor();
-      final atas = math.min(bawah + 1, p.length - 1);
-      final sisa = pos - bawah;
-      hasil.add(Offset(
-        p[bawah].dx + (p[atas].dx - p[bawah].dx) * sisa,
-        p[bawah].dy + (p[atas].dy - p[bawah].dy) * sisa,
-      ));
+    var jumlah = 0.0;
+    for (final v in piksel) {
+      jumlah += v;
     }
-    return hasil;
+    final rata = jumlah / piksel.length;
+
+    var kuadrat = 0.0;
+    for (final v in piksel) {
+      kuadrat += (v - rata) * (v - rata);
+    }
+    // Lantai bawahnya menjaga gambar yang seluruhnya satu warna —
+    // tutup lensa, ruangan gelap gulita — dari membagi dengan nol.
+    final simpangan =
+        math.max(math.sqrt(kuadrat / piksel.length), 1 / math.sqrt(piksel.length));
+
+    for (var j = 0; j < piksel.length; j++) {
+      piksel[j] = (piksel[j] - rata) / simpangan;
+    }
+
+    final keluaran = List.generate(1, (_) => List.filled(_panjangSidik, 0.0));
+    _model!.run(piksel.reshape([1, _sisi, _sisi, 3]), keluaran);
+
+    final sidik = keluaran.first;
+    if (sidik.every((v) => v == 0)) {
+      throw const WajahGagal(
+          'Wajahnya tidak bisa dibaca jadi sidik. Coba foto ulang dengan '
+          'cahaya yang lebih terang.');
+    }
+    return sidik;
   }
 
   /// Memotong kotak wajahnya berikut sedikit ruang di sekelilingnya,
@@ -249,5 +256,7 @@ class MesinWajah {
   static Future<void> tutup() async {
     await _pendeteksi?.close();
     _pendeteksi = null;
+    _model?.close();
+    _model = null;
   }
 }
