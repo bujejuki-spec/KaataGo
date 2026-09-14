@@ -190,14 +190,32 @@ begin;
 
 -- Daftar parameternya bertambah satu, jadi yang lama dibuang lebih
 -- dulu — lihat catatan di _ambang_kembar_model() di atas.
+-- Dua-duanya dibuang, yang berparameter empat maupun yang lima.
+--
+-- Yang lima memang sudah bernama sama dan bertipe sama, tapi versi
+-- terdahulunya punya nilai bawaan — dan `create or replace` MENOLAK
+-- mencabut nilai bawaan dari fungsi yang sudah ada. Galatnya menyebut
+-- DROP FUNCTION dengan jelas, tapi ia baru muncul saat berkas ini
+-- dijalankan ulang, bukan saat pertama kali.
 drop function if exists daftar_wajah(text, double precision[], text, text);
+drop function if exists daftar_wajah(text, double precision[], text, text, text);
 
 create or replace function daftar_wajah(
   p_resto_id text,
   p_embedding double precision[],
-  p_model text default 'facenet-128-v1',
-  p_foto_url text default null,
-  p_setuju_versi text default null)
+  -- Tidak satu pun berparameter bawaan, dan itu disengaja.
+  --
+  -- Postgres menuntutnya begitu parameter terakhir wajib: yang tanpa
+  -- bawaan tidak boleh berdiri setelah yang punya bawaan.
+  --
+  -- Tapi bukan cuma menuruti aturan bahasanya. Bawaan di sini berarti
+  -- panggilan berparameter empat punya tempat mendarat — dan tempat
+  -- mendaratnya adalah versi lama yang tidak memeriksa persetujuan sama
+  -- sekali. Aplikasi selalu mengirim kelimanya, jadi tidak ada yang
+  -- hilang dengan mewajibkannya.
+  p_model text,
+  p_foto_url text,
+  p_setuju_versi text)
 returns void
 language plpgsql
 security definer
@@ -285,6 +303,16 @@ commit;
 
 begin;
 
+-- Yang memanggil dibuang lebih dulu, baru yang dipanggil — dan
+-- keduanya dibuang karena versi terdahulunya berparameter bawaan, yang
+-- tidak bisa dicabut oleh `create or replace`.
+drop function if exists absen_masuk(text, double precision[],
+  double precision, double precision, text, text);
+drop function if exists absen_pulang(text, double precision[],
+  double precision, double precision, text, text);
+drop function if exists _absen(text, double precision[], double precision,
+  double precision, text, boolean, text);
+
 create or replace function _absen(
   p_resto_id text,
   p_embedding double precision[],
@@ -292,7 +320,15 @@ create or replace function _absen(
   p_lng double precision,
   p_foto_url text,
   p_pulang boolean,
-  p_model text default null)
+  -- TANPA nilai bawaan, dan itu disengaja.
+  --
+  -- Dengan `default null`, panggilan berparameter enam cocok ke DUA
+  -- fungsi sekaligus — yang lama dan yang ini — dan Postgres menolaknya:
+  -- "function _absen(...) is not unique". Yang kena bukan berkas ini
+  -- melainkan absensi_payroll.sql yang dijalankan lebih dulu di bundel
+  -- gabungan, jadi galatnya muncul jauh sebelum baris ini terbaca dan
+  -- seluruh sisa bundelnya batal.
+  p_model text)
 returns table (jarak_m integer, skor double precision, waktu timestamptz)
 language plpgsql
 security definer
@@ -459,8 +495,8 @@ create or replace function absen_masuk(
   p_embedding double precision[],
   p_lat double precision,
   p_lng double precision,
-  p_foto_url text default null,
-  p_model text default null)
+  p_foto_url text,
+  p_model text)
 returns table (jarak_m integer, skor double precision, waktu timestamptz)
 language sql
 security definer
@@ -475,8 +511,8 @@ create or replace function absen_pulang(
   p_embedding double precision[],
   p_lat double precision,
   p_lng double precision,
-  p_foto_url text default null,
-  p_model text default null)
+  p_foto_url text,
+  p_model text)
 returns table (jarak_m integer, skor double precision, waktu timestamptz)
 language sql
 security definer

@@ -117,6 +117,7 @@ FILES=(
   paket_langganan.sql
   perbaikan_hak_fungsi.sql
   paket_trial_rapi.sql
+  paket_publik.sql
   wajah_tidak_kembar.sql
   wajah_geometri.sql
   wajah_facenet.sql
