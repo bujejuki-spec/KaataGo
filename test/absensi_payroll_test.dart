@@ -450,6 +450,53 @@ void main() {
     });
   });
 
+  // Ember `absensi` sengaja tidak publik: isinya foto wajah karyawan dan
+  // surat keterangan sakit.
+  //
+  // getPublicUrl() tetap mengembalikan alamat untuk ember tertutup —
+  // alamat yang selalu ditolak. Tidak ada galat saat menyimpannya, dan
+  // yang terlihat cuma kotak "Gagal dimuat" di layar orang yang sedang
+  // memutuskan gaji.
+  group('gambar dari ember tertutup', () {
+    test('yang disimpan jalur berkasnya, bukan alamat publik', () {
+      for (final jalur in [
+        'lib/db/absensi_repository.dart',
+        'lib/db/paket_langganan_repository.dart',
+      ]) {
+        expect(File(jalur).readAsStringSync(), isNot(contains('getPublicUrl')),
+            reason: jalur);
+      }
+    });
+
+    test('ditampilkan lewat URL bertanda tangan', () {
+      final w = File('lib/widgets/gambar_bertanda.dart').readAsStringSync();
+      expect(w, contains('createSignedUrl('));
+      // Tanda yang tersimpan di basis data akan kedaluwarsa, dan
+      // barisnya berubah jadi kotak kosong tanpa ada yang mengubah
+      // apa pun. Jadi tandanya dibuat saat gambarnya mau ditampilkan.
+      expect(w, contains('class GambarBertanda'));
+    });
+
+    // Baris lama terlanjur menyimpan URL publik yang tidak pernah bisa
+    // dibuka. Jalurnya masih ada di dalam alamat itu.
+    test('alamat lama dipungut kembali jalurnya', () {
+      final w = File('lib/widgets/gambar_bertanda.dart').readAsStringSync();
+      expect(w, contains("'/object/public/\$ember/'"));
+      expect(w, contains("indexOf('?')"));
+    });
+
+    test('layar yang menampilkannya memakai widget itu', () {
+      for (final jalur in [
+        'lib/screens/absensi_report_screen.dart',
+        'lib/screens/pengajuan_langganan_screen.dart',
+      ]) {
+        final isi = File(jalur).readAsStringSync();
+        expect(isi, contains('GambarBertanda('), reason: jalur);
+        expect(isi, isNot(contains('Image.network(')), reason: jalur);
+      }
+    });
+  });
+
   // Pencocokan otomatisnya cuma membandingkan bentuk wajah, dan bentuk
   // wajah dua orang bisa mirip. Yang tidak mirip wajahnya sendiri — dan
   // itu cuma bisa dilihat kalau kedua fotonya bersebelahan.

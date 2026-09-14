@@ -174,12 +174,12 @@ class _AbsensiScreenState extends State<AbsensiScreen> {
             'dipindahkan ke wajah orang lain diam-diam.',
           ),
           actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(c, false),
-                child: const Text('Nanti')),
-            FilledButton(
-                onPressed: () => Navigator.pop(c, true),
-                child: const Text('Daftarkan')),
+            DialogActions(
+              confirmLabel: 'Daftarkan',
+              cancelLabel: 'Nanti',
+              onConfirm: () => Navigator.pop(c, true),
+              onCancel: () => Navigator.pop(c, false),
+            ),
           ],
         ),
       );

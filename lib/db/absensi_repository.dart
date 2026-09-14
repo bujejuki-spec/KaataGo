@@ -154,7 +154,12 @@ class AbsensiRepository {
 
   // ── Berkas ─────────────────────────────────────────────────────────
 
-  /// Mengunggah foto absen atau surat sakit, mengembalikan URL-nya.
+  /// Mengunggah foto absen atau surat sakit, mengembalikan JALUR-nya.
+  ///
+  /// Jalur, bukan URL publik. Embernya tertutup — alamat publiknya
+  /// selalu ditolak, dan penolakannya baru terlihat berbulan-bulan
+  /// kemudian sebagai kotak "Gagal dimuat". Yang menampilkannya membuat
+  /// URL bertanda tangan saat gambarnya mau dilihat.
   ///
   /// Namanya memuat email dan waktunya, bukan angka acak: berkas yang
   /// tidak bisa dikenali dari namanya hanya bisa ditelusuri lewat baris
@@ -178,6 +183,6 @@ class AbsensiRepository {
             upsert: true,
           ),
         );
-    return _client.storage.from(_ember).getPublicUrl(nama);
+    return nama;
   }
 }

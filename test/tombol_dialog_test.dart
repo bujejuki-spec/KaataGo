@@ -29,7 +29,22 @@ void main() {
         final tutup = sisa.indexOf('\n      ],');
         final blok = tutup < 0 ? sisa.substring(0, 400) : sisa.substring(0, tutup);
 
-        final adaBatal = blok.contains("Text('Batal')");
+        // Bukan cuma kata "Batal".
+        //
+        // Penjaga ini dulu hanya mengenal satu kata, dan dialog
+        // "Daftarkan wajahmu" lolos dengan tombol bernama "Nanti" —
+        // melipat persis seperti yang mau dicegah, dan yang menemukannya
+        // tangkapan layar dari HP orang. Yang menentukan bukan katanya,
+        // melainkan perannya: tombol yang membatalkan, disebut apa pun.
+        const kataBatal = [
+          'Batal',
+          'Nanti',
+          'Lain kali',
+          'Tidak',
+          'Jangan',
+          'Belum',
+        ];
+        final adaBatal = kataBatal.any((k) => blok.contains("Text('$k')"));
         if (!adaBatal) continue;
 
         // Batal sendirian itu dialog pemberitahuan, bukan pilihan —

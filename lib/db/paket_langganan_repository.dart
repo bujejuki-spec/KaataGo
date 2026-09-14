@@ -50,7 +50,7 @@ class PaketLanggananRepository {
 
   // ── Merchant ────────────────────────────────────────────────────────
 
-  /// Mengunggah bukti transfer, mengembalikan URL-nya.
+  /// Mengunggah bukti transfer, mengembalikan JALUR-nya.
   ///
   /// Menumpang ember `absensi` yang sudah tertutup dari umum, bukan
   /// membuat ember baru: bukti transfer sama tidak pantasnya untuk bisa
@@ -67,7 +67,7 @@ class PaketLanggananRepository {
           fileOptions: const FileOptions(
               contentType: 'image/jpeg', upsert: true),
         );
-    return _client.storage.from(_ember).getPublicUrl(nama);
+    return nama;
   }
 
   Future<String> ajukan({

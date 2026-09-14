@@ -37,6 +37,14 @@ Formatnya dibaca `scripts/release.sh`: judul `## <versi>`, lalu
 poin-poinnya. Versi yang tidak punya bagiannya di sini tetap terbit,
 hanya pengumumannya memakai kalimat umum.
 
+## 3.10.1
+
+- Foto acuan dan foto absen kini benar-benar tampil di Absensi Karyawan.
+  Foto yang sudah terlanjur tersimpan ikut tampil, tidak perlu diulang
+- Bukti transfer langganan ikut diperbaiki
+- Rincian absensi harian tidak lagi terpotong di layar kecil
+- Perbaikan bug dan penyempurnaan tampilan
+
 ## 3.10.0
 
 - **Absen wajah sekarang langsung bisa dipakai** — tanpa unduhan tambahan

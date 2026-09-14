@@ -7,6 +7,7 @@ import '../theme.dart';
 import '../utils/pesan_galat.dart';
 import '../widgets/app_toast.dart';
 import '../widgets/dialog_actions.dart';
+import '../widgets/gambar_bertanda.dart';
 import '../widgets/lencana_paket_aktif.dart';
 import '../widgets/responsive.dart';
 import 'harga_paket_screen.dart';
@@ -341,18 +342,11 @@ class _Kartu extends StatelessWidget {
           // dan yang tidak dibuka akan disetujui tanpa dilihat.
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
-            child: Image.network(
-              p.buktiUrl,
+            child: SizedBox(
               height: 200,
               width: double.infinity,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
-                height: 80,
-                alignment: Alignment.center,
-                color: KaataTheme.softFillOf(context),
-                child: Text('Bukti transfernya gagal dimuat.',
-                    style: TextStyle(fontSize: 12, color: muted)),
-              ),
+              child: GambarBertanda(
+                  simpanan: p.buktiUrl, kosong: 'Bukti transfernya tidak ada'),
             ),
           ),
           if (onSetujui != null) ...[

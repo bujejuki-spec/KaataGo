@@ -15,6 +15,7 @@ import '../utils/akses_menu.dart';
 import '../utils/id_time.dart';
 import '../utils/pesan_galat.dart';
 import '../widgets/app_toast.dart';
+import '../widgets/gambar_bertanda.dart';
 import '../widgets/responsive.dart';
 
 /// Laporan absensi satu periode gaji — Admin, Owner, dan Finance.
@@ -349,24 +350,39 @@ class _KartuOrang extends StatelessWidget {
               child: Column(
                 children: [
                   for (final b in baris)
-                    Row(
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Row(
                       children: [
-                        SizedBox(
-                          width: 96,
-                          child: Text(_tgl.format(b.tanggal),
-                              style: TextStyle(fontSize: 12, color: muted)),
-                        ),
+                        // Tanggal di atas, rinciannya di baris kedua.
+                        //
+                        // Semuanya dalam satu baris memaksa jam, lama
+                        // kerja, dan jaraknya berbagi sisa ruang setelah
+                        // tombol foto dan sakelar — dan di layar 5 inci
+                        // yang tersisa cuma "09:26 → — (2 …". Angka yang
+                        // terpotong sama tidak bergunanya dengan angka
+                        // yang tidak ada.
                         Expanded(
-                          child: Text(
-                            b.status == StatusAbsen.hadir
-                                ? '${b.masukAt == null ? '—' : jam.format(b.masukAt!.toWib())}'
-                                    ' → ${b.pulangAt == null ? '—' : jam.format(b.pulangAt!.toWib())}'
-                                    '${b.lamaTeks == null ? '' : '  ·  ${b.lamaTeks}'}'
-                                    '${b.masukJarakM == null ? '' : '  (${b.masukJarakM} m)'}'
-                                : '${b.status.label}${b.alasan == null ? '' : ' — ${b.alasan}'}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontSize: 12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(_tgl.format(b.tanggal),
+                                  style: const TextStyle(
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w600)),
+                              const SizedBox(height: 1),
+                              Text(
+                                b.status == StatusAbsen.hadir
+                                    ? '${b.masukAt == null ? '—' : jam.format(b.masukAt!.toWib())}'
+                                        ' → ${b.pulangAt == null ? 'belum pulang' : jam.format(b.pulangAt!.toWib())}'
+                                        '${b.lamaTeks == null ? '' : '  ·  ${b.lamaTeks}'}'
+                                        '${b.masukJarakM == null ? '' : '  ·  ${b.masukJarakM} m'}'
+                                    : '${b.status.label}${b.alasan == null ? '' : ' — ${b.alasan}'}',
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(fontSize: 11.5, color: muted),
+                              ),
+                            ],
                           ),
                         ),
                         // Foto absennya disandingkan dengan foto acuan.
@@ -394,12 +410,15 @@ class _KartuOrang extends StatelessWidget {
                               : 'Hari ini tidak memotong gaji',
                           child: Switch(
                             value: b.potongGaji,
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
                             onChanged: bolehUbahDiSini(context)
                                 ? (v) => onPotong(b, v)
                                 : null,
                           ),
                         ),
                       ],
+                    ),
                     ),
                 ],
               ),
@@ -555,26 +574,11 @@ class _Foto extends StatelessWidget {
           aspectRatio: 1,
           child: ClipRRect(
             borderRadius: BorderRadius.circular(10),
-            child: url == null
-                ? Container(
-                    color: KaataTheme.softFillOf(context),
-                    alignment: Alignment.center,
-                    child: Text(kosong,
-                        style: TextStyle(fontSize: 11.5, color: muted)),
-                  )
-                : Image.network(
-                    url!,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      color: KaataTheme.softFillOf(context),
-                      alignment: Alignment.center,
-                      child: Text('Gagal dimuat',
-                          style: TextStyle(fontSize: 11.5, color: muted)),
-                    ),
-                  ),
+            child: GambarBertanda(simpanan: url, kosong: kosong),
           ),
         ),
       ],
     );
   }
 }
+
