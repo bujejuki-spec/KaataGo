@@ -37,6 +37,23 @@ Formatnya dibaca `scripts/release.sh`: judul `## <versi>`, lalu
 poin-poinnya. Versi yang tidak punya bagiannya di sini tetap terbit,
 hanya pengumumannya memakai kalimat umum.
 
+## 3.12.0
+
+- Absen wajah kini diperiksa **sebelum fotonya diunggah**, jadi kalau
+  bukan orangnya ketahuan langsung — tidak perlu menunggu unggahan
+  selesai dulu
+- Berlangganan sekarang lewat **satu pintu saja**: pengajuan langganan
+  yang disetujui KaataGo Admin. Biaya bulanan mengikuti harga paket,
+  tidak lagi diketik terpisah
+- Pengajuan langganan bisa dicari dengan nama merchant, riwayatnya
+  menampilkan hari ini dan bisa dipilih periodenya, dan bukti
+  transfernya bisa dilipat biar daftarnya tidak kepanjangan
+- Tagihan yang dibatalkan tidak lagi ikut tampil di daftar tagihan
+- Lencana paket di beranda hanya bisa ditekan Owner dan Finance —
+  peran lain tetap melihatnya sebagai keterangan
+- Harga paket di halaman web KaataGo kini mengikuti harga yang berlaku
+- Perbaikan bug dan penyempurnaan tampilan
+
 ## 3.11.0
 
 - **Pengenalan wajah untuk absensi diganti dengan model terlatih.** Cara

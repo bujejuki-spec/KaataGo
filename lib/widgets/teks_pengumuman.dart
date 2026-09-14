@@ -57,22 +57,63 @@ class TeksPengumuman extends StatelessWidget {
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: Text(
-                    bagian[i].teks,
-                    style: TextStyle(fontSize: fontSize, height: 1.45),
+                  child: Text.rich(
+                    _bertebal(bagian[i].teks,
+                        TextStyle(fontSize: fontSize, height: 1.45)),
                   ),
                 ),
               ],
             )
           else
-            Text(
-              bagian[i].teks,
-              style: TextStyle(fontSize: fontSize, height: 1.45),
+            Text.rich(
+              _bertebal(bagian[i].teks,
+                  TextStyle(fontSize: fontSize, height: 1.45)),
             ),
         ],
       ],
     );
   }
+}
+
+/// Mengubah `**begini**` jadi benar-benar tebal.
+///
+/// ── Kenapa perlu ─────────────────────────────────────────────────────
+///
+/// Catatan rilis ditulis di berkas Markdown, tempat `**` memang berarti
+/// tebal. Yang membacanya di kotak masuk bukan Markdown melainkan satu
+/// `Text` biasa — jadi bintangnya muncul apa adanya, dan kalimat yang
+/// justru ingin ditonjolkan berubah jadi kalimat yang terlihat rusak.
+///
+/// Diterjemahkan saat DITAMPILKAN, bukan saat disimpan. Pengumuman yang
+/// sudah terlanjur ada di kotak masuk orang tidak bisa ditulis ulang,
+/// dan justru itu yang paling banyak dibaca — termasuk yang sudah
+/// terkirim sebelum berkas ini ada.
+///
+/// Yang dikenali cuma `**`. Bukan karena yang lain tidak berguna,
+/// melainkan karena catatan rilisnya memang hanya memakai itu, dan
+/// penerjemah Markdown penuh di sini berarti tiap bintang, garis bawah,
+/// dan tanda kurung yang kebetulan ditulis orang berubah jadi gaya yang
+/// tidak diniatkan siapa pun.
+///
+/// Bintang yang tidak berpasangan dibiarkan apa adanya — memakan
+/// separuh kalimat karena satu bintang nyasar lebih buruk daripada
+/// menampilkan bintangnya.
+TextSpan _bertebal(String teks, TextStyle dasar) {
+  final pola = RegExp(r'\*\*(.+?)\*\*', dotAll: true);
+  final anak = <TextSpan>[];
+  var i = 0;
+
+  for (final m in pola.allMatches(teks)) {
+    if (m.start > i) anak.add(TextSpan(text: teks.substring(i, m.start)));
+    anak.add(TextSpan(
+      text: m.group(1),
+      style: const TextStyle(fontWeight: FontWeight.bold),
+    ));
+    i = m.end;
+  }
+  if (i < teks.length) anak.add(TextSpan(text: teks.substring(i)));
+
+  return TextSpan(style: dasar, children: anak);
 }
 
 /// Satu paragraf atau satu butir daftar.
@@ -124,5 +165,7 @@ List<_Bagian> _pecah(String isi) {
 /// Daftar berbutirnya diratakan jadi satu kalimat panjang: pratinjau
 /// yang memuat tanda hubung dan patahan barisnya terbaca seperti teks
 /// rusak, dan dua baris pertama jadi terbuang untuk tanda baca.
-String ringkasPengumuman(String isi) =>
-    _pecah(isi).map((b) => b.teks).join(' · ');
+String ringkasPengumuman(String isi) => _pecah(isi)
+    .map((b) => b.teks.replaceAll(RegExp(r'\*\*(.+?)\*\*', dotAll: true),
+        r'$1'))
+    .join(' · ');

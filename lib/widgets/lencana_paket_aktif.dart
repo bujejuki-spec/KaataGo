@@ -80,6 +80,24 @@ class _LencanaPaketAktifState extends State<LencanaPaketAktif> {
     final k = _keadaan;
     if (k == null || k.diluarJalurPaket) return const SizedBox.shrink();
 
+    // Yang boleh MENGUBAH paket cuma Owner dan Finance.
+    //
+    // Lencananya tetap terlihat semua peran, dan memang harus: itulah
+    // jawaban untuk kasir yang menunya lebih sedikit daripada kemarin.
+    // Yang dicabut cuma ketukannya.
+    //
+    // Layar pilih paket menyuruh orang mentransfer sejumlah uang dan
+    // mengunggah buktinya. Membukanya untuk kasir dan chef berarti
+    // menawarkan keputusan belanja kepada orang yang bukan pemegang
+    // keputusan itu — dan pengajuan yang terlanjur masuk harus ditolak
+    // seseorang di seberang sana, dengan penjelasan yang canggung.
+    //
+    // Layarnya sendiri tetap punya penjagaannya sendiri; ini bukan
+    // satu-satunya. Yang diperbaiki di sini pintunya, supaya tidak ada
+    // yang menekan sesuatu yang berujung penolakan.
+    final peran = context.watch<AuthProvider>();
+    final bolehUbah = peran.isOwner || peran.isFinance;
+
     Future<void> buka() async {
       await Navigator.of(context).push(
         MaterialPageRoute(builder: (_) => const PilihPaketScreen()),
@@ -103,7 +121,7 @@ class _LencanaPaketAktifState extends State<LencanaPaketAktif> {
           warna: warnaPaket(coba),
           ikon: Icons.hourglass_bottom,
           teks: 'Percobaan ${coba.label} · ${k.sisaHari ?? 0} hari lagi',
-          onTap: buka,
+          onTap: bolehUbah ? buka : null,
         ),
       );
     }
@@ -119,7 +137,7 @@ class _LencanaPaketAktifState extends State<LencanaPaketAktif> {
             ? Icons.workspace_premium
             : Icons.star_outline,
         teks: 'Langganan ${paket.label}',
-        onTap: buka,
+        onTap: bolehUbah ? buka : null,
       ),
     );
   }
@@ -129,13 +147,20 @@ class _Pil extends StatelessWidget {
   final Color warna;
   final IconData ikon;
   final String teks;
-  final VoidCallback onTap;
+
+  /// Null berarti lencananya cuma keterangan, bukan tombol.
+  ///
+  /// InkWell dengan onTap null memang berhenti bisa ditekan, tapi ia
+  /// juga berhenti memberi riak saat disentuh — dan itu bagian yang
+  /// penting: tombol yang berkedip tapi tidak melakukan apa-apa
+  /// mengajari orang untuk berhenti mempercayai tombol lain.
+  final VoidCallback? onTap;
 
   const _Pil({
     required this.warna,
     required this.ikon,
     required this.teks,
-    required this.onTap,
+    this.onTap,
   });
 
   @override

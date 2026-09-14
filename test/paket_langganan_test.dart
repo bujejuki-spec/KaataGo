@@ -7,6 +7,111 @@ import 'package:pos_app/utils/katalog_menu.dart';
 
 /// Paket Basic dan Premium, masa percobaan, dan pengajuan berlangganan.
 void main() {
+  String bacaBerkas(String jalur) => File(jalur).readAsStringSync();
+
+  group('satu pintu untuk berlangganan', () {
+    final billing = bacaBerkas('lib/screens/super_admin_billing_screen.dart');
+
+    test('paket tidak bisa disetel langsung dari Billing Merchant', () {
+      // Paket yang disetel langsung berarti ada merchant yang paketnya
+      // berjalan tanpa satu pun pengajuan — tidak ada bukti transfer,
+      // tidak ada jejak siapa yang menyetujui, dan tidak ada yang bisa
+      // ditunjukkan saat dia bertanya kenapa ditagih.
+      expect(billing, isNot(contains("Text('Setel Langganan')")));
+      expect(billing, isNot(contains('_PilihanPaket.langganan(_paketLangganan)')));
+    });
+
+    test('melepas paket tetap ada, karena kekeliruan butuh jalan pulang', () {
+      expect(billing, contains("Text('Lepas Paket')"));
+      expect(billing, contains('_PilihanPaket.langganan(null)'));
+    });
+
+    test('biaya per bulan tidak lagi diketik tangan', () {
+      // Dua tempat yang sama-sama boleh menentukan satu angka akan
+      // berselisih — biasanya pada hari harga paketnya naik.
+      expect(billing, isNot(contains("requiredLabel('Biaya per Bulan')")));
+      expect(billing, isNot(contains('monthlyPrice: parseRupiah')));
+    });
+
+    test('tagihan yang dibatalkan tidak ditampilkan', () {
+      expect(billing, contains('t.status == InvoiceStatus.cancelled'));
+    });
+  });
+
+  group('lencana paket', () {
+    final lencana = bacaBerkas('lib/widgets/lencana_paket_aktif.dart');
+
+    test('hanya Owner dan Finance yang bisa menekannya', () {
+      // Layar pilih paket menyuruh orang mentransfer uang dan mengunggah
+      // buktinya. Membukanya untuk kasir dan chef berarti menawarkan
+      // keputusan belanja kepada yang bukan pemegang keputusan itu.
+      expect(lencana, contains('peran.isOwner || peran.isFinance'));
+      expect(lencana, contains('onTap: bolehUbah ? buka : null'));
+    });
+
+    test('lencananya tetap terlihat semua peran', () {
+      // Itulah jawaban untuk kasir yang menunya lebih sedikit daripada
+      // kemarin: bukan aplikasinya rusak, paketnya memang Basic.
+      final blok = lencana.substring(lencana.indexOf('Widget build(BuildContext'));
+      expect(blok, isNot(contains('if (!bolehUbah) return const SizedBox')));
+    });
+
+    test('yang tidak boleh menekan tidak diberi riak palsu', () {
+      expect(lencana, contains('final VoidCallback? onTap;'));
+    });
+  });
+
+  group('pengumuman di kotak masuk', () {
+    final teks = bacaBerkas('lib/widgets/teks_pengumuman.dart');
+
+    test('bintang tebal Markdown benar-benar jadi tebal', () {
+      // Catatan rilis ditulis di berkas Markdown. Dikirim apa adanya ke
+      // satu Text biasa, bintangnya muncul sendiri — dan kalimat yang
+      // justru ingin ditonjolkan berubah jadi kalimat yang rusak.
+      expect(teks, contains('TextSpan _bertebal('));
+      expect(teks, contains('FontWeight.bold'));
+      expect(teks, contains('Text.rich('));
+    });
+
+    test('pratinjaunya membuang bintangnya, bukan menampilkannya', () {
+      final blok = teks.substring(teks.indexOf('String ringkasPengumuman'));
+      expect(blok, contains('replaceAll'));
+    });
+  });
+
+  group('layar pengajuan langganan', () {
+    final layar = bacaBerkas('lib/screens/pengajuan_langganan_screen.dart');
+
+    test('riwayatnya bawaannya hari ini saja', () {
+      expect(layar, contains('_hariIni()'));
+      expect(layar, contains('_diRentang(p.diajukanAt)'));
+      expect(layar, contains('showDateRangePicker'));
+    });
+
+    test('yang menunggu tidak ikut disaring periode', () {
+      // Pengajuan yang masuk kemarin dan belum diputuskan tetap harus
+      // terlihat hari ini. Kalau ia hilang bersama tanggalnya, yang
+      // hilang adalah merchant yang sedang tidak bisa berjualan.
+      final baris = layar
+          .split('\n')
+          .firstWhere((b) => b.contains('_semua.where((p) => p.menunggu'));
+      expect(baris, isNot(contains('_diRentang')));
+    });
+
+    test('bisa dicari dengan nama merchant', () {
+      expect(layar, contains('KotakCari'));
+      expect(layar, contains('cocokCari(_kata, [p.namaResto, p.restoId])'));
+    });
+
+    test('buktinya terbuka untuk yang menunggu, terlipat untuk riwayat', () {
+      // Yang menunggu memang datang untuk dilihat buktinya. Menambah
+      // satu ketukan di depan hal yang harus diperiksa berarti ia akan
+      // disetujui tanpa dilihat.
+      expect(layar, contains('late bool _terbuka = widget.onSetujui != null'));
+      expect(layar, contains('if (_terbuka) ...['));
+    });
+  });
+
   final sql = File('supabase/paket_langganan.sql').readAsStringSync();
 
   /// Isi sebuah array SQL yang ditulis sebagai `select array[...]`.

@@ -17,7 +17,6 @@ import '../models/restaurant.dart';
 import '../theme.dart';
 import '../widgets/kotak_cari.dart';
 import '../utils/kontak_merchant.dart';
-import '../utils/rupiah_input.dart';
 import '../widgets/app_toast.dart';
 import '../widgets/required_label.dart';
 import '../widgets/responsive.dart';
@@ -293,6 +292,18 @@ class _SuperAdminBillingScreenState extends State<SuperAdminBillingScreen> {
   Map<String, List<BillingInvoice>> get _tagihanPerMerchant {
     final hasil = <String, List<BillingInvoice>>{};
     for (final t in _tagihan) {
+      // Tagihan yang dibatalkan tidak ditampilkan.
+      //
+      // Ia bukan pekerjaan dan bukan riwayat yang dibaca siapa pun di
+      // sini: tidak menunggu diperiksa, tidak menunggu dibayar, dan
+      // tidak menambah apa-apa ke jumlah yang tertagih. Yang
+      // dilakukannya cuma menumpuk di antara baris yang memang harus
+      // dilihat — dan makin banyak baris mati di satu daftar, makin
+      // besar peluang yang hidup ikut terlewat.
+      //
+      // Barisnya tetap ada di basis data. Yang dihilangkan tampilannya.
+      if (t.status == InvoiceStatus.cancelled) continue;
+
       final resto = _restoDari(t.restoId);
       final nama = t.restoName ?? resto?.name ?? t.restoId;
       if (!cocokCari(_kataTagihan, [nama, t.id, resto?.address])) continue;
@@ -838,11 +849,6 @@ class _DialogSetelan extends StatefulWidget {
 }
 
 class _DialogSetelanState extends State<_DialogSetelan> {
-  late final _harga = TextEditingController(
-    text: widget.awal.monthlyPrice == 0
-        ? ''
-        : formatRupiahInput(widget.awal.monthlyPrice),
-  );
   late final _tenggang =
       TextEditingController(text: '${widget.awal.graceDays}');
   late String _caraTagih = widget.awal.paymentMethod;
@@ -851,7 +857,6 @@ class _DialogSetelanState extends State<_DialogSetelan> {
 
   @override
   void dispose() {
-    _harga.dispose();
     _tenggang.dispose();
     super.dispose();
   }
@@ -867,19 +872,7 @@ class _DialogSetelanState extends State<_DialogSetelan> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(
-              controller: _harga,
-              keyboardType: TextInputType.number,
-              inputFormatters: [ThousandsInputFormatter()],
-              decoration: InputDecoration(
-                label: requiredLabel('Biaya per Bulan'),
-                prefixText: 'Rp ',
-                helperText: 'Kosong atau 0 berarti gratis — tidak pernah '
-                    'ditagih dan tidak pernah terkunci.',
-                helperMaxLines: 3,
-              ),
-            ),
-            const SizedBox(height: 16),
+
             // Tanggal 29–31 boleh dipilih, dan di bulan yang lebih
             // pendek jatuh di hari terakhirnya — 31 jadi 30 di April,
             // 28 di Februari biasa, 29 di Februari kabisat.
@@ -977,7 +970,13 @@ class _DialogSetelanState extends State<_DialogSetelan> {
           onConfirm: () => Navigator.pop(
             context,
             widget.awal.copyWith(
-              monthlyPrice: parseRupiah(_harga.text) ?? 0,
+              // Harganya TIDAK ikut disimpan dari sini.
+              //
+              // Ia mengikuti harga paket yang berlaku, dan dua tempat
+              // yang sama-sama boleh menentukan satu angka akan
+              // berselisih — biasanya pada hari harga paketnya naik,
+              // dan yang membayar harga lama adalah merchant yang
+              // nilainya kebetulan pernah diketik tangan di sini.
               billingDay: _tanggalTagih,
               graceDays: (int.tryParse(_tenggang.text.trim()) ?? 1).clamp(0, 30),
               active: _aktif,
@@ -1098,8 +1097,7 @@ class _DialogPaketState extends State<_DialogPaket> {
   KeadaanLangganan? _keadaan;
   bool _memuat = true;
 
-  /// Paket yang dipilih di masing-masing bagian.
-  Paket? _paketLangganan;
+  /// Paket yang dipilih untuk masa percobaan.
   Paket _paketPercobaan = Paket.premium;
 
   @override
@@ -1120,7 +1118,6 @@ class _DialogPaketState extends State<_DialogPaket> {
       if (!mounted) return;
       setState(() {
         _keadaan = k;
-        _paketLangganan = k.paket;
         // Lama percobaan yang sudah pernah disetel dibaca kembali, bukan
         // dikembalikan ke 14. Kolom yang melupakan angka yang barusan
         // diisi orang membuat setiap pembukaan berikutnya terlihat
@@ -1170,41 +1167,33 @@ class _DialogPaketState extends State<_DialogPaket> {
                     _Bagian(
                       judul: 'Langganan',
                       keterangan:
-                          'Penagihan bulanan langsung berjalan. Akses menunya '
-                          'ikut disesuaikan.',
+                          'Paketnya disetel lewat pengajuan langganan yang '
+                          'disetujui, bukan dari sini — supaya tiap paket '
+                          'yang berjalan punya bukti bayarnya.',
                       anak: [
-                        _PilihPaketBaris(
-                          terpilih: _paketLangganan,
-                          onPilih: (p) => setState(() => _paketLangganan = p),
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: OutlinedButton(
-                                onPressed: k?.paket == null
-                                    ? null
-                                    : () => Navigator.pop(context,
-                                        const _PilihanPaket.langganan(null)),
-                                child: const Text('Lepas'),
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              flex: 2,
-                              child: FilledButton(
-                                onPressed: _paketLangganan == null ||
-                                        _paketLangganan == k?.paket
-                                    ? null
-                                    : () => Navigator.pop(
-                                          context,
-                                          _PilihanPaket.langganan(
-                                              _paketLangganan),
-                                        ),
-                                child: const Text('Setel Langganan'),
-                              ),
-                            ),
-                          ],
+                        // Yang tersisa cuma melepas, dan itu bukan pintu
+                        // kedua untuk berlangganan.
+                        //
+                        // Menyetel paket dari sini berarti ada merchant
+                        // yang paketnya berjalan tanpa satu pun
+                        // pengajuan — tidak ada bukti transfer, tidak
+                        // ada jejak siapa yang menyetujui, dan tidak ada
+                        // yang bisa ditunjukkan saat ditanya kenapa dia
+                        // ditagih. Jadi pintunya ditutup.
+                        //
+                        // Melepas dibiarkan justru karena kekeliruan
+                        // harus punya jalan pulang: paket yang salah
+                        // disetujui tidak boleh jadi keadaan yang tidak
+                        // bisa dibatalkan siapa pun.
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton(
+                            onPressed: k?.paket == null
+                                ? null
+                                : () => Navigator.pop(context,
+                                    const _PilihanPaket.langganan(null)),
+                            child: const Text('Lepas Paket'),
+                          ),
                         ),
                       ],
                     ),

@@ -121,6 +121,7 @@ FILES=(
   wajah_tidak_kembar.sql
   wajah_geometri.sql
   wajah_facenet.sql
+  wajah_pratinjau.sql
   absensi_baca_super_admin.sql
   shift_opening_check.sql
   support_tickets.sql

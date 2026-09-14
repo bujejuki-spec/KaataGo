@@ -185,6 +185,32 @@ class _AbsensiScreenState extends State<AbsensiScreen> {
       final wajah = await _pindaiWajah();
       if (wajah == null) return;
 
+      // Diperiksa SEBELUM fotonya diunggah.
+      //
+      // Dulu penolakannya datang paling akhir, sesudah fotonya
+      // terlanjur naik — jadi wajah orang yang absennya tidak pernah
+      // jadi tetap tersimpan di penyimpanan merchant. Dan yang ditolak
+      // karena cahaya pagi menunggu unggahan selesai cuma untuk
+      // dikabari harus mengulang.
+      //
+      // Sekarang sejajar dengan pemeriksaan mata terpejam: ditolak di
+      // depan, sebelum apa pun dikirim.
+      //
+      // Yang dikirim ke server cuma 128 angka hasil pindaian, bukan
+      // fotonya — dan sidik yang terdaftar tetap tidak pernah turun ke
+      // HP. Sidik yang bisa diunduh aplikasi adalah sidik yang bisa
+      // dikirim balik sebagai "hasil pemindaian".
+      if (!await _repo.cocokkanWajah(restoId: restoId, sidik: wajah.sidik)) {
+        if (!mounted) return;
+        showAppToast(
+          context,
+          'Wajahnya tidak cocok dengan yang terdaftar. Hadapkan wajahmu '
+          'lurus ke kamera dengan cahaya yang cukup, lalu coba lagi.',
+          isError: true,
+        );
+        return;
+      }
+
       String? url;
       // Fotonya boleh gagal diunggah tanpa membatalkan absennya.
       //

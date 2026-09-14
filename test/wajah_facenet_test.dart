@@ -104,6 +104,50 @@ void main() {
     });
   });
 
+  group('wajahnya diperiksa sebelum fotonya diunggah', () {
+    test('pemeriksaannya berdiri sebelum unggahan di layar absensi', () {
+      // Urutannya yang penting, bukan sekadar ada. Penolakan yang datang
+      // sesudah unggahan berarti wajah orang yang absennya tidak pernah
+      // jadi tetap tersimpan di penyimpanan merchant.
+      final layar = baca('lib/screens/absensi_screen.dart');
+      final blok = layar.substring(layar.indexOf('Future<void> _absen('));
+      final periksa = blok.indexOf('cocokkanWajah');
+      final unggah = blok.indexOf('_repo.unggah(');
+      expect(periksa, greaterThan(-1),
+          reason: 'Tidak ada pemeriksaan wajah sebelum absen.');
+      expect(periksa, lessThan(unggah),
+          reason: 'Pemeriksaannya jatuh SESUDAH unggahan — fotonya sudah '
+              'naik sebelum ketahuan bukan orangnya.');
+    });
+
+    test('server menjawab ya atau tidak, bukan skornya', () {
+      // Fungsi yang menjawab dengan angka adalah alat untuk menaiki
+      // bukit: tebakan diubah sedikit demi sedikit sambil melihat
+      // skornya naik, sampai lolos tanpa pernah menghadap kamera.
+      final sql = baca('supabase/wajah_pratinjau.sql');
+      expect(sql, contains('returns boolean'));
+      expect(sql, isNot(contains('returns double precision')));
+    });
+
+    test('sidik yang terdaftar tetap tidak bisa diunduh aplikasi', () {
+      // Yang dikirim ke server hasil pindaian; yang tersimpan tidak
+      // pernah turun ke HP. Sidik yang bisa diunduh aplikasi adalah
+      // sidik yang bisa dikirim balik sebagai hasil pemindaian.
+      final sql = baca('supabase/wajah_pratinjau.sql');
+      expect(sql, isNot(contains('policy')));
+      expect(baca('lib/db/absensi_repository.dart'),
+          isNot(contains("from('employee_faces')")));
+    });
+
+    test('yang lolos pemeriksaan awal tetap diperiksa lagi saat dicatat', () {
+      // Pemeriksaan awal boleh dilewati siapa pun yang memanggil
+      // absen_masuk() langsung. Kalau _absen() ikut mempercayainya,
+      // yang tersisa cuma pemeriksaan di layar.
+      final sql = baca('supabase/wajah_facenet.sql');
+      expect(sql, contains('v_skor < _ambang(v_wajah.model)'));
+    });
+  });
+
   group('persetujuan tidak cuma dijaga layar', () {
     test('server menolak pendaftaran tanpa versi persetujuan', () {
       // Kotak centang menghalangi orang yang memakai aplikasi. Ia tidak

@@ -8,6 +8,7 @@ import '../utils/pesan_galat.dart';
 import '../widgets/app_toast.dart';
 import '../widgets/dialog_actions.dart';
 import '../widgets/gambar_bertanda.dart';
+import '../widgets/kotak_cari.dart';
 import '../widgets/lencana_paket_aktif.dart';
 import '../widgets/responsive.dart';
 import 'harga_paket_screen.dart';
@@ -32,11 +33,55 @@ class _PengajuanLanggananScreenState extends State<PengajuanLanggananScreen> {
   static final _rp =
       NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
   static final _waktu = DateFormat('d MMM yyyy, HH:mm', 'id_ID');
+  static final _tanggal = DateFormat('d MMM yyyy', 'id_ID');
 
   List<PengajuanLangganan> _semua = const [];
   bool _memuat = true;
   bool _sibuk = false;
   String? _galat;
+
+  final _cari = TextEditingController();
+  String _kata = '';
+
+  /// Rentang riwayat yang sedang dilihat. Bawaannya hari ini saja.
+  ///
+  /// Riwayat sebulan penuh terbuka tiap kali layar ini dibuka berarti
+  /// pengajuan yang MENUNGGU — satu-satunya yang benar-benar butuh
+  /// seseorang — harus dicari di antara puluhan baris yang sudah
+  /// selesai. Yang lewat dari hari ini tetap bisa dibuka, tapi dimintai
+  /// dulu.
+  late DateTimeRange _rentang = _hariIni();
+
+  static DateTimeRange _hariIni() {
+    final k = DateTime.now();
+    final h = DateTime(k.year, k.month, k.day);
+    return DateTimeRange(start: h, end: h);
+  }
+
+  bool _diRentang(DateTime t) {
+    final l = t.toLocal();
+    final hari = DateTime(l.year, l.month, l.day);
+    return !hari.isBefore(_rentang.start) && !hari.isAfter(_rentang.end);
+  }
+
+  @override
+  void dispose() {
+    _cari.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pilihRentang() async {
+    final hasil = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2024),
+      lastDate: DateTime.now(),
+      initialDateRange: _rentang,
+      helpText: 'Periode riwayat',
+      saveText: 'Terapkan',
+    );
+    if (hasil == null || !mounted) return;
+    setState(() => _rentang = hasil);
+  }
 
   @override
   void initState() {
@@ -124,8 +169,30 @@ class _PengajuanLanggananScreenState extends State<PengajuanLanggananScreen> {
   @override
   Widget build(BuildContext context) {
     final muted = KaataTheme.mutedOf(context);
-    final menunggu = _semua.where((p) => p.menunggu).toList();
-    final riwayat = _semua.where((p) => !p.menunggu).toList();
+    // Pencarian berlaku untuk keduanya — yang dicari nama merchant,
+    // dan yang mencarinya tidak tahu lebih dulu pengajuan itu sudah
+    // diputuskan atau belum.
+    bool cocok(PengajuanLangganan p) =>
+        cocokCari(_kata, [p.namaResto, p.restoId]);
+
+    // Yang menunggu TIDAK ikut disaring periode.
+    //
+    // Ia pekerjaan yang belum selesai, bukan riwayat. Pengajuan yang
+    // masuk kemarin dan belum diputuskan tetap harus terlihat hari ini
+    // — kalau ia ikut hilang bersama tanggalnya, yang hilang adalah
+    // merchant yang sedang tidak bisa berjualan.
+    final menunggu = _semua.where((p) => p.menunggu && cocok(p)).toList();
+    final riwayat = _semua
+        .where((p) => !p.menunggu && cocok(p) && _diRentang(p.diajukanAt))
+        .toList();
+
+    final satuHari = _rentang.start == _rentang.end;
+    final labelRentang = satuHari
+        ? (_rentang.start == _hariIni().start
+            ? 'Hari ini'
+            : _tanggal.format(_rentang.start))
+        : '${_tanggal.format(_rentang.start)} – '
+            '${_tanggal.format(_rentang.end)}';
 
     return Scaffold(
       backgroundColor: KaataTheme.backgroundOf(context),
@@ -162,9 +229,20 @@ class _PengajuanLanggananScreenState extends State<PengajuanLanggananScreen> {
                     if (_galat != null)
                       Text(_galat!, style: const TextStyle(color: Colors.red)),
                     _Ringkasan(jumlah: menunggu.length),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 14),
+                    KotakCari(
+                      controller: _cari,
+                      petunjuk: 'Cari nama merchant',
+                      onUbah: (v) => setState(() => _kata = v),
+                      padding: EdgeInsets.zero,
+                    ),
+                    const SizedBox(height: 14),
                     if (menunggu.isEmpty)
-                      Text('Tidak ada pengajuan yang menunggu.',
+                      Text(
+                          _kata.isEmpty
+                              ? 'Tidak ada pengajuan yang menunggu.'
+                              : 'Tidak ada pengajuan menunggu yang cocok '
+                                  'dengan "$_kata".',
                           style: TextStyle(fontSize: 12.5, color: muted))
                     else
                       for (final p in menunggu)
@@ -176,14 +254,52 @@ class _PengajuanLanggananScreenState extends State<PengajuanLanggananScreen> {
                           onSetujui: () => _setujui(p),
                           onTolak: () => _tolak(p),
                         ),
-                    if (riwayat.isNotEmpty) ...[
-                      const SizedBox(height: 22),
-                      Text('Riwayat',
-                          style: TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.bold,
-                              color: muted)),
-                      const SizedBox(height: 8),
+                    const SizedBox(height: 22),
+                    Row(
+                      children: [
+                        Text('Riwayat',
+                            style: TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.bold,
+                                color: muted)),
+                        const Spacer(),
+                        // Periodenya disebut di tombolnya sendiri.
+                        //
+                        // Daftar yang kosong tanpa menyebut sedang
+                        // menampilkan tanggal berapa terbaca sebagai
+                        // "tidak ada apa-apa", padahal yang benar
+                        // "tidak ada apa-apa HARI INI".
+                        OutlinedButton.icon(
+                          onPressed: _pilihRentang,
+                          icon: const Icon(Icons.calendar_today, size: 15),
+                          label: Text(labelRentang,
+                              style: const TextStyle(fontSize: 12.5)),
+                          style: OutlinedButton.styleFrom(
+                            visualDensity: VisualDensity.compact,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
+                          ),
+                        ),
+                        if (!satuHari || _rentang.start != _hariIni().start)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 4),
+                            child: IconButton(
+                              icon: const Icon(Icons.today, size: 18),
+                              tooltip: 'Kembali ke hari ini',
+                              visualDensity: VisualDensity.compact,
+                              onPressed: () =>
+                                  setState(() => _rentang = _hariIni()),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    if (riwayat.isEmpty)
+                      Text(
+                          'Tidak ada pengajuan yang diputuskan pada '
+                          '${labelRentang.toLowerCase()}.',
+                          style: TextStyle(fontSize: 12.5, color: muted))
+                    else
                       for (final p in riwayat)
                         _Kartu(
                           pengajuan: p,
@@ -191,7 +307,6 @@ class _PengajuanLanggananScreenState extends State<PengajuanLanggananScreen> {
                           waktu: _waktu,
                           sibuk: _sibuk,
                         ),
-                    ],
                   ],
                 ),
               ),
@@ -255,7 +370,7 @@ class _Ringkasan extends StatelessWidget {
   }
 }
 
-class _Kartu extends StatelessWidget {
+class _Kartu extends StatefulWidget {
   final PengajuanLangganan pengajuan;
   final NumberFormat rp;
   final DateFormat waktu;
@@ -273,9 +388,32 @@ class _Kartu extends StatelessWidget {
   });
 
   @override
+  State<_Kartu> createState() => _KartuState();
+}
+
+class _KartuState extends State<_Kartu> {
+  /// Buktinya terbuka untuk yang MENUNGGU, terlipat untuk riwayat.
+  ///
+  /// Keduanya bukan pekerjaan yang sama. Yang menunggu memang datang
+  /// untuk dilihat buktinya — melipatnya berarti menambah satu ketukan
+  /// di depan hal yang harus diperiksa, dan yang butuh ketukan tambahan
+  /// akan disetujui tanpa dilihat.
+  ///
+  /// Riwayat sudah diputuskan. Gambar setinggi 200 piksel untuk tiap
+  /// baris yang sudah selesai membuat daftar sepuluh pengajuan sepanjang
+  /// dua ribu piksel, dan yang dicari orang di riwayat biasanya cuma
+  /// satu nama.
+  late bool _terbuka = widget.onSetujui != null;
+
+  @override
   Widget build(BuildContext context) {
     final muted = KaataTheme.mutedOf(context);
-    final p = pengajuan;
+    final p = widget.pengajuan;
+    final rp = widget.rp;
+    final waktu = widget.waktu;
+    final sibuk = widget.sibuk;
+    final onSetujui = widget.onSetujui;
+    final onTolak = widget.onTolak;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -340,15 +478,44 @@ class _Kartu extends StatelessWidget {
           // Buktinya ditampilkan, bukan cuma ditautkan. Yang memeriksa
           // puluhan pengajuan tidak akan membuka tautan satu per satu —
           // dan yang tidak dibuka akan disetujui tanpa dilihat.
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: SizedBox(
-              height: 200,
-              width: double.infinity,
-              child: GambarBertanda(
-                  simpanan: p.buktiUrl, kosong: 'Bukti transfernya tidak ada'),
+          //
+          // Yang bisa dilipat cuma tingginya. Judulnya tetap menyebut
+          // buktinya ada, jadi yang terlipat tidak pernah terbaca
+          // sebagai pengajuan tanpa bukti.
+          InkWell(
+            onTap: () => setState(() => _terbuka = !_terbuka),
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: [
+                  Icon(Icons.receipt_long_outlined, size: 15, color: muted),
+                  const SizedBox(width: 6),
+                  Text('Bukti transfer',
+                      style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                          color: muted)),
+                  const Spacer(),
+                  Icon(_terbuka ? Icons.expand_less : Icons.expand_more,
+                      size: 19, color: muted),
+                ],
+              ),
             ),
           ),
+          if (_terbuka) ...[
+            const SizedBox(height: 6),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: SizedBox(
+                height: 200,
+                width: double.infinity,
+                child: GambarBertanda(
+                    simpanan: p.buktiUrl,
+                    kosong: 'Bukti transfernya tidak ada'),
+              ),
+            ),
+          ],
           if (onSetujui != null) ...[
             const SizedBox(height: 12),
             Row(

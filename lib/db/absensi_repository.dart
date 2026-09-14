@@ -50,6 +50,27 @@ class AbsensiRepository {
   Future<void> resetWajah(String restoId, String email) => _client
       .rpc('reset_wajah', params: {'p_resto_id': restoId, 'p_email': email});
 
+  /// Memeriksa wajahnya sebelum fotonya diunggah.
+  ///
+  /// Jawabannya cuma ya atau tidak — skornya sengaja tidak dikembalikan
+  /// server, karena fungsi yang menjawab dengan angka adalah alat untuk
+  /// menaiki bukit: tebakan bisa diubah sedikit demi sedikit sambil
+  /// melihat skornya naik, sampai lolos tanpa pernah menghadap kamera.
+  ///
+  /// Ini kenyamanan, bukan penjagaan. Yang menentukan sah tidaknya absen
+  /// tetap pemeriksaan di dalam server saat absen dicatat.
+  Future<bool> cocokkanWajah({
+    required String restoId,
+    required List<double> sidik,
+  }) async {
+    final hasil = await _client.rpc('cocokkan_wajah', params: {
+      'p_resto_id': restoId,
+      'p_embedding': sidik,
+      'p_model': MesinWajah.namaModel,
+    });
+    return hasil == true;
+  }
+
   // ── Absen ──────────────────────────────────────────────────────────
 
   Future<HasilAbsen> absen({
