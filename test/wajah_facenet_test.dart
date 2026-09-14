@@ -45,6 +45,22 @@ void main() {
       expect(lisensi.readAsStringSync(), contains('Apache License'));
     });
 
+    test('tflite_flutter tidak turun ke versi yang tidak bisa dikompilasi', () {
+      // 0.10.x memakai `UnmodifiableUint8ListView`, yang dibuang dari
+      // Dart 3.4. Kegagalannya tidak terlihat dari tes maupun analisis —
+      // berkas itu tidak pernah ikut dikompilasi untuk mesin ini. Yang
+      // menemukannya `flutter build apk`, delapan menit setelah rilis
+      // dimulai.
+      final baris = baca('pubspec.yaml')
+          .split('\n')
+          .firstWhere((b) => b.trimLeft().startsWith('tflite_flutter:'));
+      final versi = baris.split(':').last.trim().replaceAll('^', '');
+      final bagian = versi.split('.').map(int.parse).toList();
+      expect(bagian[0] * 1000 + bagian[1], greaterThanOrEqualTo(12),
+          reason: 'tflite_flutter $versi tidak bisa dikompilasi dengan '
+              'Dart 3.5 — butuh 0.12.0 ke atas.');
+    });
+
     test('map assets-nya terdaftar di pubspec', () {
       expect(baca('pubspec.yaml'), contains('- assets/face/'));
     });

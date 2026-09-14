@@ -135,9 +135,13 @@ dependencies:
   # (assets/face/facenet.tflite) dan tidak pernah menyentuh jaringan:
   # yang masuk piksel di RAM, yang keluar 128 angka.
   #
-  # Ditahan di 0.10.x. 0.11 ke atas menuntut Dart 3.6, sedangkan
-  # toolchain proyek ini dipatok Flutter 3.24.5 / Dart 3.5.4.
-  tflite_flutter: ^0.10.4
+  # JANGAN turunkan ke 0.10.x. Versi itu memakai
+  # `UnmodifiableUint8ListView`, yang dibuang dari Dart 3.4 — dan
+  # gagalnya tidak terlihat dari sini: `flutter analyze` bersih,
+  # `flutter test` hijau, karena berkas itu tidak pernah ikut
+  # dikompilasi untuk tes di mesin. Yang menemukannya `flutter build
+  # apk`, delapan menit setelah rilis dimulai.
+  tflite_flutter: ^0.12.1
 
 dependency_overrides:
   # app_links 6.4.x's Android build.gradle references `flutter.compileSdkVersion`
