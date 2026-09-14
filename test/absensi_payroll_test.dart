@@ -450,6 +450,40 @@ void main() {
     });
   });
 
+  // Kasir dan Chef sengaja tidak punya hak BACA di ember `absensi` —
+  // isinya foto wajah dan surat sakit rekan-rekannya. Tapi layanan
+  // Storage membaca baris objeknya lebih dulu saat upsert, jadi
+  // `upsert: true` membuat mereka kena 403 sebelum sempat menulis apa
+  // pun. Galatnya tidak menyebut izin sama sekali.
+  test('unggahan ke ember tertutup tidak memakai upsert', () {
+    for (final jalur in [
+      'lib/db/absensi_repository.dart',
+      'lib/db/paket_langganan_repository.dart',
+    ]) {
+      final isi = File(jalur).readAsStringSync();
+      // Komentar boleh menyebutnya; yang dilarang kodenya.
+      final kode = isi
+          .split('\n')
+          .where((b) => !b.trimLeft().startsWith('//'))
+          .join('\n');
+      expect(kode, isNot(contains('upsert: true')),
+          reason: '$jalur memakai upsert — Kasir dan Chef akan kena 403');
+    }
+  });
+
+  // Yang menulis boleh semua peran; yang membaca hanya yang memeriksa
+  // absensi.
+  test('kebijakan embernya menulis untuk semua peran, baca untuk atasan', () {
+    final sql = File('supabase/absensi_payroll.sql').readAsStringSync();
+    final tulis = sql.substring(sql.indexOf('create policy "absensi: tulis'));
+    expect(tulis.substring(0, 600), contains("'kasir', 'chef'"));
+
+    final baca = sql.substring(sql.indexOf('create policy "absensi: baca'));
+    final blokBaca = baca.substring(0, 400);
+    expect(blokBaca, contains("'owner', 'admin', 'finance'"));
+    expect(blokBaca, isNot(contains("'kasir'")));
+  });
+
   // Ember `absensi` sengaja tidak publik: isinya foto wajah karyawan dan
   // surat keterangan sakit.
   //

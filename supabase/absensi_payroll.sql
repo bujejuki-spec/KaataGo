@@ -959,9 +959,17 @@ create policy "absensi: baca atasan" on storage.objects
           array['owner', 'admin', 'finance'])
   );
 
--- Menimpa berkas yang sudah ada. Layanan Storage membaca lalu menulis
--- baris objeknya saat upsert, jadi tanpa ini penggantian foto gagal
--- dengan galat yang tidak menyebut izin sama sekali.
+-- Menimpa berkas yang sudah ada.
+--
+-- PERHATIAN untuk yang menyentuh kode pengunggahnya nanti: JANGAN
+-- memakai `upsert: true` di ember ini. Layanan Storage MEMBACA baris
+-- objeknya lebih dulu untuk memutuskan sisip-atau-timpa, dan Kasir
+-- maupun Chef sengaja tidak punya hak baca di sini — isinya foto wajah
+-- dan surat sakit rekan-rekannya. Yang mereka terima 403 sebelum sempat
+-- menulis apa pun, dan galatnya tidak menyebut izin sama sekali.
+--
+-- Nama berkasnya sudah memuat milidetik, jadi tidak ada yang perlu
+-- ditimpa. Kebijakan ini tetap ada untuk berkas lama.
 drop policy if exists "absensi: ubah karyawan" on storage.objects;
 create policy "absensi: ubah karyawan" on storage.objects
   for update using (

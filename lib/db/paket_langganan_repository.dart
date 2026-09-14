@@ -64,8 +64,8 @@ class PaketLanggananRepository {
     await _client.storage.from(_ember).uploadBinary(
           nama,
           bytes,
-          fileOptions: const FileOptions(
-              contentType: 'image/jpeg', upsert: true),
+          // Tanpa upsert — lihat AbsensiRepository.unggah().
+          fileOptions: const FileOptions(contentType: 'image/jpeg'),
         );
     return nama;
   }

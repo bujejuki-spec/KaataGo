@@ -178,9 +178,16 @@ class AbsensiRepository {
     await _client.storage.from(_ember).uploadBinary(
           nama,
           bytes,
+          // upsert SENGAJA tidak dipakai.
+          //
+          // Nama berkasnya sudah memuat milidetik, jadi tidak mungkin
+          // bertabrakan — dan upsert menuntut layanan Storage MEMBACA
+          // baris objeknya dulu untuk memutuskan sisip-atau-timpa. Kasir
+          // dan Chef tidak punya hak baca di ember ini (isinya foto
+          // wajah dan surat sakit rekan-rekannya), jadi yang mereka
+          // terima 403 sebelum sempat menulis apa pun.
           fileOptions: FileOptions(
             contentType: ekstensi == 'pdf' ? 'application/pdf' : 'image/jpeg',
-            upsert: true,
           ),
         );
     return nama;

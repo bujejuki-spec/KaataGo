@@ -37,6 +37,12 @@ Formatnya dibaca `scripts/release.sh`: judul `## <versi>`, lalu
 poin-poinnya. Versi yang tidak punya bagiannya di sini tetap terbit,
 hanya pengumumannya memakai kalimat umum.
 
+## 3.10.2
+
+- Kasir dan Chef kini bisa mendaftarkan wajah dan mengunggah foto absen.
+  Sebelumnya unggahannya ditolak tanpa keterangan yang bisa dibaca
+- Perbaikan bug dan penyempurnaan tampilan
+
 ## 3.10.1
 
 - Foto acuan dan foto absen kini benar-benar tampil di Absensi Karyawan.
