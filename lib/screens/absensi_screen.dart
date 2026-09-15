@@ -17,6 +17,7 @@ import '../utils/resto_location.dart';
 import '../widgets/app_toast.dart';
 import '../widgets/dialog_actions.dart';
 import '../widgets/responsive.dart';
+import 'kamera_wajah_screen.dart';
 import 'slip_gaji_screen.dart';
 
 /// Absensi karyawan: wajah, titik GPS, dan waktunya.
@@ -104,16 +105,19 @@ class _AbsensiScreenState extends State<AbsensiScreen> {
   /// Kamera depan, dan tidak boleh dari galeri: gambar yang boleh
   /// dipilih dari galeri adalah gambar yang bisa dipilih dari foto
   /// teman.
-  Future<HasilWajah?> _pindaiWajah() async {
+  Future<HasilWajah?> _pindaiWajah({required String petunjuk}) async {
     try {
-      final foto = await ImagePicker().pickImage(
-        source: ImageSource.camera,
-        preferredCameraDevice: CameraDevice.front,
-        maxWidth: 1080,
-        imageQuality: 90,
-      );
-      if (foto == null) return null;
-      return await MesinWajah.pindai(foto.path);
+      // Kamera di dalam aplikasi, bukan aplikasi kamera bawaan HP.
+      //
+      // image_picker menyerahkan pekerjaannya lewat ACTION_IMAGE_CAPTURE,
+      // dan di sana kamera depan cuma SARAN yang boleh diabaikan — dan
+      // hampir semua aplikasi kamera pabrikan memang mengabaikannya.
+      // Yang absen jadi membalik kameranya sendiri tiap pagi, dan
+      // sebagian memotret dengan kamera belakang tanpa sadar lalu
+      // bertanya-tanya kenapa absennya ditolak.
+      final jalur = await ambilFotoWajah(context, petunjuk: petunjuk);
+      if (jalur == null) return null;
+      return await MesinWajah.pindai(jalur);
     } on WajahGagal catch (e) {
       if (mounted) showAppToast(context, e.pesan, isError: true);
       return null;
@@ -136,7 +140,9 @@ class _AbsensiScreenState extends State<AbsensiScreen> {
 
     setState(() => _sibuk = true);
     try {
-      final wajah = await _pindaiWajah();
+      final wajah = await _pindaiWajah(
+          petunjuk: 'Hadapkan wajahmu lurus ke kamera dengan cahaya yang '
+              'cukup. Foto ini jadi acuan absenmu berikutnya.');
       if (wajah == null) return;
 
       final url = await _repo.unggah(
@@ -182,7 +188,10 @@ class _AbsensiScreenState extends State<AbsensiScreen> {
       final posisi = await currentPosition();
       if (!mounted) return;
 
-      final wajah = await _pindaiWajah();
+      final wajah = await _pindaiWajah(
+          petunjuk: pulang
+              ? 'Foto untuk absen pulang.'
+              : 'Foto untuk absen masuk.');
       if (wajah == null) return;
 
       // Diperiksa SEBELUM fotonya diunggah.
@@ -357,8 +366,35 @@ class _AbsensiScreenState extends State<AbsensiScreen> {
                         tanggal: _tanggalPanjang,
                         onMasuk: () => _absen(pulang: false),
                         onPulang: () => _absen(pulang: true),
-                        onTidakMasuk: _ajukanTidakMasuk,
                       ),
+
+                    // Izin, sakit, dan cuti berdiri sendiri — SELALU,
+                    // apa pun keadaan absennya hari ini.
+                    //
+                    // Dulu tombolnya ikut bersembunyi di tiga keadaan
+                    // sekaligus: saat wajahnya belum terdaftar, saat
+                    // sudah absen masuk, dan saat modelnya belum siap.
+                    // Yang paling merugikan yang pertama — karyawan
+                    // baru yang sakit di hari pertamanya tidak punya
+                    // cara menyatakannya sama sekali, dan mendaftarkan
+                    // wajah lebih dulu justru menuntutnya datang.
+                    //
+                    // Dua keadaan lain pun keliru: pengajuannya bisa
+                    // bertanggal mundur sampai 30 hari, jadi sudah
+                    // absen hari ini tidak ada hubungannya dengan bisa
+                    // atau tidaknya mengajukan izin untuk Senin lalu.
+                    if (MesinWajah.tersedia && _modelSiap) ...[
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 46,
+                        child: OutlinedButton.icon(
+                          icon: const Icon(Icons.event_busy_outlined, size: 18),
+                          label: const Text('Izin / Sakit / Cuti'),
+                          onPressed: _sibuk ? null : _ajukanTidakMasuk,
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 18),
                     Text('Riwayat 30 hari',
                         style: TextStyle(
@@ -480,7 +516,6 @@ class _KartuHariIni extends StatelessWidget {
   final DateFormat tanggal;
   final VoidCallback onMasuk;
   final VoidCallback onPulang;
-  final VoidCallback onTidakMasuk;
 
   const _KartuHariIni({
     required this.baris,
@@ -489,7 +524,6 @@ class _KartuHariIni extends StatelessWidget {
     required this.tanggal,
     required this.onMasuk,
     required this.onPulang,
-    required this.onTidakMasuk,
   });
 
   @override
@@ -574,17 +608,6 @@ class _KartuHariIni extends StatelessWidget {
                 ),
               ],
             ),
-          if (!sudahMasuk) ...[
-            const SizedBox(height: 10),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                icon: const Icon(Icons.event_busy_outlined, size: 17),
-                label: const Text('Tidak Masuk Hari Ini'),
-                onPressed: sibuk ? null : onTidakMasuk,
-              ),
-            ),
-          ],
         ],
       ),
     );

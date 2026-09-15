@@ -626,20 +626,41 @@ void main() {
 
   // Gambar yang boleh dipilih dari galeri adalah gambar yang bisa
   // dipilih dari foto teman.
-  test('wajahnya difoto kamera depan, bukan diambil dari galeri', () {
+  test('wajahnya difoto kamera dalam aplikasi, bukan dipilih dari galeri', () {
+    // Dulu tes ini menuntut `preferredCameraDevice: CameraDevice.front`,
+    // dan itu memang tertulis di kodenya — tapi ia cuma SARAN di dalam
+    // ACTION_IMAGE_CAPTURE, dan aplikasi kamera pabrikan mengabaikannya.
+    // Tesnya hijau; kameranya tetap membuka lensa belakang.
+    //
+    // Sekarang kameranya dibuka sendiri, jadi tidak ada yang bisa
+    // mengabaikan pilihannya.
     final layar = File('lib/screens/absensi_screen.dart').readAsStringSync();
     final blok = layar.substring(layar.indexOf('Future<HasilWajah?> _pindaiWajah'));
     final pindai = blok.substring(0, blok.indexOf('\n  }'));
-    expect(pindai, contains('source: ImageSource.camera'));
-    expect(pindai, contains('preferredCameraDevice: CameraDevice.front'));
-    expect(pindai, isNot(contains('ImageSource.gallery')));
+    expect(pindai, contains('ambilFotoWajah(context'));
+    expect(pindai, isNot(contains('ImagePicker()')));
+
+    final kamera = File('lib/screens/kamera_wajah_screen.dart').readAsStringSync();
+    expect(kamera, contains('CameraLensDirection.front'));
+    // Tablet kasir kadang tidak punya kamera depan. Menolak membuka
+    // kamera sama sekali di situ berarti absennya mati total.
+    expect(kamera, contains('orElse: () => daftar.first'));
+    // Bingkai kepala, supaya orangnya tahu harus berdiri di mana.
+    expect(kamera, contains('_PanduanKepala'));
   });
 
   testWidgets('semua peran punya menu Absensi di katalog UAM', (tester) async {
     final katalog = File('lib/utils/katalog_menu.dart').readAsStringSync();
-    // Lima peran, masing-masing satu entri 'Absensi'.
-    expect("'Absensi',".allMatches(katalog).length, 5);
-    expect("'Absensi Karyawan',".allMatches(katalog).length, 3);
+    // Enam peran, masing-masing satu entri 'Absensi' — HR ikut sejak
+    // peran itu ada.
+    expect("'Absensi',".allMatches(katalog).length, 6);
+    expect("'Absensi Karyawan',".allMatches(katalog).length, 4);
+    // Payroll TETAP dua: Owner dan Finance.
+    //
+    // HR mengurus kehadiran, bukan bayarannya. Yang mencatat kehadiran
+    // tidak boleh jadi orang yang sama dengan yang menentukan gaji —
+    // kalau angka ini naik jadi tiga, bacalah dulu catatan di
+    // lib/screens/hr_home_screen.dart.
     expect("'Payroll',".allMatches(katalog).length, 2);
     debugPrint('katalog terverifikasi');
   });

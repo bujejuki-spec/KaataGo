@@ -9,6 +9,7 @@ import 'admin_home_screen.dart';
 import 'chef_home_screen.dart';
 import 'customer_home_screen.dart';
 import 'finance_home_screen.dart';
+import 'hr_home_screen.dart';
 import 'kasir_home_screen.dart';
 import 'owner_home_screen.dart';
 import '../widgets/billing_gate.dart';
@@ -125,7 +126,7 @@ class _RootScreenState extends State<RootScreen> {
   }
 
   Widget? _homeForRole(AuthProvider auth) {
-    // Kelima peran resto dibungkus satu gerbang langganan. Dipasang di
+    // Keenam peran resto dibungkus satu gerbang langganan. Dipasang di
     // sini, bukan di dalam tiap layar: lima pemasangan berarti lima
     // tempat yang bisa terlewat, dan yang terlewat tidak akan terlihat
     // sampai ada resto menunggak yang kebetulan memakai peran itu.
@@ -137,6 +138,7 @@ class _RootScreenState extends State<RootScreen> {
       _ when auth.isKasir => const KasirHomeScreen(),
       _ when auth.isChef => const ChefHomeScreen(),
       _ when auth.isFinance => const FinanceHomeScreen(),
+      _ when auth.isHr => const HrHomeScreen(),
       _ => null,
     };
     return home == null ? null : BillingGate(child: home);

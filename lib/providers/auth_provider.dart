@@ -10,7 +10,7 @@ import '../services/push_service.dart';
 
 import '../supabase_config.dart';
 
-enum EmployeeRole { superAdmin, owner, admin, kasir, chef, finance }
+enum EmployeeRole { superAdmin, owner, admin, kasir, chef, finance, hr }
 
 /// Which door the sign-in came through, so the account can be checked
 /// against what the person actually picked.
@@ -31,6 +31,7 @@ const _roleDbValues = {
   EmployeeRole.kasir: 'kasir',
   EmployeeRole.chef: 'chef',
   EmployeeRole.finance: 'finance',
+  EmployeeRole.hr: 'hr',
 };
 
 /// Nilai peran seperti yang tertulis di database.
@@ -49,6 +50,7 @@ const _roleDisplayLabels = {
   EmployeeRole.kasir: 'Kasir',
   EmployeeRole.chef: 'Chef',
   EmployeeRole.finance: 'Finance',
+  EmployeeRole.hr: 'HR',
 };
 
 /// Handles Google Sign-In (via Supabase Auth) and figures out the
@@ -145,6 +147,9 @@ class AuthProvider extends ChangeNotifier {
   bool get isKasir => role == EmployeeRole.kasir;
   bool get isChef => role == EmployeeRole.chef;
   bool get isFinance => role == EmployeeRole.finance;
+
+  /// Mengurus orang dan kehadirannya — bukan uang, bukan dapur.
+  bool get isHr => role == EmployeeRole.hr;
 
   /// Owner memegang seluruh menu Chef, Kasir, Admin, dan Finance.
   bool get isOwner => role == EmployeeRole.owner;

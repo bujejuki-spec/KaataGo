@@ -37,6 +37,26 @@ Formatnya dibaca `scripts/release.sh`: judul `## <versi>`, lalu
 poin-poinnya. Versi yang tidak punya bagiannya di sini tetap terbit,
 hanya pengumumannya memakai kalimat umum.
 
+## 3.13.0
+
+- **Peran baru: HR.** Berandanya berisi Kelola Karyawan, Absensi, dan
+  Absensi Karyawan. Gaji sengaja tidak termasuk — yang mencatat
+  kehadiran bukan orang yang sama dengan yang menentukan bayaran
+- **Kamera absen sekarang di dalam aplikasi**, lengkap dengan bingkai
+  tempat kepala diletakkan, dan benar-benar membuka kamera depan
+- Tombol **Izin / Sakit / Cuti** kini selalu terlihat di menu Absensi —
+  sebelumnya ikut bersembunyi saat wajah belum didaftarkan, jadi yang
+  sakit di hari pertamanya tidak punya cara menyatakannya
+- **Reset wajah** bisa dilakukan Owner, Admin, Finance, dan HR langsung
+  dari layar perbandingan foto di Absensi Karyawan
+- Owner dan Finance bisa **berhenti berlangganan** sendiri. Aplikasinya
+  tidak langsung mati — masih bisa dipakai sampai tanggal tagihan
+  berikutnya, dan bisa dibatalkan sebelum tanggal itu
+- Aplikasinya kini hanya bisa dipakai selama **masa percobaan atau
+  langganan yang aktif**. Di luar itu terkunci, dan alasannya disebut
+  apa adanya
+- Perbaikan bug dan penyempurnaan tampilan
+
 ## 3.12.0
 
 - Absen wajah kini diperiksa **sebelum fotonya diunggah**, jadi kalau

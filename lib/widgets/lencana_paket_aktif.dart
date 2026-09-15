@@ -78,7 +78,7 @@ class _LencanaPaketAktifState extends State<LencanaPaketAktif> {
   @override
   Widget build(BuildContext context) {
     final k = _keadaan;
-    if (k == null || k.diluarJalurPaket) return const SizedBox.shrink();
+    if (k == null || k.belumPernahDiberiPaket) return const SizedBox.shrink();
 
     // Yang boleh MENGUBAH paket cuma Owner dan Finance.
     //

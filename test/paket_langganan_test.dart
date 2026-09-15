@@ -38,6 +38,68 @@ void main() {
     });
   });
 
+  group('berhenti berlangganan', () {
+    final sql = bacaBerkas('supabase/hentikan_langganan.sql');
+    final layar = bacaBerkas('lib/screens/pilih_paket_screen.dart');
+
+    test('berlaku di tanggal tagihan berikutnya, bukan seketika', () {
+      // Mematikan aplikasinya di detik tombolnya ditekan berarti
+      // menjual sebulan lalu mengambil sisanya kembali.
+      expect(sql, contains('aktif_sampai'));
+      expect(sql, contains('v_sampai <= v_ini'));
+      expect(layar, contains('masih bisa dipakai sampai'));
+    });
+
+    test('cuma Owner dan Finance', () {
+      // Yang paling terkena bukan yang menekan tombolnya: kasir yang
+      // besok tidak bisa membuka shift, dapur yang berhenti menerima
+      // pesanan.
+      expect(sql, contains("is_resto_employee(p_resto_id, array['owner', 'finance'])"));
+      expect(layar, contains('a.isOwner || a.isFinance'));
+    });
+
+    test('ada jalan pulang sebelum tanggalnya lewat', () {
+      expect(sql, contains('create or replace function lanjutkan_langganan'));
+      expect(layar, contains('Batalkan, Lanjutkan '));
+    });
+
+    test('berlangganan lagi menghapus tanggal berhentinya', () {
+      // Tanpa ini, merchant yang berhenti lalu berlangganan lagi tetap
+      // membawa tanggal berhentinya — dan aplikasinya mati di tanggal
+      // itu meski dia baru saja membayar.
+      expect(sql, contains('trg_bersihkan_penghentian'));
+    });
+
+    test('KaataGo Admin ikut melihat siapa yang berhenti', () {
+      expect(sql, contains('alasan_berhenti'));
+      final blok = sql.substring(sql.indexOf('keadaan_langganan_semua'));
+      expect(blok, contains('b.dihentikan_at is not null'));
+    });
+  });
+
+  group('aplikasinya terkunci di luar percobaan dan langganan', () {
+    final sql = bacaBerkas('supabase/hentikan_langganan.sql');
+    final gate = bacaBerkas('lib/widgets/billing_gate.dart');
+
+    test('kuncinya dihitung dari dua keadaan saja', () {
+      expect(sql, contains('not (coalesce(c.v_coba, false) or '
+          'coalesce(c.v_langganan, false))'));
+    });
+
+    test('tiap sebab terkunci punya kalimatnya sendiri', () {
+      // Satu kalimat untuk tiga sebab membuat merchant yang tidak
+      // pernah diberi percobaan mencari percobaan yang tidak ada.
+      for (final kalimat in [
+        'Merchant ini belum berlangganan',
+        'Langganannya sudah dihentikan',
+        'Masa langganannya sudah berakhir',
+        'Masa percobaan sudah berakhir',
+      ]) {
+        expect(gate, contains("'$kalimat'"), reason: kalimat);
+      }
+    });
+  });
+
   group('lencana paket', () {
     final lencana = bacaBerkas('lib/widgets/lencana_paket_aktif.dart');
 
@@ -441,15 +503,27 @@ void main() {
   });
 
   group('keadaan langganan', () {
-    test('merchant lama dikenali di luar jalur paket', () {
+    // Aturannya dibalik, dan tes lamanya ikut dibalik.
+    //
+    // Dulu: merchant yang tidak pernah disentuh KaataGo Admin berjalan
+    // bebas tanpa kunci — supaya merchant lama tidak mati pada hari
+    // fitur paket dipasang. Sekarang: tidak ada paket berarti tidak ada
+    // akses, dan yang menjawab boleh-tidaknya adalah server.
+    test('belum pernah diberi paket dikenali sebagai keadaannya sendiri', () {
       const k = KeadaanLangganan();
-      expect(k.diluarJalurPaket, isTrue);
-      expect(k.terkunciPaket, isFalse);
+      expect(k.belumPernahDiberiPaket, isTrue);
     });
 
-    test('yang sudah berlangganan tidak di luar jalur', () {
+    test('yang sudah berlangganan bukan "belum pernah diberi"', () {
       const k = KeadaanLangganan(paket: Paket.premium);
-      expect(k.diluarJalurPaket, isFalse);
+      expect(k.belumPernahDiberiPaket, isFalse);
+    });
+
+    test('terkunci berarti tidak boleh dipakai', () {
+      const kunci = KeadaanLangganan(terkunciPaket: true);
+      const bebas = KeadaanLangganan(paket: Paket.basic);
+      expect(kunci.bolehDipakai, isFalse);
+      expect(bebas.bolehDipakai, isTrue);
     });
 
     test('diingatkan mulai dua hari sebelum habis', () {

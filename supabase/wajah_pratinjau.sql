@@ -65,7 +65,7 @@ begin
   end if;
 
   if not is_resto_employee(p_resto_id,
-       array['owner', 'admin', 'finance', 'kasir', 'chef']) then
+       peran_karyawan()) then
     raise exception 'Kamu bukan karyawan merchant ini.';
   end if;
 

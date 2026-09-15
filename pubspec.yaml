@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 3.12.0+161
+version: 3.13.0+162
 
 environment:
   sdk: ^3.5.4
@@ -142,6 +142,19 @@ dependencies:
   # dikompilasi untuk tes di mesin. Yang menemukannya `flutter build
   # apk`, delapan menit setelah rilis dimulai.
   tflite_flutter: ^0.12.1
+
+  # Kamera di dalam aplikasi, khusus untuk absen wajah.
+  #
+  # image_picker tetap dipakai untuk memilih gambar dari galeri, tapi
+  # tidak untuk memotret wajah: ia menyerahkan pekerjaannya ke aplikasi
+  # kamera bawaan HP, dan `preferredCameraDevice: front` cuma SARAN yang
+  # boleh diabaikan aplikasi itu — dan hampir semua aplikasi kamera
+  # pabrikan memang mengabaikannya. Yang absen jadi harus membalik
+  # kameranya sendiri tiap pagi.
+  #
+  # Ditahan di 0.11.0+2: versi di atasnya menuntut Flutter 3.35, dan
+  # toolchain proyek ini dipatok 3.24.5.
+  camera: 0.11.0+2
 
 dependency_overrides:
   # app_links 6.4.x's Android build.gradle references `flutter.compileSdkVersion`

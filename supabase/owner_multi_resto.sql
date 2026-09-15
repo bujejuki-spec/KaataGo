@@ -20,7 +20,8 @@ begin;
 -- ── 1. Peran owner ───────────────────────────────────────────────────
 alter table employees drop constraint if exists employees_role_check;
 alter table employees add constraint employees_role_check
-  check (role in ('admin', 'kasir', 'chef', 'super_admin', 'finance', 'owner'));
+  check (role in ('admin', 'kasir', 'chef', 'super_admin', 'finance',
+                 'owner', 'hr'));
 
 -- ── 2. Satu email, banyak resto ──────────────────────────────────────
 -- Keanggotaan seseorang melekat pada restonya, bukan pada dirinya semata,

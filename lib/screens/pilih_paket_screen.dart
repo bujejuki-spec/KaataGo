@@ -36,6 +36,7 @@ class _PilihPaketScreenState extends State<PilihPaketScreen> {
 
   static final _rp =
       NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+  static final _tgl = DateFormat('d MMMM yyyy', 'id_ID');
 
   List<InfoPaket> _paket = const [];
   List<BankAccount> _rekening = const [];
@@ -162,6 +163,60 @@ class _PilihPaketScreenState extends State<PilihPaketScreen> {
     }
   }
 
+  /// Yang boleh menghentikan langganan.
+  ///
+  /// Owner dan Finance saja. Yang paling terkena penghentian justru
+  /// orang yang tidak menekan tombolnya — kasir yang besok tidak bisa
+  /// membuka shift, dapur yang berhenti menerima pesanan.
+  bool get _bolehHentikan {
+    final a = context.read<AuthProvider>();
+    return a.isOwner || a.isFinance;
+  }
+
+  Future<void> _hentikan() async {
+    final restoId = context.read<AuthProvider>().restoId;
+    if (restoId == null) return;
+
+    final alasan = await showDialog<String>(
+      context: context,
+      builder: (_) => const _DialogBerhenti(),
+    );
+    if (alasan == null || !mounted) return;
+
+    setState(() => _mengirim = true);
+    try {
+      final sampai = await _repo.hentikan(restoId: restoId, alasan: alasan);
+      if (!mounted) return;
+      showAppToast(
+        context,
+        'Langganan dihentikan. Aplikasinya masih bisa dipakai sampai '
+        '${_tgl.format(sampai)}.',
+      );
+      await _muat();
+    } catch (e) {
+      if (mounted) showAppToast(context, pesanGalat(e), isError: true);
+    } finally {
+      if (mounted) setState(() => _mengirim = false);
+    }
+  }
+
+  Future<void> _lanjutkan() async {
+    final restoId = context.read<AuthProvider>().restoId;
+    if (restoId == null) return;
+
+    setState(() => _mengirim = true);
+    try {
+      await _repo.lanjutkan(restoId);
+      if (!mounted) return;
+      showAppToast(context, 'Langganannya berjalan lagi seperti biasa.');
+      await _muat();
+    } catch (e) {
+      if (mounted) showAppToast(context, pesanGalat(e), isError: true);
+    } finally {
+      if (mounted) setState(() => _mengirim = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final muted = KaataTheme.mutedOf(context);
@@ -187,6 +242,62 @@ class _PilihPaketScreenState extends State<PilihPaketScreen> {
                     if (_keadaan.pengajuanDitolak)
                       _Ditolak(alasan: _keadaan.alasanTolak),
                     _Pengantar(keadaan: _keadaan),
+
+                    // Penghentian yang sedang berjalan disebut lebih
+                    // dulu, sebelum daftar paket.
+                    //
+                    // Tanpa ini yang membuka layar ini melihat daftar
+                    // paket seolah tidak terjadi apa-apa — dan baru tahu
+                    // langganannya akan berhenti pada hari aplikasinya
+                    // benar-benar mati.
+                    if (_keadaan.dihentikan && _keadaan.aktifSampai != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 14),
+                        child: _Kotak(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Row(
+                                children: [
+                                  Icon(Icons.event_busy,
+                                      size: 17, color: Color(0xFFB45309)),
+                                  SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      'Langganan dihentikan',
+                                      style: TextStyle(
+                                          fontSize: 13.5,
+                                          fontWeight: FontWeight.bold,
+                                          color: Color(0xFF92400E)),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                'Aplikasinya masih bisa dipakai sampai '
+                                '${_tgl.format(_keadaan.aktifSampai!)}. '
+                                'Setelah itu terkunci sampai berlangganan '
+                                'lagi.',
+                                style: TextStyle(
+                                    fontSize: 12.5, height: 1.45, color: muted),
+                              ),
+                              if (_bolehHentikan) ...[
+                                const SizedBox(height: 12),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: FilledButton.icon(
+                                    icon: const Icon(Icons.undo, size: 17),
+                                    label: const Text('Batalkan, Lanjutkan '
+                                        'Langganan'),
+                                    onPressed: _mengirim ? null : _lanjutkan,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ),
                     const SizedBox(height: 18),
                     Text(
                         _keadaan.sudahBerlangganan
@@ -282,6 +393,27 @@ class _PilihPaketScreenState extends State<PilihPaketScreen> {
                             style: TextStyle(fontSize: 11.5, color: muted),
                           ),
                         ),
+                    ],
+                    if (_keadaan.sudahBerlangganan &&
+                        !_keadaan.dihentikan &&
+                        _bolehHentikan) ...[
+                      const SizedBox(height: 26),
+                      // Paling bawah, dan tidak menonjol.
+                      //
+                      // Berhenti berlangganan bukan yang dicari orang
+                      // saat membuka layar ini, dan tombol merah besar
+                      // di dekat pilihan paket adalah tombol yang
+                      // sesekali tertekan oleh yang sebenarnya mau
+                      // memperpanjang.
+                      Center(
+                        child: TextButton.icon(
+                          icon: const Icon(Icons.cancel_outlined,
+                              size: 16, color: Colors.red),
+                          label: const Text('Berhenti Berlangganan',
+                              style: TextStyle(color: Colors.red)),
+                          onPressed: _mengirim ? null : _hentikan,
+                        ),
+                      ),
                     ],
                   ],
                 ],
@@ -641,4 +773,104 @@ class _Kotak extends StatelessWidget {
         ),
         child: child,
       );
+}
+
+
+/// Menanyakan alasan berhenti, dan memastikan orangnya memang bermaksud.
+///
+/// Alasannya opsional tapi ditanyakan, karena inilah satu-satunya saat
+/// merchant yang pergi masih mau bicara — dan yang tidak pernah
+/// ditanyakan tidak pernah terjawab.
+class _DialogBerhenti extends StatefulWidget {
+  const _DialogBerhenti();
+
+  @override
+  State<_DialogBerhenti> createState() => _DialogBerhentiState();
+}
+
+class _DialogBerhentiState extends State<_DialogBerhenti> {
+  final _alasan = TextEditingController();
+  bool _paham = false;
+
+  @override
+  void dispose() {
+    _alasan.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final muted = KaataTheme.mutedOf(context);
+
+    return AlertDialog(
+      title: const Text('Berhenti berlangganan?'),
+      content: SizedBox(
+        width: 340,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Aplikasinya TIDAK langsung mati. Kamu masih bisa memakainya '
+                'sampai tanggal tagihan berikutnya — setelah itu terkunci '
+                'sampai berlangganan lagi.\n\n'
+                'Data merchantmu tidak dihapus.',
+                style: TextStyle(fontSize: 13, height: 1.5, color: muted),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _alasan,
+                maxLines: 3,
+                maxLength: 300,
+                decoration: const InputDecoration(
+                  labelText: 'Alasan (opsional)',
+                  hintText: 'Contoh: restonya tutup sementara',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              InkWell(
+                onTap: () => setState(() => _paham = !_paham),
+                borderRadius: BorderRadius.circular(8),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Checkbox(
+                      value: _paham,
+                      visualDensity: VisualDensity.compact,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      onChanged: (v) => setState(() => _paham = v ?? false),
+                    ),
+                    const SizedBox(width: 6),
+                    const Expanded(
+                      child: Padding(
+                        padding: EdgeInsets.only(top: 9),
+                        child: Text(
+                          'Saya paham kasir, dapur, dan seluruh karyawan '
+                          'tidak bisa memakai aplikasinya setelah tanggal itu.',
+                          style: TextStyle(fontSize: 12.5, height: 1.4),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        DialogActions(
+          confirmLabel: 'Hentikan Langganan',
+          cancelLabel: 'Batal',
+          destructive: true,
+          // Mati sampai dicentang. Yang paling terkena keputusan ini
+          // bukan yang menekannya.
+          onConfirm: _paham
+              ? () => Navigator.pop(context, _alasan.text.trim())
+              : null,
+        ),
+      ],
+    );
+  }
 }

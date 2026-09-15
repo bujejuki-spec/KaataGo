@@ -48,6 +48,26 @@ class PaketLanggananRepository {
         Map<String, dynamic>.from(list.first as Map));
   }
 
+  /// Menyatakan berhenti berlangganan.
+  ///
+  /// Mengembalikan tanggal terakhir aplikasinya masih bisa dipakai —
+  /// tanggal tagihan berikutnya, bukan hari ini. Yang sudah membayar
+  /// bulan ini berhak memakai bulan ini.
+  Future<DateTime> hentikan({
+    required String restoId,
+    String? alasan,
+  }) async {
+    final hasil = await _client.rpc('hentikan_langganan', params: {
+      'p_resto_id': restoId,
+      'p_alasan': alasan,
+    });
+    return DateTime.parse(hasil.toString());
+  }
+
+  /// Membatalkan penghentian, selama tanggalnya belum lewat.
+  Future<void> lanjutkan(String restoId) =>
+      _client.rpc('lanjutkan_langganan', params: {'p_resto_id': restoId});
+
   // ── Merchant ────────────────────────────────────────────────────────
 
   /// Mengunggah bukti transfer, mengembalikan JALUR-nya.

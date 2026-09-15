@@ -1480,7 +1480,7 @@ class _PenandaBaris extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final k = keadaan;
-    if (k == null || k.diluarJalurPaket) return const SizedBox.shrink();
+    if (k == null || k.belumPernahDiberiPaket) return const SizedBox.shrink();
 
     final (teks, warna) = switch (k) {
       _ when k.paket != null => (k.paket!.label, warnaPaket(k.paket!)),

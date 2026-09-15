@@ -120,8 +120,11 @@ FILES=(
   paket_publik.sql
   wajah_tidak_kembar.sql
   wajah_geometri.sql
+  peran_karyawan.sql
   wajah_facenet.sql
   wajah_pratinjau.sql
+  peran_hr.sql
+  hentikan_langganan.sql
   absensi_baca_super_admin.sql
   shift_opening_check.sql
   support_tickets.sql

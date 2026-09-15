@@ -111,6 +111,15 @@ const katalogMenu = <String, List<String>>{
     'Absensi',
     'Layar Dapur',
   ],
+  // Gaji sengaja tidak ada di sini, dan itu bukan kelupaan. Yang
+  // mencatat kehadiran tidak boleh jadi orang yang sama dengan yang
+  // menentukan bayarannya — lihat catatan panjangnya di
+  // lib/screens/hr_home_screen.dart.
+  'hr': [
+    'Absensi',
+    'Absensi Karyawan',
+    'Kelola Karyawan',
+  ],
 };
 
 /// Nama peran yang dibaca orang.
@@ -120,4 +129,5 @@ const labelPeran = <String, String>{
   'finance': 'Finance',
   'kasir': 'Kasir',
   'chef': 'Chef',
+  'hr': 'HR',
 };

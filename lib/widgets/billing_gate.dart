@@ -417,6 +417,44 @@ class _LayarPilihPaket extends StatelessWidget {
     final muted = KaataTheme.mutedOf(context);
     final diperiksa = langganan.sedangDiperiksa;
 
+    // Tiga sebab terkunci, tiga kalimat yang berbeda.
+    //
+    // Dulu semuanya dijawab "Masa percobaan sudah berakhir". Kepada
+    // merchant yang tidak pernah diberi percobaan, kalimat itu membuat
+    // orang mencari-cari percobaan yang tidak pernah ada — lalu
+    // menyimpulkan datanya hilang. Kepada yang langganannya baru habis,
+    // ia bahkan keliru: dia sudah pernah membayar.
+    final (judul, isi) = switch (langganan) {
+      _ when diperiksa => (
+          'Pembayaranmu sedang diperiksa',
+          'Paling lama 1×24 jam. Begitu KaataGo memastikan pembayarannya '
+              'masuk, aplikasinya bisa dipakai kembali.'
+        ),
+      _ when langganan.belumPernahDiberiPaket => (
+          'Merchant ini belum berlangganan',
+          'Pilih paket untuk mulai memakai KaataGo. Kalau kamu merasa '
+              'seharusnya sudah punya masa percobaan, hubungi KaataGo — '
+              'seluruh data merchantmu tetap utuh.'
+        ),
+      _ when langganan.dihentikan => (
+          'Langganannya sudah dihentikan',
+          'Masa aktifnya berakhir dan langganannya tidak diperpanjang. '
+              'Pilih paket untuk memakainya lagi — seluruh data '
+              'merchantmu tetap utuh.'
+        ),
+      _ when langganan.paket != null => (
+          'Masa langganannya sudah berakhir',
+          'Perpanjang untuk melanjutkan. Seluruh data merchantmu tetap '
+              'utuh dan langsung bisa dipakai lagi.'
+        ),
+      _ => (
+          'Masa percobaan sudah berakhir',
+          'Pilih paket langgananmu untuk melanjutkan. Seluruh data '
+              'merchantmu tetap utuh dan langsung bisa dipakai lagi '
+              'setelah berlangganan.'
+        ),
+    };
+
     return Scaffold(
       backgroundColor: KaataTheme.backgroundOf(context),
       body: SafeArea(
@@ -433,22 +471,14 @@ class _LayarPilihPaket extends StatelessWidget {
                 ),
                 const SizedBox(height: 18),
                 Text(
-                  diperiksa
-                      ? 'Pembayaranmu sedang diperiksa'
-                      : 'Masa percobaan sudah berakhir',
+                  judul,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                       fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  diperiksa
-                      ? 'Paling lama 1×24 jam. Begitu KaataGo memastikan '
-                          'pembayarannya masuk, aplikasinya bisa dipakai '
-                          'kembali.'
-                      : 'Pilih paket langgananmu untuk melanjutkan. Seluruh '
-                          'data merchantmu tetap utuh dan langsung bisa '
-                          'dipakai lagi setelah berlangganan.',
+                  isi,
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 13.5, height: 1.5, color: muted),
                 ),

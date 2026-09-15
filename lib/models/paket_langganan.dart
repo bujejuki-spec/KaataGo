@@ -68,6 +68,13 @@ class KeadaanLangganan {
 
   final bool terkunciPaket;
 
+  /// Merchant sudah menyatakan berhenti. Aplikasinya TETAP bisa dipakai
+  /// sampai [aktifSampai] — yang sudah membayar bulan ini berhak
+  /// memakai bulan ini.
+  final bool dihentikan;
+  final DateTime? aktifSampai;
+  final String? alasanBerhenti;
+
   const KeadaanLangganan({
     this.paket,
     this.namaPaket,
@@ -81,13 +88,25 @@ class KeadaanLangganan {
     this.statusPengajuan,
     this.alasanTolak,
     this.terkunciPaket = false,
+    this.dihentikan = false,
+    this.aktifSampai,
+    this.alasanBerhenti,
   });
 
-  /// Merchant ini memang tidak pernah dimasukkan ke jalur paket.
+  /// Merchant ini belum pernah diberi paket maupun percobaan.
   ///
-  /// Yang belum pernah disentuh KaataGo Admin berjalan persis seperti
-  /// sebelumnya — tanpa paket, tanpa percobaan, tanpa kunci.
-  bool get diluarJalurPaket => paket == null && trialSampai == null;
+  /// Dulu ini berarti "berjalan bebas, tanpa kunci" — supaya merchant
+  /// lama tidak mati pada hari fitur paket dipasang. Sekarang artinya
+  /// terbalik: tidak ada paket berarti tidak ada akses, dan yang
+  /// membedakannya dari percobaan-habis cuma kalimat yang ditampilkan.
+  ///
+  /// Dipertahankan justru untuk itu — "masa percobaanmu habis" kepada
+  /// merchant yang tidak pernah diberi percobaan adalah kalimat yang
+  /// membuat orang mencari-cari percobaan yang tidak pernah ada.
+  bool get belumPernahDiberiPaket => paket == null && trialSampai == null;
+
+  /// Masih boleh dipakai: sedang mencoba, atau berlangganan aktif.
+  bool get bolehDipakai => !terkunciPaket;
 
   bool get sedangDiperiksa => statusPengajuan == 'verifikasi';
   bool get pengajuanDitolak => statusPengajuan == 'ditolak';
@@ -131,6 +150,11 @@ class KeadaanLangganan {
         statusPengajuan: map['status_pengajuan']?.toString(),
         alasanTolak: map['alasan_tolak']?.toString(),
         terkunciPaket: map['terkunci_paket'] == true,
+        dihentikan: map['dihentikan'] == true,
+        aktifSampai: map['aktif_sampai'] == null
+            ? null
+            : DateTime.tryParse(map['aktif_sampai'].toString()),
+        alasanBerhenti: map['alasan_berhenti']?.toString(),
       );
 }
 

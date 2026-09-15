@@ -15,6 +15,7 @@ import '../utils/akses_menu.dart';
 import '../utils/id_time.dart';
 import '../utils/pesan_galat.dart';
 import '../widgets/app_toast.dart';
+import '../widgets/dialog_actions.dart';
 import '../widgets/gambar_bertanda.dart';
 import '../widgets/responsive.dart';
 
@@ -62,8 +63,60 @@ class _AbsensiReportScreenState extends State<AbsensiReportScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _muat());
   }
 
+  /// Yang boleh menghapus wajah orang lain.
+  ///
+  /// Owner, Admin, Finance, dan HR — peran yang memang mengurus orang
+  /// dan gajinya. Wajah yang bisa direset siapa saja adalah wajah yang
+  /// bisa dipindahkan diam-diam ke orang lain.
+  bool get _bolehResetWajah {
+    final a = context.read<AuthProvider>();
+    return a.isOwner || a.isAdmin || a.isFinance || a.isHr;
+  }
+
   ({DateTime mulai, DateTime akhir}) get _rentang =>
       _aturan.periodeUntuk(_periode);
+
+  /// Menghapus wajah terdaftar seseorang, supaya dia mendaftar ulang.
+  ///
+  /// Dipasang di sini, bukan di layar lain, karena di sinilah
+  /// keputusannya benar-benar diambil: saat dua foto berdampingan dan
+  /// yang melihatnya menyimpulkan itu bukan orang yang sama. Menyuruhnya
+  /// pindah layar untuk mengerjakan kesimpulan yang baru saja dia ambil
+  /// berarti sebagian tidak akan mengerjakannya sama sekali.
+  Future<void> _resetWajah(String email, String nama) async {
+    final restoId = context.read<AuthProvider>().restoId;
+    if (restoId == null) return;
+
+    final yakin = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: Text('Reset wajah $nama?'),
+        content: const Text(
+          'Wajah terdaftarnya dihapus, dan dia harus mendaftarkan wajah '
+          'lagi sebelum bisa absen berikutnya.\n\n'
+          'Absensi yang sudah tercatat tidak berubah, dan foto-foto lama '
+          'tetap tersimpan sebagai bukti.',
+        ),
+        actions: [
+          DialogActions(
+            confirmLabel: 'Reset Wajah',
+            destructive: true,
+            onConfirm: () => Navigator.pop(c, true),
+          ),
+        ],
+      ),
+    );
+    if (yakin != true || !mounted) return;
+
+    try {
+      await _absensi.resetWajah(restoId, email);
+      if (!mounted) return;
+      showAppToast(context, 'Wajah $nama direset. Dia bisa mendaftar lagi.');
+      await _muat();
+    } catch (e) {
+      if (mounted) showAppToast(context, pesanGalat(e), isError: true);
+    }
+  }
 
   Future<void> _muat() async {
     final restoId = context.read<AuthProvider>().restoId;
@@ -278,6 +331,14 @@ class _AbsensiReportScreenState extends State<AbsensiReportScreen> {
                             onToggle: () => setState(
                                 () => _fokus = _fokus == e.key ? null : e.key),
                             onPotong: _ubahPotong,
+                            // Reset wajah cuma untuk yang memang
+                            // mengurus orang. Kasir dan chef tidak
+                            // pernah membuka layar ini, tapi Owner bisa
+                            // memakai perangkat yang sama dengan
+                            // siapa pun.
+                            onResetWajah: _bolehResetWajah
+                                ? () => _resetWajah(e.key, _namaOrang(e.key))
+                                : null,
                           ),
                     ],
                   ),
@@ -298,6 +359,10 @@ class _KartuOrang extends StatelessWidget {
   final VoidCallback onToggle;
   final Future<void> Function(BarisAbsensi, bool) onPotong;
 
+  /// Null berarti yang membuka layar ini tidak berhak mereset wajah —
+  /// tombolnya tidak muncul sama sekali, bukan muncul lalu menolak.
+  final VoidCallback? onResetWajah;
+
   static final _tgl = DateFormat('EEE, d MMM', 'id_ID');
 
   const _KartuOrang({
@@ -309,6 +374,7 @@ class _KartuOrang extends StatelessWidget {
     required this.jam,
     required this.onToggle,
     required this.onPotong,
+    this.onResetWajah,
   });
 
   @override
@@ -399,6 +465,7 @@ class _KartuOrang extends StatelessWidget {
                             absenUrl: b.masukFotoUrl!,
                             nama: nama,
                             ragu: b.masukRagu,
+                            onResetWajah: onResetWajah,
                           ),
                         // Keputusan potong gaji ada di baris harinya,
                         // bukan di layar payroll. Yang memutuskannya
@@ -444,12 +511,14 @@ class _TombolFoto extends StatelessWidget {
   final String absenUrl;
   final String nama;
   final bool ragu;
+  final VoidCallback? onResetWajah;
 
   const _TombolFoto({
     required this.acuanUrl,
     required this.absenUrl,
     required this.nama,
     required this.ragu,
+    this.onResetWajah,
   });
 
   @override
@@ -470,6 +539,7 @@ class _TombolFoto extends StatelessWidget {
           absenUrl: absenUrl,
           nama: nama,
           ragu: ragu,
+          onResetWajah: onResetWajah,
         ),
       ),
     );
@@ -481,12 +551,14 @@ class _DialogBandingFoto extends StatelessWidget {
   final String absenUrl;
   final String nama;
   final bool ragu;
+  final VoidCallback? onResetWajah;
 
   const _DialogBandingFoto({
     required this.acuanUrl,
     required this.absenUrl,
     required this.nama,
     required this.ragu,
+    this.onResetWajah,
   });
 
   @override
@@ -535,11 +607,35 @@ class _DialogBandingFoto extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              'Foto acuan diambil sekali saat mendaftarkan wajah. Kalau '
-              'kedua wajah ini jelas bukan orang yang sama, reset wajahnya '
-              'lewat Kelola Karyawan lalu tandai harinya memotong gaji.',
+              onResetWajah == null
+                  ? 'Foto acuan diambil sekali saat mendaftarkan wajah.'
+                  : 'Foto acuan diambil sekali saat mendaftarkan wajah. '
+                      'Kalau kedua wajah ini jelas bukan orang yang sama, '
+                      'reset wajahnya lalu tandai harinya memotong gaji.',
               style: TextStyle(fontSize: 11.5, height: 1.4, color: muted),
             ),
+            // Tombolnya di sini, bukan di layar lain.
+            //
+            // Kalimat di atas dulu menyuruh "reset wajahnya lewat Kelola
+            // Karyawan" — dan di sana tidak pernah ada tombolnya. Yang
+            // membacanya mencari, tidak menemukan, lalu menyimpulkan
+            // fiturnya tidak ada.
+            if (onResetWajah != null) ...[
+              const SizedBox(height: 14),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.person_off_outlined,
+                      size: 17, color: Colors.red),
+                  label: const Text('Reset Wajah',
+                      style: TextStyle(color: Colors.red)),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    onResetWajah!();
+                  },
+                ),
+              ),
+            ],
           ],
         ),
       ),
