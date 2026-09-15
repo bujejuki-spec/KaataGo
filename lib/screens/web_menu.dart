@@ -164,6 +164,7 @@ List<MenuWeb> menuWebUntuk(AuthProvider auth) {
   if (auth.isOwner) return _owner;
   if (auth.isAdmin) return _admin;
   if (auth.isFinance) return _finance;
+  if (auth.isHr) return _hr;
   return const [];
 }
 
@@ -623,6 +624,26 @@ const _admin = <MenuWeb>[
     judul: 'Kotak Masuk',
     layar: InboxScreen.new,
     belumDibaca: _inboxBelumDibaca,
+  ),
+];
+
+/// HR (Human Resource): orang dan kehadirannya, di layar lebar.
+///
+/// Absensi miliknya sendiri sengaja tidak ada. Absen butuh kamera depan
+/// dan titik GPS orang yang berdiri di tempatnya — komputer kantor
+/// punya keduanya di tempat yang salah. Gaji juga tidak ada, sama
+/// seperti di ponselnya.
+const _hr = <MenuWeb>[
+  MenuWeb(
+    kelompok: 'Karyawan',
+    ikon: Icons.badge_outlined,
+    judul: 'Absensi Karyawan',
+    layar: AbsensiReportScreen.new,
+  ),
+  MenuWeb(
+    ikon: Icons.badge_outlined,
+    judul: 'Kelola Karyawan',
+    layar: EmployeeManagementScreen.new,
   ),
 ];
 
