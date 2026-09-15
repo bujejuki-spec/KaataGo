@@ -37,7 +37,7 @@ Formatnya dibaca `scripts/release.sh`: judul `## <versi>`, lalu
 poin-poinnya. Versi yang tidak punya bagiannya di sini tetap terbit,
 hanya pengumumannya memakai kalimat umum.
 
-## 3.13.0
+## 3.13.1
 
 - **Peran baru: HR.** Berandanya berisi Kelola Karyawan, Absensi, dan
   Absensi Karyawan. Gaji sengaja tidak termasuk — yang mencatat
@@ -55,6 +55,11 @@ hanya pengumumannya memakai kalimat umum.
 - Aplikasinya kini hanya bisa dipakai selama **masa percobaan atau
   langganan yang aktif**. Di luar itu terkunci, dan alasannya disebut
   apa adanya
+- HR (Human Resource) kini juga bisa membuka KaataGo dari komputer:
+  Absensi Karyawan dan Kelola Karyawan
+- Tautan **Situs KaataGo** di layar Tentang KaataGo sekarang diatur
+  KaataGo Admin, jadi selalu mengarah ke alamat terbaru tanpa perlu
+  memperbarui aplikasi
 - Perbaikan bug dan penyempurnaan tampilan
 
 ## 3.12.0

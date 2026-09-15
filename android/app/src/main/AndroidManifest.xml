@@ -1,4 +1,5 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.CAMERA" />
     <!-- Ubin peta OpenStreetMap diambil lewat jaringan. Selama ini izin
          internet datang menumpang dari manifest paket lain; menulisnya
@@ -9,8 +10,18 @@
     <!-- Saving the receipt PNG to the gallery (gal). Android 10+ writes
          via MediaStore and needs no permission, but minSdk here is 23 so
          older devices still do. -->
+    <!-- tools:replace, karena camera_android_camerax membawa izin yang sama
+         dengan maxSdkVersion 28, dan Gradle menolak menggabungkan dua
+         nilai yang berbeda: build gagal 22 menit setelah dimulai, di tahap
+         yang tidak disentuh analyze maupun tes.
+
+         Nilai KITA yang harus menang, bukan milik paket kamera. 29 berarti
+         Android 10 masih diberi izin menulis — dan gal memang masih
+         membutuhkannya di sana. Membiarkan 28 menang berarti HP Android 10
+         diam-diam gagal menyimpan struk ke galeri. -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
-        android:maxSdkVersion="29" />
+        android:maxSdkVersion="29"
+        tools:replace="android:maxSdkVersion" />
     <!-- Memasang APK versi baru yang diunduh dari dalam aplikasi.
          Tanpa izin ini Android menolak membuka layar pemasangnya, dan
          kegagalannya terlihat seperti aplikasinya yang rusak: berkasnya
