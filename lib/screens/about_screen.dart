@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../db/setelan_platform_repository.dart';
 import '../theme.dart';
 import '../widgets/kaata_logo.dart';
 
@@ -285,10 +286,35 @@ class _Section extends StatelessWidget {
 /// belum punya akun dan sedang menimbang, dan yang dia butuhkan
 /// berikutnya ada di situsnya: cara berlangganan, dan berkas
 /// pemasangnya.
-class _WebsiteLink extends StatelessWidget {
-  static const _url = 'https://bujejuki-spec.github.io/KaataGo-LandingPage/';
-
+class _WebsiteLink extends StatefulWidget {
   const _WebsiteLink();
+
+  @override
+  State<_WebsiteLink> createState() => _WebsiteLinkState();
+}
+
+class _WebsiteLinkState extends State<_WebsiteLink> {
+  /// Tautannya dibaca dari basis data, disetel KaataGo Admin.
+  ///
+  /// Dulu ditulis mati di dalam APK, jadi mengganti alamat situs berarti
+  /// merilis APK baru — dan HP yang belum memperbarui terus membuka
+  /// alamat lama selamanya. Sambil menunggu jawabannya, tombolnya sudah
+  /// bisa ditekan dengan alamat bawaan: tombol yang mati karena sinyal
+  /// lemah di halaman login lebih buruk daripada alamat yang sedikit tua.
+  String _url = SetelanPlatformRepository.tautanSitusBawaan;
+
+  @override
+  void initState() {
+    super.initState();
+    SetelanPlatformRepository().tautanSitus().then((t) {
+      if (mounted && t != _url) setState(() => _url = t);
+    });
+  }
+
+  /// Alamat untuk dibaca orang: tanpa https:// dan garis miring penutup.
+  String get _tampil => _url
+      .replaceFirst(RegExp(r'^https://'), '')
+      .replaceFirst(RegExp(r'/$'), '');
 
   @override
   Widget build(BuildContext context) {
@@ -326,7 +352,7 @@ class _WebsiteLink extends StatelessWidget {
                         style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                     const SizedBox(height: 2),
                     Text(
-                      'bujejuki-spec.github.io/KaataGo-LandingPage',
+                      _tampil,
                       style: TextStyle(fontSize: 11.5, color: KaataTheme.mutedOf(context)),
                       overflow: TextOverflow.ellipsis,
                     ),

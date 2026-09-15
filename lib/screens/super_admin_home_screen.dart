@@ -17,6 +17,7 @@ import 'support_admin_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'publish_announcement_screen.dart';
+import 'tautan_situs_screen.dart';
 import 'restaurant_manage_list_screen.dart';
 import 'bank_account_screen.dart';
 import '../models/billing.dart';
@@ -179,6 +180,16 @@ class SuperAdminHomeScreen extends StatelessWidget {
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute(
                         builder: (_) => const MarketReportScreen()),
+                  ),
+                ),
+                HubMenuTile(
+                  icon: Icons.language,
+                  title: 'Tautan Situs KaataGo',
+                  subtitle: 'Alamat yang dibuka dari layar Tentang KaataGo',
+                  color: const Color(0xFF0EA5E9),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                        builder: (_) => const TautanSitusScreen()),
                   ),
                 ),
                 HubMenuTile(

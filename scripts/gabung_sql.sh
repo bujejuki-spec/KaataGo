@@ -125,6 +125,7 @@ FILES=(
   wajah_pratinjau.sql
   peran_hr.sql
   hentikan_langganan.sql
+  setelan_platform.sql
   absensi_baca_super_admin.sql
   shift_opening_check.sql
   support_tickets.sql
