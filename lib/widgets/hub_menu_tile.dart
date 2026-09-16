@@ -151,7 +151,18 @@ class HubHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(20, 44, 20, 24),
+      // Padat, bukan menumpuk.
+      //
+      // Dulu isinya berdiri enam baris: logo, nama, email, tiga tombol
+      // tema, lencana paket, lalu pemilih merchant — masing-masing satu
+      // baris sendiri. Di HP 6 inci, menu kerja pertama baru mulai di
+      // separuh bawah layar, dan yang dibuka dua kali sehari (Shift
+      // Kasir) justru yang paling jauh dijangkau jempol.
+      //
+      // Sekarang logo, nama, dan tombol tema berbagi satu baris; lencana
+      // dan pemilih merchant berbagi baris kedua. Tidak ada yang hilang,
+      // cuma berhenti berbaris sendiri-sendiri.
+      padding: const EdgeInsets.fromLTRB(16, 40, 16, 14),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -160,37 +171,65 @@ class HubHeader extends StatelessWidget {
         ),
       ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          logo,
-          const SizedBox(height: 16),
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.2,
-            ),
+          Row(
+            children: [
+              // Logonya dikecilkan di sini, bukan di delapan layar yang
+              // memanggilnya: semuanya mengirim ukuran 64, dan mengubah
+              // kedelapannya berarti delapan tempat yang bisa berselisih.
+              SizedBox(
+                width: 46,
+                height: 46,
+                child: FittedBox(fit: BoxFit.contain, child: logo),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                    if (subtitle != null)
+                      Text(
+                        subtitle!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            color: Colors.white.withOpacity(0.85),
+                            fontSize: 11.5),
+                      ),
+                  ],
+                ),
+              ),
+              if (tampilkanTema) ...[
+                const SizedBox(width: 8),
+                const TemaHeader(padat: true),
+              ],
+            ],
           ),
-          if (subtitle != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              subtitle!,
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 12.5),
+          if (tampilkanPaket || trailing != null)
+            Row(
+              children: [
+                if (tampilkanPaket)
+                  const Flexible(child: LencanaPaketAktif()),
+                if (tampilkanPaket && trailing != null)
+                  const SizedBox(width: 8),
+                if (trailing != null) Flexible(child: trailing!),
+              ],
             ),
-          ],
-          if (tampilkanTema) ...[
-            const SizedBox(height: 12),
-            const TemaHeader(),
-          ],
-          if (tampilkanPaket) const LencanaPaketAktif(),
-          if (trailing != null) trailing!,
         ],
-      ),
+      )
     );
   }
 }

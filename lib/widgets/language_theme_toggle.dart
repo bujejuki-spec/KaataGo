@@ -163,7 +163,19 @@ class ThemeToggle extends StatelessWidget {
 /// percobaan yang menuntut membuka lalu menutup dialog membuat orang
 /// berhenti mencoba sebelum menemukan yang dia mau.
 class TemaHeader extends StatelessWidget {
-  const TemaHeader({super.key});
+  /// Hanya ikon, tanpa label.
+  ///
+  /// Di header beranda, tiga tombol berlabel memakan satu baris penuh
+  /// sendirian — dan yang dibacanya cuma "Terang, Gelap, Ikuti HP", tiga
+  /// kata yang sudah dijelaskan ikonnya. Baris itu ikut mendorong menu
+  /// kerja turun ke bawah layar.
+  ///
+  /// Labelnya tidak hilang sepenuhnya: ia pindah ke tooltip, dan blok
+  /// berlabel penuh tetap dipakai di layar Pengaturan, tempat orang
+  /// memang sedang memilih tampilan.
+  final bool padat;
+
+  const TemaHeader({super.key, this.padat = false});
 
   @override
   Widget build(BuildContext context) {
@@ -179,8 +191,8 @@ class TemaHeader extends StatelessWidget {
     // kuning-hitam menutupi header.
     return Wrap(
       alignment: WrapAlignment.center,
-      spacing: 6,
-      runSpacing: 6,
+      spacing: padat ? 5 : 6,
+      runSpacing: padat ? 5 : 6,
       children: [
         for (final (mode, ikon, nama) in ThemeToggle._pilihanDipakai)
           Tooltip(
@@ -192,23 +204,27 @@ class TemaHeader extends StatelessWidget {
                   borderRadius: BorderRadius.circular(20),
                   onTap: () => prefs.setThemeMode(mode),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 11, vertical: 6),
+                    padding: padat
+                        ? const EdgeInsets.all(7)
+                        : const EdgeInsets.symmetric(
+                            horizontal: 11, vertical: 6),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(ikon, size: 15, color: Colors.white),
-                        const SizedBox(width: 5),
-                        Text(
-                          context.tr(nama),
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 11.5,
-                            fontWeight: mode == terpilih
-                                ? FontWeight.bold
-                                : FontWeight.w500,
+                        Icon(ikon, size: padat ? 16 : 15, color: Colors.white),
+                        if (!padat) ...[
+                          const SizedBox(width: 5),
+                          Text(
+                            context.tr(nama),
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 11.5,
+                              fontWeight: mode == terpilih
+                                  ? FontWeight.bold
+                                  : FontWeight.w500,
+                            ),
                           ),
-                        ),
+                        ],
                       ],
                     ),
                   ),

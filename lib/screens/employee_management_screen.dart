@@ -23,6 +23,12 @@ const _roleLabels = {
   'kasir': 'Kasir',
   'chef': 'Chef',
   'finance': 'Finance',
+  // Disebut lengkap di sini, bukan cuma "HR".
+  //
+  // Daftar ini yang dibaca orang saat memilih peran seseorang, dan
+  // singkatan dua huruf di antara "Kasir" dan "Finance" menuntut yang
+  // memilihnya sudah tahu artinya.
+  'hr': 'HR (Human Resource)',
 };
 
 const _roleColors = {
@@ -32,6 +38,7 @@ const _roleColors = {
   'kasir': Color(0xFF0EA5E9),
   'chef': Color(0xFFF97316),
   'finance': Color(0xFF10B981),
+  'hr': Color(0xFFEC4899),
 };
 
 /// Super Admin only: lists every employee across every restaurant, and
