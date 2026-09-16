@@ -37,6 +37,14 @@ Formatnya dibaca `scripts/release.sh`: judul `## <versi>`, lalu
 poin-poinnya. Versi yang tidak punya bagiannya di sini tetap terbit,
 hanya pengumumannya memakai kalimat umum.
 
+## 3.13.2
+
+- Header di beranda dibuat lebih ringkas, jadi menu kerja tidak lagi
+  terdorong ke separuh bawah layar
+- Peran **HR (Human Resource)** kini muncul di pilihan peran saat
+  menambah atau mengubah karyawan
+- Perbaikan bug dan penyempurnaan tampilan
+
 ## 3.13.1
 
 - **Peran baru: HR.** Berandanya berisi Kelola Karyawan, Absensi, dan

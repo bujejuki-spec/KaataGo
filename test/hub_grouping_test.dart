@@ -18,12 +18,20 @@ void main() {
   // "Absensi Karyawan" bagi yang membaca rekapnya (admin, finance,
   // owner) dan "Payroll" bagi yang menyetel gajinya (finance, owner).
   //
-  // Super Admin naik satu oleh "Pengajuan Langganan".
+  // Super Admin naik satu oleh "Pengajuan Langganan", lalu satu lagi
+  // oleh "Tautan Situs KaataGo" — alamat situs yang dulu ditulis mati di
+  // dalam APK dan kini disetel dari aplikasi.
+  //
+  // Angkanya memang ditulis tangan, dan itu disengaja. Yang dijaga tes
+  // ini justru menu yang JATUH tanpa suara saat dipindahkan ke dalam
+  // kelompok — dan menghitungnya dari berkas yang sama yang diperiksa
+  // berarti tidak menjaga apa pun. Jadi tiap penambahan menu memang
+  // harus lewat sini, satu baris, dengan alasannya.
   const jumlahMenu = {
     'kasir': 11,
     'admin': 19,
     'finance': 21,
-    'super_admin': 12,
+    'super_admin': 13,
     'owner': 32,
   };
 

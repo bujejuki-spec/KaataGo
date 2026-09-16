@@ -41,7 +41,34 @@ void main() {
 
   // Menu yang tidak ada berarti fiturnya tidak ada, seberapa pun benar
   // izinnya di server.
-  test('menunya ada di sidebar Owner dan Admin, bukan cuma Super Admin', () {
-    expect("judul: 'Kelola Karyawan'".allMatches(menu).length, 3);
+  //
+  // Diperiksa PER PERAN, bukan dengan menghitung jumlah kemunculannya.
+  //
+  // Dulu tes ini menuntut angkanya tepat tiga. Angka itu benar saat
+  // ditulis, lalu merah pada hari peran HR mendapat konsol webnya —
+  // padahal yang terjadi justru penambahan, bukan kehilangan. Dan
+  // sebaliknya: memindahkan menunya dari Admin ke peran lain tetap
+  // menghasilkan tiga, jadi angka itu tidak pernah benar-benar menjaga
+  // apa yang dimaksud judulnya.
+  group('menunya ada di sidebar peran yang mengurus karyawan', () {
+    /// Isi satu daftar menu, dipotong dari deklarasinya sampai penutupnya.
+    String daftar(String nama) {
+      final mulai = menu.indexOf('const $nama = <MenuWeb>[');
+      expect(mulai, greaterThan(-1), reason: 'Daftar menu $nama tidak ada.');
+      return menu.substring(mulai, menu.indexOf('\n];', mulai));
+    }
+
+    for (final peran in ['_superAdmin', '_owner', '_admin', '_hr']) {
+      test('$peran punya Kelola Karyawan', () {
+        expect(daftar(peran), contains("judul: 'Kelola Karyawan'"));
+      });
+    }
+
+    // Finance mengurus uang, bukan orang. Batas itu ditegakkan RLS juga,
+    // dan menu yang menawarkannya cuma menyodorkan layar yang isinya
+    // akan ditolak server.
+    test('_finance tidak punya Kelola Karyawan', () {
+      expect(daftar('_finance'), isNot(contains("judul: 'Kelola Karyawan'")));
+    });
   });
 }
