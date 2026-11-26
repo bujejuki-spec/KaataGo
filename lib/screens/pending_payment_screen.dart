@@ -16,6 +16,8 @@ import '../theme.dart';
 import '../utils/id_time.dart';
 import '../widgets/app_toast.dart';
 import '../widgets/cash_payment_dialog.dart';
+import '../widgets/dialog_actions.dart';
+import '../widgets/gambar_bertanda.dart';
 import '../widgets/responsive.dart';
 import 'payment_qris_screen.dart';
 import 'payment_transfer_screen.dart';
@@ -68,6 +70,27 @@ class _PendingPaymentScreenState extends State<PendingPaymentScreen> {
   /// Pelanggan memilih tunai dari HP-nya, tapi yang menentukan
   /// akhirnya adalah apa yang benar-benar terjadi di meja kasir.
   Future<void> _settle(CustomerOrder order) async {
+    // QRIS Statis tidak ditanya lagi cara bayarnya.
+    //
+    // Pelanggan sudah memilihnya di HP-nya, memindai QR merchant, dan
+    // mengunggah buktinya. Menanyakan ulang di sini berarti menyuruh
+    // kasir memilih hal yang sudah diputuskan — dan tiap pilihan yang
+    // bisa diubah adalah pilihan yang bisa salah diubah, menjadikan
+    // pembayaran QRIS tercatat sebagai tunai yang tidak pernah ada di
+    // laci.
+    //
+    // Yang tetap diminta: melihat buktinya. Itu satu-satunya yang
+    // memang belum terjadi.
+    if (order.paymentMethod == 'qris_static') {
+      final yakin = await showDialog<bool>(
+        context: context,
+        builder: (_) => _DialogBuktiQris(order: order, currency: _currency),
+      );
+      if (yakin != true || !mounted) return;
+      await _simpanPembayaran(order, method: 'qris_static');
+      return;
+    }
+
     final method = await showModalBottomSheet<String>(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -107,6 +130,21 @@ class _PendingPaymentScreenState extends State<PendingPaymentScreen> {
       if (confirmed != true || !mounted) return;
     }
 
+    await _simpanPembayaran(order, method: method, received: received);
+  }
+
+  /// Menyimpan pelunasannya, apa pun jalan yang dipakai untuk sampai ke
+  /// sini.
+  ///
+  /// Berdiri sendiri karena ada dua jalan masuk: yang menanyakan cara
+  /// bayarnya, dan yang tidak perlu menanyakannya. Menyalin potongan ini
+  /// ke keduanya berarti dua tempat yang harus ikut berubah setiap kali
+  /// pencatatannya berubah — dan yang terlewat tidak akan berbunyi.
+  Future<void> _simpanPembayaran(
+    CustomerOrder order, {
+    required String method,
+    int? received,
+  }) async {
     setState(() => _settling = order.id);
     try {
       await _repo.settlePayment(
@@ -691,6 +729,85 @@ class _EmptyState extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+
+/// Bukti bayar QRIS Statis, ditunjukkan sebelum kasir menyatakan lunas.
+///
+/// Buktinya ditampilkan, bukan sekadar ditautkan. Kasir yang harus
+/// membuka tautan satu per satu akan berhenti membukanya setelah pesanan
+/// kelima — dan yang tidak dibuka akan dilunaskan tanpa dilihat.
+class _DialogBuktiQris extends StatelessWidget {
+  final CustomerOrder order;
+  final NumberFormat currency;
+
+  const _DialogBuktiQris({required this.order, required this.currency});
+
+  @override
+  Widget build(BuildContext context) {
+    final muted = KaataTheme.mutedOf(context);
+    final adaBukti = order.buktiBayarUrl?.isNotEmpty == true;
+
+    return AlertDialog(
+      title: Text('Pesanan #${refOf(order.id)}',
+          style: const TextStyle(fontSize: 16)),
+      content: SizedBox(
+        width: 340,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Tagihan', style: TextStyle(fontSize: 12, color: muted)),
+            Text(currency.format(order.total),
+                style: const TextStyle(
+                    fontSize: 22, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 14),
+            if (adaBukti)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: SizedBox(
+                  height: 260,
+                  width: double.infinity,
+                  child: GambarBertanda(
+                    simpanan: order.buktiBayarUrl,
+                    ember: 'bukti-bayar',
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              )
+            else
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: KaataTheme.tintOf(context, Colors.amber),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  'Pelanggan belum mengunggah bukti. Pastikan uangnya '
+                  'benar-benar masuk sebelum melunaskan — tidak ada kabar '
+                  'dari penyedia pembayaran untuk QR statis.',
+                  style: TextStyle(fontSize: 12.5, height: 1.45, color: muted),
+                ),
+              ),
+            const SizedBox(height: 12),
+            Text(
+              'QR statis tidak membawa nominal, jadi yang paling mungkin '
+              'keliru bukan QR-nya melainkan jumlah yang diketik '
+              'pelanggan. Cocokkan dengan tagihan di atas.',
+              style: TextStyle(fontSize: 11.5, height: 1.45, color: muted),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        DialogActions(
+          confirmLabel: 'Uangnya Masuk, Lunaskan',
+          onConfirm: () => Navigator.pop(context, true),
+        ),
+      ],
     );
   }
 }

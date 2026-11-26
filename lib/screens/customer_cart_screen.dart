@@ -22,6 +22,7 @@ import '../providers/customer_cart_provider.dart';
 import '../providers/table_session_provider.dart';
 import 'customer_cash_pending_screen.dart';
 import 'customer_qris_screen.dart';
+import 'customer_qris_statis_screen.dart';
 import '../widgets/charge_summary.dart';
 import '../widgets/quantity_dialog.dart';
 import '../widgets/cart_line_tile.dart';
@@ -76,16 +77,16 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
   /// dibuka; yang tidak dinyalakan tidak pernah ditawarkan.
   MetodeBayarMerchant _metode = const MetodeBayarMerchant();
 
-  /// Dibayar di kasir, bukan lewat aplikasi.
+  /// Uangnya berpindah di meja kasir, bukan lewat HP pelanggan.
   ///
-  /// QRIS Statis ikut ke sini bersama tunai, dan itu bukan
-  /// penyederhanaan: QR statis tidak membawa nominal di dalamnya, jadi
-  /// pelanggan bisa memindai lalu mengirim jumlah yang berbeda dari
-  /// tagihannya. Yang memastikan angkanya benar adalah kasir yang
-  /// melihat bukti transfernya — persis seperti uang tunai yang dihitung
-  /// di depan mejanya.
-  bool get _payAtCashier =>
-      _paymentMethod == 'cash' || _paymentMethod == 'qris_static';
+  /// Sekarang hanya tunai. QRIS Statis dulu ikut ke sini, dan itu
+  /// keliru arah: justru QRIS-lah cara bayar yang paling tidak perlu ke
+  /// kasir — QR-nya bisa dipindai dari HP sendiri dan buktinya ada di
+  /// HP itu juga. Yang tetap dipegang kasir bukan pembayarannya,
+  /// melainkan PERNYATAAN lunasnya: QR statis tidak membawa nominal dan
+  /// tidak ada kabar apa pun dari penyedia pembayaran, jadi tetap harus
+  /// ada orang yang melihat mutasinya.
+  bool get _payAtCashier => _paymentMethod == 'cash';
 
   bool _placing = false;
 
@@ -449,22 +450,29 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
     if (!mounted) return;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
-        builder: (_) => _payAtCashier
-            // Tidak ada layar bayar untuk tunai: yang menerima uangnya
-            // kasir, dan pesanannya sudah tercatat lengkap sejak baris
-            // di atas. Yang tersisa cuma memberi tahu ke mana harus
-            // melangkah.
-            ? CustomerCashPendingScreen(
-                orderId: orderId,
-                amount: amount,
-                createdAt: DateTime.now(),
-              )
-            : CustomerQrisScreen(
-                orderId: orderId,
-                amount: amount,
-                restoId: session.restoId!,
-                createdAt: DateTime.now(),
-              ),
+        builder: (_) => switch (_paymentMethod) {
+          // Tidak ada layar bayar untuk tunai: yang menerima uangnya
+          // kasir, dan pesanannya sudah tercatat lengkap sejak baris di
+          // atas. Yang tersisa cuma memberi tahu ke mana harus melangkah.
+          'cash' => CustomerCashPendingScreen(
+              orderId: orderId,
+              amount: amount,
+              createdAt: DateTime.now(),
+            ),
+          // QR merchant ditampilkan di sini, bukan di meja kasir.
+          'qris_static' => CustomerQrisStatisScreen(
+              orderId: orderId,
+              amount: amount,
+              restoId: session.restoId!,
+              createdAt: DateTime.now(),
+            ),
+          _ => CustomerQrisScreen(
+              orderId: orderId,
+              amount: amount,
+              restoId: session.restoId!,
+              createdAt: DateTime.now(),
+            ),
+        },
       ),
     );
   }
@@ -688,11 +696,11 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
                       Text(
                         switch (_paymentMethod) {
                           'qris_static' =>
-                            'Pesanan langsung masuk ke dapur. QR-nya '
-                                'ditunjukkan kasir, dan pembayarannya '
-                                'dipastikan di sana — QR statis tidak '
-                                'membawa nominal, jadi jumlahnya perlu '
-                                'dicocokkan.',
+                            'QR merchant muncul di layar berikutnya. '
+                                'Pindai, bayar sejumlah yang tertera, '
+                                'lalu unggah buktinya — kasir yang '
+                                'memastikan, karena QR statis tidak '
+                                'membawa nominal.',
                           'cash' => 'Pesanan langsung masuk ke dapur. '
                               'Pembayaran diselesaikan di kasir — statusnya '
                               'menunggu pembayaran sampai kasir menerima '

@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/customer_order.dart';
@@ -63,7 +64,15 @@ class OrderRepository {
         .eq('resto_id', restoId)
         .eq('source', 'customer')
         .eq('payment_status', 'pending')
-        .eq('payment_method', 'cash');
+        // Keduanya, sama seperti daftar yang dibukanya.
+        //
+        // Penyaringan daftarnya terjadi di Dart lewat
+        // [CustomerOrder.isPendingCashPayment], yang sudah menyertakan
+        // QRIS Statis — sementara hitungan ini menyaring di SQL dan
+        // hanya menghitung tunai. Akibatnya penanda merah berkata "2"
+        // di atas daftar berisi 5, dan yang memercayai angkanya tidak
+        // pernah tahu ada tiga pembayaran yang menunggu.
+        .inFilter('payment_method', const ['cash', 'qris_static']);
   }
 
   /// Melunasi pesanan tunai di meja kasir.
@@ -99,6 +108,44 @@ class OrderRepository {
   /// mana yang dikredit. Uang QRIS yang tercatat di GL Kas berarti laci
   /// yang tidak pernah cocok, dan mutasi bank yang tidak pernah
   /// ditemukan pasangannya.
+  /// Mengunggah bukti bayar QRIS Statis milik pelanggan.
+  ///
+  /// Dua langkah yang sengaja dipisah: berkasnya naik ke ember tertutup,
+  /// lalu jalurnya ditempelkan ke pesanan lewat fungsi yang memeriksa
+  /// syaratnya. Pelanggan — apalagi tamu yang tidak login — tidak punya
+  /// hak mengubah baris pesanan, dan memang tidak boleh punya: baris itu
+  /// juga memuat status dapur, total, dan diskonnya.
+  ///
+  /// Nama berkasnya `<resto>/<id pesanan>.jpg`, dan kebijakan embernya
+  /// memeriksa kedua bagian itu ke tabel pesanan. Ember yang menerima
+  /// tulisan tanpa syarat adalah tempat penyimpanan gratis bagi siapa
+  /// pun yang menemukannya.
+  Future<String> unggahBuktiBayar({
+    required String restoId,
+    required String orderId,
+    required Uint8List bytes,
+  }) async {
+    final jalur = '$restoId/$orderId.jpg';
+    await _client.storage.from('bukti-bayar').uploadBinary(
+          jalur,
+          bytes,
+          // upsert DIPAKAI di sini, berbeda dari ember absensi.
+          //
+          // Namanya memang satu per pesanan, jadi mengunggah ulang
+          // berarti pelanggan membetulkan fotonya sendiri — dan tanpa
+          // upsert, yang salah unggah terkunci selamanya dengan bukti
+          // yang keliru. Kebijakan `update` embernya menuntut syarat
+          // yang sama persis dengan menulis.
+          fileOptions: const FileOptions(
+              contentType: 'image/jpeg', upsert: true),
+        );
+    await _client.rpc('lampirkan_bukti_bayar', params: {
+      'p_order_id': orderId,
+      'p_jalur': jalur,
+    });
+    return jalur;
+  }
+
   Future<void> settlePayment(
     String orderId, {
     required String method,

@@ -71,11 +71,20 @@ class GambarBertanda extends StatefulWidget {
   final BoxFit fit;
   final String kosong;
 
+  /// Ember tempat berkasnya disimpan.
+  ///
+  /// Bisa lebih dari satu: foto absensi dan bukti bayar pelanggan sama-
+  /// sama tertutup, tapi yang boleh membacanya berbeda — kasir tidak
+  /// punya hak atas foto wajah rekannya, dan dapur tidak punya hak atas
+  /// bukti transfer siapa pun.
+  final String ember;
+
   const GambarBertanda({
     super.key,
     required this.simpanan,
     this.fit = BoxFit.cover,
     this.kosong = 'Belum ada',
+    this.ember = emberTertutup,
   });
 
   @override
@@ -88,14 +97,14 @@ class _GambarBertandaState extends State<GambarBertanda> {
   @override
   void initState() {
     super.initState();
-    _url = urlBertanda(widget.simpanan);
+    _url = urlBertanda(widget.simpanan, ember: widget.ember);
   }
 
   @override
   void didUpdateWidget(GambarBertanda lama) {
     super.didUpdateWidget(lama);
     if (lama.simpanan != widget.simpanan) {
-      _url = urlBertanda(widget.simpanan);
+      _url = urlBertanda(widget.simpanan, ember: widget.ember);
     }
   }
 
