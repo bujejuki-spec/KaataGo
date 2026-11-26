@@ -11,6 +11,7 @@ import '../theme.dart';
 import '../utils/periksa_qris.dart';
 import '../utils/pesan_galat.dart';
 import 'app_toast.dart';
+import 'gambar_tersimpan.dart';
 import 'dialog_actions.dart';
 
 /// Metode bayar yang ditawarkan merchant, berikut QR statisnya.
@@ -200,9 +201,14 @@ class _BagianMetodeBayarState extends State<BagianMetodeBayar> {
       }
 
       final Uint8List bytes = await dipilih.readAsBytes();
-      final url = await _repo.unggahQr(widget.restoId, bytes);
+      final base64 = _repo.siapkanQr(bytes);
+      // Berkas lama di Storage ikut dibuang kalau merchant ini pernah
+      // memasangnya di sana — kalau tidak, ia tetap bisa dibuka siapa
+      // pun yang pernah menyimpan tautannya.
+      await _repo.hapusQr(widget.restoId);
       await _simpan(_metode.copyWith(
-        qrisStatisUrl: url,
+        qrisStatisBase64: base64,
+        qrisStatisUrl: null,
         qrisStatisPayload: payload,
         qrisStatis: true,
       ));
@@ -260,7 +266,7 @@ class _BagianMetodeBayarState extends State<BagianMetodeBayar> {
       );
     }
 
-    final url = _metode.qrisStatisUrl;
+    final ada = _metode.adaQrStatis;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -282,8 +288,8 @@ class _BagianMetodeBayarState extends State<BagianMetodeBayar> {
         _saklar(
           MetodeBayar.qrisStatis,
           _metode.qrisStatis,
-          url == null ? null : (v) => _simpan(_metode.copyWith(qrisStatis: v)),
-          catatan: url == null
+          !ada ? null : (v) => _simpan(_metode.copyWith(qrisStatis: v)),
+          catatan: !ada
               ? 'Unggah QR-nya dulu di bawah'
               : 'QR cetak sendiri — dibayar lewat kasir',
         ),
@@ -291,7 +297,7 @@ class _BagianMetodeBayarState extends State<BagianMetodeBayar> {
             (v) => _simpan(_metode.copyWith(transfer: v)),
             catatan: 'Transfer bank manual'),
         const SizedBox(height: 16),
-        _kartuQr(url),
+        _kartuQr(ada),
       ],
     );
   }
@@ -310,7 +316,7 @@ class _BagianMetodeBayarState extends State<BagianMetodeBayar> {
     );
   }
 
-  Widget _kartuQr(String? url) {
+  Widget _kartuQr(bool ada) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
@@ -332,16 +338,17 @@ class _BagianMetodeBayarState extends State<BagianMetodeBayar> {
                 TextStyle(fontSize: 11.5, color: KaataTheme.mutedOf(context)),
           ),
           const SizedBox(height: 12),
-          if (url != null) ...[
+          if (ada) ...[
             ClipRRect(
               borderRadius: BorderRadius.circular(10),
-              child: Image.network(
-                url,
+              child: SizedBox(
                 height: 190,
-                fit: BoxFit.contain,
-                errorBuilder: (_, __, ___) => Text(
-                  'Gambarnya gagal dimuat.',
-                  style: TextStyle(color: KaataTheme.mutedOf(context)),
+                child: GambarTersimpan(
+                  base64: _metode.qrisStatisBase64,
+                  jalurLama: _metode.qrisStatisUrl,
+                  ember: 'qris-statis',
+                  fit: BoxFit.contain,
+                  kosong: 'Gambarnya gagal dimuat.',
                 ),
               ),
             ),
@@ -354,10 +361,10 @@ class _BagianMetodeBayarState extends State<BagianMetodeBayar> {
                   child: OutlinedButton.icon(
                     onPressed: _sibuk ? null : _unggahQr,
                     icon: const Icon(Icons.upload_outlined, size: 18),
-                    label: Text(url == null ? 'Unggah QR' : 'Ganti QR'),
+                    label: Text(ada ? 'Ganti QR' : 'Unggah QR'),
                   ),
                 ),
-                if (url != null) ...[
+                if (ada) ...[
                   const SizedBox(width: 9),
                   Expanded(
                     child: OutlinedButton.icon(

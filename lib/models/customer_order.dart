@@ -127,13 +127,14 @@ class CustomerOrder {
   /// selama pesanannya belum dibayar tunai di sana.
   final int? cashReceived;
 
-  /// Jalur bukti bayar yang diunggah pelanggan, untuk QRIS Statis.
+  /// Bukti bayar yang diunggah pelanggan, untuk QRIS Statis.
   ///
-  /// Jalur, bukan URL lengkap: embernya tertutup, jadi alamat yang bisa
-  /// dibuka harus dibuatkan tanda tangan saat gambarnya mau dilihat.
-  /// Menyimpan URL bertanda tangan di basis data berarti menyimpan
-  /// alamat yang pasti kedaluwarsa.
+  /// [buktiBayarBase64] yang dipakai sekarang. [buktiBayarUrl] tinggal
+  /// peninggalan: baris yang dibuat sebelum gambar pindah ke base64
+  /// menunjuk ke berkas di Storage, dan membuangnya berarti bukti itu
+  /// berubah jadi kotak kosong.
   final String? buktiBayarUrl;
+  final String? buktiBayarBase64;
 
   /// Potongan yang benar-benar diberikan pada pesanan ini.
   ///
@@ -176,6 +177,7 @@ class CustomerOrder {
     this.ppnAmount,
     this.cashReceived,
     this.buktiBayarUrl,
+    this.buktiBayarBase64,
     this.discountAmount = 0,
     this.discountId,
     this.discountName,
@@ -386,6 +388,7 @@ class CustomerOrder {
       ppnAmount: (data['ppn_amount'] as num?)?.toInt(),
       cashReceived: (data['cash_received'] as num?)?.toInt(),
       buktiBayarUrl: data['bukti_bayar_url'] as String?,
+      buktiBayarBase64: data['bukti_bayar_base64'] as String?,
       discountAmount: (data['discount_amount'] as num?)?.toInt() ?? 0,
       discountId: data['discount_id'] as String?,
       discountName: data['discount_name'] as String?,

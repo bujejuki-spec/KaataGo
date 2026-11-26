@@ -8,7 +8,6 @@ import '../widgets/language_theme_toggle.dart';
 
 import '../providers/auth_provider.dart';
 import '../widgets/hub_menu_tile.dart';
-import '../widgets/kaata_logo.dart';
 import 'restaurant_info_screen.dart';
 import 'payment_info_screen.dart';
 import 'settings_screen.dart';
@@ -29,37 +28,26 @@ class SettingsMenuScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final email = context.watch<AuthProvider>().user?.email;
-
     return Scaffold(
       backgroundColor: KaataTheme.backgroundOf(context),
       // Fixed header like the role hubs. This one is a pushed route, so
       // the back arrow the SliverAppBar used to provide is layered onto
       // the header instead of disappearing with it.
+      // Bilah atas biasa, sama seperti setiap halaman kelompok menu.
+      //
+      // Dulu layar ini memakai HubHeader bergradien — kepala besar
+      // dengan logo dan surel, lengkap dengan tombol kembali yang
+      // ditempel sendiri di atasnya karena bilah atasnya memang tidak
+      // ada. Hasilnya satu-satunya halaman menu yang terlihat berbeda
+      // dari semua saudaranya, dan tombol kembalinya berada di tempat
+      // yang tidak sama dengan halaman lain.
+      //
+      // HubHeader memang untuk BERANDA sebuah peran: di sana ia
+      // menyebut siapa yang sedang masuk. Halaman yang didorong di atas
+      // beranda tidak perlu memperkenalkan orangnya lagi.
+      appBar: AppBar(title: const Text('Pengaturan')),
       body: Column(
         children: [
-          Stack(
-            children: [
-              HubHeader(
-                logo: const KaataLogo(size: 64),
-                title: 'Pengaturan',
-                subtitle: email,
-                colorA: KaataTheme.brand,
-                colorB: KaataTheme.brandDark,
-              ),
-              Positioned(
-                top: 0,
-                left: 0,
-                child: SafeArea(
-                  child: IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
-                    tooltip: 'Kembali',
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ),
-              ),
-            ],
-          ),
           Expanded(
             child: ListView(
               padding: const EdgeInsets.all(20),

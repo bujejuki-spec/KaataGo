@@ -60,6 +60,9 @@ class MetodeBayarMerchant {
   /// dan selama null, [qrisStatis] tidak boleh menyala.
   final String? qrisStatisUrl;
 
+  /// QR statis sebagai base64 — cara yang dipakai sekarang.
+  final String? qrisStatisBase64;
+
   /// Isi payload QR-nya, hasil pemindaian saat diunggah.
   final String? qrisStatisPayload;
 
@@ -69,6 +72,7 @@ class MetodeBayarMerchant {
     this.qrisStatis = false,
     this.transfer = true,
     this.qrisStatisUrl,
+    this.qrisStatisBase64,
     this.qrisStatisPayload,
   });
 
@@ -82,6 +86,7 @@ class MetodeBayarMerchant {
         qrisStatis: map['allow_qris_static'] as bool? ?? false,
         transfer: map['allow_transfer'] as bool? ?? true,
         qrisStatisUrl: map['qris_static_url'] as String?,
+        qrisStatisBase64: map['qris_static_base64'] as String?,
         qrisStatisPayload: map['qris_static_payload'] as String?,
       );
 
@@ -91,13 +96,24 @@ class MetodeBayarMerchant {
         'allow_qris_static': qrisStatis,
         'allow_transfer': transfer,
         'qris_static_url': qrisStatisUrl,
+        'qris_static_base64': qrisStatisBase64,
         'qris_static_payload': qrisStatisPayload,
       };
+
+  /// Ada QR statisnya, lewat cara mana pun ia tersimpan.
+  ///
+  /// Dua bentuk sekaligus: base64 untuk yang dipasang sejak gambar
+  /// pindah ke basis data, dan jalur Storage untuk merchant yang
+  /// memasangnya sebelum itu dan tidak pernah menggantinya.
+  bool get adaQrStatis =>
+      (qrisStatisBase64?.isNotEmpty ?? false) ||
+      (qrisStatisUrl?.isNotEmpty ?? false);
+
 
   bool aktif(MetodeBayar m) => switch (m) {
         MetodeBayar.tunai => tunai,
         MetodeBayar.qrisDinamis => qrisDinamis,
-        MetodeBayar.qrisStatis => qrisStatis && qrisStatisUrl != null,
+        MetodeBayar.qrisStatis => qrisStatis && adaQrStatis,
         MetodeBayar.transfer => transfer,
       };
 
@@ -110,6 +126,7 @@ class MetodeBayarMerchant {
     bool? qrisStatis,
     bool? transfer,
     String? qrisStatisUrl,
+    String? qrisStatisBase64,
     String? qrisStatisPayload,
     bool hapusQrisStatis = false,
   }) =>
@@ -123,6 +140,9 @@ class MetodeBayarMerchant {
         transfer: transfer ?? this.transfer,
         qrisStatisUrl:
             hapusQrisStatis ? null : (qrisStatisUrl ?? this.qrisStatisUrl),
+        qrisStatisBase64: hapusQrisStatis
+            ? null
+            : (qrisStatisBase64 ?? this.qrisStatisBase64),
         qrisStatisPayload: hapusQrisStatis
             ? null
             : (qrisStatisPayload ?? this.qrisStatisPayload),

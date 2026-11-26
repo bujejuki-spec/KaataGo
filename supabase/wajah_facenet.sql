@@ -283,7 +283,7 @@ begin
   end if;
 
   insert into employee_faces (
-    resto_id, employee_email, embedding, model, foto_url,
+    resto_id, employee_email, embedding, model, foto_base64,
     setuju_versi, setuju_at)
   values (p_resto_id, lower(v_email), p_embedding, v_model, p_foto_url,
           trim(p_setuju_versi), now());
@@ -429,7 +429,7 @@ begin
         pulang_jarak_m = round(v_jarak),
         pulang_skor = v_skor,
         pulang_ragu = v_ragu,
-        pulang_foto_url = coalesce(p_foto_url, pulang_foto_url)
+        pulang_foto_base64 = coalesce(p_foto_url, pulang_foto_base64)
     where resto_id = p_resto_id
       and lower(employee_email) = v_email
       and tanggal = v_tanggal
@@ -442,7 +442,7 @@ begin
     insert into attendance (
       resto_id, employee_email, tanggal, status,
       masuk_at, masuk_lat, masuk_lng, masuk_jarak_m, masuk_skor,
-      masuk_ragu, masuk_foto_url)
+      masuk_ragu, masuk_foto_base64)
     values (
       p_resto_id, v_email, v_tanggal, 'hadir',
       v_sekarang, p_lat, p_lng, round(v_jarak), v_skor, v_ragu, p_foto_url)
@@ -455,8 +455,8 @@ begin
             coalesce(attendance.masuk_jarak_m, excluded.masuk_jarak_m),
           masuk_skor = coalesce(attendance.masuk_skor, excluded.masuk_skor),
           masuk_ragu = coalesce(attendance.masuk_ragu, excluded.masuk_ragu),
-          masuk_foto_url =
-            coalesce(attendance.masuk_foto_url, excluded.masuk_foto_url),
+          masuk_foto_base64 = coalesce(
+              attendance.masuk_foto_base64, excluded.masuk_foto_base64),
           potong_gaji = false,
           alasan = null;
   end if;

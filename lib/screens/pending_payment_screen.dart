@@ -17,7 +17,7 @@ import '../utils/id_time.dart';
 import '../widgets/app_toast.dart';
 import '../widgets/cash_payment_dialog.dart';
 import '../widgets/dialog_actions.dart';
-import '../widgets/gambar_bertanda.dart';
+import '../widgets/gambar_tersimpan.dart';
 import '../widgets/responsive.dart';
 import 'payment_qris_screen.dart';
 import 'payment_transfer_screen.dart';
@@ -111,8 +111,8 @@ class _PendingPaymentScreenState extends State<PendingPaymentScreen> {
     } else {
       // QRIS dan transfer punya layarnya sendiri, dan layar itulah yang
       // menyatakan uangnya sudah masuk — bukan ketukan di sini.
-      final qrStatis = _metode.qrisStatisUrl;
-      if (method == 'qris_static' && qrStatis == null) {
+      final adaQr = _metode.adaQrStatis;
+      if (method == 'qris_static' && !adaQr) {
         showAppToast(context, 'QR statisnya belum dipasang di Info Pembayaran.',
             isError: true);
         return;
@@ -122,7 +122,11 @@ class _PendingPaymentScreenState extends State<PendingPaymentScreen> {
           builder: (_) => switch (method) {
             'qris' => PaymentQrisScreen(amount: order.total),
             'qris_static' => PaymentQrisStatisScreen(
-                amount: order.total, qrUrl: qrStatis!),
+                amount: order.total,
+                qr: (
+                  base64: _metode.qrisStatisBase64,
+                  jalurLama: _metode.qrisStatisUrl
+                )),
             _ => PaymentTransferScreen(amount: order.total),
           },
         ),
@@ -748,7 +752,8 @@ class _DialogBuktiQris extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final muted = KaataTheme.mutedOf(context);
-    final adaBukti = order.buktiBayarUrl?.isNotEmpty == true;
+    final adaBukti = order.buktiBayarBase64?.isNotEmpty == true ||
+        order.buktiBayarUrl?.isNotEmpty == true;
 
     return AlertDialog(
       title: Text('Pesanan #${refOf(order.id)}',
@@ -770,8 +775,9 @@ class _DialogBuktiQris extends StatelessWidget {
                 child: SizedBox(
                   height: 260,
                   width: double.infinity,
-                  child: GambarBertanda(
-                    simpanan: order.buktiBayarUrl,
+                  child: GambarTersimpan(
+                    base64: order.buktiBayarBase64,
+                    jalurLama: order.buktiBayarUrl,
                     ember: 'bukti-bayar',
                     fit: BoxFit.contain,
                   ),

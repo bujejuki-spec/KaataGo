@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/paket_langganan.dart';
+import '../utils/gambar_unggah.dart';
 
 /// Paket langganan: harganya, keadaan merchant, dan pengajuannya.
 ///
@@ -12,7 +13,6 @@ import '../models/paket_langganan.dart';
 class PaketLanggananRepository {
   final _client = Supabase.instance.client;
 
-  static const _ember = 'absensi';
 
   Future<List<InfoPaket>> daftarPaket() async {
     final rows =
@@ -70,25 +70,16 @@ class PaketLanggananRepository {
 
   // ── Merchant ────────────────────────────────────────────────────────
 
-  /// Mengunggah bukti transfer, mengembalikan JALUR-nya.
+  /// Menyiapkan bukti transfer sebagai base64.
   ///
-  /// Menumpang ember `absensi` yang sudah tertutup dari umum, bukan
-  /// membuat ember baru: bukti transfer sama tidak pantasnya untuk bisa
-  /// dibuka siapa pun yang menebak URL-nya.
-  Future<String> unggahBukti({
-    required String restoId,
-    required Uint8List bytes,
-  }) async {
-    final nama = '$restoId/langganan/'
-        '${DateTime.now().millisecondsSinceEpoch}.jpg';
-    await _client.storage.from(_ember).uploadBinary(
-          nama,
-          bytes,
-          // Tanpa upsert — lihat AbsensiRepository.unggah().
-          fileOptions: const FileOptions(contentType: 'image/jpeg'),
-        );
-    return nama;
-  }
+  /// Dulu berkasnya naik ke ember `absensi` dan yang disimpan jalurnya.
+  /// Sekarang gambarnya tersimpan di baris pengajuannya sendiri.
+  ///
+  /// Dibiarkan cukup besar: yang memeriksanya membaca nominal dan nama
+  /// pengirim dari gambar itu, dan bukti yang tidak terbaca sama saja
+  /// dengan tidak ada bukti.
+  String siapkanBukti(Uint8List bytes) =>
+      GambarUnggah.siapkan(bytes, sisiMaks: 1600, mutu: 82);
 
   Future<String> ajukan({
     required String restoId,

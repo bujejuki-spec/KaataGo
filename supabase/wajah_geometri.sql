@@ -351,18 +351,30 @@ grant execute on function daftar_wajah(text, double precision[], text, text)
 -- kebijakan SELECT: sidik yang bisa dibaca aplikasi adalah sidik yang
 -- bisa dikirim balik sebagai hasil pemindaian. Yang dibuka di sini cuma
 -- URL fotonya, dan cuma untuk yang memang memeriksa absensi.
+drop function if exists foto_acuan_wajah(text);
 create or replace function foto_acuan_wajah(p_resto_id text)
-returns table (employee_email text, foto_url text, registered_at timestamptz)
+returns table (
+  employee_email text,
+  foto_url text,
+  foto_base64 text,
+  registered_at timestamptz)
 language sql
 stable
 security definer
 set search_path = public
 as $$
-  select f.employee_email, f.foto_url, f.registered_at
+  -- Keduanya dikembalikan, bukan salah satu.
+  --
+  -- Wajah yang didaftarkan sebelum gambar pindah ke base64 masih
+  -- menunjuk ke berkas di Storage. Mengembalikan yang baru saja berarti
+  -- foto acuan mereka berubah jadi kotak kosong — tepat di layar tempat
+  -- seseorang memutuskan absen ini benar orangnya atau bukan.
+  select f.employee_email, f.foto_url, f.foto_base64, f.registered_at
   from employee_faces f
   where f.resto_id = p_resto_id
     and (is_super_admin()
-         or is_resto_employee(p_resto_id, array['owner', 'admin', 'finance'])
+         or is_resto_employee(p_resto_id,
+              array['owner', 'admin', 'finance', 'hr'])
          or lower(f.employee_email) = lower(coalesce(auth.jwt() ->> 'email', '')));
 $$;
 

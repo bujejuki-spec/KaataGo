@@ -127,6 +127,7 @@ FILES=(
   hentikan_langganan.sql
   setelan_platform.sql
   bukti_bayar_qris_statis.sql
+  gambar_base64.sql
   absensi_baca_super_admin.sql
   shift_opening_check.sql
   support_tickets.sql

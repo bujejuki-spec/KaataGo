@@ -11,7 +11,8 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   String baca(String jalur) => File(jalur).readAsStringSync();
 
-  final sql = baca('supabase/bukti_bayar_qris_statis.sql');
+  final sql = baca('supabase/gambar_base64.sql');
+  final sqlEmber = baca('supabase/bukti_bayar_qris_statis.sql');
   final repo = baca('lib/db/order_repository.dart');
 
   group('fungsi melampirkan bukti', () {
@@ -32,12 +33,24 @@ void main() {
       // Nama berkas yang bukan uuid MELEMPAR galat kalau dipaksa jadi
       // uuid — dan galat di dalam kebijakan storage mematikan unggahan
       // untuk semua orang, bukan cuma untuk yang salah menamai.
-      expect(sql, contains('o.id::text = split_part'));
+      // Di fungsinya, dan di kebijakan ember lama yang masih melayani
+      // bukti yang terlanjur tersimpan di Storage.
       expect(sql, contains('id::text = p_order_id'));
+      expect(sqlEmber, contains('o.id::text = split_part'));
     });
 
     test('hanya pesanan QRIS Statis yang bisa dilampiri', () {
       expect(sql, contains("payment_method is distinct from 'qris_static'"));
+    });
+
+    test('definisinya cuma di satu berkas', () {
+      // Dua berkas yang mendefinisikan satu fungsi berarti mana yang
+      // berlaku bergantung pada urutan dijalankannya — dan yang kalah
+      // tidak pernah berbunyi, ia cuma menulis ke kolom yang tidak
+      // dibaca siapa pun.
+      expect(sqlEmber,
+          isNot(contains('create or replace function lampirkan_bukti_bayar')));
+      expect(sql, contains('create or replace function lampirkan_bukti_bayar'));
     });
 
     test('bisa dipanggil pelanggan yang belum login', () {
@@ -50,21 +63,21 @@ void main() {
   group('ember bukti bayar', () {
     test('tertutup, bukan publik', () {
       // Bukti transfer memuat nama pengirim dan nominalnya.
-      expect(sql, contains("values ('bukti-bayar', 'bukti-bayar', false)"));
-      expect(sql, contains('do update set public = false'));
+      expect(sqlEmber, contains("values ('bukti-bayar', 'bukti-bayar', false)"));
+      expect(sqlEmber, contains('do update set public = false'));
     });
 
     test('menulis dibatasi pesanan yang benar-benar menunggu bayar', () {
       // Ember yang menerima tulisan tanpa syarat adalah tempat
       // penyimpanan gratis bagi siapa pun yang menemukannya.
-      final tulis = sql.substring(sql.indexOf('pelanggan menulis'));
+      final tulis = sqlEmber.substring(sqlEmber.indexOf('pelanggan menulis'));
       expect(tulis.substring(0, 900), contains('from public.orders o'));
       expect(tulis.substring(0, 900), contains("o.payment_status = 'pending'"));
     });
 
     test('chef tidak bisa membacanya', () {
       // Antrean dapur tidak berurusan dengan bukti transfer siapa pun.
-      final baca = sql.substring(sql.indexOf('kasir membaca'));
+      final baca = sqlEmber.substring(sqlEmber.indexOf('kasir membaca'));
       final blok = baca.substring(0, 700);
       expect(blok, contains("'kasir'"));
       expect(blok, isNot(contains("'chef'")));
@@ -72,12 +85,14 @@ void main() {
   });
 
   group('sisi aplikasi', () {
-    test('buktinya diunggah lalu dilampirkan lewat fungsi', () {
+    test('buktinya disimpan sebagai base64, lewat fungsi', () {
       // Pelanggan tidak punya hak mengubah baris pesanan, dan memang
       // tidak boleh punya: baris itu juga memuat status dapur dan total.
-      expect(repo, contains("from('bukti-bayar')"));
       expect(repo, contains("rpc('lampirkan_bukti_bayar'"));
-      expect(repo, contains(r"'$restoId/$orderId.jpg'"));
+      // Tidak lagi naik ke Storage.
+      expect(repo, isNot(contains("from('bukti-bayar')")));
+      // Dan formatnya diperiksa sebelum dikirim.
+      expect(repo, contains('GambarUnggah.siapkan('));
     });
 
     test('penanda merah menghitung sama dengan daftarnya', () {
@@ -109,7 +124,8 @@ void main() {
 
     test('buktinya ditampilkan, bukan sekadar ditautkan', () {
       final layar = baca('lib/screens/pending_payment_screen.dart');
-      expect(layar, contains("ember: 'bukti-bayar'"));
+      expect(layar, contains('GambarTersimpan('));
+      expect(layar, contains('base64: order.buktiBayarBase64'));
     });
   });
 }

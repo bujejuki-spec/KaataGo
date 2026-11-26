@@ -2,6 +2,8 @@ import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/customer_order.dart';
+import '../utils/gambar_unggah.dart';
+import 'guest_order_store.dart';
 
 /// Supabase-backed repository for orders. This is the bridge between
 /// Kasir/Customer (who place orders) and Chef (who tracks kitchen status)
@@ -108,42 +110,29 @@ class OrderRepository {
   /// mana yang dikredit. Uang QRIS yang tercatat di GL Kas berarti laci
   /// yang tidak pernah cocok, dan mutasi bank yang tidak pernah
   /// ditemukan pasangannya.
-  /// Mengunggah bukti bayar QRIS Statis milik pelanggan.
+  /// Melampirkan bukti bayar QRIS Statis milik pelanggan.
   ///
-  /// Dua langkah yang sengaja dipisah: berkasnya naik ke ember tertutup,
-  /// lalu jalurnya ditempelkan ke pesanan lewat fungsi yang memeriksa
-  /// syaratnya. Pelanggan — apalagi tamu yang tidak login — tidak punya
-  /// hak mengubah baris pesanan, dan memang tidak boleh punya: baris itu
-  /// juga memuat status dapur, total, dan diskonnya.
+  /// Disimpan sebagai base64 di baris pesanannya, bukan sebagai berkas
+  /// di Storage. Pemeriksaan format dan ukurannya terjadi sebelum ini
+  /// ([GambarUnggah.siapkan]) — yang sampai ke sini sudah JPG yang
+  /// dikecilkan.
   ///
-  /// Nama berkasnya `<resto>/<id pesanan>.jpg`, dan kebijakan embernya
-  /// memeriksa kedua bagian itu ke tabel pesanan. Ember yang menerima
-  /// tulisan tanpa syarat adalah tempat penyimpanan gratis bagi siapa
-  /// pun yang menemukannya.
-  Future<String> unggahBuktiBayar({
-    required String restoId,
+  /// Tetap lewat fungsi, bukan update biasa: pelanggan — apalagi tamu
+  /// yang tidak login — tidak punya hak mengubah baris pesanan, dan
+  /// memang tidak boleh punya. Baris itu juga memuat status dapur,
+  /// total, dan diskonnya.
+  Future<void> lampirkanBuktiBayar({
     required String orderId,
     required Uint8List bytes,
   }) async {
-    final jalur = '$restoId/$orderId.jpg';
-    await _client.storage.from('bukti-bayar').uploadBinary(
-          jalur,
-          bytes,
-          // upsert DIPAKAI di sini, berbeda dari ember absensi.
-          //
-          // Namanya memang satu per pesanan, jadi mengunggah ulang
-          // berarti pelanggan membetulkan fotonya sendiri — dan tanpa
-          // upsert, yang salah unggah terkunci selamanya dengan bukti
-          // yang keliru. Kebijakan `update` embernya menuntut syarat
-          // yang sama persis dengan menulis.
-          fileOptions: const FileOptions(
-              contentType: 'image/jpeg', upsert: true),
-        );
+    // Bukti transfer dibiarkan lebih besar daripada foto menu: angkanya
+    // harus tetap terbaca oleh mata orang yang memutuskan uangnya sudah
+    // masuk atau belum.
+    final base64 = GambarUnggah.siapkan(bytes, sisiMaks: 1600, mutu: 82);
     await _client.rpc('lampirkan_bukti_bayar', params: {
       'p_order_id': orderId,
-      'p_jalur': jalur,
+      'p_jalur': base64,
     });
-    return jalur;
   }
 
   Future<void> settlePayment(
@@ -355,6 +344,43 @@ class OrderRepository {
   /// guest's history, where the ids come from device-local storage (see
   /// [GuestOrderStore]) rather than an account. Not a stream: Supabase
   /// realtime only filters streams by equality, and this needs `in`.
+  /// Pesanan milik tamu: dari sesinya, DITAMBAH yang tercatat di
+  /// penyimpanan peramban.
+  ///
+  /// ── Kenapa tidak cukup sesinya saja ──────────────────────────────
+  ///
+  /// Sesi bisa berganti karena beberapa sebab yang tidak disadari
+  /// pelanggan: sesinya diakhiri server setelah semua pesanan selesai,
+  /// atau dia memindai QR meja yang berbeda. Begitu sesinya berganti,
+  /// pesanan lamanya tetap utuh di server tapi berhenti terlihat —
+  /// karena layarnya cuma bertanya "pesanan di sesi ini".
+  ///
+  /// Yang menunggu makanannya lalu kehilangan jejak pesanannya sendiri,
+  /// dan tidak ada galat apa pun yang menjelaskan ke mana perginya.
+  ///
+  /// Id tiap pesanan sudah disimpan di perangkatnya sejak dibuat
+  /// ([GuestOrderStore], yang di peramban mendarat di localStorage).
+  /// Di sinilah catatan itu dipakai.
+  Stream<List<CustomerOrder>> watchPesananTamu(String? sessionId) {
+    final dasar = sessionId == null
+        ? Stream<List<CustomerOrder>>.value(const [])
+        : watchBySession(sessionId);
+
+    return dasar.asyncMap((dariSesi) async {
+      final ids = await GuestOrderStore().ids();
+      final kurang =
+          ids.where((id) => !dariSesi.any((o) => o.id == id)).toList();
+      if (kurang.isEmpty) return dariSesi;
+
+      // Yang dari sesi didahulukan: ia datang dari aliran langsung, jadi
+      // statusnya yang paling baru. Yang dari catatan cuma menambah apa
+      // yang tidak ada di sana.
+      final tambahan = await getByIds(kurang);
+      return [...dariSesi, ...tambahan]
+        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    });
+  }
+
   Future<List<CustomerOrder>> getByIds(List<String> ids) async {
     if (ids.isEmpty) return [];
     final rows = await _client

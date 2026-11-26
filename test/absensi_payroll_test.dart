@@ -532,7 +532,10 @@ void main() {
         'lib/screens/pengajuan_langganan_screen.dart',
       ]) {
         final isi = File(jalur).readAsStringSync();
-        expect(isi, contains('GambarBertanda('), reason: jalur);
+        // GambarTersimpan: base64 lebih dulu, jalur Storage lama
+        // sebagai cadangan. Image.network langsung berarti ada jalan
+        // yang melewati keduanya.
+        expect(isi, contains('GambarTersimpan'), reason: jalur);
         expect(isi, isNot(contains('Image.network(')), reason: jalur);
       }
     });
@@ -560,7 +563,7 @@ void main() {
     test('foto acuan dibuka lewat fungsi, bukan tabelnya', () {
       final sql = File('supabase/wajah_geometri.sql').readAsStringSync();
       expect(sql, contains('create or replace function foto_acuan_wajah'));
-      expect(sql, contains("array['owner', 'admin', 'finance']"));
+      expect(sql, contains("array['owner', 'admin', 'finance', 'hr']"));
       expect(File('lib/db/absensi_repository.dart').readAsStringSync(),
           contains("rpc('foto_acuan_wajah'"));
     });

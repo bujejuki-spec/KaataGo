@@ -8,8 +8,10 @@ import '../db/metode_bayar_repository.dart';
 import '../db/order_repository.dart';
 import '../models/customer_order.dart';
 import '../theme.dart';
+import '../utils/gambar_unggah.dart';
 import '../utils/pesan_galat.dart';
 import '../widgets/app_toast.dart';
+import '../widgets/gambar_tersimpan.dart';
 import '../widgets/hitung_mundur_bayar.dart';
 
 /// Pelanggan membayar QRIS Statis dari HP-nya sendiri.
@@ -58,7 +60,7 @@ class _CustomerQrisStatisScreenState extends State<CustomerQrisStatisScreen> {
   late final DateTime _tenggat =
       (widget.createdAt ?? DateTime.now()).add(CustomerOrder.paymentWindow);
 
-  String? _qrUrl;
+  RefGambar? _qr;
   bool _memuat = true;
   bool _mengirim = false;
   bool _terkirim = false;
@@ -74,7 +76,9 @@ class _CustomerQrisStatisScreenState extends State<CustomerQrisStatisScreen> {
       final m = await MetodeBayarRepository().baca(widget.restoId);
       if (mounted) {
         setState(() {
-          _qrUrl = m.qrisStatisUrl;
+          _qr = m.adaQrStatis
+              ? (base64: m.qrisStatisBase64, jalurLama: m.qrisStatisUrl)
+              : null;
           _memuat = false;
         });
       }
@@ -102,14 +106,17 @@ class _CustomerQrisStatisScreenState extends State<CustomerQrisStatisScreen> {
 
     setState(() => _mengirim = true);
     try {
-      await _repo.unggahBuktiBayar(
-        restoId: widget.restoId,
+      await _repo.lampirkanBuktiBayar(
         orderId: widget.orderId,
         bytes: bytes,
       );
       if (!mounted) return;
       setState(() => _terkirim = true);
       showAppToast(context, 'Bukti terkirim. Kasir akan memastikannya.');
+    } on GambarDitolak catch (e) {
+      // Formatnya salah atau terlalu besar — disebut apa adanya, bukan
+      // dibungkus jadi "gagal mengirim".
+      if (mounted) showAppToast(context, e.pesan, isError: true);
     } catch (e) {
       if (mounted) showAppToast(context, pesanGalat(e), isError: true);
     } finally {
@@ -160,7 +167,7 @@ class _CustomerQrisStatisScreenState extends State<CustomerQrisStatisScreen> {
                   padding: EdgeInsets.all(28),
                   child: CircularProgressIndicator(),
                 )
-              else if (_qrUrl == null)
+              else if (_qr == null)
                 _Kotak(
                   warna: Colors.red,
                   child: Text(
@@ -179,18 +186,14 @@ class _CustomerQrisStatisScreenState extends State<CustomerQrisStatisScreen> {
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: KaataTheme.borderOf(context)),
                   ),
-                  child: Image.network(
-                    _qrUrl!,
+                  child: SizedBox(
                     width: 240,
                     height: 240,
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, __, ___) => SizedBox(
-                      width: 240,
-                      height: 240,
-                      child: Center(
-                        child: Text('QR gagal dimuat',
-                            style: TextStyle(color: muted)),
-                      ),
+                    child: GambarTersimpan.dariRef(
+                      _qr,
+                      ember: 'qris-statis',
+                      fit: BoxFit.contain,
+                      kosong: 'QR gagal dimuat',
                     ),
                   ),
                 ),

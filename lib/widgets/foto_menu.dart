@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../db/foto_menu_repository.dart';
 import '../models/product.dart';
 import '../utils/gambar_base64.dart';
 
@@ -12,9 +13,14 @@ import '../utils/gambar_base64.dart';
 /// cadangannya nanti dicabut — dan yang ketinggalan justru terlihat
 /// sebagai menu tanpa gambar, bukan sebagai galat.
 ///
-/// Urutannya sengaja: tautan lebih dulu. Produk yang sudah dipindahkan
-/// tapi base64-nya belum dibersihkan punya keduanya, dan yang benar
-/// dipakai adalah yang tidak melewati Postgres.
+/// Urutannya sengaja: yang tersimpan di `product_photos` lebih dulu,
+/// lalu tautan Storage, lalu `products.photo_base64` yang paling tua.
+///
+/// `product_photos` adalah tabel tersendiri, dan itu bukan kerapian:
+/// aliran realtime Supabase selalu mengirim BARIS UTUH, jadi foto yang
+/// tinggal di baris produk ikut terkirim ulang tiap kali stoknya
+/// berubah — ke setiap pelanggan yang sedang membuka menu. Di tabel
+/// terpisah, fotonya diambil sekali lalu diingat.
 class FotoMenu extends StatelessWidget {
   final Product product;
 
@@ -33,11 +39,24 @@ class FotoMenu extends StatelessWidget {
 
   /// Ada gambarnya, dari sumber mana pun.
   static bool punyaFoto(Product p) =>
+      (FotoMenuRepository.base64(p.id)?.isNotEmpty ?? false) ||
       (p.photoUrl != null && p.photoUrl!.isNotEmpty) ||
       (p.photoBase64 != null && p.photoBase64!.isNotEmpty);
 
   @override
   Widget build(BuildContext context) {
+    // Yang baru lebih dulu: foto yang dipasang sejak gambar pindah ke
+    // basis data tersimpan di product_photos.
+    final tersimpan = FotoMenuRepository.base64(product.id);
+    if (tersimpan != null && tersimpan.isNotEmpty) {
+      return Image.memory(
+        byteGambar(tersimpan),
+        width: double.infinity,
+        fit: fit,
+        errorBuilder: (_, __, ___) => kosong,
+      );
+    }
+
     final url = product.photoUrl;
     if (url != null && url.isNotEmpty) {
       return Image.network(

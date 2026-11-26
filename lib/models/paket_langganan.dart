@@ -167,6 +167,7 @@ class PengajuanLangganan {
   final int harga;
   final String status;
   final String buktiUrl;
+  final String? buktiBase64;
   final String? catatan;
   final String? diajukanOleh;
   final DateTime diajukanAt;
@@ -180,6 +181,7 @@ class PengajuanLangganan {
     required this.harga,
     required this.status,
     required this.buktiUrl,
+    this.buktiBase64,
     this.catatan,
     this.diajukanOleh,
     required this.diajukanAt,
@@ -204,6 +206,7 @@ class PengajuanLangganan {
         harga: (map['harga'] as num?)?.toInt() ?? 0,
         status: map['status']?.toString() ?? 'verifikasi',
         buktiUrl: map['bukti_url']?.toString() ?? '',
+        buktiBase64: map['bukti_base64']?.toString(),
         catatan: map['catatan'] as String?,
         diajukanOleh: map['diajukan_oleh'] as String?,
         diajukanAt: DateTime.parse(map['diajukan_at'].toString()).toUtc(),

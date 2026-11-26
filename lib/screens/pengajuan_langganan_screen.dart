@@ -7,7 +7,7 @@ import '../theme.dart';
 import '../utils/pesan_galat.dart';
 import '../widgets/app_toast.dart';
 import '../widgets/dialog_actions.dart';
-import '../widgets/gambar_bertanda.dart';
+import '../widgets/gambar_tersimpan.dart';
 import '../widgets/kotak_cari.dart';
 import '../widgets/lencana_paket_aktif.dart';
 import '../widgets/responsive.dart';
@@ -510,8 +510,9 @@ class _KartuState extends State<_Kartu> {
               child: SizedBox(
                 height: 200,
                 width: double.infinity,
-                child: GambarBertanda(
-                    simpanan: p.buktiUrl,
+                child: GambarTersimpan(
+                    base64: p.buktiBase64,
+                    jalurLama: p.buktiUrl,
                     kosong: 'Bukti transfernya tidak ada'),
               ),
             ),

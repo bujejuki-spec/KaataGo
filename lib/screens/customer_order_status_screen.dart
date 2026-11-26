@@ -96,7 +96,10 @@ class CustomerOrderStatusScreen extends StatelessWidget {
       body: StreamBuilder<List<CustomerOrder>>(
         stream: email != null
             ? repo.watchByCustomerEmail(email)
-            : repo.watchBySession(session.sessionId!),
+            // Sesinya, ditambah yang tercatat di penyimpanan peramban —
+            // supaya memuat ulang halaman tidak menghilangkan pesanan
+            // yang sedang ditunggu.
+            : repo.watchPesananTamu(session.sessionId),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());

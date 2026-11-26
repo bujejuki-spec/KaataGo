@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/metode_bayar.dart';
+import '../utils/gambar_unggah.dart';
 
 /// Metode bayar yang ditawarkan merchant, berikut QR statisnya.
 ///
@@ -45,31 +46,36 @@ class MetodeBayarRepository {
     });
   }
 
-  /// Mengunggah gambar QR statisnya, lalu mengembalikan tautannya.
+  /// Menyiapkan gambar QR statis sebagai base64.
   ///
-  /// Berkasnya bernama menurut id restonya dan ditimpa tiap kali diganti:
-  /// tiap merchant hanya punya satu QR statis, dan menyimpan yang lama
-  /// berarti menyimpan QR yang tidak lagi dipakai siapa pun tapi tetap
-  /// bisa dibuka siapa pun yang punya tautannya.
-  Future<String> unggahQr(String restoId, Uint8List bytes) async {
-    final nama = '$restoId.png';
-    await _client.storage.from(ember).uploadBinary(
-          nama,
-          bytes,
-          fileOptions: const FileOptions(
-            contentType: 'image/png',
-            upsert: true,
-          ),
-        );
-    // Penanda versi: nama berkasnya tetap, jadi QR yang diganti punya
-    // tautan yang sama persis dengan yang lama — dan CDN akan terus
-    // menyajikan gambar lama entah sampai kapan. Yang menerima akibatnya
-    // pelanggan yang membayar ke QR yang sudah tidak dipakai.
-    final dasar = _client.storage.from(ember).getPublicUrl(nama);
-    return '$dasar?v=${DateTime.now().millisecondsSinceEpoch}';
-  }
+  /// Dulu berkasnya naik ke Storage dan yang disimpan tautan publiknya,
+  /// lengkap dengan penanda versi — karena nama berkasnya tetap, QR yang
+  /// diganti punya tautan yang sama persis dan CDN terus menyajikan
+  /// gambar lama. Yang menerima akibatnya pelanggan yang membayar ke QR
+  /// yang sudah tidak dipakai.
+  ///
+  /// Base64 tidak punya masalah itu sama sekali: yang tersimpan gambarnya
+  /// sendiri, bukan alamat yang menunjuk ke sesuatu yang bisa berubah
+  /// di belakang.
+  ///
+  /// Mutunya dijaga tinggi dan tidak dikecilkan banyak: ini QR yang akan
+  /// dipindai kamera HP pelanggan, dan kotak-kotak kecilnya adalah
+  /// datanya — bukan hiasan yang boleh kabur.
+  String siapkanQr(Uint8List bytes) =>
+      GambarUnggah.siapkan(bytes, sisiMaks: 1200, mutu: 92);
 
+  /// Membuang berkas QR lama di Storage, kalau merchant ini memang
+  /// pernah memasangnya di sana.
+  ///
+  /// Dipanggil saat QR-nya dilepas. Yang base64 ikut hilang bersama
+  /// barisnya; yang di Storage harus dibuang sendiri, kalau tidak ia
+  /// tetap bisa dibuka siapa pun yang pernah menyimpan tautannya.
   Future<void> hapusQr(String restoId) async {
-    await _client.storage.from(ember).remove(['$restoId.png']);
+    try {
+      await _client.storage.from(ember).remove(['$restoId.png']);
+    } catch (_) {
+      // Merchant yang QR-nya memang tidak pernah di Storage juga sampai
+      // ke sini, dan itu keadaan yang benar.
+    }
   }
 }

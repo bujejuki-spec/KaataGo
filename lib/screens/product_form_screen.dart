@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
-import '../db/foto_menu_storage.dart';
+import '../db/foto_menu_repository.dart';
 import '../utils/pesan_galat.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -37,7 +37,7 @@ class ProductFormScreen extends StatefulWidget {
 }
 
 class _ProductFormScreenState extends State<ProductFormScreen> {
-  final _fotoStorage = FotoMenuStorage();
+  final _fotoMenu = FotoMenuRepository();
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameCtrl;
   late final TextEditingController _descriptionCtrl;
@@ -267,14 +267,16 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     if (_pickedPhoto != null) {
       final bytes = _pickedPhoto!;
       try {
-        photoUrl = await _fotoStorage.unggah(
+        await _fotoMenu.simpan(
           restoId: provider.restoId!,
           productId: productId,
           bytes: bytes,
         );
-        // Fotonya sekarang di Storage. Base64 lamanya dilepas supaya
-        // barisnya tidak menyimpan dua salinan gambar yang sama.
+        // Fotonya sekarang di `product_photos`. Keduanya di baris
+        // produk dilepas supaya tidak ada salinan kedua yang ikut
+        // terkirim tiap kali barisnya berubah.
         photoBase64 = null;
+        photoUrl = null;
       } catch (e) {
         if (!mounted) return;
         setState(() => _saving = false);
@@ -290,7 +292,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
         // dan berkas yatim di Storage jauh lebih ringan daripada
         // penyimpanan produk yang gagal gara-gara pembersihan.
         try {
-          await _fotoStorage.hapus(provider.restoId!, productId);
+          await _fotoMenu.hapus(productId);
         } catch (_) {}
       }
     }

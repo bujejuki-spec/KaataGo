@@ -34,12 +34,15 @@ class BarisAbsensi {
   final double? masukLng;
   final int? masukJarakM;
   final String? masukFotoUrl;
+  final String? masukFotoBase64;
   final double? pulangLat;
   final double? pulangLng;
   final String? pulangFotoUrl;
+  final String? pulangFotoBase64;
 
   final String? alasan;
   final String? buktiUrl;
+  final String? buktiBase64;
   final bool potongGaji;
 
   /// Kemiripan wajahnya jatuh di pita ragu-ragu: diterima, tapi pantas
@@ -58,11 +61,14 @@ class BarisAbsensi {
     this.masukLng,
     this.masukJarakM,
     this.masukFotoUrl,
+    this.masukFotoBase64,
     this.pulangLat,
     this.pulangLng,
     this.pulangFotoUrl,
+    this.pulangFotoBase64,
     this.alasan,
     this.buktiUrl,
+    this.buktiBase64,
     this.potongGaji = false,
     this.masukRagu = false,
     this.pulangRagu = false,
@@ -102,11 +108,14 @@ class BarisAbsensi {
         masukLng: (map['masuk_lng'] as num?)?.toDouble(),
         masukJarakM: (map['masuk_jarak_m'] as num?)?.toInt(),
         masukFotoUrl: map['masuk_foto_url'] as String?,
+        masukFotoBase64: map['masuk_foto_base64'] as String?,
         pulangLat: (map['pulang_lat'] as num?)?.toDouble(),
         pulangLng: (map['pulang_lng'] as num?)?.toDouble(),
         pulangFotoUrl: map['pulang_foto_url'] as String?,
+        pulangFotoBase64: map['pulang_foto_base64'] as String?,
         alasan: map['alasan'] as String?,
         buktiUrl: map['bukti_url'] as String?,
+        buktiBase64: map['bukti_base64'] as String?,
         potongGaji: map['potong_gaji'] == true,
         masukRagu: map['masuk_ragu'] == true,
         pulangRagu: map['pulang_ragu'] == true,

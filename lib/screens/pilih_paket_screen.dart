@@ -146,7 +146,7 @@ class _PilihPaketScreenState extends State<PilihPaketScreen> {
 
     setState(() => _mengirim = true);
     try {
-      final url = await _repo.unggahBukti(restoId: restoId, bytes: bukti);
+      final url = _repo.siapkanBukti(bukti);
       await _repo.ajukan(
         restoId: restoId,
         paket: paket,

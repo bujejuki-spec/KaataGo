@@ -16,7 +16,7 @@ import '../utils/id_time.dart';
 import '../utils/pesan_galat.dart';
 import '../widgets/app_toast.dart';
 import '../widgets/dialog_actions.dart';
-import '../widgets/gambar_bertanda.dart';
+import '../widgets/gambar_tersimpan.dart';
 import '../widgets/responsive.dart';
 
 /// Laporan absensi satu periode gaji — Admin, Owner, dan Finance.
@@ -45,7 +45,7 @@ class _AbsensiReportScreenState extends State<AbsensiReportScreen> {
   AturanGaji _aturan = const AturanGaji();
   List<BarisAbsensi> _baris = const [];
   var _nama = const <String, String>{};
-  var _acuan = const <String, String>{};
+  var _acuan = const <String, RefGambar>{};
   String _namaMerchant = '';
 
   bool _memuat = true;
@@ -152,7 +152,7 @@ class _AbsensiReportScreenState extends State<AbsensiReportScreen> {
           for (final e in hasil[2] as List<Employee>)
             e.email.toLowerCase(): e.name.isEmpty ? e.email : e.name,
         };
-        _acuan = hasil[3] as Map<String, String>;
+        _acuan = hasil[3] as Map<String, RefGambar>;
         _memuat = false;
       });
     } catch (e) {
@@ -324,7 +324,7 @@ class _AbsensiReportScreenState extends State<AbsensiReportScreen> {
                           _KartuOrang(
                             nama: _namaOrang(e.key),
                             email: e.key,
-                            acuanUrl: _acuan[e.key],
+                            acuan: _acuan[e.key],
                             baris: e.value,
                             terbuka: _fokus == e.key,
                             jam: _jam,
@@ -352,7 +352,7 @@ class _AbsensiReportScreenState extends State<AbsensiReportScreen> {
 class _KartuOrang extends StatelessWidget {
   final String nama;
   final String email;
-  final String? acuanUrl;
+  final RefGambar? acuan;
   final List<BarisAbsensi> baris;
   final bool terbuka;
   final DateFormat jam;
@@ -368,7 +368,7 @@ class _KartuOrang extends StatelessWidget {
   const _KartuOrang({
     required this.nama,
     required this.email,
-    this.acuanUrl,
+    this.acuan,
     required this.baris,
     required this.terbuka,
     required this.jam,
@@ -461,8 +461,11 @@ class _KartuOrang extends StatelessWidget {
                         // detik kalau kedua fotonya bersebelahan.
                         if (b.masukFotoUrl != null)
                           _TombolFoto(
-                            acuanUrl: acuanUrl,
-                            absenUrl: b.masukFotoUrl!,
+                            acuan: acuan,
+                            absen: (
+                              base64: b.masukFotoBase64,
+                              jalurLama: b.masukFotoUrl
+                            ),
                             nama: nama,
                             ragu: b.masukRagu,
                             onResetWajah: onResetWajah,
@@ -507,15 +510,15 @@ class _KartuOrang extends StatelessWidget {
 /// keduanya dipakai pada saat yang sama, yaitu saat memutuskan seseorang
 /// dibayar untuk hari itu atau tidak.
 class _TombolFoto extends StatelessWidget {
-  final String? acuanUrl;
-  final String absenUrl;
+  final RefGambar? acuan;
+  final RefGambar absen;
   final String nama;
   final bool ragu;
   final VoidCallback? onResetWajah;
 
   const _TombolFoto({
-    required this.acuanUrl,
-    required this.absenUrl,
+    required this.acuan,
+    required this.absen,
     required this.nama,
     required this.ragu,
     this.onResetWajah,
@@ -535,8 +538,8 @@ class _TombolFoto extends StatelessWidget {
       onPressed: () => showDialog<void>(
         context: context,
         builder: (_) => _DialogBandingFoto(
-          acuanUrl: acuanUrl,
-          absenUrl: absenUrl,
+          acuan: acuan,
+          absen: absen,
           nama: nama,
           ragu: ragu,
           onResetWajah: onResetWajah,
@@ -547,15 +550,15 @@ class _TombolFoto extends StatelessWidget {
 }
 
 class _DialogBandingFoto extends StatelessWidget {
-  final String? acuanUrl;
-  final String absenUrl;
+  final RefGambar? acuan;
+  final RefGambar absen;
   final String nama;
   final bool ragu;
   final VoidCallback? onResetWajah;
 
   const _DialogBandingFoto({
-    required this.acuanUrl,
-    required this.absenUrl,
+    required this.acuan,
+    required this.absen,
     required this.nama,
     required this.ragu,
     this.onResetWajah,
@@ -597,11 +600,11 @@ class _DialogBandingFoto extends StatelessWidget {
               children: [
                 Expanded(
                   child: _Foto(
-                      judul: 'Acuan', url: acuanUrl, kosong: 'Belum ada'),
+                      judul: 'Acuan', ref: acuan, kosong: 'Belum ada'),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: _Foto(judul: 'Absen hari itu', url: absenUrl),
+                  child: _Foto(judul: 'Absen hari itu', ref: absen),
                 ),
               ],
             ),
@@ -651,10 +654,10 @@ class _DialogBandingFoto extends StatelessWidget {
 
 class _Foto extends StatelessWidget {
   final String judul;
-  final String? url;
+  final RefGambar? ref;
   final String kosong;
 
-  const _Foto({required this.judul, this.url, this.kosong = 'Tidak ada'});
+  const _Foto({required this.judul, this.ref, this.kosong = 'Tidak ada'});
 
   @override
   Widget build(BuildContext context) {
@@ -670,7 +673,8 @@ class _Foto extends StatelessWidget {
           aspectRatio: 1,
           child: ClipRRect(
             borderRadius: BorderRadius.circular(10),
-            child: GambarBertanda(simpanan: url, kosong: kosong),
+            child: GambarTersimpan.dariRef(ref,
+                ember: AbsensiRepository.emberLama, kosong: kosong),
           ),
         ),
       ],

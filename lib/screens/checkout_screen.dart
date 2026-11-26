@@ -556,8 +556,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       // QRIS Statis punya layarnya sendiri: QR-nya milik merchant, tidak
       // membawa nominal, dan tidak ada webhook yang menyatakan lunas —
       // yang bersaksi kasirnya, setelah melihat bukti transfer.
-      final qrStatis = _metode.qrisStatisUrl;
-      if (method == PaymentMethod.qrisStatic && qrStatis == null) {
+      final adaQr = _metode.adaQrStatis;
+      if (method == PaymentMethod.qrisStatic && !adaQr) {
         showAppToast(context, 'QR statisnya belum dipasang di Info Pembayaran.',
             isError: true);
         return;
@@ -567,7 +567,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           builder: (_) => switch (method) {
             PaymentMethod.qris => PaymentQrisScreen(amount: amount),
             PaymentMethod.qrisStatic =>
-              PaymentQrisStatisScreen(amount: amount, qrUrl: qrStatis!),
+              PaymentQrisStatisScreen(
+                  amount: amount,
+                  qr: (
+                    base64: _metode.qrisStatisBase64,
+                    jalurLama: _metode.qrisStatisUrl
+                  )),
             _ => PaymentTransferScreen(amount: amount),
           },
         ),

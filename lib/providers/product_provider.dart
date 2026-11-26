@@ -3,6 +3,7 @@ import 'package:uuid/uuid.dart';
 
 import '../db/firestore_product_repository.dart';
 import '../db/product_repository.dart';
+import '../db/foto_menu_repository.dart';
 import '../models/product.dart';
 
 class ProductProvider extends ChangeNotifier {
@@ -42,6 +43,16 @@ class ProductProvider extends ChangeNotifier {
       return;
     }
     _products = await _repo.getAll(restoId);
+    // Fotonya diambil terpisah dari barisnya — sekali per merchant,
+    // lalu diingat. Lihat FotoMenuRepository untuk alasannya.
+    if (restoId != null) {
+      try {
+        await FotoMenuRepository().muat(restoId!);
+      } catch (_) {
+        // Menu tanpa gambar masih bisa dipesan; menu yang gagal dimuat
+        // seluruhnya tidak.
+      }
+    }
     notifyListeners();
   }
 

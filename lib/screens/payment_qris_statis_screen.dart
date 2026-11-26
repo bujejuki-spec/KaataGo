@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../theme.dart';
 import '../widgets/dialog_actions.dart';
+import '../widgets/gambar_tersimpan.dart';
 import '../widgets/responsive.dart';
 
 /// QR statis merchant, ditunjukkan ke pelanggan di meja kasir.
@@ -19,12 +20,15 @@ import '../widgets/responsive.dart';
 /// melainkan jumlah yang diketik pelanggan.
 class PaymentQrisStatisScreen extends StatelessWidget {
   final int amount;
-  final String qrUrl;
+
+  /// QR-nya: base64 kalau sudah dipasang ulang, jalur Storage kalau
+  /// merchant ini memasangnya sebelum gambar pindah ke basis data.
+  final RefGambar qr;
 
   const PaymentQrisStatisScreen({
     super.key,
     required this.amount,
-    required this.qrUrl,
+    required this.qr,
   });
 
   @override
@@ -71,28 +75,14 @@ class PaymentQrisStatisScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: KaataTheme.borderOf(context)),
               ),
-              child: Image.network(
-                qrUrl,
-                fit: BoxFit.contain,
-                // Tempatnya dipegang selama gambarnya turun. Kotak yang
-                // tiba-tiba muncul memindahkan tombol di bawahnya persis
-                // saat kasir hendak menekannya.
-                loadingBuilder: (context, child, kemajuan) => kemajuan == null
-                    ? child
-                    : const SizedBox(
-                        height: 280,
-                        child: Center(child: CircularProgressIndicator()),
-                      ),
-                errorBuilder: (_, __, ___) => SizedBox(
-                  height: 280,
-                  child: Center(
-                    child: Text(
-                      'QR-nya gagal dimuat. Periksa koneksi, atau pakai '
-                      'metode bayar lain dulu.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: KaataTheme.mutedOf(context)),
-                    ),
-                  ),
+              child: SizedBox(
+                height: 280,
+                child: GambarTersimpan.dariRef(
+                  qr,
+                  ember: 'qris-statis',
+                  fit: BoxFit.contain,
+                  kosong: 'QR-nya belum dipasang. Pakai metode bayar '
+                      'lain dulu.',
                 ),
               ),
             ),

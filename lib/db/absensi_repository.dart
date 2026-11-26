@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/absensi.dart';
+import '../utils/gambar_unggah.dart';
 import '../utils/mesin_wajah.dart';
 
 /// Absensi wajah berlokasi, dan aturan gaji yang menghitung darinya.
@@ -14,7 +15,9 @@ import '../utils/mesin_wajah.dart';
 class AbsensiRepository {
   final _client = Supabase.instance.client;
 
-  static const _ember = 'absensi';
+  /// Ember lama, masih disebut saat MEMBACA berkas yang terlanjur
+  /// tersimpan di sana sebelum gambar pindah ke base64.
+  static const emberLama = 'absensi';
 
   static String _tgl(DateTime d) => '${d.year.toString().padLeft(4, '0')}-'
       '${d.month.toString().padLeft(2, '0')}-'
@@ -162,15 +165,28 @@ class AbsensiRepository {
   /// absen hari itu. Pemeriksaan otomatis menangkap yang bentuk
   /// wajahnya jelas berbeda; yang halus ditangkap mata orang, dan cuma
   /// bisa ditangkap kalau kedua fotonya benar-benar bersebelahan.
-  Future<Map<String, String>> fotoAcuan(String restoId) async {
+  /// Foto acuan tiap karyawan: base64 kalau ada, jalur lama kalau belum.
+  ///
+  /// Wajah yang didaftarkan sebelum gambar pindah ke base64 masih
+  /// menunjuk ke berkas di Storage. Memilih salah satu saja berarti
+  /// separuh acuan berubah jadi kotak kosong — tepat di layar tempat
+  /// seseorang memutuskan absen ini benar orangnya atau bukan.
+  Future<Map<String, ({String? base64, String? jalurLama})>> fotoAcuan(
+      String restoId) async {
     final rows =
         await _client.rpc('foto_acuan_wajah', params: {'p_resto_id': restoId});
-    return {
-      for (final r in (rows as List? ?? const []))
-        if ((r as Map)['foto_url'] != null)
-          r['employee_email'].toString().toLowerCase():
-              r['foto_url'].toString(),
-    };
+    final hasil = <String, ({String? base64, String? jalurLama})>{};
+    for (final r in (rows as List? ?? const [])) {
+      final m = r as Map;
+      final b64 = m['foto_base64']?.toString();
+      final lama = m['foto_url']?.toString();
+      if ((b64 == null || b64.isEmpty) && (lama == null || lama.isEmpty)) {
+        continue;
+      }
+      hasil[m['employee_email'].toString().toLowerCase()] =
+          (base64: b64, jalurLama: lama);
+    }
+    return hasil;
   }
 
   /// Atasan membetulkan statusnya, atau memutuskan potong gaji.
@@ -188,42 +204,20 @@ class AbsensiRepository {
 
   // ── Berkas ─────────────────────────────────────────────────────────
 
-  /// Mengunggah foto absen atau surat sakit, mengembalikan JALUR-nya.
+  /// Menyiapkan gambar untuk disimpan sebagai base64.
   ///
-  /// Jalur, bukan URL publik. Embernya tertutup — alamat publiknya
-  /// selalu ditolak, dan penolakannya baru terlihat berbulan-bulan
-  /// kemudian sebagai kotak "Gagal dimuat". Yang menampilkannya membuat
-  /// URL bertanda tangan saat gambarnya mau dilihat.
+  /// Dulu ia mengunggah berkas ke Storage dan mengembalikan jalurnya.
+  /// Sekarang gambarnya tersimpan di baris absensinya sendiri, jadi
+  /// tidak ada yang perlu diunggah — yang tersisa memeriksa format dan
+  /// ukurannya, lalu mengubahnya jadi teks.
   ///
-  /// Namanya memuat email dan waktunya, bukan angka acak: berkas yang
-  /// tidak bisa dikenali dari namanya hanya bisa ditelusuri lewat baris
-  /// yang menunjuknya — dan kalau barisnya yang hilang, yang tersisa
-  /// adalah ember berisi ribuan gambar tanpa pemilik.
-  Future<String> unggah({
-    required String restoId,
-    required String email,
-    required Uint8List bytes,
-    required String jenis,
-    String ekstensi = 'jpg',
-  }) async {
-    final nama = '$restoId/$jenis/'
-        '${email.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_')}_'
-        '${DateTime.now().millisecondsSinceEpoch}.$ekstensi';
-    await _client.storage.from(_ember).uploadBinary(
-          nama,
-          bytes,
-          // upsert SENGAJA tidak dipakai.
-          //
-          // Nama berkasnya sudah memuat milidetik, jadi tidak mungkin
-          // bertabrakan — dan upsert menuntut layanan Storage MEMBACA
-          // baris objeknya dulu untuk memutuskan sisip-atau-timpa. Kasir
-          // dan Chef tidak punya hak baca di ember ini (isinya foto
-          // wajah dan surat sakit rekan-rekannya), jadi yang mereka
-          // terima 403 sebelum sempat menulis apa pun.
-          fileOptions: FileOptions(
-            contentType: ekstensi == 'pdf' ? 'application/pdf' : 'image/jpeg',
-          ),
-        );
-    return nama;
-  }
+  /// Nama parameternya di sisi server masih `p_foto_url` dan
+  /// `p_bukti_url`. Tanda tangannya sengaja tidak diubah: daftar
+  /// parameter yang berbeda membuat fungsi KEDUA dengan nama yang sama,
+  /// dan aplikasi yang belum diperbarui akan memanggil yang lama tanpa
+  /// satu pun galat yang menjelaskan kenapa fotonya tidak muncul.
+  String siapkanGambar(Uint8List bytes) =>
+      // Wajah dan surat sakit sama-sama harus terbaca mata orang yang
+      // memutuskan gaji, jadi tidak dikecilkan sekecil foto menu.
+      GambarUnggah.siapkan(bytes, sisiMaks: 1400, mutu: 82);
 }

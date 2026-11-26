@@ -145,12 +145,7 @@ class _AbsensiScreenState extends State<AbsensiScreen> {
               'cukup. Foto ini jadi acuan absenmu berikutnya.');
       if (wajah == null) return;
 
-      final url = await _repo.unggah(
-        restoId: restoId,
-        email: email,
-        bytes: wajah.potongan,
-        jenis: 'wajah',
-      );
+      final url = _repo.siapkanGambar(wajah.potongan);
       await _repo.daftarWajah(
         restoId: restoId,
         sidik: wajah.sidik,
@@ -228,12 +223,7 @@ class _AbsensiScreenState extends State<AbsensiScreen> {
       // sudah berdiri di tempatnya hanya karena jaringan warung sedang
       // lambat mengunggah gambar adalah hukuman untuk hal yang salah.
       try {
-        url = await _repo.unggah(
-          restoId: restoId,
-          email: email,
-          bytes: wajah.potongan,
-          jenis: pulang ? 'pulang' : 'masuk',
-        );
+        url = _repo.siapkanGambar(wajah.potongan);
       } catch (_) {}
 
       final hasil = await _repo.absen(
@@ -276,12 +266,7 @@ class _AbsensiScreenState extends State<AbsensiScreen> {
     try {
       String? bukti;
       if (hasil.bukti != null) {
-        bukti = await _repo.unggah(
-          restoId: restoId,
-          email: email,
-          bytes: hasil.bukti!,
-          jenis: 'bukti',
-        );
+        bukti = _repo.siapkanGambar(hasil.bukti!);
       }
       await _repo.ajukanTidakMasuk(
         restoId: restoId,

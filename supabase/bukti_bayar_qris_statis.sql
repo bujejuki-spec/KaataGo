@@ -31,55 +31,17 @@ alter table orders add column if not exists bukti_bayar_url text;
 commit;
 
 -- ─────────────────────────────────────────────────────────────────────
--- Melampirkan bukti
+-- Melampirkan bukti — PINDAH ke gambar_base64.sql
 -- ─────────────────────────────────────────────────────────────────────
-
-begin;
-
-create or replace function lampirkan_bukti_bayar(
-  p_order_id text,
-  p_jalur text)
-returns void
-language plpgsql
-security definer
-set search_path = public
-as $fn$
-declare
-  v_o record;
-begin
-  select * into v_o from orders where id::text = p_order_id;
-
-  if v_o is null then
-    raise exception 'Pesanannya tidak ditemukan.';
-  end if;
-
-  -- Hanya pesanan yang memang menunggu dibayar lewat QRIS Statis.
-  --
-  -- Tanpa syarat ini, satu kolom di pesanan mana pun bisa ditimpa oleh
-  -- siapa pun yang menebak id-nya — termasuk pesanan yang sudah lunas,
-  -- yang buktinya justru jadi bahan sengketa.
-  if v_o.payment_method is distinct from 'qris_static' then
-    raise exception 'Pesanan ini tidak dibayar lewat QRIS Statis.';
-  end if;
-
-  -- 'pending', bukan 'unpaid'. Nilainya ditulis aplikasi dari nama
-  -- enum-nya sendiri (OrderPaymentStatus.pending), dan menebak namanya
-  -- menghasilkan fungsi yang menolak SETIAP pesanan yang sah.
-  if v_o.payment_status is distinct from 'pending' then
-    raise exception 'Pesanan ini sudah selesai pembayarannya.';
-  end if;
-
-  update orders set bukti_bayar_url = p_jalur where id::text = p_order_id;
-end;
-$fn$;
-
--- `anon` memang disengaja: pelanggan yang memesan dari QR meja sering
--- tidak login sama sekali, dan dialah yang memegang buktinya.
-revoke all on function lampirkan_bukti_bayar(text, text) from public;
-grant execute on function lampirkan_bukti_bayar(text, text)
-  to anon, authenticated;
-
-commit;
+--
+-- `lampirkan_bukti_bayar` dulu didefinisikan di sini, menyimpan JALUR
+-- berkas di Storage. Sejak gambar unggahan pindah ke base64, fungsinya
+-- menulis ke kolom yang berbeda — dan definisinya ikut pindah.
+--
+-- Sengaja tidak ditinggalkan salinannya di sini. Dua berkas yang
+-- mendefinisikan satu fungsi berarti mana yang berlaku bergantung pada
+-- urutan dijalankannya, dan yang kalah tidak pernah berbunyi: ia cuma
+-- menulis ke kolom yang tidak dibaca siapa pun.
 
 -- ─────────────────────────────────────────────────────────────────────
 -- Ember bukti bayar

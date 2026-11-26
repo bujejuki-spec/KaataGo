@@ -105,19 +105,25 @@ void main() {
   });
 
   group('wajahnya diperiksa sebelum fotonya diunggah', () {
-    test('pemeriksaannya berdiri sebelum unggahan di layar absensi', () {
-      // Urutannya yang penting, bukan sekadar ada. Penolakan yang datang
-      // sesudah unggahan berarti wajah orang yang absennya tidak pernah
-      // jadi tetap tersimpan di penyimpanan merchant.
+    test('pemeriksaannya mendahului pencatatan absennya', () {
+      // Dulu yang dijaga di sini urutan terhadap UNGGAHAN: penolakan
+      // yang datang sesudahnya berarti wajah orang yang absennya tidak
+      // pernah jadi tetap tersimpan di penyimpanan merchant.
+      //
+      // Sejak gambar pindah ke base64 tidak ada unggahan sama sekali —
+      // fotonya ikut dalam panggilan absennya, jadi yang ditolak tidak
+      // meninggalkan apa pun. Yang tersisa dijaga: pemeriksaannya tetap
+      // di depan, supaya yang bukan orangnya tahu seketika alih-alih
+      // menunggu server menolaknya.
       final layar = baca('lib/screens/absensi_screen.dart');
       final blok = layar.substring(layar.indexOf('Future<void> _absen('));
       final periksa = blok.indexOf('cocokkanWajah');
-      final unggah = blok.indexOf('_repo.unggah(');
+      final catat = blok.indexOf('_repo.absen(');
       expect(periksa, greaterThan(-1),
           reason: 'Tidak ada pemeriksaan wajah sebelum absen.');
-      expect(periksa, lessThan(unggah),
-          reason: 'Pemeriksaannya jatuh SESUDAH unggahan — fotonya sudah '
-              'naik sebelum ketahuan bukan orangnya.');
+      expect(catat, greaterThan(-1));
+      expect(periksa, lessThan(catat),
+          reason: 'Pemeriksaannya jatuh sesudah absennya dicatat.');
     });
 
     test('server menjawab ya atau tidak, bukan skornya', () {
