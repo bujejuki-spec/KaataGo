@@ -16,6 +16,7 @@
 const katalogMenu = <String, List<String>>{
   'kasir': [
     'Absensi',
+    'Status Pesanan',
     'Shift Kasir',
     'Kasir / Input Pesanan',
     'Layar Pelanggan',
@@ -78,7 +79,7 @@ const katalogMenu = <String, List<String>>{
     'Kasir / Input Pesanan',
     'Layar Pelanggan',
     'Pesanan Masuk',
-    'Layar Dapur',
+    'Status Pesanan',
     'Pending Payment',
     'Riwayat Kasir',
     'Laporan Penjualan',
@@ -109,7 +110,7 @@ const katalogMenu = <String, List<String>>{
   ],
   'chef': [
     'Absensi',
-    'Layar Dapur',
+    'Status Pesanan',
   ],
   // Gaji sengaja tidak ada di sini, dan itu bukan kelupaan. Yang
   // mencatat kehadiran tidak boleh jadi orang yang sama dengan yang
@@ -128,6 +129,6 @@ const labelPeran = <String, String>{
   'admin': 'Admin',
   'finance': 'Finance',
   'kasir': 'Kasir',
-  'chef': 'Chef',
+  'chef': 'Waiters',
   'hr': 'HR',
 };

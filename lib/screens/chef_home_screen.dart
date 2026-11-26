@@ -33,11 +33,18 @@ class ChefHomeScreen extends StatefulWidget {
 class _ChefHomeScreenState extends State<ChefHomeScreen> {
   final _repo = OrderRepository();
 
-  /// Status null berarti tab "Menunggu Pembayaran": isinya dipilih dari
-  /// status bayarnya, bukan status dapurnya.
+  /// Dua tab saja: yang sedang dikerjakan, dan yang sudah.
+  ///
+  /// "Menunggu Bayar" dan "Baru" dulu berdiri di sini, dan keduanya
+  /// bukan pekerjaan layar ini lagi. Pesanan yang belum dibayar diurus
+  /// kasir di Pending Payment, dan yang menyatakan sebuah pesanan mulai
+  /// disiapkan juga kasir — dari Pesanan Masuk, saat pesanannya benar-
+  /// benar diteruskan.
+  ///
+  /// Yang memakai layar ini mengantar makanan, bukan memutuskan mana
+  /// yang mulai dikerjakan. Dua tab yang tidak pernah dia sentuh cuma
+  /// menambah dua tempat yang harus dilewati tiap kali membuka layarnya.
   static const _tabs = <(KitchenStatus?, String)>[
-    (null, 'Menunggu Bayar'),
-    (KitchenStatus.waiting, 'Baru'),
     (KitchenStatus.onProgress, 'Diproses'),
     (KitchenStatus.done, 'Selesai'),
   ];
@@ -55,7 +62,7 @@ class _ChefHomeScreenState extends State<ChefHomeScreen> {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final restoId = auth.restoId!;
-    final employeeName = auth.employeeName?.isNotEmpty == true ? auth.employeeName! : 'Chef';
+    final employeeName = auth.employeeName?.isNotEmpty == true ? auth.employeeName! : 'Waiters';
 
     return DefaultTabController(
       length: _tabs.length,
@@ -68,7 +75,7 @@ class _ChefHomeScreenState extends State<ChefHomeScreen> {
             children: [
               Text(employeeName, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               Text(
-                '${auth.roleLabel ?? 'Chef'} • ${auth.user?.email ?? ''}',
+                '${auth.roleLabel ?? 'Waiters'} • ${auth.user?.email ?? ''}',
                 style: const TextStyle(fontSize: 11, color: Colors.white70),
                 overflow: TextOverflow.ellipsis,
               ),
@@ -81,9 +88,11 @@ class _ChefHomeScreenState extends State<ChefHomeScreen> {
           // perataannya: rata kiri menyisakan ruang kosong menganggur di
           // kanan dan membuat barisnya terlihat terpotong — seolah ada
           // tab kelima yang gagal dimuat.
+          // Dua tab muat dibagi rata, jadi tidak perlu digeser lagi.
+          //
+          // Tab yang bisa digeser padahal isinya muat membuat orang
+          // mencari-cari tab ketiga yang tidak pernah ada.
           bottom: TabBar(
-            isScrollable: true,
-            tabAlignment: TabAlignment.center,
             tabs: _tabs.map((t) => Tab(text: t.$2)).toList(),
           ),
           actions: [

@@ -157,7 +157,7 @@ class OwnerHomeScreen extends StatelessWidget {
                     ),
                       HubMenuTile(
                       icon: Icons.soup_kitchen_outlined,
-                      title: 'Layar Dapur',
+                      title: 'Status Pesanan',
                       subtitle: 'Antrean masak, cek menu sebelum selesai',
                       color: const Color(0xFFEF4444),
                       onTap: () => _open(context, const ChefHomeScreen()),

@@ -67,12 +67,6 @@ class CustomerOrderStatusScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final session = context.watch<TableSessionProvider>();
-    final currency = NumberFormat.currency(
-      locale: 'id_ID',
-      symbol: 'Rp ',
-      decimalDigits: 0,
-    );
-    final dateFmt = DateFormat('HH:mm', 'id_ID');
 
     if (!session.hasActiveResto) {
       return Scaffold(
@@ -93,7 +87,48 @@ class CustomerOrderStatusScreen extends StatelessWidget {
       // sekaligus, jadi satu label di header pasti salah untuk sebagian
       // isinya.
       appBar: AppBar(title: const Text('Pesanan Saya')),
-      body: StreamBuilder<List<CustomerOrder>>(
+      body: Column(
+        children: [
+          // Nomor yang sedang disiapkan, di paling atas.
+          //
+          // Inilah pertanyaan yang paling sering muncul sambil
+          // menunggu: "sudah sampai nomor berapa?". Tanpa jawabannya di
+          // sini, satu-satunya cara mengetahuinya adalah berdiri dan
+          // bertanya ke kasir.
+          if (restoId != null) _AntreanBerjalan(restoId: restoId),
+          Expanded(
+            child: _daftar(context, repo, email, restoId, session),
+          ),
+        ],
+      ),
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: OutlinedButton.icon(
+            icon: const Icon(Icons.check_circle_outline),
+            label: const Text('Pesanan Sudah Semua • Selesai'),
+            onPressed: () => _confirmEndSession(context),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _daftar(
+    BuildContext context,
+    OrderRepository repo,
+    String? email,
+    String? restoId,
+    TableSessionProvider session,
+  ) {
+    final currency = NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: 'Rp ',
+      decimalDigits: 0,
+    );
+    final dateFmt = DateFormat('HH:mm', 'id_ID');
+
+    return StreamBuilder<List<CustomerOrder>>(
         stream: email != null
             ? repo.watchByCustomerEmail(email)
             // Sesinya, ditambah yang tercatat di penyimpanan peramban —
@@ -265,17 +300,6 @@ class CustomerOrderStatusScreen extends StatelessWidget {
             },
           );
         },
-      ),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: OutlinedButton.icon(
-            icon: const Icon(Icons.check_circle_outline),
-            label: const Text('Pesanan Sudah Semua • Selesai'),
-            onPressed: () => _confirmEndSession(context),
-          ),
-        ),
-      ),
     );
   }
 }
@@ -341,6 +365,77 @@ class _OrderPlaceLine extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+
+/// Nomor antrean yang sedang disiapkan di merchant ini, hari ini.
+///
+/// Ditaruh di atas daftar pesanannya sendiri, bukan di dalam tiap kartu:
+/// yang dijawabnya pertanyaan tentang DAPURNYA, bukan tentang satu
+/// pesanan. Diulang di tiap kartu, ia cuma jadi angka yang sama tercetak
+/// berkali-kali.
+class _AntreanBerjalan extends StatelessWidget {
+  final String restoId;
+
+  const _AntreanBerjalan({required this.restoId});
+
+  @override
+  Widget build(BuildContext context) {
+    final muted = KaataTheme.mutedOf(context);
+
+    return StreamBuilder<List<int>>(
+      stream: OrderRepository().watchAntreanDisiapkan(restoId),
+      builder: (context, snapshot) {
+        final nomor = snapshot.data ?? const <int>[];
+
+        // Tidak ada yang sedang disiapkan: barisnya hilang sama sekali.
+        //
+        // Baris yang berkata "tidak ada" tetap memakan ruang di atas
+        // daftar dan tetap harus dibaca — padahal tidak membawa satu pun
+        // kabar.
+        if (nomor.isEmpty) return const SizedBox.shrink();
+
+        return Container(
+          width: double.infinity,
+          margin: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: KaataTheme.tintOf(context, Colors.orange),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: Colors.orange.withOpacity(0.35)),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.soup_kitchen_outlined,
+                  size: 20, color: Color(0xFFB45309)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Sedang disiapkan',
+                        style: TextStyle(fontSize: 11.5, color: muted)),
+                    const SizedBox(height: 2),
+                    Text(
+                      nomor
+                          .map((n) => '#${n.toString().padLeft(3, '0')}')
+                          .join('  '),
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1,
+                        color: Color(0xFF92400E),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

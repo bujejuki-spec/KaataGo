@@ -25,6 +25,7 @@ import 'cashier_shift_screen.dart';
 import 'finance_balance_screen.dart';
 import 'pending_payment_screen.dart';
 import 'pos_home_screen.dart';
+import 'chef_home_screen.dart';
 import 'transaction_history_screen.dart';
 
 /// Home screen for the 'kasir' role — styled the same as Admin/Finance/
@@ -218,6 +219,24 @@ class _KasirHomeScreenState extends State<KasirHomeScreen> {
                           ? Future.value(0)
                           : OrderRepository().pendingCashPaymentCount(restoId),
                       destination: () => const PendingPaymentScreen(),
+                    ),
+                    // Kasir ikut melihat Status Pesanan.
+                    //
+                    // Dialah yang menyatakan sebuah pesanan mulai
+                    // disiapkan, jadi dia juga yang paling sering
+                    // ditanya pelanggan sudah sampai mana. Menyuruhnya
+                    // bertanya ke orang lain untuk menjawab itu cuma
+                    // menambah satu orang di antara pertanyaan dan
+                    // jawabannya.
+                    HubMenuTile(
+                      icon: Icons.room_service_outlined,
+                      title: 'Status Pesanan',
+                      subtitle: 'Yang sedang disiapkan dan yang sudah selesai',
+                      color: const Color(0xFF8B5CF6),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                            builder: (_) => const ChefHomeScreen()),
+                      ),
                     ),
                     HubMenuTile(
                       icon: Icons.receipt_long_outlined,

@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/customer_order.dart';
 import '../utils/gambar_unggah.dart';
+import '../utils/id_time.dart';
 import 'guest_order_store.dart';
 
 /// Supabase-backed repository for orders. This is the bridge between
@@ -379,6 +380,44 @@ class OrderRepository {
       return [...dariSesi, ...tambahan]
         ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
     });
+  }
+
+  /// Nomor antrean yang sedang disiapkan di sebuah merchant, hari ini.
+  ///
+  /// Dipakai layar pelanggan untuk menjawab pertanyaan yang paling
+  /// sering muncul sambil menunggu: "sudah sampai nomor berapa?".
+  /// Tanpa itu, satu-satunya cara mengetahuinya adalah bertanya ke
+  /// kasir — dan yang bertanya berdiri meninggalkan mejanya.
+  ///
+  /// Disaring di Dart, bukan di kueri: aliran Supabase cuma menerima
+  /// satu penyaring kesamaan, dan yang dipakai sudah restonya.
+  Stream<List<int>> watchAntreanDisiapkan(String restoId) {
+    return _client
+        .from('orders')
+        .stream(primaryKey: ['id'])
+        .eq('resto_id', restoId)
+        .limit(batasAliran)
+        .map((rows) {
+          final kini = DateTime.now().toWib();
+          final nomor = <int>[];
+          for (final r in rows) {
+            final o = CustomerOrder.fromMap(r);
+            if (o.kitchenStatus != KitchenStatus.onProgress) continue;
+            if (o.orderNo == null) continue;
+            // Hari ini saja. Nomor antrean diulang tiap hari, jadi
+            // nomor kemarin yang tertinggal di status "diproses" akan
+            // tampil sebagai antrean yang sedang dikerjakan sekarang.
+            final w = o.createdAt.toWib();
+            if (w.year != kini.year ||
+                w.month != kini.month ||
+                w.day != kini.day) {
+              continue;
+            }
+            nomor.add(o.orderNo!);
+          }
+          nomor.sort();
+          return nomor;
+        });
   }
 
   Future<List<CustomerOrder>> getByIds(List<String> ids) async {

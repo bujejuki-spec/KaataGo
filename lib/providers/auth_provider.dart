@@ -48,7 +48,13 @@ const _roleDisplayLabels = {
   EmployeeRole.owner: 'Owner',
   EmployeeRole.admin: 'Admin',
   EmployeeRole.kasir: 'Kasir',
-  EmployeeRole.chef: 'Chef',
+  // Labelnya saja yang berganti, bukan nilainya di basis data.
+  //
+  // Nilai 'chef' disebut 33 kali di kebijakan RLS. Menggantinya berarti
+  // menyentuh seluruhnya DAN memigrasikan baris karyawan yang ada —
+  // risiko nyata, tanpa satu pun yang terlihat oleh orang yang
+  // memakainya. Yang mereka lihat labelnya.
+  EmployeeRole.chef: 'Waiters',
   EmployeeRole.finance: 'Finance',
   EmployeeRole.hr: 'HR',
 };
