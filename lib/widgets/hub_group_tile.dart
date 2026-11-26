@@ -5,6 +5,7 @@ import '../utils/akses_menu.dart';
 import 'badged_hub_tile.dart';
 import 'hub_menu_tile.dart';
 import 'responsive.dart';
+import 'tampak_menu.dart';
 
 /// Satu kelompok menu, dibuka sebagai halaman tersendiri.
 ///
@@ -100,6 +101,33 @@ class HubGroupTile extends StatelessWidget {
     // yang belum diatur KaataGo Admin — tidak ada yang perlu diperiksa,
     // jadi tidak ada yang dibangun.
     if (!terlihat(context)) return const SizedBox.shrink();
+
+    // Kelompok yang tersisa satu menu membubarkan dirinya sendiri.
+    //
+    // Pintu yang di baliknya cuma ada satu kartu menambah satu ketukan
+    // tanpa menyembunyikan apa pun: judul kelompoknya dan judul menunya
+    // sama-sama harus dibaca, dan yang kedua baru terlihat setelah yang
+    // pertama diketuk.
+    //
+    // Dihitung SESUDAH penyaringan UAM, bukan dari jumlah yang ditulis
+    // di beranda. Kelompok bisa berisi tiga menu dan dicabut dua oleh
+    // UAM — dan yang tersisa tetap satu pintu berisi satu kartu, persis
+    // keadaan yang mau dihindari. Menghitungnya dari kode tidak akan
+    // pernah menangkap itu, karena di kode jumlahnya memang tiga.
+    final isi = tileTampak(context, tiles());
+
+    // Kelompok tanpa isi sama sekali tidak dipajang.
+    //
+    // Janji itu sudah ditulis di komentar di atas, tapi dulu hanya
+    // ditegakkan lewat [terlihat] — yang menjawab "boleh" untuk
+    // kelompok kosong, karena yang tidak dikenali memang jatuh ke
+    // "boleh". Akibatnya kelompok yang benar-benar tidak berisi apa pun
+    // tetap mengundang orang masuk ke halaman kosong.
+    if (isi.isEmpty) return const SizedBox.shrink();
+
+    if (isi.length == 1 && _judul(isi.single) != null) {
+      return isi.single;
+    }
 
     if (loadCount == null) {
       return HubMenuTile(

@@ -149,16 +149,6 @@ class AdminHomeScreen extends StatelessWidget {
                         MaterialPageRoute(builder: (_) => const TransactionHistoryScreen()),
                       ),
                     ),
-                    HubMenuTile(
-                      icon: Icons.insights_outlined,
-                      title: 'Laporan Penjualan',
-                      subtitle: 'Menu terlaris, menu tidak laku, dan jam ramai',
-                      color: const Color(0xFF8B5CF6),
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                            builder: (_) => const MerchantReportScreen()),
-                      ),
-                    ),
                   ],
                 ),
                 HubGroupTile(
@@ -194,6 +184,24 @@ class AdminHomeScreen extends StatelessWidget {
                     // sengaja tidak ikut — itu pemeriksaan, dan
                     // pemeriksaan tidak dipegang orang yang sehari-hari
                     // memegang lacinya.
+                  ],
+                ),
+                HubGroupTile(
+                  icon: Icons.summarize_outlined,
+                  title: 'Report',
+                  subtitle: 'Laporan Penjualan, Tutup Buku',
+                  color: const Color(0xFF8B5CF6),
+                  tiles: () => [
+                    HubMenuTile(
+                      icon: Icons.insights_outlined,
+                      title: 'Laporan Penjualan',
+                      subtitle: 'Menu terlaris, menu tidak laku, dan jam ramai',
+                      color: const Color(0xFF8B5CF6),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                            builder: (_) => const MerchantReportScreen()),
+                      ),
+                    ),
                     HubMenuTile(
                       icon: Icons.event_available_outlined,
                       title: 'Tutup Buku',

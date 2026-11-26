@@ -190,26 +190,6 @@ class FinanceHomeScreen extends StatelessWidget {
                       ),
                     ),
                     HubMenuTile(
-                      icon: Icons.event_available_outlined,
-                      title: 'Tutup Buku',
-                      subtitle: 'Kunci angka sebuah hari, per metode bayar',
-                      color: const Color(0xFF0EA5E9),
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                            builder: (_) => const TutupBukuScreen()),
-                      ),
-                    ),
-                    HubMenuTile(
-                      icon: Icons.compare_arrows,
-                      title: 'Rekonsiliasi Bank',
-                      subtitle: 'Cocokkan mutasi rekening dengan catatannya',
-                      color: const Color(0xFF8B5CF6),
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                            builder: (_) => const RekonsiliasiScreen()),
-                      ),
-                    ),
-                    HubMenuTile(
                       icon: Icons.numbers,
                       title: 'Mapping GL Account',
                       subtitle: 'Nomor akun untuk pemasukan & pengeluaran',
@@ -228,6 +208,24 @@ class FinanceHomeScreen extends StatelessWidget {
                       ),
                     ),
                     HubMenuTile(
+                      icon: Icons.credit_card_outlined,
+                      title: 'Pencairan Gateway',
+                      subtitle: 'Catat dana QRIS yang masuk rekening & potongannya',
+                      color: const Color(0xFFEC4899),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                            builder: (_) => const FinanceGatewaySettlementScreen()),
+                      ),
+                    ),
+                  ],
+                ),
+                HubGroupTile(
+                  icon: Icons.summarize_outlined,
+                  title: 'Report',
+                  subtitle: 'Laporan Transaksi, Tutup Buku, Rekonsiliasi Bank',
+                  color: const Color(0xFF8B5CF6),
+                  tiles: () => [
+                    HubMenuTile(
                       icon: Icons.receipt_long_outlined,
                       title: 'Laporan Transaksi',
                       subtitle: 'Cetak laporan per periode, seperti rekening koran',
@@ -237,13 +235,23 @@ class FinanceHomeScreen extends StatelessWidget {
                       ),
                     ),
                     HubMenuTile(
-                      icon: Icons.credit_card_outlined,
-                      title: 'Pencairan Gateway',
-                      subtitle: 'Catat dana QRIS yang masuk rekening & potongannya',
-                      color: const Color(0xFFEC4899),
+                      icon: Icons.event_available_outlined,
+                      title: 'Tutup Buku',
+                      subtitle: 'Kunci angka sebuah hari, per metode bayar',
+                      color: const Color(0xFF0EA5E9),
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(
-                            builder: (_) => const FinanceGatewaySettlementScreen()),
+                            builder: (_) => const TutupBukuScreen()),
+                      ),
+                    ),
+                    HubMenuTile(
+                      icon: Icons.compare_arrows,
+                      title: 'Rekonsiliasi Bank',
+                      subtitle: 'Cocokkan mutasi rekening dengan catatannya',
+                      color: const Color(0xFF8B5CF6),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                            builder: (_) => const RekonsiliasiScreen()),
                       ),
                     ),
                   ],

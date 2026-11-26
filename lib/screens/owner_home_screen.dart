@@ -179,13 +179,6 @@ class OwnerHomeScreen extends StatelessWidget {
                       color: const Color(0xFF6366F1),
                       onTap: () => _open(context, const TransactionHistoryScreen()),
                     ),
-                    HubMenuTile(
-                      icon: Icons.insights_outlined,
-                      title: 'Laporan Penjualan',
-                      subtitle: 'Menu terlaris, menu tidak laku, dan jam ramai',
-                      color: const Color(0xFF8B5CF6),
-                      onTap: () => _open(context, const MerchantReportScreen()),
-                    ),
                     ],
                   ),
                   HubGroupTile(
@@ -273,26 +266,6 @@ class OwnerHomeScreen extends StatelessWidget {
                       ),
                     ),
                     HubMenuTile(
-                      icon: Icons.event_available_outlined,
-                      title: 'Tutup Buku',
-                      subtitle: 'Kunci angka sebuah hari, per metode bayar',
-                      color: const Color(0xFF0EA5E9),
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                            builder: (_) => const TutupBukuScreen()),
-                      ),
-                    ),
-                    HubMenuTile(
-                      icon: Icons.compare_arrows,
-                      title: 'Rekonsiliasi Bank',
-                      subtitle: 'Cocokkan mutasi rekening dengan catatannya',
-                      color: const Color(0xFF8B5CF6),
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                            builder: (_) => const RekonsiliasiScreen()),
-                      ),
-                    ),
-                    HubMenuTile(
                       icon: Icons.numbers,
                       title: 'Mapping GL Account',
                       subtitle: 'Nomor akun untuk pemasukan & pengeluaran',
@@ -314,13 +287,48 @@ class OwnerHomeScreen extends StatelessWidget {
                       color: const Color(0xFF14B8A6),
                       onTap: () => _open(context, const FinanceJournalScreen()),
                     ),
+                    ],
+                  ),
+                  HubGroupTile(
+                    icon: Icons.summarize_outlined,
+                    title: 'Report',
+                    subtitle: 'Laporan Penjualan, Laporan Transaksi, Tutup Buku, Rekonsiliasi Bank',
+                    color: const Color(0xFF8B5CF6),
+                    tiles: () => [
+                      HubMenuTile(
+                        icon: Icons.insights_outlined,
+                        title: 'Laporan Penjualan',
+                        subtitle: 'Menu terlaris, menu tidak laku, dan jam ramai',
+                        color: const Color(0xFF8B5CF6),
+                        onTap: () => _open(context, const MerchantReportScreen()),
+                      ),
                       HubMenuTile(
                       icon: Icons.description_outlined,
                       title: 'Laporan Transaksi',
                       subtitle: 'Cetak laporan per periode, seperti rekening koran',
                       color: const Color(0xFF0EA5E9),
                       onTap: () => _open(context, const FinanceReportScreen()),
-                    ),
+                      ),
+                      HubMenuTile(
+                        icon: Icons.event_available_outlined,
+                        title: 'Tutup Buku',
+                        subtitle: 'Kunci angka sebuah hari, per metode bayar',
+                        color: const Color(0xFF0EA5E9),
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                              builder: (_) => const TutupBukuScreen()),
+                        ),
+                      ),
+                      HubMenuTile(
+                        icon: Icons.compare_arrows,
+                        title: 'Rekonsiliasi Bank',
+                        subtitle: 'Cocokkan mutasi rekening dengan catatannya',
+                        color: const Color(0xFF8B5CF6),
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                              builder: (_) => const RekonsiliasiScreen()),
+                        ),
+                      ),
                     ],
                   ),
                   HubGroupTile(

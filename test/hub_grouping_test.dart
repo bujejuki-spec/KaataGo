@@ -176,10 +176,24 @@ void main() {
       expect(find.text('menu di dalam'), findsOneWidget);
     });
 
-    testWidgets('isinya baru dibangun saat pintunya dibuka', (tester) async {
-      // Membangun seluruh isi tiap kelompok saat hub dibuka berarti
-      // membayar biaya layar yang mungkin tidak pernah dilihat.
-      var dibangun = 0;
+    testWidgets('layarnya baru dibangun saat pintunya dibuka', (tester) async {
+      // Yang mahal adalah LAYAR di balik tiap menu, bukan daftar
+      // kartunya.
+      //
+      // Dulu tes ini menuntut `tiles` tidak dipanggil sama sekali
+      // sebelum pintunya diketuk, dan alasannya ditulis "membayar biaya
+      // layar yang mungkin tidak pernah dilihat". Tapi `tiles` tidak
+      // pernah membangun layar: layarnya ada di dalam closure `onTap`,
+      // dan yang dibangun cuma beberapa objek kartu yang tidak satu pun
+      // ter-mount.
+      //
+      // Sejak kelompok berisi satu menu membubarkan dirinya, daftarnya
+      // memang harus dihitung lebih dulu — tidak ada cara tahu berapa
+      // yang tersisa tanpa melihatnya. Jadi yang dijaga sekarang hal
+      // yang benar-benar mahal, dan itu tetap malas.
+      var layarDibangun = 0;
+      var daftarDibangun = 0;
+
       await tester.pumpWidget(MaterialApp(
         home: Scaffold(
           body: HubGroupTile(
@@ -188,18 +202,41 @@ void main() {
             subtitle: 'Saldo dan setoran',
             color: const Color(0xFF6366F1),
             tiles: () {
-              dibangun++;
-              return const [Text('x')];
+              daftarDibangun++;
+              return [
+                HubMenuTile(
+                  icon: Icons.circle,
+                  title: 'Saldo',
+                  subtitle: 'uang perusahaan',
+                  color: Colors.indigo,
+                  onTap: () => layarDibangun++,
+                ),
+                HubMenuTile(
+                  icon: Icons.circle,
+                  title: 'Setoran',
+                  subtitle: 'setor ke bank',
+                  color: Colors.indigo,
+                  onTap: () => layarDibangun++,
+                ),
+              ];
             },
           ),
         ),
       ));
       await tester.pumpAndSettle();
-      expect(dibangun, 0);
+
+      // Daftarnya boleh dihitung, tapi tidak boleh dihitung berkali-kali
+      // dalam satu gambar.
+      expect(daftarDibangun, 1);
+      // Dan tidak satu pun isinya ter-mount sebelum pintunya dibuka.
+      expect(find.text('Saldo'), findsNothing);
+      expect(layarDibangun, 0);
 
       await tester.tap(find.text('Keuangan'));
       await tester.pumpAndSettle();
-      expect(dibangun, 1);
+      expect(find.text('Saldo'), findsOneWidget);
+      expect(layarDibangun, 0, reason: 'Layar baru boleh dibangun saat '
+          'menunya sendiri diketuk, bukan saat kelompoknya dibuka.');
     });
 
     testWidgets('tanpa penanda tetap kartu biasa', (tester) async {

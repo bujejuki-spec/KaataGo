@@ -26,32 +26,88 @@ class NotificationService {
   /// Dipisah per jenis supaya pemakainya bisa mematikan salah satunya
   /// lewat setelan Android tanpa ikut mematikan yang lain — dapur mungkin
   /// ingin bunyi terus, sementara kasir cukup yang pesanannya sendiri.
+  /// Versi channel.
+  ///
+  /// Android MENGUNCI suara dan tingkat kepentingan sebuah channel pada
+  /// saat ia pertama kali dibuat. Memperbaikinya lewat kode tidak pernah
+  /// menyentuh channel yang sudah telanjur terpasang di HP seseorang —
+  /// dan itulah sebabnya notifikasi tetap senyap meski setelan di berkas
+  /// ini sudah benar sejak lama.
+  ///
+  /// Satu-satunya jalan membuat channel BARU dengan id yang berbeda.
+  /// Naikkan angka ini setiap kali suara atau tingkat kepentingannya
+  /// berubah, dan pindahkan id lamanya ke [_idUsang] supaya tidak
+  /// menumpuk jadi daftar panjang di Setelan HP pemakainya.
+  static const _versi = 'v2';
+
+  /// Channel disebut dengan NAMA, bukan diambil lewat indeks.
+  ///
+  /// Dulu daftarnya diakses `_channels[0]`..`_channels[3]`, dan
+  /// pengumuman mengambil indeks 3 — yang ternyata channel unduhan.
+  /// Pengumuman merchant selama ini keluar lewat kanal "Unduhan
+  /// Pembaruan": siapa pun yang membisukan notifikasi progres unduhan
+  /// ikut membisukan pengumuman, tanpa pernah tahu. Tidak ada galat,
+  /// tidak ada yang mengeluh — cuma kabar yang tidak sampai.
+  static const _statusPesanan = (
+    id: 'kaata_order_status_$_versi',
+    name: 'Status Pesanan',
+    description: 'Pemberitahuan saat pesanan mulai dimasak atau siap',
+    berbunyi: true,
+  );
+  static const _pesananBaru = (
+    id: 'kaata_new_order_$_versi',
+    name: 'Pesanan Baru',
+    description: 'Pemberitahuan untuk dapur saat ada pesanan masuk',
+    berbunyi: true,
+  );
+  static const _hasilPengajuan = (
+    id: 'kaata_fund_review_$_versi',
+    name: 'Hasil Pengajuan',
+    description: 'Setoran tunai & top up petty cash yang sudah diputus Finance',
+    berbunyi: true,
+  );
+
+  /// Satu-satunya yang sengaja senyap.
+  ///
+  /// Ia menemani unduhan yang sedang berjalan dan diperbarui tiap kali
+  /// persentasenya naik. Dulu perulangan di [init] memberi suara ke
+  /// SEMUA channel termasuk yang ini — dan di Android 8+ setelan channel
+  /// yang menang, bukan setelan per notifikasi. Jadi `playSound: false`
+  /// di [showDownloadProgress] tidak pernah berlaku, dan unduhan
+  /// berbunyi tiap satu persen: cara tercepat membuat orang mematikan
+  /// notifikasi KaataGo seluruhnya.
+  static const _unduhan = (
+    id: 'kaata_download_$_versi',
+    name: 'Unduhan Pembaruan',
+    description: 'Kemajuan unduhan versi baru aplikasi',
+    berbunyi: false,
+  );
+  static const _pengumuman = (
+    id: 'kaata_announcement_$_versi',
+    name: 'Pengumuman',
+    description: 'Kabar dari merchant dan pemberitahuan versi baru aplikasi',
+    berbunyi: true,
+  );
+
   static const _channels = [
-    (
-      id: 'kaata_order_status',
-      name: 'Status Pesanan',
-      description: 'Pemberitahuan saat pesanan mulai dimasak atau siap',
-    ),
-    (
-      id: 'kaata_new_order',
-      name: 'Pesanan Baru',
-      description: 'Pemberitahuan untuk dapur saat ada pesanan masuk',
-    ),
-    (
-      id: 'kaata_fund_review',
-      name: 'Hasil Pengajuan',
-      description: 'Setoran tunai & top up petty cash yang sudah diputus Finance',
-    ),
-    (
-      id: 'kaata_download',
-      name: 'Unduhan Pembaruan',
-      description: 'Kemajuan unduhan versi baru aplikasi',
-    ),
-    (
-      id: 'kaata_announcement',
-      name: 'Pengumuman',
-      description: 'Kabar dari merchant dan pemberitahuan versi baru aplikasi',
-    ),
+    _statusPesanan,
+    _pesananBaru,
+    _hasilPengajuan,
+    _unduhan,
+    _pengumuman,
+  ];
+
+  /// Channel dari versi sebelumnya, dibuang saat aplikasi dibuka.
+  ///
+  /// Tanpa ini pemakainya melihat dua "Pesanan Baru" di Setelan HP —
+  /// satu yang lama dan bisu, satu yang baru — dan tidak ada cara
+  /// menebak mana yang sedang dipakai.
+  static const _idUsang = [
+    'kaata_order_status',
+    'kaata_new_order',
+    'kaata_fund_review',
+    'kaata_download',
+    'kaata_announcement',
   ];
 
   static const _sound = RawResourceAndroidNotificationSound('kaata_notif');
@@ -104,10 +160,12 @@ class NotificationService {
             c.id,
             c.name,
             description: c.description,
-            importance: Importance.high, // banner + bunyi
-            sound: _sound,
-            playSound: true,
-            enableVibration: true,
+            // Yang menemani unduhan tidak ikut berbunyi, dan di Android
+            // 8+ hanya di sinilah hal itu bisa ditentukan.
+            importance: c.berbunyi ? Importance.high : Importance.low,
+            sound: c.berbunyi ? _sound : null,
+            playSound: c.berbunyi,
+            enableVibration: c.berbunyi,
           ),
         );
       } catch (e) {
@@ -122,11 +180,26 @@ class NotificationService {
             c.id,
             c.name,
             description: c.description,
-            importance: Importance.high,
-            playSound: true,
-            enableVibration: true,
+            importance: c.berbunyi ? Importance.high : Importance.low,
+            playSound: c.berbunyi,
+            enableVibration: c.berbunyi,
           ),
         );
+      }
+    }
+
+    // Channel versi sebelumnya dibuang SESUDAH yang baru terbentuk.
+    //
+    // Urutannya disengaja: kalau pembuatannya gagal, yang lama masih
+    // berdiri dan notifikasinya tetap sampai — bisu, tapi sampai.
+    // Membuang lebih dulu berarti kegagalan membuat berarti tidak ada
+    // notifikasi sama sekali.
+    for (final id in _idUsang) {
+      try {
+        await android?.deleteNotificationChannel(id);
+      } catch (_) {
+        // Tidak ada yang perlu dilakukan: channel yang memang belum
+        // pernah ada juga sampai ke sini, dan itu keadaan yang benar.
       }
     }
 
@@ -150,14 +223,14 @@ class NotificationService {
     required String title,
     required String body,
   }) =>
-      _show(channel: _channels[0], id: id, title: title, body: body);
+      _show(channel: _statusPesanan, id: id, title: title, body: body);
 
   Future<void> showNewOrder({
     required int id,
     required String title,
     required String body,
   }) =>
-      _show(channel: _channels[1], id: id, title: title, body: body);
+      _show(channel: _pesananBaru, id: id, title: title, body: body);
 
   /// Kabar bahwa setoran atau top up yang diajukan sudah diputus Finance.
   ///
@@ -169,7 +242,7 @@ class NotificationService {
     required String title,
     required String body,
   }) =>
-      _show(channel: _channels[2], id: id, title: title, body: body);
+      _show(channel: _hasilPengajuan, id: id, title: title, body: body);
 
   /// Pengumuman — dari resto maupun dari sistem.
   Future<void> showAnnouncement({
@@ -180,7 +253,7 @@ class NotificationService {
     String? restoId,
   }) =>
       _show(
-        channel: _channels[3],
+        channel: _pengumuman,
         id: id,
         title: title,
         body: body,
@@ -234,8 +307,8 @@ class NotificationService {
         percent == null ? 'Sedang berjalan…' : '$percent%',
         NotificationDetails(
           android: AndroidNotificationDetails(
-            'kaata_download',
-            'Unduhan Pembaruan',
+            _unduhan.id,
+            _unduhan.name,
             channelDescription: 'Kemajuan unduhan versi baru aplikasi',
             icon: 'ic_notification',
             // Tanpa suara dan tanpa getar: ini kabar yang menemani,
@@ -279,8 +352,8 @@ class NotificationService {
         'Ketuk untuk memasang versi terbaru KaataGo',
         NotificationDetails(
           android: AndroidNotificationDetails(
-            'kaata_download',
-            'Unduhan Pembaruan',
+            _unduhan.id,
+            _unduhan.name,
             icon: 'ic_notification',
             importance: Importance.high,
             priority: Priority.high,
@@ -375,7 +448,8 @@ class NotificationService {
   }
 
   Future<void> _show({
-    required ({String id, String name, String description}) channel,
+    required ({String id, String name, String description, bool berbunyi})
+        channel,
     required int id,
     required String title,
     required String body,
