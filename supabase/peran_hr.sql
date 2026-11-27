@@ -206,24 +206,25 @@ commit;
 -- ─────────────────────────────────────────────────────────────────────
 -- 6. Foto acuan ikut terbuka untuk HR
 -- ─────────────────────────────────────────────────────────────────────
+--
+-- Definisinya SENGAJA tidak di sini lagi.
+--
+-- Bagian ini dulu menyatakan ulang `foto_acuan_wajah` hanya untuk
+-- menambahkan 'hr' ke daftar perannya. `supabase/wajah_geometri.sql`
+-- sudah memuat 'hr' DAN kolom `foto_base64` yang menyusul sesudahnya —
+-- jadi salinan di sini bukan cuma berlebih, ia lebih tua.
+--
+-- Dan ia berjalan SESUDAH wajah_geometri.sql dalam urutan
+-- `scripts/gabung_sql.sh`. Artinya pasang-baru akan berhenti di sini:
+-- `create or replace` tidak bisa mengubah bentuk kembalian, dan
+-- kembalian di sini kehilangan satu kolom. Yang sudah terpasang tidak
+-- terpengaruh — galatnya cuma menunggu orang pertama yang memasang dari
+-- nol.
+--
+-- Pemilik sahnya `supabase/wajah_geometri.sql`. Haknya tetap diberikan
+-- di sini karena di sinilah peran HR dibahas.
 
 begin;
-
-create or replace function foto_acuan_wajah(p_resto_id text)
-returns table (employee_email text, foto_url text, registered_at timestamptz)
-language sql
-stable
-security definer
-set search_path = public
-as $$
-  select f.employee_email, f.foto_url, f.registered_at
-  from employee_faces f
-  where f.resto_id = p_resto_id
-    and (is_super_admin()
-         or is_resto_employee(p_resto_id,
-              array['owner', 'admin', 'finance', 'hr'])
-         or lower(f.employee_email) = lower(coalesce(auth.jwt() ->> 'email', '')));
-$$;
 
 grant execute on function foto_acuan_wajah(text) to authenticated;
 

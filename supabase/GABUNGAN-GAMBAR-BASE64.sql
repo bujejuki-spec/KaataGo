@@ -4,17 +4,13 @@
 --
 -- ⚠ POTRET SEKALI PAKAI, bukan sumber kebenaran.
 --
--- Isinya salinan empat berkas di `supabase/` pada saat gabungan ini
+-- Isinya salinan lima berkas di `supabase/` pada saat gabungan ini
 -- dibuat. Begitu salah satunya diubah, berkas ini basi — dan berkas
 -- gabungan yang basi berbahaya justru karena ia tetap berjalan tanpa
 -- galat, lalu menimpa fungsi dengan versi lama.
 --
--- Sumbernya tetap berkas aslinya. Kalau perlu gabungan baru, susun
--- ulang dari sana dengan urutan yang sama seperti di bawah.
---
--- Gabungan empat berkas. Aman diulang: semuanya memakai
--- `create or replace`, `add column if not exists`, dan `drop policy if
--- exists`.
+-- Aman diulang: semuanya memakai `create or replace`, `add column if
+-- not exists`, dan `drop policy if exists`.
 --
 -- ── Urutannya BUKAN sembarang ─────────────────────────────────────────
 --
@@ -25,18 +21,72 @@
 --
 -- Karena itu yang menambah kolom berjalan paling dulu:
 --
---   1. gambar_base64           kolom base64 + tabel product_photos
---   2. wajah_geometri          _mirip_geometri, ambang, foto_acuan_wajah
---   3. wajah_facenet           daftar_wajah & _absen (menimpa yang di 2)
---   4. bukti_bayar_qris_statis ember lama + kebijakannya
+--   1. paket_langganan         daftar menu UAM (Status Pesanan)
+--   2. gambar_base64           kolom base64 + tabel product_photos
+--   3. wajah_geometri          ambang, _mirip_geometri, foto_acuan_wajah
+--   4. wajah_facenet           daftar_wajah & _absen (menimpa yang di 3)
+--   5. bukti_bayar_qris_statis ember lama + kebijakannya
 --
--- Bagian 3 memang menimpa sebagian isi bagian 2, dan itu disengaja:
--- bagian 2 masih memuat versi lama fungsi absen yang dipakai cara
--- pencocokan sebelumnya.
+-- Bagian 4 memang menimpa sebagian isi bagian 3, dan itu disengaja:
+-- bagian 3 masih memuat versi lama fungsi absen dari cara pencocokan
+-- sebelumnya.
 
+
+-- ════════════════════════════════════════════════════════════════════
+-- BAGIAN 1 dari 5 — paket_langganan.sql — HANYA daftar menunya
+-- ════════════════════════════════════════════════════════════════════
+--
+-- Yang berubah di berkas itu cuma satu nama menu: 'Layar Dapur' jadi
+-- 'Status Pesanan'. Jadi yang dibawa ke sini cuma fungsi yang memuatnya.
+--
+-- ── Kenapa bukan seluruh berkasnya ────────────────────────────────
+--
+-- `paket_langganan.sql` juga memuat `keadaan_langganan`, dan versi di
+-- sana sudah ketinggalan: ia belum mengenal penghentian langganan.
+-- Membawanya ke sini berarti mengembalikan fungsi itu ke versi lama —
+-- dan kalau bentuk kembaliannya kebetulan sama, Postgres akan
+-- melakukannya tanpa satu pun galat, lalu fitur berhenti berlangganan
+-- mati diam-diam. Yang menyelamatkan kita kali ini justru galatnya:
+-- bentuk kembaliannya memang sudah berbeda.
+--
+-- Pemilik sahnya `supabase/hentikan_langganan.sql`, dan ia sudah
+-- terpasang. Tidak ada alasan menjalankan ulang 760 baris skema yang
+-- tidak berubah hanya untuk mengganti satu nama menu.
+
+begin;
+
+-- Seluruh menu yang dikenal aplikasi.
+--
+-- Disebut di sini, bukan dibaca dari mana-mana: basis data tidak bisa
+-- melihat katalog menu di dalam APK. Yang menjaga keduanya tetap sama
+-- adalah pengujian di sisi aplikasi (`test/paket_langganan_test.dart`),
+-- yang gagal begitu ada menu di katalog yang belum disebut di sini.
+create or replace function _menu_semua()
+returns text[]
+language sql
+immutable
+as $$
+  select array[
+    'Shift Kasir', 'Kasir / Input Pesanan', 'Layar Pelanggan',
+    'Pending Payment', 'Riwayat Kasir', 'Pesanan Masuk', 'Status Pesanan',
+    'Laporan Penjualan', 'Pemasukan', 'Saldo & Pengeluaran',
+    'Setor Saldo Cash', 'Terima Cash Pickup', 'Saldo Perusahaan',
+    'Pembayaran dari KaataGo', 'Periksa Pembukuan', 'Tutup Buku',
+    'Rekonsiliasi Bank', 'Mapping GL Account', 'Jurnal GL',
+    'Laporan Transaksi', 'Pencairan Gateway', 'Tagihan Langganan',
+    'Kelola Produk', 'Kelola Karyawan', 'Diskon', 'Kirim Pengumuman',
+    'Kategori', 'Level', 'Info Merchant', 'QR Meja',
+    'Pengaturan Pembayaran', 'Rekening Perusahaan',
+    'Absensi', 'Absensi Karyawan', 'Payroll'
+  ];
+$$;
+
+revoke all on function _menu_semua() from public, anon;
+
+commit;
 
 -- ═══════════════════════════════════════════════════════════════════
--- gambar_base64.sql
+-- BAGIAN 2 dari 5 — gambar_base64.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - gambar unggahan disimpan sebagai base64, bukan di Storage.
@@ -346,7 +396,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- wajah_geometri.sql
+-- BAGIAN 3 dari 5 — wajah_geometri.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - mencocokkan wajah dari bentuknya, tanpa model terlatih.
@@ -763,7 +813,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- wajah_facenet.sql
+-- BAGIAN 4 dari 5 — wajah_facenet.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - wajah dicocokkan dengan model terlatih, dan didaftarkan
@@ -1338,7 +1388,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- bukti_bayar_qris_statis.sql
+-- BAGIAN 5 dari 5 — bukti_bayar_qris_statis.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - pelanggan membayar QRIS Statis dari HP-nya sendiri.
@@ -1475,32 +1525,3 @@ commit;
 --
 -- Yang benar: ember-nya TIDAK publik, dan ada tiga kebijakan —
 -- menulis, membaca, menimpa.
-
-
--- ═══════════════════════════════════════════════════════════════════
--- MEMERIKSANYA — jalankan terpisah sesudah berkas di atas selesai
--- ═══════════════════════════════════════════════════════════════════
---
--- 1. Kolom base64 sudah ada di enam tempat:
---
---      select table_name, column_name
---      from information_schema.columns
---      where column_name like '%base64%' and table_schema = 'public'
---      order by table_name;
---
--- 2. Tabel foto menu berdiri sendiri, dan baris produk tetap RINGAN:
---
---      select pg_size_pretty(avg(pg_column_size(p.*))::bigint) from products p;
---
---    Kalau angka itu melonjak, fotonya kembali masuk ke baris produk —
---    dan seluruh album akan terkirim ulang tiap kali stok berubah.
---
--- 3. Fungsi absen tinggal SATU tanda tangan masing-masing:
---
---      select p.proname, pg_get_function_identity_arguments(p.oid)
---      from pg_proc p join pg_namespace n on n.oid = p.pronamespace
---      where n.nspname = 'public'
---        and p.proname in ('_absen', 'daftar_wajah', 'foto_acuan_wajah')
---      order by 1;
---
---    `foto_acuan_wajah` harus mengembalikan foto_base64 DAN foto_url.

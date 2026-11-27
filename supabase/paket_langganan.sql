@@ -276,7 +276,7 @@ immutable
 as $$
   select array[
     'Shift Kasir', 'Kasir / Input Pesanan', 'Layar Pelanggan',
-    'Pending Payment', 'Riwayat Kasir', 'Pesanan Masuk', 'Layar Dapur',
+    'Pending Payment', 'Riwayat Kasir', 'Pesanan Masuk', 'Status Pesanan',
     'Laporan Penjualan', 'Pemasukan', 'Saldo & Pengeluaran',
     'Setor Saldo Cash', 'Terima Cash Pickup', 'Saldo Perusahaan',
     'Pembayaran dari KaataGo', 'Periksa Pembukuan', 'Tutup Buku',

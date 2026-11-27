@@ -27,8 +27,11 @@ void main() {
   // kelompok — dan menghitungnya dari berkas yang sama yang diperiksa
   // berarti tidak menjaga apa pun. Jadi tiap penambahan menu memang
   // harus lewat sini, satu baris, dengan alasannya.
+  // Kasir naik satu oleh "Status Pesanan": dialah yang menyatakan
+  // sebuah pesanan mulai disiapkan, jadi dia juga yang paling sering
+  // ditanya pelanggan sudah sampai mana.
   const jumlahMenu = {
-    'kasir': 11,
+    'kasir': 12,
     'admin': 19,
     'finance': 21,
     'super_admin': 13,

@@ -397,27 +397,37 @@ class OrderRepository {
         .stream(primaryKey: ['id'])
         .eq('resto_id', restoId)
         .limit(batasAliran)
-        .map((rows) {
-          final kini = DateTime.now().toWib();
-          final nomor = <int>[];
-          for (final r in rows) {
-            final o = CustomerOrder.fromMap(r);
-            if (o.kitchenStatus != KitchenStatus.onProgress) continue;
-            if (o.orderNo == null) continue;
-            // Hari ini saja. Nomor antrean diulang tiap hari, jadi
-            // nomor kemarin yang tertinggal di status "diproses" akan
-            // tampil sebagai antrean yang sedang dikerjakan sekarang.
-            final w = o.createdAt.toWib();
-            if (w.year != kini.year ||
-                w.month != kini.month ||
-                w.day != kini.day) {
-              continue;
-            }
-            nomor.add(o.orderNo!);
-          }
-          nomor.sort();
-          return nomor;
-        });
+        .map((rows) => nomorDisiapkan(
+              rows.map(CustomerOrder.fromMap).toList(),
+              DateTime.now().toWib(),
+            ));
+  }
+
+  /// Nomor antrean yang sedang disiapkan, disaring dari daftar pesanan.
+  ///
+  /// Berdiri sebagai fungsi murni supaya bisa diuji: di dalam pemetaan
+  /// aliran, satu-satunya cara memeriksanya adalah punya Supabase yang
+  /// berjalan — dan yang tidak bisa diuji di sini adalah yang halus.
+  ///
+  /// Yang halus di sini soal tanggal. Nomor antrean diulang tiap hari,
+  /// jadi pesanan KEMARIN yang tertinggal di status "diproses" — tidak
+  /// pernah ditandai selesai sebelum tutup — akan tampil sebagai
+  /// antrean yang sedang dikerjakan sekarang. Pelanggan yang memegang
+  /// nomor 3 melihat "sedang disiapkan #003" lalu berdiri menghampiri
+  /// kasir, padahal itu nomor 3 milik hari kemarin.
+  static List<int> nomorDisiapkan(List<CustomerOrder> pesanan, DateTime kini) {
+    final nomor = <int>[];
+    for (final o in pesanan) {
+      if (o.kitchenStatus != KitchenStatus.onProgress) continue;
+      if (o.orderNo == null) continue;
+      final w = o.createdAt.toWib();
+      if (w.year != kini.year || w.month != kini.month || w.day != kini.day) {
+        continue;
+      }
+      nomor.add(o.orderNo!);
+    }
+    nomor.sort();
+    return nomor;
   }
 
   Future<List<CustomerOrder>> getByIds(List<String> ids) async {

@@ -37,6 +37,32 @@ Formatnya dibaca `scripts/release.sh`: judul `## <versi>`, lalu
 poin-poinnya. Versi yang tidak punya bagiannya di sini tetap terbit,
 hanya pengumumannya memakai kalimat umum.
 
+## 3.13.3
+
+- Peran **Chef kini bernama Waiters**. Yang membuka layarnya mengantar
+  makanan, bukan memutuskan mana yang mulai dikerjakan
+- Menu **Layar Dapur kini bernama Status Pesanan**, dan tinggal dua tab:
+  Diproses dan Selesai. Nomor antreannya dibesarkan, lengkap dengan
+  sudah berapa lama pesanan itu menunggu dan berapa barangnya yang siap
+- **Kasir yang menyatakan pesanan mulai disiapkan**, di tempat
+  pesanannya diterima. Tombolnya hanya muncul untuk pesanan yang sudah
+  lunas. Kasir juga kini bisa membuka Status Pesanan
+- Pelanggan bisa **membayar QRIS Statis dari HP-nya sendiri** lalu
+  mengunggah bukti bayarnya. Buktinya tampil di Pending Payment, dan
+  untuk pesanan itu mitra tidak ditanya lagi cara bayarnya — pembayaran
+  QRIS tidak bisa lagi tercatat sebagai tunai
+- **Riwayat pesanan pelanggan yang memesan dari QR meja tidak lagi
+  hilang** saat halamannya dimuat ulang
+- Foto yang diunggah kini **otomatis dikecilkan**, dan hanya JPG dan PNG
+  yang diterima
+- Beranda: **grup yang isinya cuma satu menu tidak dibungkus grup lagi**,
+  dan laporan-laporan dikumpulkan ke grup baru bernama **Report**
+- **Notifikasi pesanan masuk sekarang berbunyi**
+- **QRIS Dinamis dan Virtual Account belum tersedia**, dan sekarang
+  menyebutkannya apa adanya saat dicoba — penyedia pembayarannya belum
+  siap
+- Perbaikan bug dan penyempurnaan tampilan
+
 ## 3.13.2
 
 - Header di beranda dibuat lebih ringkas, jadi menu kerja tidak lagi

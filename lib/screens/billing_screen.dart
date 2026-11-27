@@ -13,6 +13,7 @@ import '../models/billing.dart';
 import '../theme.dart';
 import '../utils/photo_picker.dart';
 import '../widgets/app_toast.dart';
+import '../widgets/dialog_belum_tersedia.dart';
 import '../widgets/responsive.dart';
 import '../widgets/dialog_actions.dart';
 
@@ -128,7 +129,31 @@ class _BillingScreenState extends State<BillingScreen> {
     }
   }
 
+  /// Penyedia pembayarannya sudah siap menerbitkan Virtual Account.
+  ///
+  /// Sengaja getter, bukan `const`: dengan const, analyzer menandai
+  /// seluruh sisa fungsinya sebagai kode mati dan satu-satunya cara
+  /// meredamnya adalah menghapus kodenya. Yang dihapus harus ditulis
+  /// ulang dari nol saat penyedianya siap — padahal ia sudah benar.
+  bool get _vaSiap => false;
+
   Future<void> _mintaVa(BillingInvoice inv) async {
+    // Virtual Account ditahan selama penyedia pembayarannya belum siap.
+    //
+    // Ditahan SEBELUM pemilihan bank, bukan sesudahnya: menyuruh orang
+    // memilih bank lebih dulu lalu memberitahunya tidak bisa adalah dua
+    // langkah yang keduanya terbuang.
+    //
+    // Tombolnya sengaja tidak disembunyikan. Tagihan yang tidak punya
+    // satu pun cara bayar terlihat seperti layar yang gagal dimuat, dan
+    // yang membacanya menghubungi KaataGo Support untuk menanyakan hal
+    // yang bisa dijawab layarnya sendiri.
+    if (!_vaSiap) {
+      await dialogBelumTersedia(context, nama: 'Virtual Account');
+      return;
+    }
+    if (!mounted) return;
+
     final bank = await showDialog<String>(
       context: context,
       builder: (_) => const _DialogPilihBank(),

@@ -214,6 +214,9 @@ class _ChefHomeScreenState extends State<ChefHomeScreen> {
                   key: ValueKey(Theme.of(context).brightness),
                   orders: orders,
                   actionsFor: _buildActions,
+                  // Layar ini dibaca sambil berjalan membawa piring,
+                  // bukan sambil duduk menelusuri daftar.
+                  nomorBesar: true,
                 );
               }).toList(),
             );

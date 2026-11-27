@@ -17,7 +17,7 @@
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 1 dari 103 — employee_surrogate_key.sql
+-- BAGIAN 1 dari 113 — employee_surrogate_key.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — email karyawan jadi bisa diubah.
@@ -68,7 +68,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 2 dari 103 — promo_banner.sql
+-- BAGIAN 2 dari 113 — promo_banner.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — banner promo per resto.
@@ -130,7 +130,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 3 dari 103 — rilis_setor_petty_inbox.sql
+-- BAGIAN 3 dari 113 — rilis_setor_petty_inbox.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — setoran & top up petty cash berjenjang, GL Suspense, dan
@@ -617,7 +617,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 4 dari 103 — customer_cash_payment.sql
+-- BAGIAN 4 dari 113 — customer_cash_payment.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pelanggan boleh memilih bayar tunai di kasir.
@@ -687,7 +687,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 5 dari 103 — push_notifications.sql
+-- BAGIAN 5 dari 113 — push_notifications.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — notifikasi yang tetap sampai walau aplikasinya tertutup.
@@ -1035,7 +1035,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 6 dari 103 — announcement_categories.sql
+-- BAGIAN 6 dari 113 — announcement_categories.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pengumuman dibagi dua jenis, dan admin resto boleh mengirim.
@@ -1124,7 +1124,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 7 dari 103 — fix_device_tokens_rls.sql
+-- BAGIAN 7 dari 113 — fix_device_tokens_rls.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pendaftaran token push lewat fungsi, bukan tulis langsung.
@@ -1243,7 +1243,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 8 dari 103 — push_trigger_pg_net.sql
+-- BAGIAN 8 dari 113 — push_trigger_pg_net.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — panggil Edge Function langsung dari database, tanpa webhook.
@@ -1356,7 +1356,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 9 dari 103 — payment_gateway.sql
+-- BAGIAN 9 dari 113 — payment_gateway.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — QRIS sungguhan lewat Xendit.
@@ -1510,7 +1510,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 10 dari 103 — gateway_settlement.sql
+-- BAGIAN 10 dari 113 — gateway_settlement.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pencairan dana dari payment gateway.
@@ -1693,7 +1693,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 11 dari 103 — resto_payment_accounts.sql
+-- BAGIAN 11 dari 113 — resto_payment_accounts.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pencairan langsung ke rekening masing-masing resto.
@@ -1786,7 +1786,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 12 dari 103 — counter_charge.sql
+-- BAGIAN 12 dari 113 — counter_charge.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — tagihan QRIS di meja kasir.
@@ -1823,7 +1823,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 13 dari 103 — announcement_push.sql
+-- BAGIAN 13 dari 113 — announcement_push.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pengumuman ikut membunyikan HP.
@@ -1880,7 +1880,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 14 dari 103 — cash_payment_expiry.sql
+-- BAGIAN 14 dari 113 — cash_payment_expiry.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pesanan tunai yang tidak dilunasi di kasir hangus sendiri.
@@ -1966,7 +1966,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 15 dari 103 — level_groups.sql
+-- BAGIAN 15 dari 113 — level_groups.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — tiap resto menyusun sendiri kelompok levelnya.
@@ -2092,7 +2092,7 @@ create trigger trg_seed_level_groups
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 16 dari 103 — resto_order_types.sql
+-- BAGIAN 16 dari 113 — resto_order_types.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — resto menentukan sendiri melayani Dine In, Take Away, atau
@@ -2130,7 +2130,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 17 dari 103 — product_out_of_stock.sql
+-- BAGIAN 17 dari 113 — product_out_of_stock.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — ketersediaan produk ditandai, bukan dihitung.
@@ -2174,7 +2174,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 18 dari 103 — discounts.sql
+-- BAGIAN 18 dari 113 — discounts.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — diskon: per menu (termasuk bundling) atau minimum belanja.
@@ -2384,7 +2384,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 19 dari 103 — promo_banner_period.sql
+-- BAGIAN 19 dari 113 — promo_banner_period.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — banner promo punya masa berlaku.
@@ -2412,7 +2412,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 20 dari 103 — default_gl_accounts.sql
+-- BAGIAN 20 dari 113 — default_gl_accounts.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — resto baru langsung punya bagan akun dan tarif pajaknya.
@@ -2584,7 +2584,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 21 dari 103 — gateway_account_super_admin.sql
+-- BAGIAN 21 dari 113 — gateway_account_super_admin.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pengenal sub-akun Xendit jadi urusan Super Admin saja.
@@ -2625,7 +2625,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 22 dari 103 — announcement_audience.sql
+-- BAGIAN 22 dari 113 — announcement_audience.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pengumuman resto memilih sasarannya: karyawan, pelanggan,
@@ -2698,7 +2698,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 23 dari 103 — kasir_journal_read.sql
+-- BAGIAN 23 dari 113 — kasir_journal_read.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — kasir boleh melihat jurnal dari catatan yang dia buat.
@@ -2734,7 +2734,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 24 dari 103 — cancel_order.sql
+-- BAGIAN 24 dari 113 — cancel_order.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pelanggan boleh membatalkan pesanannya sendiri selama
@@ -2826,7 +2826,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 25 dari 103 — settled_at_counter.sql
+-- BAGIAN 25 dari 113 — settled_at_counter.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — menandai pesanan mandiri yang uangnya diterima di meja
@@ -2868,7 +2868,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 26 dari 103 — discount_min_qty.sql
+-- BAGIAN 26 dari 113 — discount_min_qty.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — diskon dengan syarat jumlah pembelian.
@@ -2898,7 +2898,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 27 dari 103 — discount_product_rules.sql
+-- BAGIAN 27 dari 113 — discount_product_rules.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — syarat jumlah menempel di tiap menu, bukan di promonya.
@@ -2951,7 +2951,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 28 dari 103 — billing.sql
+-- BAGIAN 28 dari 113 — billing.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — langganan bulanan resto.
@@ -3367,7 +3367,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 29 dari 103 — billing_va.sql
+-- BAGIAN 29 dari 113 — billing_va.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — tagihan langganan dibayar lewat Virtual Account Xendit.
@@ -3537,7 +3537,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 30 dari 103 — platform_finance.sql
+-- BAGIAN 30 dari 113 — platform_finance.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — keuangan KaataGo sendiri, terpisah dari keuangan resto.
@@ -3895,7 +3895,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 31 dari 103 — resto_soft_delete.sql
+-- BAGIAN 31 dari 113 — resto_soft_delete.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — menghapus resto tanpa membuang datanya.
@@ -4074,7 +4074,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 32 dari 103 — billing_discount_apply.sql
+-- BAGIAN 32 dari 113 — billing_discount_apply.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — diskon ikut memotong tagihan yang sudah terbit.
@@ -4241,7 +4241,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 33 dari 103 — billing_journal_gross.sql
+-- BAGIAN 33 dari 113 — billing_journal_gross.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pendapatan langganan dicatat sebesar harga penuh.
@@ -4392,7 +4392,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 34 dari 103 — gl_discount_backfill.sql
+-- BAGIAN 34 dari 113 — gl_discount_backfill.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — GL Diskon terisi bawaannya di tiap resto.
@@ -4454,7 +4454,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 35 dari 103 — platform_gl_renumber.sql
+-- BAGIAN 35 dari 113 — platform_gl_renumber.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — nomor akun penyewa platform dipindah ke golongan 11xxxxx.
@@ -4554,7 +4554,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 36 dari 103 — product_toppings.sql
+-- BAGIAN 36 dari 113 — product_toppings.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — topping per menu, berikut harga dan batas pilihnya.
@@ -4596,7 +4596,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 37 dari 103 — vouchers.sql
+-- BAGIAN 37 dari 113 — vouchers.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — voucher untuk pelanggan, dananya benar-benar berpindah.
@@ -5083,7 +5083,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 38 dari 103 — voucher_payouts.sql
+-- BAGIAN 38 dari 113 — voucher_payouts.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — voucher yang dipakai pelanggan dibayarkan sungguhan ke resto.
@@ -5426,7 +5426,7 @@ select cron.schedule('settle-voucher-payouts', '*/15 * * * *',
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 39 dari 103 — voucher_announcement.sql
+-- BAGIAN 39 dari 113 — voucher_announcement.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — voucher yang terbit langsung mengabari pelanggan.
@@ -5554,7 +5554,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 40 dari 103 — voucher_manage.sql
+-- BAGIAN 40 dari 113 — voucher_manage.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — banner voucher, dan menghapus batch yang tidak jadi.
@@ -5742,7 +5742,7 @@ revoke all on function delete_voucher_batch(text) from public, anon;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 41 dari 103 — market_report.sql
+-- BAGIAN 41 dari 113 — market_report.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — laporan pasar untuk Super Admin.
@@ -5901,7 +5901,7 @@ revoke all on function report_idle_restos(integer) from public, anon;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 42 dari 103 — billing_due_day.sql
+-- BAGIAN 42 dari 113 — billing_due_day.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — tanggal tagih 29, 30, 31, dan jatuh tempo berikutnya.
@@ -6057,7 +6057,7 @@ $$;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 43 dari 103 — balance_topup.sql
+-- BAGIAN 43 dari 113 — balance_topup.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — setoran modal ke saldo utama.
@@ -6227,7 +6227,7 @@ create trigger trg_log_balance_topup
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 44 dari 103 — voucher_new_customer.sql
+-- BAGIAN 44 dari 113 — voucher_new_customer.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — voucher khusus pengguna baru.
@@ -6462,7 +6462,7 @@ $$;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 45 dari 103 — qris_receipt_fields.sql
+-- BAGIAN 45 dari 113 — qris_receipt_fields.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — rincian kuitansi QRIS dari Xendit, jadi kolomnya sendiri.
@@ -6599,7 +6599,7 @@ where c.id = d.id;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 46 dari 103 — order_number.sql
+-- BAGIAN 46 dari 113 — order_number.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — nomor pesanan harian per resto.
@@ -6748,7 +6748,7 @@ do update set last_no = greatest(order_counters.last_no, excluded.last_no);
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 47 dari 103 — customer_display.sql
+-- BAGIAN 47 dari 113 — customer_display.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — layar pelanggan di meja kasir.
@@ -6896,7 +6896,7 @@ end $$;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 48 dari 103 — resto_facilities.sql
+-- BAGIAN 48 dari 113 — resto_facilities.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — fasilitas merchant.
@@ -6939,7 +6939,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 49 dari 103 — merchant_reviews.sql
+-- BAGIAN 49 dari 113 — merchant_reviews.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — penilaian merchant oleh pelanggan, dan jam bukanya.
@@ -7055,7 +7055,7 @@ $$;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 50 dari 103 — review_prompt.sql
+-- BAGIAN 50 dari 113 — review_prompt.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — mengajak pelanggan menilai, sejam sesudah membayar.
@@ -7170,7 +7170,7 @@ select cron.schedule('review-prompts', '*/20 * * * *',
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 51 dari 103 — order_cancel_kitchen.sql
+-- BAGIAN 51 dari 113 — order_cancel_kitchen.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pesanan yang batal berhenti punya status dapur.
@@ -7252,7 +7252,7 @@ where payment_status in ('cancelled', 'expired')
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 52 dari 103 — product_badges_reviews.sql
+-- BAGIAN 52 dari 113 — product_badges_reviews.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — label menu, penilaian menu, dan angka terjualnya.
@@ -7410,7 +7410,7 @@ grant execute on function product_stats(text) to anon, authenticated;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 53 dari 103 — cashier_shift.sql
+-- BAGIAN 53 dari 113 — cashier_shift.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — buka dan tutup shift kasir.
@@ -7690,7 +7690,7 @@ grant execute on function shift_expected_cash(uuid, timestamptz) to authenticate
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 54 dari 103 — product_review_per_order.sql
+-- BAGIAN 54 dari 113 — product_review_per_order.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — penilaian menu menempel pada pesanannya, bukan pada menunya.
@@ -7789,7 +7789,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 55 dari 103 — cash_variance.sql
+-- BAGIAN 55 dari 113 — cash_variance.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — GL Selisih Kasir, dan pelunasannya.
@@ -8102,7 +8102,7 @@ grant execute on function settle_cash_variance(uuid, text) to authenticated;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 56 dari 103 — cash_variance_lebih.sql
+-- BAGIAN 56 dari 113 — cash_variance_lebih.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — selisih lebih shift kasir jadi titipan yang ditelusuri.
@@ -8465,7 +8465,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 57 dari 103 — backfill_selisih_lebih.sql
+-- BAGIAN 57 dari 113 — backfill_selisih_lebih.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — melahirkan baris kerja untuk selisih lebih yang terlanjur
@@ -8513,7 +8513,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 58 dari 103 — buka_shift_terkunci.sql
+-- BAGIAN 58 dari 113 — buka_shift_terkunci.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — siapa yang boleh membuka shift, dan kapan dia belum boleh.
@@ -8610,7 +8610,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 59 dari 103 — perbaiki_deskripsi_jurnal.sql
+-- BAGIAN 59 dari 113 — perbaiki_deskripsi_jurnal.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - membetulkan deskripsi jurnal yang huruf pisahnya rusak.
@@ -8755,7 +8755,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 60 dari 103 — stok_terkunci.sql
+-- BAGIAN 60 dari 113 — stok_terkunci.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - stok yang benar-benar menahan pesanan.
@@ -9009,7 +9009,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 61 dari 103 — foto_menu_storage.sql
+-- BAGIAN 61 dari 113 — foto_menu_storage.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - foto menu pindah dari kolom tabel ke Storage.
@@ -9162,7 +9162,7 @@ create policy "menu-foto: hapus karyawan" on storage.objects
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 62 dari 103 — saldo_cash_pembanding.sql
+-- BAGIAN 62 dari 113 — saldo_cash_pembanding.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - buka dan tutup shift dibandingkan dengan Saldo Cash.
@@ -9353,7 +9353,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 63 dari 103 — merchant_email.sql
+-- BAGIAN 63 dari 113 — merchant_email.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - alamat surel merchant.
@@ -9377,7 +9377,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 64 dari 103 — tagihan_ikut_tanggal.sql
+-- BAGIAN 64 dari 113 — tagihan_ikut_tanggal.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - tagihan yang belum waktunya ikut hilang saat tanggalnya diubah.
@@ -9508,7 +9508,7 @@ $$;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 65 dari 103 — qris_hangus.sql
+-- BAGIAN 65 dari 113 — qris_hangus.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - pesanan QRIS yang tidak dibayar ikut hangus.
@@ -9628,7 +9628,7 @@ grant execute on function bangkitkan_pesanan_terbayar(uuid) to authenticated;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 66 dari 103 — qris_statis.sql
+-- BAGIAN 66 dari 113 — qris_statis.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - QRIS Statis, dan metode bayar yang bisa dipilih merchant.
@@ -9855,7 +9855,7 @@ create policy "qris-statis: hapus karyawan" on storage.objects
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 67 dari 103 — tutup_buku_harian.sql
+-- BAGIAN 67 dari 113 — tutup_buku_harian.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - tutup buku harian merchant.
@@ -10149,7 +10149,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 68 dari 103 — rekening_perusahaan.sql
+-- BAGIAN 68 dari 113 — rekening_perusahaan.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - rekening perusahaan berdiri sendiri, tidak menempel di resto.
@@ -10386,7 +10386,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 69 dari 103 — setor_dan_pickup.sql
+-- BAGIAN 69 dari 113 — setor_dan_pickup.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - setoran menyebut rekeningnya, dan cash pickup.
@@ -10498,7 +10498,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 70 dari 103 — mutasi_bank.sql
+-- BAGIAN 70 dari 113 — mutasi_bank.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - mutasi rekening, dan mencocokkannya dengan yang tercatat.
@@ -10853,7 +10853,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 71 dari 103 — cara_tagih.sql
+-- BAGIAN 71 dari 113 — cara_tagih.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - cara menagih merchant: Virtual Account atau transfer.
@@ -10965,7 +10965,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 72 dari 103 — rekening_owner.sql
+-- BAGIAN 72 dari 113 — rekening_owner.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - Owner dan Finance benar-benar bisa menambah rekening.
@@ -11119,7 +11119,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 73 dari 103 — shift_privasi.sql
+-- BAGIAN 73 dari 113 — shift_privasi.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - kasir melihat shiftnya sendiri, bukan shift orang lain.
@@ -11220,7 +11220,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 74 dari 103 — terima_cash_pickup.sql
+-- BAGIAN 74 dari 113 — terima_cash_pickup.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - serah terima cash pickup, dan dua akun GL untuknya.
@@ -11524,7 +11524,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 75 dari 103 — uam_menu.sql
+-- BAGIAN 75 dari 113 — uam_menu.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - parameter akses menu per resto, per peran.
@@ -11614,7 +11614,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 76 dari 103 — layar_pelanggan_rinci.sql
+-- BAGIAN 76 dari 113 — layar_pelanggan_rinci.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - layar pelanggan menampilkan rincian, bukan cuma nominal.
@@ -11752,7 +11752,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 77 dari 103 — stok_lepas_10_menit.sql
+-- BAGIAN 77 dari 113 — stok_lepas_10_menit.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - stok yang dipesan dan tidak dibayar kembali ke rak
@@ -11826,7 +11826,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 78 dari 103 — rekening_kaatago_terbaca.sql
+-- BAGIAN 78 dari 113 — rekening_kaatago_terbaca.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - merchant benar-benar bisa membaca rekening KaataGo.
@@ -11865,7 +11865,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 79 dari 103 — jurnal_cash_pickup_benar.sql
+-- BAGIAN 79 dari 113 — jurnal_cash_pickup_benar.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - jurnal cash pickup diperbaiki, dan jalur Suspense dipulihkan.
@@ -12186,7 +12186,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 80 dari 103 — saldo_perusahaan.sql
+-- BAGIAN 80 dari 113 — saldo_perusahaan.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - Saldo Perusahaan: kas dan bank sebagai dua kantong nyata.
@@ -12677,7 +12677,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 81 dari 103 — jurnal_bank_terjadwal.sql
+-- BAGIAN 81 dari 113 — jurnal_bank_terjadwal.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - pendapatan non-tunai masuk Saldo Bank tiap jam 5 pagi WIB.
@@ -12929,7 +12929,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 82 dari 103 — backfill_saldo_bank.sql
+-- BAGIAN 82 dari 113 — backfill_saldo_bank.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - saldo bank perusahaan diisi dari penjualan non-tunai yang
@@ -13027,7 +13027,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 83 dari 103 — jurnal_selisih_ke_bank.sql
+-- BAGIAN 83 dari 113 — jurnal_selisih_ke_bank.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - selisih kasir yang dilunasi transfer ikut masuk Saldo Bank.
@@ -13214,7 +13214,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 84 dari 103 — setoran_ke_saldo_bank.sql
+-- BAGIAN 84 dari 113 — setoran_ke_saldo_bank.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - setoran tunai yang disetujui mendarat di Saldo Bank
@@ -13360,7 +13360,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 85 dari 103 — tutup_shift_sendiri.sql
+-- BAGIAN 85 dari 113 — tutup_shift_sendiri.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - shift hanya bisa ditutup oleh yang membukanya.
@@ -13455,7 +13455,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 86 dari 103 — saldo_awal.sql
+-- BAGIAN 86 dari 113 — saldo_awal.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - menyetel saldo awal kas dan rekening perusahaan.
@@ -13655,7 +13655,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 87 dari 103 — periksa_pembukuan.sql
+-- BAGIAN 87 dari 113 — periksa_pembukuan.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - pemeriksa konsistensi pembukuan.
@@ -13857,7 +13857,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 88 dari 103 — layar_pelanggan_rincian_biaya.sql
+-- BAGIAN 88 dari 113 — layar_pelanggan_rincian_biaya.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - layar pelanggan menyebut dari mana totalnya berasal.
@@ -13991,7 +13991,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 89 dari 103 — merchant_report.sql
+-- BAGIAN 89 dari 113 — merchant_report.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — laporan penjualan untuk merchant sendiri.
@@ -14212,7 +14212,7 @@ grant execute on function report_sales_summary(text, date, date) to authenticate
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 90 dari 103 — laporan_grafik.sql
+-- BAGIAN 90 dari 113 — laporan_grafik.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - deret waktu dan pembagian untuk grafik Laporan Penjualan.
@@ -14422,7 +14422,7 @@ grant execute on function report_sales_by_category(text, date, date)
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 91 dari 103 — absensi_payroll.sql
+-- BAGIAN 91 dari 113 — absensi_payroll.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - absensi wajah berlokasi, dan payroll yang menghitung darinya.
@@ -15382,13 +15382,33 @@ drop policy if exists "absensi: baca atasan" on storage.objects;
 create policy "absensi: baca atasan" on storage.objects
   for select using (
     bucket_id = 'absensi'
-    and public.is_resto_employee((storage.foldername(name))[1],
-          array['owner', 'admin', 'finance'])
+    and (
+      -- KaataGo Admin ikut, dan itu bukan kelonggaran melainkan syarat:
+      -- bukti transfer langganan diunggah ke ember ini, dan yang wajib
+      -- memeriksanya sebelum menyetujui pembayaran justru dia — yang
+      -- bukan karyawan resto mana pun.
+      --
+      -- Sebatas map bukti transfernya. Ember ini juga menyimpan foto
+      -- wajah karyawan dan surat keterangan sakit, dan tidak ada yang
+      -- membutuhkan itu untuk menyetujui pembayaran.
+      (public.is_super_admin()
+        and (storage.foldername(name))[2] = 'langganan')
+      or public.is_resto_employee((storage.foldername(name))[1],
+           array['owner', 'admin', 'finance'])
+    )
   );
 
--- Menimpa berkas yang sudah ada. Layanan Storage membaca lalu menulis
--- baris objeknya saat upsert, jadi tanpa ini penggantian foto gagal
--- dengan galat yang tidak menyebut izin sama sekali.
+-- Menimpa berkas yang sudah ada.
+--
+-- PERHATIAN untuk yang menyentuh kode pengunggahnya nanti: JANGAN
+-- memakai `upsert: true` di ember ini. Layanan Storage MEMBACA baris
+-- objeknya lebih dulu untuk memutuskan sisip-atau-timpa, dan Kasir
+-- maupun Chef sengaja tidak punya hak baca di sini — isinya foto wajah
+-- dan surat sakit rekan-rekannya. Yang mereka terima 403 sebelum sempat
+-- menulis apa pun, dan galatnya tidak menyebut izin sama sekali.
+--
+-- Nama berkasnya sudah memuat milidetik, jadi tidak ada yang perlu
+-- ditimpa. Kebijakan ini tetap ada untuk berkas lama.
 drop policy if exists "absensi: ubah karyawan" on storage.objects;
 create policy "absensi: ubah karyawan" on storage.objects
   for update using (
@@ -15405,7 +15425,7 @@ create policy "absensi: ubah karyawan" on storage.objects
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 92 dari 103 — paket_langganan.sql
+-- BAGIAN 92 dari 113 — paket_langganan.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - paket langganan Basic dan Premium, berikut masa percobaan.
@@ -15686,7 +15706,7 @@ immutable
 as $$
   select array[
     'Shift Kasir', 'Kasir / Input Pesanan', 'Layar Pelanggan',
-    'Pending Payment', 'Riwayat Kasir', 'Pesanan Masuk', 'Layar Dapur',
+    'Pending Payment', 'Riwayat Kasir', 'Pesanan Masuk', 'Status Pesanan',
     'Laporan Penjualan', 'Pemasukan', 'Saldo & Pengeluaran',
     'Setor Saldo Cash', 'Terima Cash Pickup', 'Saldo Perusahaan',
     'Pembayaran dari KaataGo', 'Periksa Pembukuan', 'Tutup Buku',
@@ -16170,7 +16190,7 @@ select cron.schedule('kaatago-ingat-percobaan', '0 2 * * *',
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 93 dari 103 — perbaikan_hak_fungsi.sql
+-- BAGIAN 93 dari 113 — perbaikan_hak_fungsi.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - menutup fungsi bantu yang tidak seharusnya bisa dipanggil
@@ -16334,7 +16354,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 94 dari 103 — paket_trial_rapi.sql
+-- BAGIAN 94 dari 113 — paket_trial_rapi.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - masa percobaan punya paketnya sendiri.
@@ -16407,6 +16427,23 @@ begin
 
   if v_paket not in ('basic', 'premium') then
     raise exception 'Paket percobaannya harus Basic atau Premium.';
+  end if;
+
+  -- Yang sudah berlangganan tidak boleh diberi percobaan.
+  --
+  -- Fungsi ini menyetel paket jadi null dan harganya jadi nol. Dipanggil
+  -- untuk merchant yang sudah membayar, ia diam-diam membatalkan
+  -- langganannya dan menghentikan penagihannya — tanpa galat, tanpa
+  -- catatan, dan yang menemukannya bukan kita melainkan tagihan yang
+  -- berhenti datang.
+  --
+  -- Layarnya memang sudah menyembunyikan tombolnya, tapi layar yang
+  -- menyembunyikan tombol tidak menahan apa pun: fungsinya tetap bisa
+  -- dipanggil langsung.
+  if exists (select 1 from resto_billing
+             where resto_id = p_resto_id and paket is not null) then
+    raise exception 'Merchant ini sudah berlangganan. Lepas paketnya dulu '
+                    'kalau memang mau dikembalikan ke masa percobaan.';
   end if;
 
   v_sampai := (now() at time zone 'Asia/Jakarta')::date + p_hari;
@@ -16586,7 +16623,77 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 95 dari 103 — wajah_tidak_kembar.sql
+-- BAGIAN 95 dari 113 — paket_publik.sql
+-- ═══════════════════════════════════════════════════════════════════
+
+-- KaataGo - daftar paket yang boleh dibaca tanpa login.
+--
+-- Jalankan SETELAH paket_langganan.sql. Aman diulang.
+--
+-- ── Untuk apa ────────────────────────────────────────────────────────
+--
+-- Landing page menampilkan harga paket. Kalau harganya diketik ulang di
+-- HTML, ia akan benar hari ini dan diam-diam keliru pada hari KaataGo
+-- Admin menaikkannya — dan yang menemukannya adalah calon merchant yang
+-- membaca satu angka di web lalu melihat angka lain di aplikasi.
+--
+-- Jadi halamannya membaca dari sini.
+--
+-- ── Kenapa fungsi, bukan melonggarkan kebijakan tabelnya ─────────────
+--
+-- Kebijakan `paket: baca` menuntut `auth.uid() is not null`, dan
+-- pengunjung landing page memang tidak login. Menurunkan syarat itu
+-- jadi `true` memang membuat halamannya jalan — sekaligus membuka
+-- SELURUH baris tabelnya ke internet, termasuk `updated_by` yang berisi
+-- alamat surel orang yang terakhir mengubah harga.
+--
+-- Fungsi ini membuka persis lima kolom yang memang untuk dipajang, dan
+-- tidak satu pun yang lain.
+
+begin;
+
+create or replace function paket_publik()
+returns table (
+  kode text,
+  nama text,
+  keterangan text,
+  harga_bulanan bigint,
+  urutan integer
+)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select p.kode, p.nama, p.keterangan, p.harga_bulanan, p.urutan
+  from paket_langganan p
+  order by p.urutan, p.harga_bulanan;
+$$;
+
+-- `anon` memang disengaja: itulah peran pengunjung yang belum login,
+-- dan halaman harga tanpa login adalah seluruh gunanya fungsi ini.
+grant execute on function paket_publik() to anon, authenticated;
+
+commit;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- Memeriksanya
+-- ─────────────────────────────────────────────────────────────────────
+--
+--   select * from paket_publik();
+--
+-- Dan dari luar, sebagai pengunjung yang belum login — ini yang
+-- benar-benar dipakai landing page:
+--
+--   curl -s -X POST \
+--     'https://xizpwtycczigjhzxegen.supabase.co/rest/v1/rpc/paket_publik' \
+--     -H 'apikey: <anon key>' -H 'Content-Type: application/json' -d '{}'
+--
+-- Yang keluar harus dua baris tanpa satu pun kolom `updated_by`.
+
+
+-- ═══════════════════════════════════════════════════════════════════
+-- BAGIAN 96 dari 113 — wajah_tidak_kembar.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - wajah yang didaftarkan tidak boleh kembar dengan rekannya.
@@ -16723,7 +16830,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 96 dari 103 — wajah_geometri.sql
+-- BAGIAN 97 dari 113 — wajah_geometri.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo - mencocokkan wajah dari bentuknya, tanpa model terlatih.
@@ -17079,18 +17186,30 @@ grant execute on function daftar_wajah(text, double precision[], text, text)
 -- kebijakan SELECT: sidik yang bisa dibaca aplikasi adalah sidik yang
 -- bisa dikirim balik sebagai hasil pemindaian. Yang dibuka di sini cuma
 -- URL fotonya, dan cuma untuk yang memang memeriksa absensi.
+drop function if exists foto_acuan_wajah(text);
 create or replace function foto_acuan_wajah(p_resto_id text)
-returns table (employee_email text, foto_url text, registered_at timestamptz)
+returns table (
+  employee_email text,
+  foto_url text,
+  foto_base64 text,
+  registered_at timestamptz)
 language sql
 stable
 security definer
 set search_path = public
 as $$
-  select f.employee_email, f.foto_url, f.registered_at
+  -- Keduanya dikembalikan, bukan salah satu.
+  --
+  -- Wajah yang didaftarkan sebelum gambar pindah ke base64 masih
+  -- menunjuk ke berkas di Storage. Mengembalikan yang baru saja berarti
+  -- foto acuan mereka berubah jadi kotak kosong — tepat di layar tempat
+  -- seseorang memutuskan absen ini benar orangnya atau bukan.
+  select f.employee_email, f.foto_url, f.foto_base64, f.registered_at
   from employee_faces f
   where f.resto_id = p_resto_id
     and (is_super_admin()
-         or is_resto_employee(p_resto_id, array['owner', 'admin', 'finance'])
+         or is_resto_employee(p_resto_id,
+              array['owner', 'admin', 'finance', 'hr'])
          or lower(f.employee_email) = lower(coalesce(auth.jwt() ->> 'email', '')));
 $$;
 
@@ -17128,7 +17247,2015 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 97 dari 103 — shift_opening_check.sql
+-- BAGIAN 98 dari 113 — peran_karyawan.sql
+-- ═══════════════════════════════════════════════════════════════════
+
+-- KaataGo - daftar peran karyawan berdiri di satu tempat.
+--
+-- Jalankan SEBELUM wajah_facenet.sql, wajah_pratinjau.sql, peran_hr.sql,
+-- dan hentikan_langganan.sql — keempatnya memanggil fungsi ini. Aman
+-- diulang.
+--
+-- ── Kenapa berdiri sendiri ───────────────────────────────────────────
+--
+-- Fungsi-fungsi absensi menyebut daftar peran yang sama berulang kali:
+-- _absen(), daftar_wajah(), cocokkan_wajah(), keadaan_langganan().
+-- Diketik ulang di tiap tempat, menambah satu peran berarti menemukan
+-- semuanya — dan yang terlewat tidak pernah berbunyi. Ia cuma berarti
+-- peran baru itu tidak bisa absen, ketahuan berminggu-minggu kemudian
+-- dari orangnya sendiri.
+--
+-- ── Kenapa berkasnya terpisah, bukan ikut peran_hr.sql ───────────────
+--
+-- Karena berkas yang mendefinisikannya harus berjalan LEBIH DULU
+-- daripada semua yang memakainya, dan peran_hr.sql berdiri di tengah
+-- urutan. Menaruhnya di sana membuat berkas sebelumnya memanggil
+-- fungsi yang belum ada — galat yang saya buat sendiri, dan yang
+-- menemukannya bukan tes melainkan orang yang menjalankan query-nya.
+
+begin;
+
+create or replace function peran_karyawan()
+returns text[]
+language sql
+immutable
+as $$
+  select array['owner', 'admin', 'finance', 'kasir', 'chef', 'hr'];
+$$;
+
+revoke all on function peran_karyawan() from public, anon;
+grant execute on function peran_karyawan() to authenticated;
+
+commit;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- Memeriksanya
+-- ─────────────────────────────────────────────────────────────────────
+--
+--   select peran_karyawan();
+--
+-- Yang benar: enam peran, termasuk 'hr'.
+
+
+-- ═══════════════════════════════════════════════════════════════════
+-- BAGIAN 99 dari 113 — wajah_facenet.sql
+-- ═══════════════════════════════════════════════════════════════════
+
+-- KaataGo - wajah dicocokkan dengan model terlatih, dan didaftarkan
+-- hanya setelah orangnya menyetujuinya.
+--
+-- Jalankan SETELAH wajah_geometri.sql. Aman diulang.
+--
+-- ── Kenapa cara yang lama harus dibuang ──────────────────────────────
+--
+-- Cara sebelumnya membandingkan BENTUK wajah: titik kontur dari ML Kit,
+-- diluruskan di garis mata dan diseragamkan skalanya. Angka ambangnya
+-- saya pasang berdasarkan vektor buatan, bukan wajah sungguhan.
+--
+-- Begitu ada tiga wajah asli di basis data, ia terbantah seketika:
+--
+--   kaatatemanjajan  vs  kahfi.gamal22     0,8849
+--   ethereumluther   vs  kahfi.gamal22     0,8646
+--   ethereumluther   vs  kaatatemanjajan   0,8478
+--
+-- Tiga orang yang BERBEDA, semuanya jauh di atas ambang "yakin" 0,72 —
+-- jadi mereka tidak cuma lolos, mereka lolos tanpa ditandai ragu. Dalam
+-- satuan jarak antarmata, wajah mereka cuma berselisih 3-5%, kira-kira
+-- sebesar goyangan kontur ML Kit antara dua foto orang yang SAMA di
+-- cahaya yang berbeda.
+--
+-- Tidak ada celah yang bisa disetel di situ. Penyeragaman skalanya
+-- membuang justru apa yang membedakan orang, dan yang tersisa cuma
+-- "berbentuk wajah" — dan semua orang berbentuk wajah.
+--
+-- Yang menggantikannya FaceNet: model terlatih, 128 angka, dijalankan
+-- di ponsel lewat TensorFlow Lite. Fotonya tidak ke mana-mana; yang
+-- masuk model adalah piksel di RAM, yang keluar 128 angka.
+--
+-- ── Sidik lama tidak bisa dibandingkan dengan yang baru ──────────────
+--
+-- Dua cara yang berbeda menghasilkan angka yang tidak sebanding sama
+-- sekali. Membandingkannya tetap mengeluarkan bilangan — dan bilangan
+-- itulah yang paling berbahaya, karena ia terlihat seperti jawaban.
+--
+-- Jadi wajah yang terdaftar dengan cara lama DITOLAK di sini, berikut
+-- pesan yang menyuruh mendaftar ulang. Bukan dibiarkan lewat.
+
+begin;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- Ambangnya
+-- ─────────────────────────────────────────────────────────────────────
+--
+-- Angka 0,40 bukan tebakan: itu ambang kosinus yang dipakai aplikasi
+-- asal modelnya sendiri setelah diuji. Sidik FaceNet TIDAK dinormalkan
+-- panjangnya, jadi yang dipakai kosinus, bukan jarak Euclid.
+--
+-- Keduanya berdiri sebagai fungsi tersendiri supaya bisa disetel dari
+-- SQL Editor begitu terlihat sebaran nyatanya — tanpa membangun ulang
+-- aplikasi dan tanpa menunggu semua merchant memperbaruinya.
+
+-- Di bawah ini absennya DITOLAK.
+create or replace function _ambang_facenet()
+returns double precision language sql immutable as
+$$ select 0.40::double precision $$;
+
+-- Di bawah ini diterima tapi DITANDAI ragu, supaya atasannya memeriksa
+-- fotonya sendiri.
+--
+-- Ada pita di antara "jelas orangnya" dan "jelas bukan", dan menolak
+-- semua yang jatuh di situ berarti mengunci orang dari pekerjaannya
+-- karena cahaya pagi yang berbeda. Yang ragu dicatat, bukan ditolak.
+create or replace function _ambang_facenet_yakin()
+returns double precision language sql immutable as
+$$ select 0.55::double precision $$;
+
+-- Ambang "terlalu mirip dengan rekan" yang mengikuti modelnya.
+--
+-- Fungsi bernama BARU, bukan _ambang_kembar() dengan parameter tambahan.
+-- `create or replace` dengan daftar parameter yang berbeda tidak menimpa
+-- apa pun — ia membuat fungsi KEDUA dengan nama yang sama, dan mana
+-- yang terpanggil kemudian bergantung pada pencocokan tipe.
+create or replace function _ambang_kembar_model(p_model text)
+returns double precision
+language sql
+stable
+as $$
+  select case
+    when coalesce(p_model, '') like 'facenet-%' then 0.75::double precision
+    else _ambang_kembar()
+  end;
+$$;
+
+revoke all on function _ambang_facenet() from public, anon;
+revoke all on function _ambang_facenet_yakin() from public, anon;
+revoke all on function _ambang_kembar_model(text) from public, anon;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- Satu pintu untuk memilih cara membandingkan
+-- ─────────────────────────────────────────────────────────────────────
+
+create or replace function _mirip(
+  a double precision[], b double precision[], p_model text)
+returns double precision
+language sql
+immutable
+as $$
+  select case
+    when coalesce(p_model, '') like 'facenet-%' then _mirip_wajah(a, b)
+    when coalesce(p_model, '') like 'geometri-%' then _mirip_geometri(a, b)
+    else _mirip_wajah(a, b)
+  end;
+$$;
+
+create or replace function _ambang(p_model text)
+returns double precision
+language sql
+stable
+as $$
+  select case
+    when coalesce(p_model, '') like 'facenet-%' then _ambang_facenet()
+    when coalesce(p_model, '') like 'geometri-%' then _ambang_geo()
+    else _ambang_wajah()
+  end;
+$$;
+
+create or replace function _ambang_yakin(p_model text)
+returns double precision
+language sql
+stable
+as $$
+  select case
+    when coalesce(p_model, '') like 'facenet-%' then _ambang_facenet_yakin()
+    when coalesce(p_model, '') like 'geometri-%' then _ambang_geo_yakin()
+    else _ambang_wajah()
+  end;
+$$;
+
+revoke all on function _mirip(double precision[], double precision[], text)
+  from public, anon;
+revoke all on function _ambang(text) from public, anon;
+revoke all on function _ambang_yakin(text) from public, anon;
+
+commit;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- Persetujuan sebelum wajahnya didaftarkan
+-- ─────────────────────────────────────────────────────────────────────
+--
+-- Wajah adalah data pribadi yang bersifat spesifik menurut UU 27/2022.
+-- Mengambilnya tanpa persetujuan yang sah bukan cuma soal etika, dan
+-- persetujuan yang sah berarti orangnya tahu untuk apa dipakai,
+-- disimpan di mana, berapa lama, dan bagaimana mencabutnya.
+--
+-- Yang dicatat bukan cuma "sudah setuju", melainkan VERSI teks yang dia
+-- setujui berikut waktunya. Kalau suatu hari syaratnya berubah, yang
+-- pernah menyetujui teks lama tetap tercatat menyetujui teks lama —
+-- dan tanpa versinya, catatan persetujuan tidak membuktikan apa pun
+-- karena tidak ada yang tahu dia menyetujui apa.
+
+begin;
+
+alter table employee_faces
+  add column if not exists setuju_versi text,
+  add column if not exists setuju_at timestamptz;
+
+commit;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- Sidik dari cara yang lama dibuang
+-- ─────────────────────────────────────────────────────────────────────
+--
+-- Bukan sekadar kebersihan. Sidik itu sudah tidak bisa dibandingkan
+-- dengan apa pun — jadi ia data biometrik yang tersimpan tanpa satu pun
+-- kegunaan, dan data semacam itu tidak boleh menganggur di basis data.
+--
+-- Membuangnya juga yang membuat orangnya BISA mendaftar ulang:
+-- daftar_wajah() menolak siapa pun yang barisnya masih ada, dan tanpa
+-- ini tiga orang terjebak di antara absen yang ditolak dan pendaftaran
+-- yang ditolak.
+--
+-- Foto acuannya ikut hilang dari layar sampai mereka mendaftar ulang.
+-- Berkasnya sendiri masih di penyimpanan, jadi tidak ada bukti sengketa
+-- yang lenyap.
+
+begin;
+
+delete from employee_faces where model not like 'facenet-%';
+
+commit;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- Mendaftarkan wajah
+-- ─────────────────────────────────────────────────────────────────────
+
+begin;
+
+-- Daftar parameternya bertambah satu, jadi yang lama dibuang lebih
+-- dulu — lihat catatan di _ambang_kembar_model() di atas.
+-- Dua-duanya dibuang, yang berparameter empat maupun yang lima.
+--
+-- Yang lima memang sudah bernama sama dan bertipe sama, tapi versi
+-- terdahulunya punya nilai bawaan — dan `create or replace` MENOLAK
+-- mencabut nilai bawaan dari fungsi yang sudah ada. Galatnya menyebut
+-- DROP FUNCTION dengan jelas, tapi ia baru muncul saat berkas ini
+-- dijalankan ulang, bukan saat pertama kali.
+drop function if exists daftar_wajah(text, double precision[], text, text);
+drop function if exists daftar_wajah(text, double precision[], text, text, text);
+
+create or replace function daftar_wajah(
+  p_resto_id text,
+  p_embedding double precision[],
+  -- Tidak satu pun berparameter bawaan, dan itu disengaja.
+  --
+  -- Postgres menuntutnya begitu parameter terakhir wajib: yang tanpa
+  -- bawaan tidak boleh berdiri setelah yang punya bawaan.
+  --
+  -- Tapi bukan cuma menuruti aturan bahasanya. Bawaan di sini berarti
+  -- panggilan berparameter empat punya tempat mendarat — dan tempat
+  -- mendaratnya adalah versi lama yang tidak memeriksa persetujuan sama
+  -- sekali. Aplikasi selalu mengirim kelimanya, jadi tidak ada yang
+  -- hilang dengan mewajibkannya.
+  p_model text,
+  p_foto_url text,
+  p_setuju_versi text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $fn$
+declare
+  v_email text := auth.jwt() ->> 'email';
+  v_model text := coalesce(p_model, 'facenet-128-v1');
+  v_kembar record;
+begin
+  if v_email is null then
+    raise exception 'Harus masuk dulu.';
+  end if;
+
+  if not is_resto_employee(p_resto_id,
+       peran_karyawan()) then
+    raise exception 'Kamu bukan karyawan merchant ini.';
+  end if;
+
+  -- Persetujuannya diperiksa di SERVER, bukan cuma di layar.
+  --
+  -- Kotak centang di aplikasi menghalangi orang yang memakai aplikasi.
+  -- Ia tidak menghalangi apa pun yang memanggil fungsi ini langsung —
+  -- dan wajah yang masuk lewat jalan itu adalah wajah yang tersimpan
+  -- tanpa ada yang pernah menyetujuinya.
+  if coalesce(trim(p_setuju_versi), '') = '' then
+    raise exception 'Pendaftaran wajah butuh persetujuanmu dulu. Baca '
+                    'syarat penggunaan datanya lalu centang setuju.';
+  end if;
+
+  if p_embedding is null or array_length(p_embedding, 1) is null then
+    raise exception 'Sidik wajahnya kosong. Ulangi pemindaian.';
+  end if;
+
+  if exists (select 1 from employee_faces
+             where resto_id = p_resto_id
+               and lower(employee_email) = lower(v_email)) then
+    raise exception 'Wajahmu sudah terdaftar. Minta Owner atau Admin '
+                    'mereset dulu kalau memang perlu didaftar ulang.';
+  end if;
+
+  -- Terlalu mirip dengan rekan satu merchant berarti salah satu dari
+  -- dua hal, dan keduanya harus dihentikan di sini: wajah orang lain
+  -- yang didaftarkan, atau cara pencocokan yang tidak membedakan siapa
+  -- pun. Yang kedua adalah kegagalan paling berbahaya, karena ia tidak
+  -- pernah membuat siapa pun mengeluh — persis yang terjadi pada cara
+  -- lama, dan yang menemukannya bukan pemeriksaan ini melainkan seorang
+  -- manusia yang menatap dua foto bersebelahan.
+  --
+  -- Hanya dibandingkan dengan sidik dari model yang SAMA. Sidik dari
+  -- model berbeda tidak sebanding, dan membandingkannya menghasilkan
+  -- penolakan yang tidak bisa dijelaskan ke orangnya.
+  select employee_email,
+         _mirip(embedding, p_embedding, v_model) as skor
+    into v_kembar
+  from employee_faces
+  where resto_id = p_resto_id and model = v_model
+  order by _mirip(embedding, p_embedding, v_model) desc
+  limit 1;
+
+  if v_kembar.employee_email is not null
+     and v_kembar.skor >= _ambang_kembar_model(v_model) then
+    raise exception 'Wajah ini terlalu mirip dengan karyawan lain yang '
+                    'sudah terdaftar. Minta Owner atau Admin memeriksanya.';
+  end if;
+
+  insert into employee_faces (
+    resto_id, employee_email, embedding, model, foto_base64,
+    setuju_versi, setuju_at)
+  values (p_resto_id, lower(v_email), p_embedding, v_model, p_foto_url,
+          trim(p_setuju_versi), now());
+end;
+$fn$;
+
+revoke all on function daftar_wajah(
+  text, double precision[], text, text, text) from public, anon;
+grant execute on function daftar_wajah(
+  text, double precision[], text, text, text) to authenticated;
+
+commit;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- Absen menolak sidik yang tidak sebanding
+-- ─────────────────────────────────────────────────────────────────────
+
+begin;
+
+-- Yang memanggil dibuang lebih dulu, baru yang dipanggil — dan
+-- keduanya dibuang karena versi terdahulunya berparameter bawaan, yang
+-- tidak bisa dicabut oleh `create or replace`.
+drop function if exists absen_masuk(text, double precision[],
+  double precision, double precision, text, text);
+drop function if exists absen_pulang(text, double precision[],
+  double precision, double precision, text, text);
+drop function if exists _absen(text, double precision[], double precision,
+  double precision, text, boolean, text);
+
+create or replace function _absen(
+  p_resto_id text,
+  p_embedding double precision[],
+  p_lat double precision,
+  p_lng double precision,
+  p_foto_url text,
+  p_pulang boolean,
+  -- TANPA nilai bawaan, dan itu disengaja.
+  --
+  -- Dengan `default null`, panggilan berparameter enam cocok ke DUA
+  -- fungsi sekaligus — yang lama dan yang ini — dan Postgres menolaknya:
+  -- "function _absen(...) is not unique". Yang kena bukan berkas ini
+  -- melainkan absensi_payroll.sql yang dijalankan lebih dulu di bundel
+  -- gabungan, jadi galatnya muncul jauh sebelum baris ini terbaca dan
+  -- seluruh sisa bundelnya batal.
+  p_model text)
+returns table (jarak_m integer, skor double precision, waktu timestamptz)
+language plpgsql
+security definer
+set search_path = public
+as $fn$
+declare
+  v_email text := lower(coalesce(auth.jwt() ->> 'email', ''));
+  v_resto record;
+  v_setelan record;
+  v_wajah record;
+  v_skor double precision;
+  v_ragu boolean;
+  v_jarak double precision;
+  v_peran text;
+  v_wajib_dekat boolean;
+  v_tanggal date := (now() at time zone 'Asia/Jakarta')::date;
+  v_sekarang timestamptz := now();
+begin
+  if v_email = '' then
+    raise exception 'Harus masuk dulu.';
+  end if;
+
+  if not is_resto_employee(p_resto_id,
+       peran_karyawan()) then
+    raise exception 'Kamu bukan karyawan merchant ini.';
+  end if;
+
+  select latitude, longitude, name into v_resto
+  from restaurants where id = p_resto_id;
+
+  if v_resto.latitude is null or v_resto.longitude is null then
+    raise exception 'Titik lokasi merchant belum disetel. Minta Admin '
+                    'menyetelnya di menu Profil Merchant dulu.';
+  end if;
+
+  if p_lat is null or p_lng is null then
+    raise exception 'Lokasimu tidak terbaca. Nyalakan GPS lalu coba lagi.';
+  end if;
+
+  select * into v_setelan from payroll_settings where resto_id = p_resto_id;
+
+  v_jarak := _jarak_meter(v_resto.latitude, v_resto.longitude, p_lat, p_lng);
+
+  -- Admin dan Finance tidak diikat radius: satu kantor pusat bisa
+  -- mengurus beberapa merchant, dan mengikat mereka ke titik salah
+  -- satunya berarti menyuruh mereka pergi ke sana tiap pagi untuk
+  -- pekerjaan yang tidak dikerjakan di sana. Titik GPS-nya TETAP
+  -- dicatat; yang dilepas penolakannya, bukan pencatatannya.
+  select e.role into v_peran
+  from employees e
+  where e.resto_id = p_resto_id and lower(e.email) = v_email
+  limit 1;
+
+  v_wajib_dekat := coalesce(v_peran, '') not in ('admin', 'finance');
+
+  if v_wajib_dekat and v_jarak > coalesce(v_setelan.radius_absen_m, 150) then
+    raise exception 'Kamu % meter dari %. Absen hanya bisa dalam radius % meter.',
+      round(v_jarak), coalesce(v_resto.name, 'merchant'),
+      coalesce(v_setelan.radius_absen_m, 150);
+  end if;
+
+  select * into v_wajah from employee_faces
+  where resto_id = p_resto_id and lower(employee_email) = v_email;
+
+  if v_wajah is null then
+    raise exception 'Wajahmu belum terdaftar. Daftarkan dulu di menu Absensi.';
+  end if;
+
+  -- Sidik dari cara yang berbeda TIDAK dibandingkan.
+  --
+  -- Membandingkannya tetap mengeluarkan bilangan, dan bilangan itulah
+  -- yang paling berbahaya: ia terlihat seperti jawaban. Yang wajahnya
+  -- terdaftar dengan cara lama disuruh mendaftar ulang, bukan diadu
+  -- dengan angka yang tidak berarti apa-apa.
+  if p_model is not null and coalesce(v_wajah.model, '') <> p_model then
+    raise exception 'Wajahmu terdaftar dengan cara pengenalan yang lama '
+                    'dan tidak bisa dibandingkan dengan yang sekarang. '
+                    'Minta Owner atau Admin mereset wajahmu lewat Kelola '
+                    'Karyawan, lalu daftarkan ulang.';
+  end if;
+
+  v_skor := _mirip(v_wajah.embedding, p_embedding, v_wajah.model);
+
+  if v_skor < _ambang(v_wajah.model) then
+    raise exception 'Wajahnya tidak cocok dengan yang terdaftar. '
+                    'Hadapkan wajahmu lurus ke kamera dengan cahaya yang '
+                    'cukup, lalu coba lagi.';
+  end if;
+
+  -- Diterima, tapi belum tentu meyakinkan.
+  v_ragu := v_skor < _ambang_yakin(v_wajah.model);
+
+  if p_pulang then
+    update attendance
+    set pulang_at = v_sekarang,
+        pulang_lat = p_lat,
+        pulang_lng = p_lng,
+        pulang_jarak_m = round(v_jarak),
+        pulang_skor = v_skor,
+        pulang_ragu = v_ragu,
+        pulang_foto_base64 = coalesce(p_foto_url, pulang_foto_base64)
+    where resto_id = p_resto_id
+      and lower(employee_email) = v_email
+      and tanggal = v_tanggal
+      and masuk_at is not null;
+
+    if not found then
+      raise exception 'Belum ada absen masuk hari ini.';
+    end if;
+  else
+    insert into attendance (
+      resto_id, employee_email, tanggal, status,
+      masuk_at, masuk_lat, masuk_lng, masuk_jarak_m, masuk_skor,
+      masuk_ragu, masuk_foto_base64)
+    values (
+      p_resto_id, v_email, v_tanggal, 'hadir',
+      v_sekarang, p_lat, p_lng, round(v_jarak), v_skor, v_ragu, p_foto_url)
+    on conflict (resto_id, employee_email, tanggal) do update
+      set status = 'hadir',
+          masuk_at = coalesce(attendance.masuk_at, excluded.masuk_at),
+          masuk_lat = coalesce(attendance.masuk_lat, excluded.masuk_lat),
+          masuk_lng = coalesce(attendance.masuk_lng, excluded.masuk_lng),
+          masuk_jarak_m =
+            coalesce(attendance.masuk_jarak_m, excluded.masuk_jarak_m),
+          masuk_skor = coalesce(attendance.masuk_skor, excluded.masuk_skor),
+          masuk_ragu = coalesce(attendance.masuk_ragu, excluded.masuk_ragu),
+          masuk_foto_base64 = coalesce(
+              attendance.masuk_foto_base64, excluded.masuk_foto_base64),
+          potong_gaji = false,
+          alasan = null;
+  end if;
+
+  return query select round(v_jarak)::integer, v_skor, v_sekarang;
+end;
+$fn$;
+
+revoke all on function _absen(text, double precision[], double precision,
+  double precision, text, boolean, text) from public, anon, authenticated;
+
+commit;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- Pintu absennya meneruskan nama modelnya
+-- ─────────────────────────────────────────────────────────────────────
+
+begin;
+
+-- Urutannya penting. Yang memanggil dibuang lebih dulu, baru yang
+-- dipanggil: membuang _absen() lama selagi absen_masuk() lama masih
+-- menyebutnya adalah galat ketergantungan, dan galat itu membatalkan
+-- seluruh berkas ini di tengah jalan.
+drop function if exists absen_masuk(text, double precision[],
+  double precision, double precision, text);
+drop function if exists absen_pulang(text, double precision[],
+  double precision, double precision, text);
+
+-- Yang berparameter lama dibuang: ia memanggil jalur tanpa pemeriksaan
+-- model, dan jalan memutar yang tidak dipakai sebaiknya tidak tertinggal.
+drop function if exists _absen(text, double precision[], double precision,
+  double precision, text, boolean);
+
+create or replace function absen_masuk(
+  p_resto_id text,
+  p_embedding double precision[],
+  p_lat double precision,
+  p_lng double precision,
+  p_foto_url text,
+  p_model text)
+returns table (jarak_m integer, skor double precision, waktu timestamptz)
+language sql
+security definer
+set search_path = public
+as $$
+  select * from _absen(p_resto_id, p_embedding, p_lat, p_lng,
+                       p_foto_url, false, p_model);
+$$;
+
+create or replace function absen_pulang(
+  p_resto_id text,
+  p_embedding double precision[],
+  p_lat double precision,
+  p_lng double precision,
+  p_foto_url text,
+  p_model text)
+returns table (jarak_m integer, skor double precision, waktu timestamptz)
+language sql
+security definer
+set search_path = public
+as $$
+  select * from _absen(p_resto_id, p_embedding, p_lat, p_lng,
+                       p_foto_url, true, p_model);
+$$;
+
+revoke all on function absen_masuk(text, double precision[], double precision,
+  double precision, text, text) from public, anon;
+revoke all on function absen_pulang(text, double precision[], double precision,
+  double precision, text, text) from public, anon;
+grant execute on function absen_masuk(text, double precision[], double precision,
+  double precision, text, text) to authenticated;
+grant execute on function absen_pulang(text, double precision[], double precision,
+  double precision, text, text) to authenticated;
+
+commit;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- Memeriksanya
+-- ─────────────────────────────────────────────────────────────────────
+--
+-- 1. Wajah yang masih memakai cara lama — semuanya harus didaftar ulang:
+--
+--      select resto_id, employee_email, model from employee_faces
+--      where model not like 'facenet-%';
+--
+-- 2. Sesudah beberapa orang mendaftar ulang, kemiripan ANTARKARYAWAN
+--    adalah ujian yang dulu gagal. Dengan FaceNet, angka orang yang
+--    berbeda seharusnya jauh di bawah 0,40 — bukan 0,85 seperti dulu:
+--
+--      select a.employee_email, b.employee_email,
+--             round(_mirip(a.embedding, b.embedding, a.model)::numeric, 3)
+--      from employee_faces a join employee_faces b
+--        on a.resto_id = b.resto_id and a.employee_email < b.employee_email
+--      where a.model like 'facenet-%' and b.model like 'facenet-%';
+--
+--    Kalau angkanya masih tinggi, JANGAN naikkan ambangnya — berarti
+--    ada yang keliru di sisi aplikasi, dan menaikkan ambang cuma
+--    menyembunyikannya sampai ada yang absen atas nama orang lain.
+--
+-- 3. Sebaran skor absen orangnya sendiri:
+--
+--      select round(masuk_skor::numeric, 2) as skor, count(*)
+--      from attendance where masuk_skor is not null group by 1 order by 1;
+--
+--    - Banyak yang ditolak padahal orangnya benar → turunkan _ambang_facenet()
+--    - Ada yang lolos padahal bukan orangnya      → naikkan _ambang_facenet()
+--
+-- 4. Persetujuan tercatat berikut versinya:
+--
+--      select employee_email, setuju_versi, setuju_at from employee_faces;
+
+
+-- ═══════════════════════════════════════════════════════════════════
+-- BAGIAN 100 dari 113 — wajah_pratinjau.sql
+-- ═══════════════════════════════════════════════════════════════════
+
+-- KaataGo - memeriksa wajahnya sebelum fotonya diunggah.
+--
+-- Jalankan SETELAH wajah_facenet.sql. Aman diulang.
+--
+-- ── Apa yang diperbaiki ──────────────────────────────────────────────
+--
+-- Urutan lamanya: pindai wajah, unggah fotonya, baru absen. Penolakan
+-- datang di langkah ketiga — sesudah fotonya terlanjur naik.
+--
+-- Untuk yang absennya ditolak karena bukan orangnya, itu berarti foto
+-- wajahnya sudah tersimpan di penyimpanan merchant padahal absennya
+-- tidak pernah jadi. Untuk yang ditolak karena cahaya pagi, itu berarti
+-- menunggu unggahan selesai cuma untuk dikabari harus mengulang.
+--
+-- Fungsi ini memindahkan penolakannya ke depan, sejajar dengan
+-- pemeriksaan mata terpejam dan wajah miring yang memang sudah terjadi
+-- di HP sebelum apa pun dikirim.
+--
+-- ── Kenapa tidak dicocokkan di HP saja ───────────────────────────────
+--
+-- Karena untuk mencocokkan di HP, HP harus memegang sidik wajah yang
+-- terdaftar — dan sidik yang bisa diunduh aplikasi adalah sidik yang
+-- bisa dikirim balik sebagai "hasil pemindaian". Absennya berhenti
+-- membuktikan ada orang di depan kamera.
+--
+-- Itu sebabnya `employee_faces` sengaja tidak punya satu pun kebijakan
+-- SELECT, dan itu tidak dilonggarkan di sini. Yang dikirim ke server
+-- cuma 128 angka hasil pindaian, jauh lebih ringan daripada satu foto.
+--
+-- ── Kenapa jawabannya cuma ya atau tidak ─────────────────────────────
+--
+-- Skornya TIDAK dikembalikan, dan ini bukan kepelitan.
+--
+-- Fungsi yang menjawab "0,38" untuk satu tebakan dan "0,41" untuk
+-- tebakan berikutnya adalah alat untuk menaiki bukit: siapa pun bisa
+-- mengubah-ubah angkanya sedikit demi sedikit sambil melihat skornya
+-- naik, sampai lolos tanpa pernah menghadap kamera. Yang menjawab "ya"
+-- atau "tidak" tidak memberi arah untuk didaki.
+--
+-- ── Ini kenyamanan, bukan penjagaan ──────────────────────────────────
+--
+-- Yang menentukan sah tidaknya absen tetap pemeriksaan di dalam
+-- _absen(). Fungsi ini boleh dilewati sepenuhnya oleh siapa pun yang
+-- memanggil absen_masuk() langsung — dan tidak ada yang hilang kalau
+-- dilewati, karena _absen() memeriksa hal yang sama sekali lagi.
+
+begin;
+
+create or replace function cocokkan_wajah(
+  p_resto_id text,
+  p_embedding double precision[],
+  p_model text)
+returns boolean
+language plpgsql
+stable
+security definer
+set search_path = public
+as $fn$
+declare
+  v_email text := lower(coalesce(auth.jwt() ->> 'email', ''));
+  v_wajah record;
+begin
+  if v_email = '' then
+    raise exception 'Harus masuk dulu.';
+  end if;
+
+  if not is_resto_employee(p_resto_id,
+       peran_karyawan()) then
+    raise exception 'Kamu bukan karyawan merchant ini.';
+  end if;
+
+  if p_embedding is null or array_length(p_embedding, 1) is null then
+    raise exception 'Sidik wajahnya kosong. Ulangi pemindaian.';
+  end if;
+
+  select * into v_wajah from employee_faces
+  where resto_id = p_resto_id and lower(employee_email) = v_email;
+
+  -- Belum terdaftar bukan urusan fungsi ini. Yang menjawabnya layar
+  -- absensi, dan menjawabnya di sini cuma memindahkan pesan yang sama
+  -- ke tempat yang lebih membingungkan.
+  if v_wajah is null then
+    return false;
+  end if;
+
+  if coalesce(v_wajah.model, '') <> coalesce(p_model, '') then
+    return false;
+  end if;
+
+  return _mirip(v_wajah.embedding, p_embedding, v_wajah.model)
+         >= _ambang(v_wajah.model);
+end;
+$fn$;
+
+revoke all on function cocokkan_wajah(text, double precision[], text)
+  from public, anon;
+grant execute on function cocokkan_wajah(text, double precision[], text)
+  to authenticated;
+
+commit;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- Memeriksanya
+-- ─────────────────────────────────────────────────────────────────────
+--
+--   select proname, prorettype::regtype
+--   from pg_proc where proname = 'cocokkan_wajah';
+--
+-- Yang benar: satu baris, dan tipe kembaliannya `boolean` — bukan
+-- `double precision`. Kalau suatu hari ia berubah jadi mengembalikan
+-- skor, bacalah lagi catatan "kenapa jawabannya cuma ya atau tidak" di
+-- atas sebelum melanjutkan.
+
+
+-- ═══════════════════════════════════════════════════════════════════
+-- BAGIAN 101 dari 113 — peran_hr.sql
+-- ═══════════════════════════════════════════════════════════════════
+
+-- KaataGo - peran HR.
+--
+-- Jalankan SETELAH peran_karyawan.sql. Aman diulang.
+--
+-- ── Apa yang ditambahkan ─────────────────────────────────────────────
+--
+-- Satu peran baru yang mengurus orang, bukan uang dan bukan dapur:
+-- Kelola Karyawan, Absensi (miliknya sendiri), dan Absensi Karyawan.
+--
+-- ── Yang SENGAJA tidak diberikan ─────────────────────────────────────
+--
+-- HR tidak menyentuh gaji. Tidak `payroll_settings`, tidak
+-- `employee_payroll`, tidak rekap payroll — itu tetap milik Owner dan
+-- Finance.
+--
+-- Godaannya besar, karena absensi dan payroll memang berdampingan di
+-- satu layar dan orang yang mengurus kehadiran terasa "seharusnya" juga
+-- mengurus gaji. Tapi keduanya dipisah justru supaya yang mencatat
+-- kehadiran bukan orang yang sama dengan yang menentukan bayarannya.
+-- Memberi keduanya ke satu orang berarti dia bisa menandai seorang
+-- rekan alpa lalu memotong gajinya, sendirian, tanpa satu pun mata
+-- kedua.
+--
+-- Kalau suatu hari HR memang harus memegang payroll, itu keputusan
+-- tersendiri yang pantas ditimbang lagi — bukan sesuatu yang ikut
+-- terbawa karena berkas ini kebetulan mengubah daftar peran.
+--
+-- ── Kenapa daftarnya ditulis ulang, bukan ditambahi ──────────────────
+--
+-- Tiap kebijakan di bawah dibuang lalu dibuat ulang dengan daftar
+-- lengkapnya. Menambahkan peran ke policy yang sudah ada tidak bisa
+-- dilakukan sepotong di Postgres, dan menulis setengahnya menghasilkan
+-- kebijakan yang kehilangan peran lama — yang berarti Admin kehilangan
+-- aksesnya diam-diam pada hari berkas ini dijalankan.
+
+begin;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- 1. 'hr' jadi peran yang sah
+-- ─────────────────────────────────────────────────────────────────────
+
+alter table employees drop constraint if exists employees_role_check;
+alter table employees add constraint employees_role_check
+  check (role in ('admin', 'kasir', 'chef', 'super_admin', 'finance',
+                 'owner', 'hr'));
+
+commit;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- 2. Kelola Karyawan
+-- ─────────────────────────────────────────────────────────────────────
+
+begin;
+
+drop policy if exists "employees: read own, resto admin, or super_admin"
+  on employees;
+create policy "employees: read own, resto admin, or super_admin" on employees
+  for select using (
+    email = auth.jwt() ->> 'email'
+    or is_super_admin()
+    or (resto_id is not null
+        and is_resto_employee(resto_id, array['admin', 'hr']))
+  );
+
+drop policy if exists "employees: admin or super_admin insert" on employees;
+create policy "employees: admin or super_admin insert" on employees
+  for insert with check (
+    is_super_admin()
+    or (resto_id is not null
+        and is_resto_employee(resto_id, array['admin', 'hr']))
+  );
+
+drop policy if exists "employees: admin or super_admin update" on employees;
+create policy "employees: admin or super_admin update" on employees
+  for update using (
+    is_super_admin()
+    or (resto_id is not null
+        and is_resto_employee(resto_id, array['admin', 'hr']))
+  );
+
+drop policy if exists "employees: admin or super_admin delete" on employees;
+create policy "employees: admin or super_admin delete" on employees
+  for delete using (
+    is_super_admin()
+    or (resto_id is not null
+        and is_resto_employee(resto_id, array['admin', 'hr']))
+  );
+
+commit;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- 3. Absensi karyawan
+-- ─────────────────────────────────────────────────────────────────────
+
+begin;
+
+drop policy if exists "attendance: read" on attendance;
+create policy "attendance: read" on attendance
+  for select using (
+    is_super_admin()
+    or lower(employee_email) = lower(coalesce(auth.jwt() ->> 'email', ''))
+    or is_resto_employee(resto_id, array['owner', 'admin', 'finance', 'hr'])
+  );
+
+drop policy if exists "attendance: atasan ubah" on attendance;
+create policy "attendance: atasan ubah" on attendance
+  for update using (
+    is_super_admin()
+    or is_resto_employee(resto_id, array['owner', 'admin', 'finance', 'hr'])
+  );
+
+-- Setelan absensi ikut terbaca: radiusnya dipakai layar absensi untuk
+-- menjelaskan kenapa seseorang ditolak, dan tanggal gajiannya menentukan
+-- periode mana yang ditampilkan di Absensi Karyawan.
+drop policy if exists "payroll_settings: baca" on payroll_settings;
+create policy "payroll_settings: baca" on payroll_settings
+  for select using (
+    is_super_admin()
+    or is_resto_employee(resto_id,
+         array['owner', 'admin', 'finance', 'kasir', 'chef', 'hr'])
+  );
+
+commit;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- 4. Foto absensi
+-- ─────────────────────────────────────────────────────────────────────
+
+begin;
+
+drop policy if exists "absensi: baca atasan" on storage.objects;
+create policy "absensi: baca atasan" on storage.objects
+  for select using (
+    bucket_id = 'absensi'
+    and (
+      (public.is_super_admin()
+        and (storage.foldername(name))[2] = 'langganan')
+      or public.is_resto_employee((storage.foldername(name))[1],
+           array['owner', 'admin', 'finance', 'hr'])
+    )
+  );
+
+-- HR ikut menaruh berkas, karena dia juga absen seperti karyawan lain.
+drop policy if exists "absensi: tulis karyawan" on storage.objects;
+create policy "absensi: tulis karyawan" on storage.objects
+  for insert with check (
+    bucket_id = 'absensi'
+    and public.is_resto_employee((storage.foldername(name))[1],
+          array['owner', 'admin', 'finance', 'kasir', 'chef', 'hr'])
+  );
+
+drop policy if exists "absensi: ubah karyawan" on storage.objects;
+create policy "absensi: ubah karyawan" on storage.objects
+  for update using (
+    bucket_id = 'absensi'
+    and public.is_resto_employee((storage.foldername(name))[1],
+          array['owner', 'admin', 'finance', 'kasir', 'chef', 'hr'])
+  );
+
+commit;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- 5. HR ikut absen, dan ikut mereset wajah
+-- ─────────────────────────────────────────────────────────────────────
+
+begin;
+
+-- Daftar peran di dalam fungsi-fungsi absensi ditulis ulang. Yang
+-- diubah cuma daftarnya; sisanya persis seperti di wajah_facenet.sql
+-- dan wajah_pratinjau.sql.
+create or replace function reset_wajah(p_resto_id text, p_email text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $fn$
+begin
+  -- Yang boleh menghapus wajah orang lain: yang memang mengurus orang.
+  --
+  -- Wajah yang bisa direset siapa saja adalah wajah yang bisa
+  -- dipindahkan diam-diam ke orang lain — dan sesudah dipindahkan,
+  -- absennya tetap terlihat sah.
+  if not (is_super_admin()
+          or is_resto_employee(p_resto_id,
+               array['owner', 'admin', 'finance', 'hr'])) then
+    raise exception 'Cuma Owner, Admin, Finance, atau HR yang bisa '
+                    'mereset wajah karyawan.';
+  end if;
+
+  -- Hitungannya dibawa ke baris berikutnya lewat tabel terpisah supaya
+  -- tidak hilang saat barisnya dihapus. Reset yang sering pada satu
+  -- orang adalah pola yang pantas dilihat.
+  insert into employee_face_resets (resto_id, employee_email, oleh)
+  values (p_resto_id, lower(p_email), auth.jwt() ->> 'email');
+
+  delete from employee_faces
+  where resto_id = p_resto_id and lower(employee_email) = lower(p_email);
+end;
+$fn$;
+
+revoke all on function reset_wajah(text, text) from public, anon;
+grant execute on function reset_wajah(text, text) to authenticated;
+
+commit;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- 6. Foto acuan ikut terbuka untuk HR
+-- ─────────────────────────────────────────────────────────────────────
+--
+-- Definisinya SENGAJA tidak di sini lagi.
+--
+-- Bagian ini dulu menyatakan ulang `foto_acuan_wajah` hanya untuk
+-- menambahkan 'hr' ke daftar perannya. `supabase/wajah_geometri.sql`
+-- sudah memuat 'hr' DAN kolom `foto_base64` yang menyusul sesudahnya —
+-- jadi salinan di sini bukan cuma berlebih, ia lebih tua.
+--
+-- Dan ia berjalan SESUDAH wajah_geometri.sql dalam urutan
+-- `scripts/gabung_sql.sh`. Artinya pasang-baru akan berhenti di sini:
+-- `create or replace` tidak bisa mengubah bentuk kembalian, dan
+-- kembalian di sini kehilangan satu kolom. Yang sudah terpasang tidak
+-- terpengaruh — galatnya cuma menunggu orang pertama yang memasang dari
+-- nol.
+--
+-- Pemilik sahnya `supabase/wajah_geometri.sql`. Haknya tetap diberikan
+-- di sini karena di sinilah peran HR dibahas.
+
+begin;
+
+grant execute on function foto_acuan_wajah(text) to authenticated;
+
+commit;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- Memeriksanya
+-- ─────────────────────────────────────────────────────────────────────
+--
+-- 1. 'hr' sah sebagai peran:
+--
+--      select pg_get_constraintdef(oid) from pg_constraint
+--      where conname = 'employees_role_check';
+--
+-- 2. HR ada di empat kebijakan employees, dua kebijakan attendance, dan
+--    tiga kebijakan ember absensi:
+--
+--      select tablename, policyname, cmd
+--      from pg_policies
+--      where coalesce(qual, with_check) like '%hr%'
+--      order by tablename, cmd;
+--
+-- 3. HR TIDAK ada di payroll. Yang keluar harus kosong:
+--
+--      select policyname from pg_policies
+--      where tablename in ('employee_payroll')
+--        and coalesce(qual, with_check) like '%''hr''%';
+
+
+-- ═══════════════════════════════════════════════════════════════════
+-- BAGIAN 102 dari 113 — hentikan_langganan.sql
+-- ═══════════════════════════════════════════════════════════════════
+
+-- KaataGo - berhenti berlangganan, dan aturan kunci yang baru.
+--
+-- Jalankan SETELAH peran_hr.sql. Aman diulang.
+--
+-- ── Dua hal, dan keduanya soal kapan aplikasinya boleh dipakai ──────
+--
+-- 1. Merchant bisa menyatakan berhenti berlangganan sendiri, dan
+--    penghentiannya BERLAKU DI TANGGAL TAGIHAN BERIKUTNYA — bukan
+--    seketika. Yang sudah membayar bulan ini berhak memakai bulan ini;
+--    mematikannya di detik dia menekan tombol berarti menjual sebulan
+--    lalu mengambil sisanya kembali.
+--
+-- 2. Aplikasinya hanya bisa dipakai kalau merchant sedang mencoba atau
+--    sedang berlangganan. Di luar itu — belum pernah disetel, masa
+--    percobaannya habis, atau langganannya sudah lewat tanggal berhenti
+--    — terkunci.
+--
+-- ── Yang berubah arahnya ─────────────────────────────────────────────
+--
+-- Sebelumnya merchant yang tidak pernah disentuh KaataGo Admin berjalan
+-- apa adanya: tanpa paket, tanpa percobaan, tanpa kunci. Itu memang
+-- disengaja waktu itu — supaya merchant lama tidak tiba-tiba mati pada
+-- hari fitur paket dipasang.
+--
+-- Sekarang aturannya dibalik: tidak ada paket berarti tidak ada akses.
+-- Sebelum menjalankan berkas ini, hitung siapa yang kena:
+--
+--   select r.id, r.name,
+--          (select count(*) from employees e
+--            where e.resto_id = r.id and e.active) as karyawan_aktif
+--   from restaurants r
+--   left join resto_billing b on b.resto_id = r.id
+--   where b.paket is null and b.trial_until is null;
+--
+-- Yang punya karyawan aktif di daftar itu akan kehilangan aksesnya
+-- begitu berkas ini dijalankan. Beri mereka percobaan dulu.
+
+begin;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- 1. Kolom penghentian
+-- ─────────────────────────────────────────────────────────────────────
+--
+-- Dua kolom, bukan satu bendera.
+--
+-- `dihentikan_at` menjawab kapan dia memutuskannya, `aktif_sampai`
+-- menjawab sampai kapan dia masih boleh memakai. Satu bendera "berhenti"
+-- saja memaksa tanggalnya dihitung ulang tiap kali ditanya — dan
+-- hitungan yang diulang di beberapa tempat akan berbeda di salah
+-- satunya, biasanya pada bulan yang tanggal tagihnya tidak ada.
+
+alter table resto_billing
+  add column if not exists dihentikan_at timestamptz,
+  add column if not exists aktif_sampai date,
+  add column if not exists alasan_berhenti text;
+
+commit;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- 2. Menghentikan langganan
+-- ─────────────────────────────────────────────────────────────────────
+
+begin;
+
+create or replace function hentikan_langganan(
+  p_resto_id text,
+  p_alasan text)
+returns date
+language plpgsql
+security definer
+set search_path = public
+as $fn$
+declare
+  v_b record;
+  v_hari integer;
+  v_ini date := (now() at time zone 'Asia/Jakarta')::date;
+  v_sampai date;
+begin
+  -- Hanya Owner dan Finance.
+  --
+  -- Berhenti berlangganan adalah keputusan belanja, dan yang paling
+  -- terkena adalah orang-orang yang tidak menekan tombolnya: kasir yang
+  -- besok tidak bisa membuka shift, dapur yang berhenti menerima
+  -- pesanan. Kasir yang bisa menekannya sendiri adalah kasir yang bisa
+  -- mematikan restonya karena salah tekan.
+  if not is_resto_employee(p_resto_id, array['owner', 'finance']) then
+    raise exception 'Cuma Owner dan Finance yang bisa menghentikan '
+                    'langganan.';
+  end if;
+
+  select * into v_b from resto_billing where resto_id = p_resto_id;
+
+  if v_b is null or v_b.paket is null then
+    raise exception 'Merchant ini sedang tidak berlangganan.';
+  end if;
+
+  if v_b.dihentikan_at is not null then
+    raise exception 'Langganannya sudah dihentikan, berlaku % .',
+      to_char(v_b.aktif_sampai, 'DD Mon YYYY');
+  end if;
+
+  -- Berlaku di tanggal tagihan BERIKUTNYA.
+  --
+  -- Kalau tanggal tagihnya bulan ini belum lewat, itulah batasnya;
+  -- kalau sudah lewat, bulan depan. Tanggal 29-31 di bulan yang lebih
+  -- pendek jatuh di hari terakhirnya, sama seperti penagihannya
+  -- sendiri — dua aturan tanggal yang berbeda untuk satu siklus adalah
+  -- selisih yang baru ketahuan dari orang yang merasa dikunci kecepatan
+  -- sehari.
+  v_hari := coalesce(v_b.billing_day, 1);
+
+  v_sampai := least(
+    v_hari,
+    extract(day from (date_trunc('month', v_ini)
+                      + interval '1 month - 1 day'))::integer
+  );
+  v_sampai := date_trunc('month', v_ini)::date + (v_sampai - 1);
+
+  if v_sampai <= v_ini then
+    v_sampai := date_trunc('month', v_ini) + interval '1 month';
+    v_sampai := v_sampai + (least(
+      v_hari,
+      extract(day from (date_trunc('month', v_sampai)
+                        + interval '1 month - 1 day'))::integer
+    ) - 1);
+  end if;
+
+  update resto_billing
+  set dihentikan_at = now(),
+      aktif_sampai = v_sampai,
+      alasan_berhenti = nullif(trim(coalesce(p_alasan, '')), ''),
+      updated_at = now()
+  where resto_id = p_resto_id;
+
+  return v_sampai;
+end;
+$fn$;
+
+revoke all on function hentikan_langganan(text, text) from public, anon;
+grant execute on function hentikan_langganan(text, text) to authenticated;
+
+-- Membatalkan penghentian, selama tanggalnya belum lewat.
+--
+-- Ada karena keputusan berhenti sering dibuat saat kesal lalu ditarik
+-- kembali keesokan harinya — dan tanpa jalan pulang, yang tersisa cuma
+-- menghubungi KaataGo dan menunggu seseorang membetulkannya dari sisi
+-- sana.
+create or replace function lanjutkan_langganan(p_resto_id text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $fn$
+declare
+  v_b record;
+begin
+  if not is_resto_employee(p_resto_id, array['owner', 'finance']) then
+    raise exception 'Cuma Owner dan Finance yang bisa melanjutkan '
+                    'langganan.';
+  end if;
+
+  select * into v_b from resto_billing where resto_id = p_resto_id;
+
+  if v_b is null or v_b.dihentikan_at is null then
+    raise exception 'Langganannya memang sedang tidak dihentikan.';
+  end if;
+
+  if v_b.aktif_sampai < (now() at time zone 'Asia/Jakarta')::date then
+    raise exception 'Masa aktifnya sudah lewat. Ajukan langganan baru '
+                    'lewat menu Paket Langganan.';
+  end if;
+
+  update resto_billing
+  set dihentikan_at = null,
+      aktif_sampai = null,
+      alasan_berhenti = null,
+      updated_at = now()
+  where resto_id = p_resto_id;
+end;
+$fn$;
+
+revoke all on function lanjutkan_langganan(text) from public, anon;
+grant execute on function lanjutkan_langganan(text) to authenticated;
+
+commit;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- 3. Aturan kunci yang baru
+-- ─────────────────────────────────────────────────────────────────────
+
+begin;
+
+drop function if exists keadaan_langganan(text);
+
+create or replace function keadaan_langganan(p_resto_id text)
+returns table (
+  paket text,
+  nama_paket text,
+  harga bigint,
+  trial_until date,
+  trial_days integer,
+  trial_paket text,
+  sisa_hari integer,
+  dalam_percobaan boolean,
+  percobaan_habis boolean,
+  status_pengajuan text,
+  alasan_tolak text,
+  terkunci_paket boolean,
+  dihentikan boolean,
+  aktif_sampai date,
+  alasan_berhenti text
+)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  with boleh as (
+    select is_super_admin()
+        or is_resto_employee(p_resto_id, peran_karyawan()) as ya
+  ),
+  s as (
+    select * from resto_billing where resto_id = p_resto_id
+  ),
+  r as (
+    select status, alasan_tolak
+    from subscription_requests
+    where resto_id = p_resto_id
+    order by diajukan_at desc
+    limit 1
+  ),
+  hari as (
+    select (now() at time zone 'Asia/Jakarta')::date as ini
+  ),
+  hitung as (
+    select
+      h.ini,
+      s.*,
+      -- Sedang mencoba.
+      coalesce(s.paket is null and s.trial_until is not null
+               and h.ini <= s.trial_until, false) as v_coba,
+      -- Berlangganan dan masih dalam masa aktifnya.
+      coalesce(s.paket is not null
+               and (s.aktif_sampai is null or h.ini <= s.aktif_sampai),
+               false) as v_langganan
+    from hari h left join s on true
+  )
+  select
+    c.paket,
+    p.nama,
+    coalesce(p.harga_bulanan, c.monthly_price, 0),
+    c.trial_until,
+    c.trial_days,
+    case when c.trial_until is not null
+         then coalesce(c.trial_paket, 'premium') end,
+    (c.trial_until - c.ini)::integer,
+    c.v_coba,
+    coalesce(c.paket is null and c.trial_until is not null
+             and c.ini > c.trial_until, false),
+    r.status,
+    case when r.status = 'ditolak' then r.alasan_tolak end,
+    -- TERKUNCI kalau bukan keduanya.
+    --
+    -- Baris yang tidak ada sama sekali ikut terkunci: `c.v_coba` dan
+    -- `c.v_langganan` keduanya false di situ, dan merchant tanpa baris
+    -- billing memang merchant yang belum pernah diberi apa pun.
+    not (coalesce(c.v_coba, false) or coalesce(c.v_langganan, false)),
+    c.dihentikan_at is not null,
+    c.aktif_sampai,
+    c.alasan_berhenti
+  from hitung c
+  cross join boleh b
+  left join paket_langganan p on p.kode = c.paket
+  left join r on true
+  where b.ya;
+$$;
+
+grant execute on function keadaan_langganan(text) to authenticated;
+
+commit;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- 4. KaataGo Admin melihat siapa yang berhenti
+-- ─────────────────────────────────────────────────────────────────────
+
+begin;
+
+drop function if exists keadaan_langganan_semua();
+
+create or replace function keadaan_langganan_semua()
+returns table (
+  resto_id text,
+  paket text,
+  trial_until date,
+  trial_days integer,
+  trial_paket text,
+  sisa_hari integer,
+  dalam_percobaan boolean,
+  percobaan_habis boolean,
+  status_pengajuan text,
+  dihentikan boolean,
+  aktif_sampai date,
+  alasan_berhenti text
+)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  with hari as (
+    select (now() at time zone 'Asia/Jakarta')::date as ini
+  )
+  select
+    b.resto_id,
+    b.paket,
+    b.trial_until,
+    b.trial_days,
+    case when b.trial_until is not null
+         then coalesce(b.trial_paket, 'premium') end,
+    (b.trial_until - h.ini)::integer,
+    coalesce(b.paket is null and b.trial_until is not null
+             and h.ini <= b.trial_until, false),
+    coalesce(b.paket is null and b.trial_until is not null
+             and h.ini > b.trial_until, false),
+    (select status from subscription_requests r
+      where r.resto_id = b.resto_id
+      order by r.diajukan_at desc limit 1),
+    b.dihentikan_at is not null,
+    b.aktif_sampai,
+    b.alasan_berhenti
+  from resto_billing b
+  cross join hari h
+  where is_super_admin();
+$$;
+
+grant execute on function keadaan_langganan_semua() to authenticated;
+
+commit;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- 5. Paket yang disetujui menghapus penghentian sebelumnya
+-- ─────────────────────────────────────────────────────────────────────
+--
+-- Tanpa ini, merchant yang berhenti lalu berlangganan lagi tetap
+-- membawa tanggal berhentinya yang lama — dan aplikasinya mati di
+-- tanggal itu meski dia baru saja membayar.
+
+begin;
+
+create or replace function _bersihkan_penghentian()
+returns trigger
+language plpgsql
+as $fn$
+begin
+  if new.paket is not null and new.paket is distinct from old.paket then
+    new.dihentikan_at := null;
+    new.aktif_sampai := null;
+    new.alasan_berhenti := null;
+  end if;
+  return new;
+end;
+$fn$;
+
+drop trigger if exists trg_bersihkan_penghentian on resto_billing;
+create trigger trg_bersihkan_penghentian
+  before update on resto_billing
+  for each row execute function _bersihkan_penghentian();
+
+commit;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- Memeriksanya
+-- ─────────────────────────────────────────────────────────────────────
+--
+--   select resto_id, paket, trial_until, dihentikan_at, aktif_sampai
+--   from resto_billing order by resto_id;
+--
+--   select * from keadaan_langganan_semua() where dihentikan;
+--
+-- Dan yang paling penting — siapa yang sekarang terkunci:
+--
+--   select r.id, r.name from restaurants r
+--   join resto_billing b on b.resto_id = r.id
+--   where not (
+--     (b.paket is null and b.trial_until is not null
+--       and (now() at time zone 'Asia/Jakarta')::date <= b.trial_until)
+--     or (b.paket is not null and (b.aktif_sampai is null
+--       or (now() at time zone 'Asia/Jakarta')::date <= b.aktif_sampai))
+--   );
+
+
+-- ═══════════════════════════════════════════════════════════════════
+-- BAGIAN 103 dari 113 — setelan_platform.sql
+-- ═══════════════════════════════════════════════════════════════════
+
+-- KaataGo - setelan milik KaataGo sendiri, bukan milik merchant.
+--
+-- Jalankan kapan saja. Aman diulang.
+--
+-- ── Untuk apa ────────────────────────────────────────────────────────
+--
+-- Tautan situs KaataGo di layar Tentang KaataGo dulu ditulis mati di
+-- dalam APK. Mengganti alamatnya — pindah domain, pindah hosting —
+-- berarti merilis APK baru, dan HP yang belum memperbarui tetap
+-- membuka alamat lama selamanya. Justru HP-HP itulah yang paling perlu
+-- diarahkan ke tempat yang benar.
+--
+-- ── Kenapa bukan tabel `settings` ────────────────────────────────────
+--
+-- `settings` adalah setelan pembayaran PER MERCHANT — satu baris per
+-- resto, dijaga Admin dan Finance resto itu. Tautan situs KaataGo bukan
+-- milik merchant mana pun, dan menaruhnya di sana berarti memilih satu
+-- resto secara acak untuk menampungnya.
+--
+-- ── Siapa yang boleh apa ─────────────────────────────────────────────
+--
+-- Baca: siapa pun, termasuk yang belum login. Layar Tentang KaataGo
+-- bisa dibuka dari halaman login, dan yang membukanya sering justru
+-- orang yang belum punya akun.
+--
+-- Ubah: KaataGo Admin saja. Tautan yang bisa diubah merchant adalah
+-- tautan yang bisa diarahkan ke halaman palsu yang meminta kata sandi —
+-- dari dalam aplikasi resmi, dengan kepercayaan penuh pembacanya.
+
+begin;
+
+create table if not exists setelan_platform (
+  kunci text primary key,
+  nilai text not null,
+  updated_at timestamptz not null default now(),
+  updated_by text
+);
+
+-- Tautan harus https.
+--
+-- Diperiksa di basis data, bukan cuma di layar editornya: tautan
+-- `http://` atau `javascript:` yang lolos ke sini dibuka apa adanya oleh
+-- setiap HP yang membaca layar Tentang.
+alter table setelan_platform drop constraint if exists setelan_platform_tautan_https;
+alter table setelan_platform add constraint setelan_platform_tautan_https
+  check (kunci not like 'tautan_%' or nilai ~ '^https://[^\s]+$');
+
+alter table setelan_platform enable row level security;
+
+drop policy if exists "setelan_platform: baca" on setelan_platform;
+create policy "setelan_platform: baca" on setelan_platform
+  for select using (true);
+
+drop policy if exists "setelan_platform: super admin ubah" on setelan_platform;
+create policy "setelan_platform: super admin ubah" on setelan_platform
+  for all using (is_super_admin()) with check (is_super_admin());
+
+grant select on setelan_platform to anon, authenticated;
+grant insert, update, delete on setelan_platform to authenticated;
+
+-- Nilai awalnya alamat yang sekarang tertulis di APK, supaya memasang
+-- berkas ini tidak mengubah apa pun yang dilihat orang.
+insert into setelan_platform (kunci, nilai)
+values ('tautan_situs', 'https://bujejuki-spec.github.io/KaataGo-LandingPage/')
+on conflict (kunci) do nothing;
+
+commit;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- Memeriksanya
+-- ─────────────────────────────────────────────────────────────────────
+--
+--   select * from setelan_platform;
+--
+-- Dan dari luar, sebagai pengunjung yang belum login:
+--
+--   curl -s 'https://xizpwtycczigjhzxegen.supabase.co/rest/v1/setelan_platform?kunci=eq.tautan_situs' \
+--     -H 'apikey: <anon key>'
+
+
+-- ═══════════════════════════════════════════════════════════════════
+-- BAGIAN 104 dari 113 — bukti_bayar_qris_statis.sql
+-- ═══════════════════════════════════════════════════════════════════
+
+-- KaataGo - pelanggan membayar QRIS Statis dari HP-nya sendiri.
+--
+-- Jalankan kapan saja. Aman diulang.
+--
+-- ── Apa yang berubah ─────────────────────────────────────────────────
+--
+-- Sebelumnya QRIS Statis diperlakukan sama persis dengan tunai: pesanan
+-- masuk, lalu pelanggan disuruh ke meja kasir. Padahal justru QRIS yang
+-- paling tidak perlu ke kasir — QR-nya bisa dipindai dari HP sendiri,
+-- dan buktinya ada di HP itu juga.
+--
+-- Sekarang pelanggan melihat QR merchant di layarnya, membayar, lalu
+-- mengunggah bukti transfernya. Yang memastikan tetap kasir, karena QR
+-- statis tidak membawa nominal dan tidak ada kabar apa pun yang datang
+-- dari penyedia pembayaran.
+--
+-- ── Kenapa fungsi, bukan melonggarkan kebijakan `orders` ─────────────
+--
+-- UPDATE pada `orders` menuntut karyawan resto. Pelanggan — apalagi tamu
+-- yang tidak login — tidak termasuk, dan memang tidak boleh: tabel itu
+-- juga memuat status dapur, total, dan diskon. Melonggarkannya supaya
+-- satu kolom bisa diisi berarti membuka seluruh barisnya.
+--
+-- Fungsi di bawah hanya menyentuh satu kolom, dan hanya untuk pesanan
+-- yang memang sedang menunggu dibayar lewat QRIS Statis.
+
+begin;
+
+alter table orders add column if not exists bukti_bayar_url text;
+
+commit;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- Melampirkan bukti — PINDAH ke gambar_base64.sql
+-- ─────────────────────────────────────────────────────────────────────
+--
+-- `lampirkan_bukti_bayar` dulu didefinisikan di sini, menyimpan JALUR
+-- berkas di Storage. Sejak gambar unggahan pindah ke base64, fungsinya
+-- menulis ke kolom yang berbeda — dan definisinya ikut pindah.
+--
+-- Sengaja tidak ditinggalkan salinannya di sini. Dua berkas yang
+-- mendefinisikan satu fungsi berarti mana yang berlaku bergantung pada
+-- urutan dijalankannya, dan yang kalah tidak pernah berbunyi: ia cuma
+-- menulis ke kolom yang tidak dibaca siapa pun.
+
+-- ─────────────────────────────────────────────────────────────────────
+-- Ember bukti bayar
+-- ─────────────────────────────────────────────────────────────────────
+--
+-- Tertutup, tidak seperti `qris-statis` yang memang gambar publik.
+-- Bukti transfer memuat nama pengirim, nomor rekening sebagian, dan
+-- nominalnya — tidak satu pun pantas bisa dibuka siapa saja yang
+-- menebak alamatnya.
+
+begin;
+
+insert into storage.buckets (id, name, public)
+values ('bukti-bayar', 'bukti-bayar', false)
+on conflict (id) do update set public = false;
+
+-- Menulis: siapa pun, TAPI hanya ke pesanan yang benar-benar ada,
+-- belum lunas, dan memang memilih QRIS Statis.
+--
+-- Jalurnya `<resto_id>/<order_id>.jpg`, dan kedua bagiannya diperiksa.
+-- Ember yang menerima tulisan tanpa syarat adalah tempat penyimpanan
+-- gratis bagi siapa pun yang menemukannya.
+drop policy if exists "bukti bayar: pelanggan menulis" on storage.objects;
+create policy "bukti bayar: pelanggan menulis" on storage.objects
+  for insert with check (
+    bucket_id = 'bukti-bayar'
+    and exists (
+      select 1 from public.orders o
+      -- `o.id::text`, bukan sebaliknya. Nama berkas yang bukan uuid
+      -- akan MELEMPAR galat kalau dipaksa jadi uuid — dan galat di
+      -- dalam kebijakan storage mematikan unggahan untuk semua orang,
+      -- bukan cuma untuk yang salah menamai.
+      where o.id::text = split_part((storage.foldername(name))[2], '.', 1)
+        and o.resto_id = (storage.foldername(name))[1]
+        and o.payment_method = 'qris_static'
+        and o.payment_status = 'pending'
+    )
+  );
+
+-- Membaca: yang memutuskan pembayarannya.
+--
+-- Kasir ikut, dan memang harus: dialah yang menyatakan lunas setelah
+-- melihat buktinya. Chef tidak — antrean dapur tidak berurusan dengan
+-- bukti transfer siapa pun.
+drop policy if exists "bukti bayar: kasir membaca" on storage.objects;
+create policy "bukti bayar: kasir membaca" on storage.objects
+  for select using (
+    bucket_id = 'bukti-bayar'
+    and (
+      public.is_super_admin()
+      or public.is_resto_employee((storage.foldername(name))[1],
+           array['owner', 'admin', 'finance', 'kasir'])
+    )
+  );
+
+-- Mengubah: pelanggan yang salah unggah boleh menimpanya, dengan syarat
+-- yang sama persis seperti menulis.
+drop policy if exists "bukti bayar: pelanggan menimpa" on storage.objects;
+create policy "bukti bayar: pelanggan menimpa" on storage.objects
+  for update using (
+    bucket_id = 'bukti-bayar'
+    and exists (
+      select 1 from public.orders o
+      -- `o.id::text`, bukan sebaliknya. Nama berkas yang bukan uuid
+      -- akan MELEMPAR galat kalau dipaksa jadi uuid — dan galat di
+      -- dalam kebijakan storage mematikan unggahan untuk semua orang,
+      -- bukan cuma untuk yang salah menamai.
+      where o.id::text = split_part((storage.foldername(name))[2], '.', 1)
+        and o.resto_id = (storage.foldername(name))[1]
+        and o.payment_method = 'qris_static'
+        and o.payment_status = 'pending'
+    )
+  );
+
+commit;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- Memeriksanya
+-- ─────────────────────────────────────────────────────────────────────
+--
+--   select column_name from information_schema.columns
+--   where table_name = 'orders' and column_name = 'bukti_bayar_url';
+--
+--   select id, public from storage.buckets where id = 'bukti-bayar';
+--
+--   select policyname, cmd from pg_policies
+--   where tablename = 'objects' and policyname like 'bukti bayar%';
+--
+-- Yang benar: ember-nya TIDAK publik, dan ada tiga kebijakan —
+-- menulis, membaca, menimpa.
+
+
+-- ═══════════════════════════════════════════════════════════════════
+-- BAGIAN 105 dari 113 — gambar_base64.sql
+-- ═══════════════════════════════════════════════════════════════════
+
+-- KaataGo - gambar unggahan disimpan sebagai base64, bukan di Storage.
+--
+-- Jalankan kapan saja. Aman diulang.
+--
+-- ── Yang berubah ─────────────────────────────────────────────────────
+--
+-- Semua gambar yang diunggah orang kini tersimpan di basis data sebagai
+-- base64: bukti bayar pelanggan, bukti transfer langganan, foto absensi
+-- berikut surat sakitnya, QR statis merchant, dan foto menu.
+--
+-- Batasnya 2 MB SESUDAH dikecilkan, dan hanya JPG atau PNG yang
+-- diterima — diperiksa dari isi berkasnya, bukan dari nama.
+--
+-- ── Kenapa foto menu punya TABELNYA SENDIRI ──────────────────────────
+--
+-- Kolom `products.photo_base64` masih ada, dan justru kolom itulah yang
+-- dulu jadi masalah: aliran realtime Supabase tidak bisa memilih kolom.
+-- `.stream()` selalu mengirim BARIS UTUH, dan payload perubahannya juga
+-- baris utuh. Selama fotonya di sana, menandai satu barang habis berarti
+-- mengirim ulang seluruh album ke setiap pelanggan yang sedang membuka
+-- menu.
+--
+-- Dengan batas 2 MB per foto, menu berisi 30 produk berarti puluhan MB
+-- terkirim ulang tiap kali stok berubah. Itu bukan kelambatan kecil;
+-- itu kuota pelanggan.
+--
+-- Jadi fotonya berdiri di tabel terpisah yang TIDAK pernah dialirkan.
+-- Baris produk tetap ringan, dan fotonya diambil sekali lalu diingat.
+-- Jangan kembalikan ke `products` — kolom lamanya sengaja dibiarkan
+-- kosong sebagai peninggalan, bukan sebagai tempat yang boleh dipakai
+-- lagi.
+
+begin;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- 1. Kolom base64 di samping kolom lamanya
+-- ─────────────────────────────────────────────────────────────────────
+--
+-- Kolom lama TIDAK dibuang. Baris yang sudah terlanjur menunjuk ke
+-- Storage masih bisa dibaca, dan yang membacanya memilih mana yang ada:
+-- base64 dulu, jalur lama sebagai cadangan. Membuangnya sekarang berarti
+-- bukti absensi dan bukti transfer bertahun lalu berubah jadi kotak
+-- kosong pada hari berkas ini dijalankan.
+
+alter table orders add column if not exists bukti_bayar_base64 text;
+
+alter table subscription_requests add column if not exists bukti_base64 text;
+
+alter table attendance
+  add column if not exists masuk_foto_base64 text,
+  add column if not exists pulang_foto_base64 text,
+  add column if not exists bukti_base64 text;
+
+alter table employee_faces add column if not exists foto_base64 text;
+
+alter table settings add column if not exists qris_static_base64 text;
+
+commit;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- 2. Foto menu, di tabelnya sendiri
+-- ─────────────────────────────────────────────────────────────────────
+
+begin;
+
+create table if not exists product_photos (
+  product_id text primary key,
+  resto_id text not null,
+  base64 text not null,
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists product_photos_resto_idx
+  on product_photos (resto_id);
+
+alter table product_photos enable row level security;
+
+-- Membaca: siapa pun, termasuk pelanggan yang belum login.
+--
+-- Menu memang dipajang untuk umum — foto produk bukan rahasia, dan
+-- pelanggan yang memindai QR meja tidak punya akun.
+drop policy if exists "product_photos: baca umum" on product_photos;
+create policy "product_photos: baca umum" on product_photos
+  for select using (true);
+
+-- Menulis: karyawan resto yang bersangkutan.
+--
+-- `resto_id` diperiksa, bukan sekadar "karyawan mana pun" — tanpa itu,
+-- karyawan resto lain bisa menimpa foto menu resto ini.
+drop policy if exists "product_photos: karyawan menulis" on product_photos;
+create policy "product_photos: karyawan menulis" on product_photos
+  for all using (
+    is_super_admin()
+    or is_resto_employee(resto_id, array['owner', 'admin'])
+  ) with check (
+    is_super_admin()
+    or is_resto_employee(resto_id, array['owner', 'admin'])
+  );
+
+grant select on product_photos to anon, authenticated;
+grant insert, update, delete on product_photos to authenticated;
+
+commit;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- 3. Pelanggan melampirkan bukti bayarnya sendiri
+-- ─────────────────────────────────────────────────────────────────────
+--
+-- Menggantikan versi yang menyimpan jalur Storage. Syaratnya sama
+-- persis: hanya pesanan yang benar-benar ada, belum lunas, dan memang
+-- memilih QRIS Statis.
+
+begin;
+
+create or replace function lampirkan_bukti_bayar(
+  p_order_id text,
+  p_jalur text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $fn$
+declare
+  v_o record;
+begin
+  select * into v_o from orders where id::text = p_order_id;
+
+  if v_o is null then
+    raise exception 'Pesanannya tidak ditemukan.';
+  end if;
+
+  if v_o.payment_method is distinct from 'qris_static' then
+    raise exception 'Pesanan ini tidak dibayar lewat QRIS Statis.';
+  end if;
+
+  if v_o.payment_status is distinct from 'pending' then
+    raise exception 'Pesanan ini sudah selesai pembayarannya.';
+  end if;
+
+  -- Batas ukurannya ditegakkan di sini juga, bukan cuma di aplikasi.
+  --
+  -- Aplikasi memang sudah mengecilkan dan memeriksanya, tapi fungsi ini
+  -- terbuka untuk `anon`: yang memanggilnya langsung bisa mengirim apa
+  -- saja. Base64 membengkak kira-kira sepertiga, jadi 2 MB berkas
+  -- menjadi sekitar 2,8 MB teks.
+  if length(p_jalur) > 3000000 then
+    raise exception 'Bukti bayarnya terlalu besar.';
+  end if;
+
+  update orders set bukti_bayar_base64 = p_jalur where id::text = p_order_id;
+end;
+$fn$;
+
+revoke all on function lampirkan_bukti_bayar(text, text) from public;
+grant execute on function lampirkan_bukti_bayar(text, text)
+  to anon, authenticated;
+
+commit;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- Memeriksanya
+-- ─────────────────────────────────────────────────────────────────────
+--
+--   select column_name from information_schema.columns
+--   where column_name like '%base64%' order by table_name;
+--
+--   select policyname, cmd from pg_policies where tablename='product_photos';
+--
+-- Dan yang paling penting — baris produk harus tetap RINGAN:
+--
+--   select pg_size_pretty(avg(pg_column_size(p.*))::bigint) from products p;
+--
+-- Kalau angka itu melonjak, fotonya kembali masuk ke baris produk, dan
+-- seluruh album akan terkirim ulang tiap kali stok berubah.
+
+-- ─────────────────────────────────────────────────────────────────────
+-- 4. Fungsi yang menyimpan gambar ikut pindah kolom
+-- ─────────────────────────────────────────────────────────────────────
+--
+-- Tanda tangannya SENGAJA tidak diubah. Nama parameternya memang jadi
+-- sedikit usang — `p_bukti_url` kini membawa base64, bukan jalur — tapi
+-- mengubah daftar parameter berarti membuat fungsi KEDUA dengan nama
+-- yang sama, dan aplikasi yang belum diperbarui memanggil yang lama
+-- tanpa satu pun galat yang menjelaskan kenapa buktinya tidak muncul.
+--
+-- Yang berubah cuma kolom yang ditulis.
+
+begin;
+
+create or replace function ajukan_tidak_masuk(
+  p_resto_id text,
+  p_tanggal date,
+  p_status text,
+  p_alasan text,
+  p_bukti_url text default null)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $fn$
+declare
+  v_email text := lower(coalesce(auth.jwt() ->> 'email', ''));
+begin
+  if v_email = '' then
+    raise exception 'Harus masuk dulu.';
+  end if;
+
+  if not is_resto_employee(p_resto_id, peran_karyawan()) then
+    raise exception 'Kamu bukan karyawan merchant ini.';
+  end if;
+
+  if p_status not in ('izin', 'sakit', 'cuti') then
+    raise exception 'Statusnya harus izin, sakit, atau cuti.';
+  end if;
+
+  if p_tanggal > (now() at time zone 'Asia/Jakarta')::date then
+    raise exception 'Belum bisa mengajukan untuk tanggal yang belum tiba.';
+  end if;
+
+  if length(coalesce(p_bukti_url, '')) > 3000000 then
+    raise exception 'Bukti suratnya terlalu besar.';
+  end if;
+
+  -- Hari yang sudah terlanjur absen masuk tidak bisa diubah jadi izin
+  -- oleh yang bersangkutan sendiri. Kalau memang keliru, atasannya yang
+  -- membetulkan — dan itu meninggalkan jejak siapa yang mengubahnya.
+  if exists (select 1 from attendance
+             where resto_id = p_resto_id
+               and lower(employee_email) = v_email
+               and tanggal = p_tanggal
+               and masuk_at is not null) then
+    raise exception 'Hari itu sudah tercatat masuk. Minta Admin yang '
+                    'membetulkannya.';
+  end if;
+
+  insert into attendance (
+    resto_id, employee_email, tanggal, status, alasan, bukti_base64)
+  values (p_resto_id, v_email, p_tanggal, p_status, p_alasan, p_bukti_url)
+  on conflict (resto_id, employee_email, tanggal) do update
+    set status = excluded.status,
+        alasan = excluded.alasan,
+        bukti_base64 =
+          coalesce(excluded.bukti_base64, attendance.bukti_base64);
+end;
+$fn$;
+
+create or replace function ajukan_langganan(
+  p_resto_id text,
+  p_paket text,
+  p_bukti_url text,
+  p_catatan text default null)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $fn$
+declare
+  v_email text := auth.jwt() ->> 'email';
+  v_harga bigint;
+  v_id uuid;
+begin
+  if v_email is null then
+    raise exception 'Harus masuk dulu.';
+  end if;
+
+  -- Owner saja. Berlangganan adalah keputusan yang mengikat merchantnya
+  -- pada pembayaran bulanan, dan itu bukan keputusan yang pantas bisa
+  -- diambil setiap orang yang bisa menambah menu.
+  if not (is_super_admin() or is_resto_employee(p_resto_id, array['owner'])) then
+    raise exception 'Hanya Owner yang bisa berlangganan.';
+  end if;
+
+  if p_paket not in ('basic', 'premium') then
+    raise exception 'Paketnya harus Basic atau Premium.';
+  end if;
+
+  if p_bukti_url is null or btrim(p_bukti_url) = '' then
+    raise exception 'Bukti transfernya wajib diunggah.';
+  end if;
+
+  if length(p_bukti_url) > 3000000 then
+    raise exception 'Bukti transfernya terlalu besar.';
+  end if;
+
+  if exists (select 1 from subscription_requests
+             where resto_id = p_resto_id and status = 'verifikasi') then
+    raise exception 'Pengajuanmu yang sebelumnya masih diperiksa.';
+  end if;
+
+  select harga_bulanan into v_harga from paket_langganan where kode = p_paket;
+  if v_harga is null then
+    raise exception 'Paket % tidak dikenal.', p_paket;
+  end if;
+
+  insert into subscription_requests (
+    resto_id, paket, harga, bukti_base64, catatan, diajukan_oleh)
+  values (p_resto_id, p_paket, v_harga, btrim(p_bukti_url), p_catatan, v_email)
+  returning id into v_id;
+
+  return v_id;
+end;
+$fn$;
+
+commit;
+
+
+-- ═══════════════════════════════════════════════════════════════════
+-- BAGIAN 106 dari 113 — absensi_baca_super_admin.sql
+-- ═══════════════════════════════════════════════════════════════════
+
+-- KaataGo - KaataGo Admin bisa membuka berkas di ember `absensi`.
+--
+-- Jalankan SETELAH absensi_payroll.sql. Aman diulang.
+--
+-- ── Apa yang keliru ──────────────────────────────────────────────────
+--
+-- Kebijakan baca ember ini cuma menanyakan `is_resto_employee(...)`.
+-- KaataGo Admin bukan karyawan resto mana pun — dia yang mengurus
+-- semuanya dari luar — jadi jawabannya selalu tidak.
+--
+-- Akibatnya jatuh persis di tempat yang paling salah: bukti transfer
+-- langganan diunggah ke ember ini, dan yang wajib memeriksanya sebelum
+-- menyetujui pembayaran adalah KaataGo Admin. Yang dia lihat "Gagal
+-- dimuat", dan satu-satunya jalan yang tersisa menyetujui pembayaran
+-- tanpa pernah melihat buktinya.
+--
+-- Kebijakan tulis dan ubah sengaja TIDAK diubah. KaataGo Admin tidak
+-- perlu menaruh atau menimpa berkas di ember milik merchant, dan hak
+-- yang tidak dibutuhkan sebaiknya tidak ada.
+--
+-- ── Sebatas map bukti transfer, bukan seluruh ember ──────────────────
+--
+-- Ember ini menyimpan dua hal yang sangat berbeda. Bukti transfer, yang
+-- memang urusan KaataGo Admin. Dan foto wajah karyawan berikut surat
+-- keterangan sakitnya, yang sama sekali bukan.
+--
+-- Jalurnya sudah memisahkan keduanya sejak awal: bukti transfer selalu
+-- `<resto>/langganan/...`, sedangkan foto absen dan surat sakit ada di
+-- map lain. Jadi haknya diikat ke map itu.
+--
+-- Membuka seluruh ember memang lebih ringkas ditulis, dan akibatnya
+-- pengelola KaataGo bisa membuka wajah tiap karyawan tiap merchant
+-- tanpa satu pun dari mereka tahu. Tidak ada yang membutuhkan itu untuk
+-- menyetujui pembayaran.
+
+begin;
+
+drop policy if exists "absensi: baca atasan" on storage.objects;
+create policy "absensi: baca atasan" on storage.objects
+  for select using (
+    bucket_id = 'absensi'
+    and (
+      -- Disebut lengkap dengan skemanya. Policy pada storage.objects
+      -- tidak dijalankan PostgREST melainkan layanan Storage, yang
+      -- menyambung dengan search_path-nya sendiri — dan nama tanpa
+      -- skema di sana bisa tidak ditemukan. Galatnya baru muncul saat
+      -- seseorang benar-benar membuka gambarnya, bukan saat policy-nya
+      -- dibuat.
+      (public.is_super_admin()
+        and (storage.foldername(name))[2] = 'langganan')
+      or public.is_resto_employee((storage.foldername(name))[1],
+           array['owner', 'admin', 'finance'])
+    )
+  );
+
+commit;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- Memeriksanya
+-- ─────────────────────────────────────────────────────────────────────
+--
+--   select policyname, coalesce(qual, with_check)
+--   from pg_policies
+--   where schemaname = 'storage' and tablename = 'objects'
+--     and policyname like 'absensi%';
+--
+-- Yang benar: kebijakan SELECT menyebut is_super_admin() BERIKUT
+-- syarat map 'langganan'-nya, dan dua kebijakan lainnya tidak menyebut
+-- is_super_admin() sama sekali.
+
+
+-- ═══════════════════════════════════════════════════════════════════
+-- BAGIAN 107 dari 113 — shift_opening_check.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — perkiraan modal awal saat shift dibuka.
@@ -17223,7 +19350,7 @@ grant execute on function expected_opening_cash(text) to authenticated;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 98 dari 103 — support_tickets.sql
+-- BAGIAN 108 dari 113 — support_tickets.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pengaduan, tiket, dan percakapannya.
@@ -17651,7 +19778,7 @@ grant execute on function mark_support_read(uuid) to authenticated;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 99 dari 103 — support_push.sql
+-- BAGIAN 109 dari 113 — support_push.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — notifikasi untuk KaataGo Support.
@@ -17765,7 +19892,7 @@ create trigger trg_queue_push_support
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 100 dari 103 — support_auto_reply.sql
+-- BAGIAN 110 dari 113 — support_auto_reply.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — sapaan otomatis, dan penanda belum dibaca yang tahan
@@ -18006,7 +20133,7 @@ $$;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 101 dari 103 — support_chat_rules.sql
+-- BAGIAN 111 dari 113 — support_chat_rules.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — chat bebas bukan pengaduan, dan tiket kembar tidak lahir
@@ -18198,7 +20325,7 @@ where id in (select id from kembar where urutan > 1);
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 102 dari 103 — support_pesan_kembar.sql
+-- BAGIAN 112 dari 113 — support_pesan_kembar.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — pesan kembar di dalam satu percakapan.
@@ -18288,7 +20415,7 @@ commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════
--- BAGIAN 103 dari 103 — support_push_wording.sql
+-- BAGIAN 113 dari 113 — support_push_wording.sql
 -- ═══════════════════════════════════════════════════════════════════
 
 -- KaataGo — judul notifikasi chat tidak menyebut "pengaduan".

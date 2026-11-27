@@ -38,21 +38,34 @@ void main() {
           ),
         );
 
-    testWidgets('satu-satunya isinya dicabut, kelompoknya ikut hilang',
+    // Kelompok berisi SATU menu membubarkan dirinya, dan menunya naik
+    // menggantikannya.
+    //
+    // Pintu yang di baliknya cuma ada satu kartu menambah satu ketukan
+    // tanpa menyembunyikan apa pun: judul kelompoknya dan judul menunya
+    // sama-sama harus dibaca, dan yang kedua baru terlihat setelah yang
+    // pertama diketuk.
+    testWidgets('berisi satu menu: kelompoknya membubarkan diri',
         (tester) async {
       await tester.pumpWidget(bungkus(const {}));
-      expect(find.text('Keuangan'), findsOneWidget);
+      expect(find.text('Keuangan'), findsNothing);
+      expect(find.text('Setor Saldo Cash'), findsOneWidget);
+    });
 
+    testWidgets('satu-satunya isinya dicabut: tidak tersisa apa pun',
+        (tester) async {
       await tester.pumpWidget(
           bungkus(const {'Setor Saldo Cash': TingkatAkses.tidakAda}));
       expect(find.text('Keuangan'), findsNothing);
+      expect(find.text('Setor Saldo Cash'), findsNothing);
     });
 
-    testWidgets('isinya cuma boleh dilihat, kelompoknya tetap ada',
-        (tester) async {
+    testWidgets('yang cuma boleh dilihat tetap tampil', (tester) async {
+      // "Lihat" bukan "Tidak Ada": menunya tetap terbuka, yang dimatikan
+      // cuma tombol simpannya di dalamnya.
       await tester
           .pumpWidget(bungkus(const {'Setor Saldo Cash': TingkatAkses.lihat}));
-      expect(find.text('Keuangan'), findsOneWidget);
+      expect(find.text('Setor Saldo Cash'), findsOneWidget);
     });
   });
 

@@ -11,6 +11,51 @@ import 'package:flutter_test/flutter_test.dart';
 /// dibatasi, itu menaruh Batal di atas Simpan. [DialogActions] menyusun
 /// keduanya sendiri supaya urutannya tetap disengaja di lebar berapa
 /// pun.
+/// Isi satu blok `actions: [ ... ]`, dihitung sampai kurung penutupnya.
+///
+/// Dulu penutupnya dicari sebagai teks `'\n      ],'` — enam spasi
+/// persis — dan kalau tidak ketemu, yang dibaca 400 karakter pertama
+/// sesudahnya. Padahal dialog yang bersarang lebih dalam menutup di
+/// indentasi lain: 54 dari 104 blok di `lib/` tidak pernah cocok, jadi
+/// separuh lebih diperiksa lewat jendela sembarang yang bisa melewati
+/// ujung daftarnya ke kode yang tidak bersangkutan, atau berhenti
+/// sebelum tombol batalnya. Penjaga yang membaca blok yang salah bisa
+/// meloloskan yang nakal sekaligus menuduh yang tidak.
+///
+/// Dan jendela itu melempar RangeError pada berkas yang sisanya kurang
+/// dari 400 karakter — yang menemukannya dialog pendek yang baru
+/// ditambahkan, bukan pengujian ini.
+///
+/// Menghitung kurung itu tepat. Literal dan komentar dilewati supaya
+/// `'[x]'` atau `// [DialogActions]` tidak ikut terhitung.
+String? blokActions(String isi, int mulai) {
+  var dalam = 1;
+  for (var i = mulai; i < isi.length; i++) {
+    final c = isi[i];
+    if (c == "'" || c == '"') {
+      i++;
+      while (i < isi.length && isi[i] != c) {
+        if (isi[i] == r'\') i++;
+        i++;
+      }
+      continue;
+    }
+    if (c == '/' && i + 1 < isi.length && isi[i + 1] == '/') {
+      while (i < isi.length && isi[i] != '\n') {
+        i++;
+      }
+      continue;
+    }
+    if (c == '[') {
+      dalam++;
+    } else if (c == ']') {
+      dalam--;
+      if (dalam == 0) return isi.substring(mulai, i);
+    }
+  }
+  return null;
+}
+
 void main() {
   final berkas = Directory('lib')
       .listSync(recursive: true)
@@ -24,10 +69,15 @@ void main() {
     for (final f in berkas) {
       final isi = f.readAsStringSync();
       for (final m in RegExp(r'actions: \[').allMatches(isi)) {
-        // Isi blok actions-nya saja, sampai penutupnya.
-        final sisa = isi.substring(m.end);
-        final tutup = sisa.indexOf('\n      ],');
-        final blok = tutup < 0 ? sisa.substring(0, 400) : sisa.substring(0, tutup);
+        // Isi blok actions-nya saja, sampai kurung penutupnya.
+        final blok = blokActions(isi, m.end);
+        if (blok == null) {
+          // Kurungnya tidak pernah tertutup: itu berkas yang tidak akan
+          // terkompilasi, dan bukan urusan pengujian ini — tapi juga
+          // tidak boleh lolos tanpa suara.
+          nakal.add('${f.path} (blok actions tidak tertutup)');
+          continue;
+        }
 
         // Bukan cuma kata "Batal".
         //
@@ -49,10 +99,27 @@ void main() {
 
         // Batal sendirian itu dialog pemberitahuan, bukan pilihan —
         // tidak ada yang bisa terbalik urutannya.
-        final jumlahTombol = RegExp(r'(TextButton|FilledButton|OutlinedButton)\(')
-            .allMatches(blok)
-            .length;
-        if (jumlahTombol < 2) continue;
+        final tombol =
+            RegExp(r'(TextButton|FilledButton|OutlinedButton)\(')
+                .allMatches(blok)
+                .toList();
+        if (tombol.length < 2) continue;
+
+        // Yang dijaga URUTANNYA, bukan widget yang dipakai.
+        //
+        // [DialogActions] memenuhinya karena bentuknya, tapi ia cuma
+        // menampung satu konfirmasi dan satu batal. Dialog "Selisih
+        // Lebih" punya dua pilihan yang berbeda akibatnya ditambah
+        // batal, jadi ia menyusun Column-nya sendiri — dengan Batal
+        // sudah paling bawah. Menuntutnya memakai DialogActions berarti
+        // merusak dialog yang sudah benar demi hurufnya aturan.
+        //
+        // Jadi yang ditanyakan: tombol batalnya yang terakhir?
+        final batalnya = kataBatal
+            .map((k) => blok.indexOf("Text('$k')"))
+            .where((i) => i >= 0)
+            .reduce((a, b) => a > b ? a : b);
+        if (batalnya > tombol.last.start) continue;
 
         final baris = '\n'.allMatches(isi.substring(0, m.start)).length + 1;
         nakal.add('${f.path}:$baris');

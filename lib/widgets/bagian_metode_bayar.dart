@@ -11,6 +11,7 @@ import '../theme.dart';
 import '../utils/periksa_qris.dart';
 import '../utils/pesan_galat.dart';
 import 'app_toast.dart';
+import 'dialog_belum_tersedia.dart';
 import 'gambar_tersimpan.dart';
 import 'dialog_actions.dart';
 
@@ -282,9 +283,23 @@ class _BagianMetodeBayarState extends State<BagianMetodeBayar> {
         _saklar(MetodeBayar.tunai, _metode.tunai,
             (v) => _simpan(_metode.copyWith(tunai: v)),
             catatan: 'Uangnya masuk laci kasir'),
-        _saklar(MetodeBayar.qrisDinamis, _metode.qrisDinamis,
-            (v) => _simpan(_metode.copyWith(qrisDinamis: v)),
-            catatan: 'Lewat penyedia pembayaran, dicairkan menyusul'),
+        // QRIS Dinamis ditahan selama penyedia pembayarannya belum siap.
+        //
+        // Yang ditahan hanya MENYALAKANNYA. Mematikannya tetap boleh —
+        // kalau suatu hari ada merchant yang terlanjur menyala, ia tidak
+        // ikut terkunci di keadaan yang tidak bisa dipakai.
+        //
+        // Ditahan di sini, bukan dengan menyembunyikan saklarnya:
+        // saklar yang hilang terbaca sebagai fitur yang tidak ada, dan
+        // yang mencarinya akan bertanya ke KaataGo Support. Saklar yang
+        // menjawab saat disentuh memberi tahu sendiri.
+        _saklar(MetodeBayar.qrisDinamis, _metode.qrisDinamis, (v) {
+          if (v) {
+            dialogBelumTersedia(context, nama: 'QRIS Dinamis');
+            return;
+          }
+          _simpan(_metode.copyWith(qrisDinamis: v));
+        }, catatan: 'Belum tersedia — penyedia pembayarannya belum siap'),
         _saklar(
           MetodeBayar.qrisStatis,
           _metode.qrisStatis,

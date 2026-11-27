@@ -31,11 +31,25 @@ class OrderCard extends StatefulWidget {
   /// puluhan.
   final bool initiallyExpanded;
 
+  /// Kepala kartu yang menonjolkan nomor antrean, lama penyiapan, dan
+  /// berapa item yang sudah siap.
+  ///
+  /// Dipakai layar Status Pesanan, yang dibaca sambil berjalan membawa
+  /// piring. Nomor sebesar chip 12 piksel terbaca kalau kartunya
+  /// dipegang di tangan; tidak kalau layarnya tergeletak di meja antar
+  /// dan dilirik dari samping.
+  ///
+  /// Mati di tempat lain: Pesanan Masuk dan Riwayat ditelusuri sambil
+  /// duduk, dan di sana yang dicari nama atau tanggal — bukan nomor
+  /// yang harus terbaca dari jauh.
+  final bool nomorBesar;
+
   const OrderCard({
     super.key,
     required this.order,
     this.actions,
     this.initiallyExpanded = true,
+    this.nomorBesar = false,
   });
 
   @override
@@ -90,6 +104,10 @@ class _OrderCardState extends State<OrderCard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (widget.nomorBesar) ...[
+              _KepalaAntrean(order: order),
+              const SizedBox(height: 12),
+            ],
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -308,6 +326,130 @@ class _OrderCardState extends State<OrderCard> {
           ],
         ),
       ),
+    );
+  }
+}
+
+
+/// Kepala kartu untuk layar Status Pesanan.
+///
+/// Tiga hal yang benar-benar dipakai orang yang mengantar makanan:
+/// nomor antreannya, sudah berapa lama disiapkan, dan berapa item yang
+/// sudah siap.
+///
+/// Lamanya dihitung dari pesanan dibuat, bukan dari saat ia mulai
+/// disiapkan — kolom untuk itu tidak ada, dan menambahkannya berarti
+/// migrasi tersendiri. Angkanya tetap menjawab pertanyaan yang sama:
+/// mana yang paling lama menunggu.
+class _KepalaAntrean extends StatelessWidget {
+  final CustomerOrder order;
+
+  const _KepalaAntrean({required this.order});
+
+  @override
+  Widget build(BuildContext context) {
+    final muted = KaataTheme.mutedOf(context);
+    final menit = DateTime.now().difference(order.createdAt).inMinutes;
+
+    // Di atas 20 menit barulah warnanya berubah.
+    //
+    // Penanda yang menyala sejak menit pertama berhenti berarti apa-apa:
+    // semua kartu merah sama saja dengan tidak ada kartu merah.
+    final lama = menit >= 20;
+
+    final siap = order.itemsDone.length;
+    final total = order.items.length;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Container(
+          // Lebarnya dipatok supaya nomor satu digit dan tiga digit
+          // tetap sejajar antar kartu; TINGGINYA tidak — tinggi yang
+          // dipatok mati meluber begitu pemakainya membesarkan ukuran
+          // teks di setelan HP-nya, dan yang muncul garis belang
+          // kuning-hitam di tengah daftar pesanan.
+          constraints: const BoxConstraints(minWidth: 58),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [KaataTheme.brand, KaataTheme.brandDark],
+            ),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                order.punyaNomor ? order.nomorTampil.replaceAll('#', '') : '—',
+                style: const TextStyle(
+                  fontSize: 22,
+                  height: 1,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              const SizedBox(height: 2),
+              const Text('ANTREAN',
+                  style: TextStyle(
+                      fontSize: 7.5,
+                      letterSpacing: 0.8,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white70)),
+            ],
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.schedule,
+                      size: 14,
+                      color: lama ? const Color(0xFFB45309) : muted),
+                  const SizedBox(width: 5),
+                  Text(
+                    menit < 1 ? 'Baru saja' : '$menit menit',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: lama ? FontWeight.bold : FontWeight.w600,
+                      color: lama ? const Color(0xFFB45309) : muted,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              if (total > 0)
+                Row(
+                  children: [
+                    Expanded(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: siap / total,
+                          minHeight: 6,
+                          backgroundColor: KaataTheme.softFillOf(context),
+                          valueColor: const AlwaysStoppedAnimation(
+                              Color(0xFF10B981)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text('$siap/$total siap',
+                        style: TextStyle(fontSize: 11.5, color: muted)),
+                  ],
+                ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

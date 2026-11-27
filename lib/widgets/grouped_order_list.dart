@@ -31,12 +31,17 @@ class GroupedOrderList extends StatelessWidget {
   /// selalu satu hari tertentu, bukan semuanya sekaligus.
   final bool collapsibleDays;
 
+  /// Menonjolkan nomor antrean, lama penyiapan, dan berapa item yang
+  /// sudah siap. Dipakai layar Status Pesanan — lihat [OrderCard].
+  final bool nomorBesar;
+
   const GroupedOrderList({
     super.key,
     required this.orders,
     this.actionsFor,
     this.expandItems = true,
     this.collapsibleDays = false,
+    this.nomorBesar = false,
   });
 
   @override
@@ -68,6 +73,7 @@ class GroupedOrderList extends StatelessWidget {
                       order: o,
                       actions: actionsFor?.call(o),
                       initiallyExpanded: expandItems,
+                      nomorBesar: nomorBesar,
                     )),
               ],
               if (takeAway.isNotEmpty) ...[
@@ -77,6 +83,7 @@ class GroupedOrderList extends StatelessWidget {
                       order: o,
                       actions: actionsFor?.call(o),
                       initiallyExpanded: expandItems,
+                      nomorBesar: nomorBesar,
                     )),
               ],
         ];
