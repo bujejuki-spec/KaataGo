@@ -25,16 +25,34 @@ const FCM_PROJECT = "kaata-pos";
 // tiap pesan: tanpa ini Android memakai kanal bawaan, dan nada dering
 // khusus KaataGo tidak pernah berbunyi untuk notifikasi yang datang
 // lewat push.
+// ⚠ HARUS SAMA dengan `_versi` di lib/services/notification_service.dart.
+//
+// Kanal notifikasi Android membekukan nada dan tingkat pentingnya pada
+// saat DIBUAT — tidak ada cara mengubahnya sesudah itu selain memakai id
+// baru. Karena itu id-nya berversi, dan aplikasi MENGHAPUS id versi lama
+// saat dinyalakan (`_idUsang`).
+//
+// Akibatnya: kirim `channel_id` versi lama dari sini, dan id itu sudah
+// tidak ada lagi di HP-nya. Android tidak menolaknya dan tidak mencatat
+// galat apa pun — notifikasinya cuma jatuh ke kanal bawaan, dan nada
+// KaataGo tidak pernah berbunyi.
+//
+// Itu persis yang terjadi saat `_versi` dinaikkan ke 'v2' di Dart tanpa
+// berkas ini ikut diubah. Yang menjaganya sekarang
+// `test/kanal_push_sejalan_test.dart`, yang membandingkan nilai di bawah
+// dengan yang di Dart dan gagal begitu keduanya berbeda.
+const CHANNEL_VERSION = "v2";
+
 const CHANNELS: Record<string, string> = {
-  order_new: "kaata_new_order",
-  order_cooking: "kaata_order_status",
-  order_ready: "kaata_order_status",
-  pending_payment: "kaata_new_order",
-  deposit_pending: "kaata_fund_review",
-  deposit_reviewed: "kaata_fund_review",
-  petty_pending: "kaata_fund_review",
-  petty_reviewed: "kaata_fund_review",
-  announcement: "kaata_announcement",
+  order_new: `kaata_new_order_${CHANNEL_VERSION}`,
+  order_cooking: `kaata_order_status_${CHANNEL_VERSION}`,
+  order_ready: `kaata_order_status_${CHANNEL_VERSION}`,
+  pending_payment: `kaata_new_order_${CHANNEL_VERSION}`,
+  deposit_pending: `kaata_fund_review_${CHANNEL_VERSION}`,
+  deposit_reviewed: `kaata_fund_review_${CHANNEL_VERSION}`,
+  petty_pending: `kaata_fund_review_${CHANNEL_VERSION}`,
+  petty_reviewed: `kaata_fund_review_${CHANNEL_VERSION}`,
+  announcement: `kaata_announcement_${CHANNEL_VERSION}`,
 };
 
 interface OutboxRow {
@@ -278,7 +296,11 @@ async function tokensOf(query: any): Promise<string[]> {
 // ── Pengiriman ──────────────────────────────────────────────────────
 
 async function send(token: string, row: OutboxRow, bearer: string) {
-  const channel = CHANNELS[row.event] ?? "kaata_order_status";
+  // Cadangannya juga berversi. Kejadian baru yang belum terdaftar di
+  // CHANNELS akan memakai ini, dan cadangan yang id-nya sudah dihapus
+  // sama bisunya dengan yang di petanya.
+  const channel = CHANNELS[row.event] ??
+    `kaata_order_status_${CHANNEL_VERSION}`;
   const res = await fetch(
     `https://fcm.googleapis.com/v1/projects/${FCM_PROJECT}/messages:send`,
     {

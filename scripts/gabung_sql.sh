@@ -136,6 +136,12 @@ FILES=(
   support_chat_rules.sql
   support_pesan_kembar.sql
   support_push_wording.sql
+  # Paling akhir, dan harus tetap di sini: ia menyatakan ulang
+  # `_default_gl_accounts()` untuk memulihkan lima akun yang hilang,
+  # jadi ia wajib jalan sesudah qris_statis.sql yang menjatuhkannya.
+  akun_gl_perusahaan_lengkap.sql
+  lunas_langsung_disiapkan.sql
+  push_pending_payment_qris.sql
 )
 
 {

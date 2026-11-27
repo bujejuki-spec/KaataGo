@@ -54,7 +54,18 @@ class _OrderNotificationBinderState extends State<OrderNotificationBinder> {
     if (auth.isChef && auth.restoId != null) {
       return OrderNotifier(role: OrderWatchRole.chef, restoId: auth.restoId!);
     }
-    if ((auth.isKasir || auth.isAdmin) && auth.restoId != null) {
+    // Owner ikut, dan dulu tidak.
+    //
+    // Owner tidak masuk cabang mana pun di sini, jadi ia sama sekali
+    // tidak punya penotifikasi — apa pun yang diperbaiki di dalam
+    // OrderNotifier tidak pernah sampai kepadanya. Dan owner yang
+    // memegang warungnya sendiri justru orang yang paling sering
+    // memegang Pending Payment.
+    //
+    // Daftarnya sama dengan yang punya akses menu Pending Payment di
+    // `lib/utils/katalog_menu.dart`: kasir, admin, owner.
+    if ((auth.isKasir || auth.isAdmin || auth.isOwner) &&
+        auth.restoId != null) {
       return OrderNotifier(
         role: OrderWatchRole.cashier,
         restoId: auth.restoId!,

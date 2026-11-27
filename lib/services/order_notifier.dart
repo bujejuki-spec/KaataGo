@@ -106,6 +106,23 @@ class OrderNotifier {
       case OrderWatchRole.chef:
         return true;
       case OrderWatchRole.cashier:
+        // Pesanan pelanggan yang menunggu dibayar — siapa pun yang
+        // memegang Pending Payment.
+        //
+        // Dulu pesanan pelanggan dikecualikan seluruhnya di sini, dan
+        // itu benar selama yang dikabarkan hanya status dapur: pesanan
+        // orang lain bukan urusan kasir.
+        //
+        // Tapi pesanan yang menunggu dibayar ADALAH urusannya — itu
+        // pekerjaan yang baru saja mendarat di mejanya. Dan selama ia
+        // dikecualikan di sini, tidak ada satu pun yang berbunyi di
+        // aplikasi yang sedang terbuka: notifikasi push hanya muncul
+        // kalau aplikasinya di latar.
+        //
+        // Begitu lunas, ia tidak lagi `isAwaitingPayment` dan keluar
+        // dari daftar ini — jadi kasir tidak ikut dikabari soal status
+        // dapurnya sesudah itu.
+        if (o.isAwaitingPayment) return true;
         // Pesanan yang masuk lewat kasir/admin, dan memang dia sendiri
         // yang input — bukan rekan sesama kasir di shift yang sama.
         return o.source != OrderSource.customer &&
@@ -118,6 +135,27 @@ class OrderNotifier {
   }
 
   void _announceNew(CustomerOrder o) {
+    // Pesanan pelanggan yang menunggu dibayar, untuk yang memegang
+    // Pending Payment.
+    //
+    // Bunyinya memakai kanal pesanan baru, yang memang bernada dan
+    // berprioritas tinggi: ini pekerjaan dengan tenggang sepuluh menit,
+    // dan yang terlewat berarti pesanan hangus beserta stok yang sudah
+    // dikurangkan untuknya.
+    if (role == OrderWatchRole.cashier && o.isAwaitingPayment) {
+      final cara = switch (o.paymentMethod) {
+        'cash' => 'Bayar tunai di kasir',
+        'qris_static' => 'Bayar QRIS — tunggu bukti transfernya',
+        _ => 'Menunggu pembayaran',
+      };
+      NotificationService.instance.showNewOrder(
+        id: _notifId(o.id),
+        title: 'Pesanan menunggu dibayar',
+        body: '$cara · #${_ref(o.id)}',
+      );
+      return;
+    }
+
     // Hanya dapur yang perlu tahu soal pesanan baru. Bagi customer dan
     // kasir, pesanan baru itu justru yang barusan mereka buat sendiri —
     // memberitahukannya kembali cuma jadi gema.

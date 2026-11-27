@@ -9,6 +9,20 @@ import 'package:flutter_test/flutter_test.dart';
 /// nomornya hilang: pemicu jurnal melewatkan baris yang GL-nya kosong,
 /// jadi transaksinya benar-benar terjadi tapi tidak pernah masuk Jurnal
 /// GL. Yang menemukannya adalah Finance, berminggu-minggu kemudian.
+///
+/// ⚠ YANG TIDAK DIJAGA DI SINI
+///
+/// Berkas yang dibaca di bawah `supabase/default_gl_accounts.sql`,
+/// posisi 45 di `scripts/gabung_sql.sh`. Tapi `_default_gl_accounts()`
+/// dinyatakan ulang di beberapa berkas, dan yang BERLAKU adalah yang
+/// terakhir jalan. `qris_statis.sql` di posisi 91 pernah menjatuhkan
+/// empat akun tanpa satu pun tes bersuara — persis kejadian yang
+/// paragraf di atas memperingatkannya, dan penjaganya memeriksa berkas
+/// yang tidak pernah dipakai basis data.
+///
+/// Yang memeriksa definisi yang berlaku:
+/// `test/bagan_akun_lengkap_test.dart`. Jangan percaya berkas ini
+/// sendirian.
 void main() {
   final sql = File('supabase/default_gl_accounts.sql').readAsStringSync();
 

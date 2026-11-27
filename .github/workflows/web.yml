@@ -73,6 +73,24 @@ jobs:
       # diam-diam jauh lebih mahal daripada berkas penanda kosong.
       - run: touch build/web/.nojekyll
 
+      # TIDAK ada berkas CNAME di sini, dan itu disengaja.
+      #
+      # Situsnya dilayani di alamat bawaannya, bujejuki-spec.github.io.
+      # Berkas CNAME berisi domain yang DNS-nya belum mengarah ke GitHub
+      # membuat Pages berhenti melayani alamat bawaan itu dan
+      # mengalihkannya ke domain yang belum hidup — situsnya mati total,
+      # dan setiap QR meja yang dipindai pelanggan gagal. Itu sudah
+      # pernah terjadi sekali.
+      #
+      # Saat pindah ke kaatago.app nanti, barisnya:
+      #
+      #   - run: echo 'kaatago.app' > build/web/CNAME
+      #
+      # dan ia HARUS di sini, bukan dipasang lewat UI GitHub: langkah
+      # dorong di bawah mengganti seluruh isi repo situs, jadi CNAME
+      # dari UI hilang pada deploy berikutnya. Pasang bersamaan dengan
+      # DNS-nya, jangan salah satu duluan.
+
       - name: Dorong ke repo situs
         env:
           TOKEN: ${{ secrets.PAGES_TOKEN }}

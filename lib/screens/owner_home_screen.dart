@@ -115,6 +115,30 @@ class OwnerHomeScreen extends StatelessWidget {
                   // pulang. Menu yang harus dicari di dalam grup pada dua saat
                   // itu adalah menu yang dilewati — dan shift yang tidak pernah
                   // ditutup membuat seluruh gunanya hilang.
+                  // Tiga menu ini di depan, di luar grup mana pun.
+                  //
+                  // Yang membuka beranda mitra sepanjang hari membuka
+                  // tiga hal yang sama: menerima pesanan, melunasi yang
+                  // menunggu bayar, dan membuka/menutup shift. Menu yang
+                  // harus dicari di dalam grup pada saat tersibuk adalah
+                  // menu yang dilewati.
+                  HubMenuTile(
+                    icon: Icons.point_of_sale,
+                    title: 'Kasir / Input Pesanan',
+                    subtitle: 'Pilih produk, checkout, terima pembayaran',
+                    color: const Color(0xFF10B981),
+                    onTap: () => _open(context, const PosHomeScreen()),
+                  ),
+                  BadgedHubTile(
+                    icon: Icons.pending_actions_outlined,
+                    title: 'Pending Payment',
+                    subtitle: 'Pesanan dari HP customer yang bayar tunai di kasir',
+                    color: const Color(0xFFF59E0B),
+                    loadCount: () => restoId == null
+                        ? Future.value(0)
+                        : OrderRepository().pendingCashPaymentCount(restoId),
+                    destination: () => const PendingPaymentScreen(),
+                  ),
                   HubMenuTile(
                     icon: Icons.point_of_sale,
                     title: 'Shift Kasir',
@@ -127,17 +151,16 @@ class OwnerHomeScreen extends StatelessWidget {
                   HubGroupTile(
                     icon: Icons.point_of_sale_outlined,
                     title: 'Penjualan',
-                    subtitle: 'Input pesanan, pesanan masuk, dapur, pending payment, riwayat',
+                    subtitle: 'Layar pelanggan, pesanan masuk, status pesanan, riwayat',
                     color: const Color(0xFF10B981),
-                    loadCount: () => restoId == null ? Future.value(0) : OrderRepository().pendingCashPaymentCount(restoId),
+                    // Tanpa penanda hitungan lagi.
+                    //
+                    // Penandanya dulu hitungan Pending Payment, dan
+                    // menu itu sekarang di depan dengan penandanya
+                    // sendiri. Dibiarkan di sini, ia jadi angka merah
+                    // yang menyuruh membuka grup yang isinya tidak ada
+                    // apa-apa untuk dikerjakan.
                     tiles: () => [
-                      HubMenuTile(
-                      icon: Icons.point_of_sale,
-                      title: 'Kasir / Input Pesanan',
-                      subtitle: 'Pilih produk, checkout, terima pembayaran',
-                      color: const Color(0xFF10B981),
-                      onTap: () => _open(context, const PosHomeScreen()),
-                    ),
                     HubMenuTile(
                       icon: Icons.tv_outlined,
                       title: 'Layar Pelanggan',
@@ -161,16 +184,6 @@ class OwnerHomeScreen extends StatelessWidget {
                       subtitle: 'Antrean masak, cek menu sebelum selesai',
                       color: const Color(0xFFEF4444),
                       onTap: () => _open(context, const ChefHomeScreen()),
-                    ),
-                      BadgedHubTile(
-                      icon: Icons.pending_actions_outlined,
-                      title: 'Pending Payment',
-                      subtitle: 'Pesanan dari HP customer yang bayar tunai di kasir',
-                      color: const Color(0xFFF59E0B),
-                      loadCount: () => restoId == null
-                          ? Future.value(0)
-                          : OrderRepository().pendingCashPaymentCount(restoId),
-                      destination: () => const PendingPaymentScreen(),
                     ),
                       HubMenuTile(
                       icon: Icons.history,

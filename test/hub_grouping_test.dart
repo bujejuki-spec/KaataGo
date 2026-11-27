@@ -97,6 +97,34 @@ void main() {
       }
     });
 
+    test('Kasir dan Pending Payment di depan, di beranda owner', () {
+      // Owner yang memegang warungnya sendiri membuka dua hal ini
+      // sepanjang hari: menerima pesanan, dan melunasi yang menunggu
+      // bayar. Keduanya pernah di dalam grup Penjualan, bersama empat
+      // menu yang dibuka sekali-sekali — jadi yang paling sering
+      // dipakai justru yang paling dalam.
+      final teks = isi('owner');
+      for (final judul in ["'Kasir / Input Pesanan'", "'Pending Payment'"]) {
+        final posisi = teks.indexOf('title: $judul');
+        expect(posisi, greaterThan(0), reason: 'owner tanpa $judul');
+        // Kelompok pertama belum dibuka sama sekali di titik ini.
+        expect('tiles: () => ['.allMatches(teks.substring(0, posisi)), isEmpty,
+            reason: '$judul masih di dalam kelompok');
+      }
+    });
+
+    test('grup Penjualan tidak lagi memakai penanda Pending Payment', () {
+      // Penandanya dulu hitungan Pending Payment, dan menu itu sekarang
+      // di depan dengan penandanya sendiri. Dibiarkan di grupnya, ia
+      // jadi angka merah yang menyuruh membuka grup yang isinya tidak
+      // ada apa-apa untuk dikerjakan.
+      final teks = isi('owner');
+      final mulai = teks.indexOf("title: 'Penjualan'");
+      expect(mulai, greaterThan(0));
+      final blok = teks.substring(mulai, teks.indexOf('tiles: () => [', mulai));
+      expect(blok, isNot(contains('loadCount')));
+    });
+
     test('Keluar selalu berdiri sendiri', () {
       for (final peran in jumlahMenu.keys) {
         final teks = isi(peran);

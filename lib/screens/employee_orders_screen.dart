@@ -52,30 +52,19 @@ class EmployeeOrdersScreen extends StatelessWidget {
             orders: orders,
             expandItems: false,
             collapsibleDays: true,
-            // Kasir yang menyatakan sebuah pesanan mulai disiapkan.
+            // Tidak ada lagi tombol "Mulai Disiapkan" di sini.
             //
-            // Dulu tombol itu ada di layar dapur, ditekan juru masak
-            // sendiri. Sekarang yang memakai layar itu mengantar
-            // makanan, bukan memutuskan mana yang mulai dikerjakan —
-            // jadi keputusannya pindah ke tempat pesanannya diterima.
+            // Yang menyatakan sebuah pesanan mulai dikerjakan sekarang
+            // pembayarannya sendiri: pemicu
+            // `trg_lunas_langsung_disiapkan` memindahkannya ke Diproses
+            // begitu `payment_status` jadi 'paid'
+            // (`supabase/lunas_langsung_disiapkan.sql`).
             //
-            // Hanya untuk yang sudah lunas. Pesanan yang uangnya belum
-            // diterima memang tidak boleh diteruskan: kalau memang mau
-            // dimasak duluan, pembayarannya yang diselesaikan lebih
-            // dulu.
-            actionsFor: (order) {
-              if (order.isAwaitingPayment) return null;
-              if (order.kitchenStatus != KitchenStatus.waiting) return null;
-              return SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  icon: const Icon(Icons.soup_kitchen_outlined, size: 18),
-                  label: const Text('Mulai Disiapkan'),
-                  onPressed: () => repo.updateKitchenStatus(
-                      order.id, KitchenStatus.onProgress),
-                ),
-              );
-            },
+            // Jadi tidak ada satu pun pesanan yang bisa berada di
+            // keadaan yang dulu dilayani tombol itu — lunas tapi masih
+            // menunggu. Tombol yang tidak pernah bisa muncul lebih
+            // buruk daripada tombol yang tidak ada: ia tetap dibaca,
+            // diuji, dan dipelihara oleh orang yang mengira ia bekerja.
           );
         },
       ),

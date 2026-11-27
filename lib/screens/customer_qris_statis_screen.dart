@@ -11,6 +11,7 @@ import '../theme.dart';
 import '../utils/gambar_unggah.dart';
 import '../utils/pesan_galat.dart';
 import '../widgets/app_toast.dart';
+import '../widgets/dialog_actions.dart';
 import '../widgets/gambar_tersimpan.dart';
 import '../widgets/hitung_mundur_bayar.dart';
 
@@ -124,6 +125,53 @@ class _CustomerQrisStatisScreenState extends State<CustomerQrisStatisScreen> {
     }
   }
 
+  /// Menahan tombol kembali selama buktinya belum ada.
+  ///
+  /// ── Kenapa tetap ada jalan keluarnya ─────────────────────────────
+  ///
+  /// Layar ini dibuka pelanggan dari peramban HP-nya sendiri, hasil
+  /// memindai QR meja. Menutup tabnya tidak bisa dicegah siapa pun, jadi
+  /// "wajib" yang benar-benar mengunci tidak ada — yang terjebak hanya
+  /// akan menutup tabnya, dan pesanannya tetap menggantung tanpa bukti.
+  ///
+  /// Bedanya: kalau ia keluar lewat tab, ia keluar tanpa tahu
+  /// akibatnya. Kalau ia keluar lewat sini, ia sudah diberi tahu.
+  /// Itulah yang bisa dilakukan layar ini, dan itu memang yang berguna.
+  Future<void> _tanyaKeluar() async {
+    final keluar = await showDialog<bool>(
+      context: context,
+      builder: (d) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        icon: const Icon(Icons.receipt_long_outlined,
+            size: 32, color: Colors.orange),
+        title: const Text('Buktinya belum diunggah',
+            textAlign: TextAlign.center, style: TextStyle(fontSize: 17)),
+        content: Text(
+          'Kasir tidak punya cara memastikan pembayaranmu tanpa bukti '
+          'transfernya, jadi pesanan ini belum akan disiapkan.',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+              fontSize: 13.5, height: 1.45, color: KaataTheme.mutedOf(context)),
+        ),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          DialogActions(
+            confirmLabel: 'Unggah Sekarang',
+            onConfirm: () => Navigator.pop(d, false),
+            cancelLabel: 'Keluar Tanpa Bukti',
+            onCancel: () => Navigator.pop(d, true),
+          ),
+        ],
+      ),
+    );
+    if (!mounted) return;
+    if (keluar == true) {
+      Navigator.of(context).popUntil((r) => r.isFirst);
+    } else {
+      await _unggahBukti();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final rp = NumberFormat.currency(
@@ -133,7 +181,12 @@ class _CustomerQrisStatisScreenState extends State<CustomerQrisStatisScreen> {
         : widget.orderId.toUpperCase();
     final muted = KaataTheme.mutedOf(context);
 
-    return Scaffold(
+    return PopScope(
+      canPop: _terkirim,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _tanyaKeluar();
+      },
+      child: Scaffold(
       appBar: AppBar(
         title: const Text('Bayar QRIS'),
         automaticallyImplyLeading: false,
@@ -231,7 +284,8 @@ class _CustomerQrisStatisScreenState extends State<CustomerQrisStatisScreen> {
                     children: [
                       Text(
                         'Pindai QR di atas, bayar sejumlah yang tertera, '
-                        'lalu unggah bukti pembayarannya di sini.',
+                        'lalu unggah bukti pembayarannya di sini. Tanpa '
+                        'bukti, pesananmu belum akan disiapkan.',
                         textAlign: TextAlign.center,
                         style: TextStyle(fontSize: 13, color: muted),
                       ),
@@ -269,18 +323,28 @@ class _CustomerQrisStatisScreenState extends State<CustomerQrisStatisScreen> {
                 ),
 
               const SizedBox(height: 14),
+              // Selesai terkunci sampai buktinya terkirim.
+              //
+              // Inilah yang dulu membuat unggahannya opsional: tombol
+              // ini memulangkan orangnya ke awal tanpa peduli buktinya
+              // sudah ada atau belum. Yang sudah membayar lalu menekan
+              // Selesai merasa urusannya tuntas — padahal kasir tidak
+              // punya satu pun bukti untuk dicocokkan, dan pesanannya
+              // menggantung sampai tenggangnya habis.
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton(
-                  onPressed: () =>
-                      Navigator.of(context).popUntil((r) => r.isFirst),
-                  child: const Text('Selesai'),
+                  onPressed: _terkirim
+                      ? () => Navigator.of(context).popUntil((r) => r.isFirst)
+                      : null,
+                  child: Text(_terkirim ? 'Selesai' : 'Unggah bukti dulu'),
                 ),
               ),
             ],
           ),
         ),
       ),
+    ),
     );
   }
 }

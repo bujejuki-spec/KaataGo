@@ -60,6 +60,23 @@ grant insert, update, delete on setelan_platform to authenticated;
 
 -- Nilai awalnya alamat yang sekarang tertulis di APK, supaya memasang
 -- berkas ini tidak mengubah apa pun yang dilihat orang.
+--
+-- ⚠ `do nothing`, jadi ini HANYA berlaku untuk pasang-baru.
+--
+-- Basis data yang sudah punya barisnya tetap memegang nilai lamanya —
+-- dan itu memang disengaja: nilai itu bisa diubah KaataGo Admin lewat
+-- Setelan Platform, dan berkas migrasi tidak boleh menimpa pilihan
+-- orang hanya karena ia dijalankan ulang.
+--
+-- Akibatnya, saat pindah ke kaatago.app nanti, mengubah berkas ini
+-- TIDAK cukup. Perlu satu perintah terpisah:
+--
+--   update setelan_platform
+--   set nilai = 'https://kaatago.app/KaataGo-LandingPage/'
+--   where kunci = 'tautan_situs';
+--
+-- Atau diubah dari Superadmin → Setelan Platform, yang justru alasan
+-- nilai ini diparameterisasi sejak awal.
 insert into setelan_platform (kunci, nilai)
 values ('tautan_situs', 'https://bujejuki-spec.github.io/KaataGo-LandingPage/')
 on conflict (kunci) do nothing;

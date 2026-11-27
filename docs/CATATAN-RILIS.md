@@ -37,6 +37,30 @@ Formatnya dibaca `scripts/release.sh`: judul `## <versi>`, lalu
 poin-poinnya. Versi yang tidak punya bagiannya di sini tetap terbit,
 hanya pengumumannya memakai kalimat umum.
 
+## 3.13.4
+
+- **Pesanan yang sudah lunas langsung masuk Diproses.** Tidak perlu lagi
+  dinyatakan mulai disiapkan oleh siapa pun — pembayarannya sendiri yang
+  menyatakannya, dari cara bayar mana pun. Tombol "Mulai Disiapkan" di
+  Pesanan Masuk ikut dicabut karena tidak akan pernah muncul lagi
+- **Kasir / Input Pesanan dan Pending Payment pindah ke depan** di
+  beranda mitra, di luar grup Penjualan. Keduanya dibuka sepanjang hari,
+  dan menu yang harus dicari di dalam grup pada saat tersibuk adalah
+  menu yang dilewati
+- **Notifikasi pesanan menunggu dibayar berbunyi lagi**, dan sekarang
+  juga untuk **QRIS Statis** — sebelumnya hanya tunai. Berbunyi baik
+  saat aplikasi terbuka maupun tertutup, dan **Owner ikut menerimanya**,
+  bukan cuma kasir dan admin
+- **Pelanggan yang membayar QRIS Statis wajib mengunggah bukti
+  transfernya.** Sebelumnya bisa dilewati, dan yang melewatinya merasa
+  urusannya selesai padahal kasir tidak punya apa pun untuk dicocokkan
+- **Saldo Perusahaan yang sebelumnya kosong kini terisi.** Sebagian
+  merchant tidak pernah dibuatkan akun GL perusahaannya, jadi uang yang
+  masuk tidak punya tempat dicatat — tanpa satu pun pesan galat.
+  Akunnya dilengkapi, dan pemasukan non-tunai serta serah terima cash
+  pickup yang terlewat ikut dicatatkan pada tanggalnya masing-masing
+- Perbaikan bug dan penyempurnaan tampilan
+
 ## 3.13.3
 
 - Peran **Chef kini bernama Waiters**. Yang membuka layarnya mengantar

@@ -13,6 +13,18 @@ class SetelanPlatformRepository {
   /// login, sering tanpa sinyal yang bagus — dan tombol "Situs KaataGo"
   /// yang tidak bisa ditekan karena gagal memuat alamatnya lebih buruk
   /// daripada membuka alamat yang barangkali sudah sedikit tua.
+  /// Saat pindah ke kaatago.app nanti, nilai ini ikut berubah.
+  ///
+  /// Situs proyek dilayani di bawah domain situs PENGGUNA. Begitu
+  /// `bujejuki-spec.github.io` memakai kaatago.app, landing page-nya
+  /// pindah sendiri ke `kaatago.app/KaataGo-LandingPage/` — bukan
+  /// pilihan, melainkan akibat.
+  ///
+  /// Dan nilai di BASIS DATA yang berlaku, bukan yang di sini; ini cuma
+  /// cadangan saat basis datanya belum terbaca. Semaiannya memakai
+  /// `on conflict do nothing`, jadi baris yang sudah ada tidak ikut
+  /// berubah — nilainya harus diubah dari Superadmin → Setelan
+  /// Platform, atau dengan satu `update` manual.
   static const tautanSitusBawaan =
       'https://bujejuki-spec.github.io/KaataGo-LandingPage/';
 

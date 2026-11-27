@@ -128,4 +128,31 @@ void main() {
       expect(layar, contains('base64: order.buktiBayarBase64'));
     });
   });
+
+  group('unggah buktinya wajib, bukan opsional', () {
+    final layar = baca('lib/screens/customer_qris_statis_screen.dart');
+
+    test('Selesai terkunci sampai buktinya terkirim', () {
+      // Inilah yang dulu membuatnya opsional: tombol Selesai
+      // memulangkan orangnya ke awal tanpa peduli buktinya sudah ada
+      // atau belum. Yang menekannya merasa urusannya tuntas, padahal
+      // kasir tidak punya apa pun untuk dicocokkan.
+      final blok = layar.substring(layar.indexOf('OutlinedButton('));
+      expect(blok.substring(0, 300), contains('_terkirim'));
+      expect(blok.substring(0, 300), contains('null'));
+    });
+
+    test('tombol kembali dihadang selama buktinya belum ada', () {
+      expect(layar, contains('canPop: _terkirim'));
+      expect(layar, contains('_tanyaKeluar()'));
+    });
+
+    test('yang memilih keluar diberi tahu akibatnya', () {
+      // Layar ini dibuka dari peramban HP pelanggan. Menutup tabnya
+      // tidak bisa dicegah siapa pun, jadi yang berguna bukan
+      // menguncinya melainkan menyebut akibatnya sebelum ia keluar.
+      expect(layar, contains('Buktinya belum diunggah'));
+      expect(layar, contains('belum akan disiapkan'));
+    });
+  });
 }

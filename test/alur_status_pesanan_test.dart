@@ -113,21 +113,63 @@ void main() {
     });
   });
 
-  group('kasir yang menyatakan mulai disiapkan', () {
-    final pesananMasuk = baca('lib/screens/employee_orders_screen.dart');
+  group('lunas berarti langsung disiapkan', () {
+    // Yang menyatakan sebuah pesanan mulai dikerjakan sekarang
+    // pembayarannya sendiri, bukan ketukan siapa pun.
+    //
+    // ⚠ BATAS PENGUJIAN INI
+    //
+    // Pemicunya hidup di Postgres, dan tes Dart tidak bisa
+    // menjalankannya. Yang diperiksa di bawah TEKS SQL-nya — jadi ia
+    // menangkap klausa yang terhapus, tapi tidak membuktikan pemicunya
+    // benar-benar menyala di basis data. Yang membuktikan itu query
+    // pemeriksa di kaki berkas SQL-nya.
+    final sql = baca('supabase/lunas_langsung_disiapkan.sql');
 
-    test('tombolnya ada di Pesanan Masuk', () {
-      expect(pesananMasuk, contains("'Mulai Disiapkan'"));
-      expect(pesananMasuk, contains('KitchenStatus.onProgress'));
+    test('dipicu saat payment_status berubah, dan saat pesanan lahir', () {
+      // INSERT ikut, karena penjualan kasir LAHIR sudah lunas
+      // (cart_provider.dart: paymentStatus: OrderPaymentStatus.paid).
+      // Pemicu yang cuma mendengar UPDATE akan melewatkan seluruh
+      // penjualan kasir.
+      expect(sql, contains('before insert or update of payment_status'));
     });
 
-    test('hanya untuk pesanan yang sudah lunas', () {
-      // Pesanan yang uangnya belum diterima tidak boleh diteruskan:
-      // kalau memang mau dimasak duluan, pembayarannya yang
-      // diselesaikan lebih dulu.
-      final blok = pesananMasuk.substring(pesananMasuk.indexOf('actionsFor:'));
-      expect(blok, contains('order.isAwaitingPayment'));
-      expect(blok, contains('KitchenStatus.waiting'));
+    test('hanya dari waiting, supaya yang selesai tidak kembali ke antrean', () {
+      // Pesanan yang sudah ditandai selesai lalu cara bayarnya
+      // diperbaiki kasir tidak boleh muncul lagi di Diproses.
+      expect(sql, contains("= 'waiting' then"));
+      expect(sql, contains("new.kitchen_status := 'onProgress'"));
+    });
+
+    test('kitchen_status tidak masuk daftar kolom pemicunya', () {
+      // Kalau ikut, tombol "kembalikan ke Menunggu" yang ditambahkan
+      // nanti akan tampak tidak bekerja: statusnya dilontarkan balik di
+      // dalam transaksi yang sama, tanpa jejak.
+      final baris = sql
+          .split('\n')
+          .firstWhere((b) => b.startsWith('  before insert or update of'));
+      expect(baris, isNot(contains('kitchen_status')));
+    });
+
+    test('backfill-nya hanya hari ini', () {
+      // `watchAktif` tidak menyaring tanggal. Mendorong seluruh pesanan
+      // lunas-tapi-menunggu sejak hari pertama berarti membangkitkan
+      // pesanan berbulan lalu ke antrean waiter hari ini.
+      final blok = sql.substring(sql.indexOf('update orders'));
+      expect(blok, contains("date_trunc('day', now() at time zone 'Asia/Jakarta')"));
+    });
+
+    test('tidak ada lagi tombol Mulai Disiapkan di mana pun', () {
+      // Tombol yang tidak pernah bisa muncul lebih buruk daripada
+      // tombol yang tidak ada: ia tetap dibaca, diuji, dan dipelihara
+      // oleh orang yang mengira ia bekerja.
+      for (final f in Directory('lib')
+          .listSync(recursive: true)
+          .whereType<File>()
+          .where((f) => f.path.endsWith('.dart'))) {
+        expect(f.readAsStringSync(), isNot(contains("'Mulai Disiapkan'")),
+            reason: f.path);
+      }
     });
 
     test('kasir punya akses Status Pesanan', () {

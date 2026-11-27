@@ -4,6 +4,30 @@
 /// yang sudah tercetak menunjuk ke tempat yang salah. Kalau alamatnya
 /// pindah, jalur lama harus tetap dilayani — bukan sekadar dialihkan
 /// sekali lalu dilupakan.
+/// ── Catatan untuk saat pindah ke kaatago.app nanti ───────────────────
+///
+/// Domainnya sudah dibeli dan DNS-nya sudah disiapkan, tapi pindahnya
+/// ditunda. Tiga hal yang mahal dipelajari ulang:
+///
+/// 1. Berkas `CNAME` HARUS ditulis oleh `.github/workflows/web.yml`,
+///    bukan dipasang sekali lewat UI GitHub. Langkah dorong di workflow
+///    melakukan `git init` lalu `push --force` — ia mengganti seluruh
+///    isi repo situs, jadi CNAME dari UI hilang pada deploy berikutnya
+///    dan domainnya lepas tanpa satu pun galat.
+///
+/// 2. Sebaliknya, CNAME berisi domain yang DNS-nya belum siap membuat
+///    Pages berhenti melayani alamat github.io dan mengalihkannya ke
+///    domain yang belum hidup. Situsnya mati total, dan itu sudah
+///    pernah terjadi. Jadi CNAME dan DNS harus siap bersamaan — bukan
+///    CNAME dulu.
+///
+/// 3. Seluruh TLD `.app` ada di daftar HSTS preload peramban: tidak ada
+///    `http://` sama sekali. Sebelum sertifikatnya jadi, alamatnya
+///    tidak bisa dibuka — bukan terbuka tanpa kunci.
+///
+/// Dan pindahnya mengubah alamat landing page juga, karena situs proyek
+/// dilayani di bawah domain situs pengguna — lihat
+/// `SetelanPlatformRepository.tautanSitusBawaan`.
 const kAlamatWeb = 'https://bujejuki-spec.github.io/';
 
 /// Isi QR meja: tautan, bukan teks biasa.
