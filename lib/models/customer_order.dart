@@ -349,6 +349,21 @@ class CustomerOrder {
       paymentStatus == OrderPaymentStatus.cancelled ||
       paymentStatus == OrderPaymentStatus.expired;
 
+  /// Ada di tab "Diproses" layar Status Pesanan.
+  ///
+  /// Disebut sekali di sini, bukan diulang di tiap tempat yang
+  /// membutuhkannya. Layar yang menampilkan daftarnya dan penanda merah
+  /// yang menghitungnya harus menjawab pertanyaan yang SAMA — dan
+  /// penanda yang berkata "2" di atas daftar berisi 5 lebih buruk
+  /// daripada tidak ada penanda: yang memercayainya tidak pernah tahu
+  /// ada tiga pesanan yang tidak terhitung.
+  ///
+  /// Itu sudah pernah terjadi pada penanda Pending Payment.
+  bool get sedangDisiapkan =>
+      kitchenStatus == KitchenStatus.onProgress &&
+      !isVoid &&
+      !isAwaitingPayment;
+
   factory CustomerOrder.fromMap(Map<String, dynamic> data) {
     return CustomerOrder(
       id: data['id'] as String,

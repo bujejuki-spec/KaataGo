@@ -116,8 +116,18 @@ void main() {
 
     test('kartu pesanan menaruhnya paling depan', () {
       // Itu yang diteriakkan ke ruangan.
+      //
+      // Yang dijaga URUTANNYA, bukan kalimat syaratnya.
+      //
+      // Dulu baris ini menuntut teks persis `if (order.punyaNomor) ...[`.
+      // Begitu chip kecilnya disembunyikan saat kepala antrean menyala
+      // — supaya satu pesanan tidak menyebut nomornya dua kali —
+      // syaratnya bertambah dan penjaganya gagal, padahal nomornya
+      // tetap paling depan. Penjaga yang mengunci kalimat menolak
+      // perubahan yang tidak melanggar maksudnya, dan yang membacanya
+      // nanti tidak tahu mana dari keduanya yang sebenarnya penting.
       final kartu = File('lib/widgets/order_card.dart').readAsStringSync();
-      expect(kartu, contains('if (order.punyaNomor) ...['));
+      expect(kartu, contains('order.punyaNomor'));
       expect(kartu.indexOf('order.nomorTampil'),
           lessThan(kartu.indexOf("'Meja \${order.tableNumber}'")));
     });

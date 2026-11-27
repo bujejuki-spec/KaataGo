@@ -190,10 +190,14 @@ class _ChefHomeScreenState extends State<ChefHomeScreen> {
                         // terakhirnya — riwayat butuh itu — tapi
                         // membiarkannya di tab "Sedang Dimasak" berarti
                         // dapur memasak pesanan yang sudah dibatalkan.
-                        .where((o) =>
-                            o.kitchenStatus == tab.$1 &&
-                            !_awaitingPayment(o) &&
-                            !o.dibatalkan)
+                        .where((o) => tab.$1 == KitchenStatus.onProgress
+                            // Satu pertanyaan, satu tempat ia dijawab —
+                            // penanda merah di beranda memakai yang
+                            // sama lewat `countSedangDisiapkan`.
+                            ? o.sedangDisiapkan
+                            : o.kitchenStatus == tab.$1 &&
+                                !_awaitingPayment(o) &&
+                                !o.dibatalkan)
                         .toList();
                 if (orders.isEmpty) {
                   return Center(
@@ -217,6 +221,8 @@ class _ChefHomeScreenState extends State<ChefHomeScreen> {
                   // Layar ini dibaca sambil berjalan membawa piring,
                   // bukan sambil duduk menelusuri daftar.
                   nomorBesar: true,
+                  // Antrean, jadi yang masuk duluan di paling atas.
+                  terlamaDulu: tab.$1 == KitchenStatus.onProgress,
                 );
               }).toList(),
             );

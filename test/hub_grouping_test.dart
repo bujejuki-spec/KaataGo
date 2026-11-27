@@ -97,14 +97,18 @@ void main() {
       }
     });
 
-    test('Kasir dan Pending Payment di depan, di beranda owner', () {
+    test('Kasir, Pending Payment, dan Status Pesanan di depan', () {
       // Owner yang memegang warungnya sendiri membuka dua hal ini
       // sepanjang hari: menerima pesanan, dan melunasi yang menunggu
       // bayar. Keduanya pernah di dalam grup Penjualan, bersama empat
       // menu yang dibuka sekali-sekali — jadi yang paling sering
       // dipakai justru yang paling dalam.
       final teks = isi('owner');
-      for (final judul in ["'Kasir / Input Pesanan'", "'Pending Payment'"]) {
+      for (final judul in [
+        "'Kasir / Input Pesanan'",
+        "'Pending Payment'",
+        "'Status Pesanan'",
+      ]) {
         final posisi = teks.indexOf('title: $judul');
         expect(posisi, greaterThan(0), reason: 'owner tanpa $judul');
         // Kelompok pertama belum dibuka sama sekali di titik ini.

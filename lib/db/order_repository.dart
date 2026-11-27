@@ -60,6 +60,29 @@ class OrderRepository {
 
   /// Berapa pesanan yang menunggu dibayar di kasir — isi penanda merah
   /// di kartu menunya.
+  /// Berapa pesanan yang sedang disiapkan — isi tab "Diproses".
+  ///
+  /// Harus menjawab pertanyaan yang sama dengan
+  /// [CustomerOrder.sedangDisiapkan], yang menyaring daftarnya di Dart.
+  /// Dua saringan untuk satu pertanyaan berarti penanda merah yang
+  /// berkata "2" di atas daftar berisi 5 — dan itu sudah pernah terjadi
+  /// pada penanda Pending Payment.
+  ///
+  /// `kitchen_status` di basis data bernilai 'onProgress', camelCase:
+  /// yang ditulis `KitchenStatus.name`, bukan snake_case seperti kolom
+  /// di sekitarnya.
+  Future<int> countSedangDisiapkan(String restoId) async {
+    return await _client
+        .from('orders')
+        .count(CountOption.exact)
+        .eq('resto_id', restoId)
+        .eq('kitchen_status', 'onProgress')
+        // isVoid — hangus atau dibatalkan.
+        .not('payment_status', 'in', '("cancelled","expired")')
+        // isAwaitingPayment — NOT(dari pelanggan DAN belum dibayar).
+        .or('source.neq.customer,payment_status.neq.pending');
+  }
+
   Future<int> pendingCashPaymentCount(String restoId) async {
     return await _client
         .from('orders')

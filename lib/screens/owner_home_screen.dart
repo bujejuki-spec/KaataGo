@@ -115,11 +115,12 @@ class OwnerHomeScreen extends StatelessWidget {
                   // pulang. Menu yang harus dicari di dalam grup pada dua saat
                   // itu adalah menu yang dilewati — dan shift yang tidak pernah
                   // ditutup membuat seluruh gunanya hilang.
-                  // Tiga menu ini di depan, di luar grup mana pun.
+                  // Empat menu ini di depan, di luar grup mana pun.
                   //
                   // Yang membuka beranda mitra sepanjang hari membuka
-                  // tiga hal yang sama: menerima pesanan, melunasi yang
-                  // menunggu bayar, dan membuka/menutup shift. Menu yang
+                  // empat hal yang sama: menerima pesanan, melunasi yang
+                  // menunggu bayar, memantau antrean yang sedang
+                  // disiapkan, dan membuka/menutup shift. Menu yang
                   // harus dicari di dalam grup pada saat tersibuk adalah
                   // menu yang dilewati.
                   HubMenuTile(
@@ -139,6 +140,25 @@ class OwnerHomeScreen extends StatelessWidget {
                         : OrderRepository().pendingCashPaymentCount(restoId),
                     destination: () => const PendingPaymentScreen(),
                   ),
+                  // Berpenanda, supaya antrean yang tertinggal terlihat
+                  // dari beranda.
+                  //
+                  // Pesanan yang sedang disiapkan tidak bersuara lagi
+                  // setelah notifikasinya lewat. Tanpa penanda di sini,
+                  // satu pesanan yang tidak pernah ditandai selesai
+                  // menggantung sampai ada yang kebetulan membuka
+                  // layarnya — dan yang menunggunya duduk di meja,
+                  // bukan di layar.
+                  BadgedHubTile(
+                    icon: Icons.soup_kitchen_outlined,
+                    title: 'Status Pesanan',
+                    subtitle: 'Antrean masak, cek menu sebelum selesai',
+                    color: const Color(0xFFEF4444),
+                    loadCount: () => restoId == null
+                        ? Future.value(0)
+                        : OrderRepository().countSedangDisiapkan(restoId),
+                    destination: () => const ChefHomeScreen(),
+                  ),
                   HubMenuTile(
                     icon: Icons.point_of_sale,
                     title: 'Shift Kasir',
@@ -151,7 +171,7 @@ class OwnerHomeScreen extends StatelessWidget {
                   HubGroupTile(
                     icon: Icons.point_of_sale_outlined,
                     title: 'Penjualan',
-                    subtitle: 'Layar pelanggan, pesanan masuk, status pesanan, riwayat',
+                    subtitle: 'Layar pelanggan, pesanan masuk, riwayat kasir',
                     color: const Color(0xFF10B981),
                     // Tanpa penanda hitungan lagi.
                     //
@@ -177,13 +197,6 @@ class OwnerHomeScreen extends StatelessWidget {
                       subtitle: 'Pantau pesanan kasir & customer, status dapur',
                       color: const Color(0xFFF59E0B),
                       onTap: () => _open(context, const EmployeeOrdersScreen()),
-                    ),
-                      HubMenuTile(
-                      icon: Icons.soup_kitchen_outlined,
-                      title: 'Status Pesanan',
-                      subtitle: 'Antrean masak, cek menu sebelum selesai',
-                      color: const Color(0xFFEF4444),
-                      onTap: () => _open(context, const ChefHomeScreen()),
                     ),
                       HubMenuTile(
                       icon: Icons.history,

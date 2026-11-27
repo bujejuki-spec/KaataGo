@@ -37,6 +37,27 @@ Formatnya dibaca `scripts/release.sh`: judul `## <versi>`, lalu
 poin-poinnya. Versi yang tidak punya bagiannya di sini tetap terbit,
 hanya pengumumannya memakai kalimat umum.
 
+## 3.13.5
+
+- **Status Pesanan kini menyebut nama pelanggannya**, berikut mejanya
+  atau Take Away — di baris paling atas tiap kartu, sebelum lama
+  menunggunya. Nomor antrean dipakai memanggil, namanya dipakai
+  memastikan
+- **Tab Diproses diurutkan yang masuk duluan di paling atas.** Antrean
+  dibaca dari atas, dan pesanan yang paling lama menunggu tidak lagi
+  terdorong ke bawah oleh pesanan baru
+- Nomor antrean **tidak lagi muncul dua kali** di kartu yang sama
+- **Penanda merah berangka di menu Status Pesanan**, untuk Owner dan
+  Kasir. Angkanya sama dengan jumlah pesanan di tab Diproses, jadi
+  antrean yang tertinggal terlihat dari beranda tanpa perlu membuka
+  layarnya
+- **Status Pesanan pindah ke depan** di beranda Owner, di luar grup
+  Penjualan — bersama Kasir / Input Pesanan dan Pending Payment
+- Peran **Waiters** kini disebut Waiters juga di pilihan peran saat
+  menambah atau mengubah karyawan; sebelumnya masih tertulis "Chef" di
+  satu tempat itu
+- Perbaikan bug dan penyempurnaan tampilan
+
 ## 3.13.4
 
 - **Pesanan yang sudah lunas langsung masuk Diproses.** Tidak perlu lagi

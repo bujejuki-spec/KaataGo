@@ -228,15 +228,23 @@ class _KasirHomeScreenState extends State<KasirHomeScreen> {
                     // bertanya ke orang lain untuk menjawab itu cuma
                     // menambah satu orang di antara pertanyaan dan
                     // jawabannya.
-                    HubMenuTile(
+                    // Berpenanda, sama seperti di beranda owner.
+                    //
+                    // Pesanan yang sedang disiapkan tidak bersuara lagi
+                    // setelah notifikasinya lewat. Yang menunggunya
+                    // duduk di meja, bukan di layar.
+                    BadgedHubTile(
                       icon: Icons.room_service_outlined,
                       title: 'Status Pesanan',
                       subtitle: 'Yang sedang disiapkan dan yang sudah selesai',
                       color: const Color(0xFF8B5CF6),
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                            builder: (_) => const ChefHomeScreen()),
-                      ),
+                      // `restoId` sudah dipastikan tidak null di atas,
+                      // tapi promosinya tidak ikut masuk ke dalam
+                      // closure ini — jadi disebut lagi di sini.
+                      loadCount: () => restoId == null
+                          ? Future.value(0)
+                          : OrderRepository().countSedangDisiapkan(restoId),
+                      destination: () => const ChefHomeScreen(),
                     ),
                     HubMenuTile(
                       icon: Icons.receipt_long_outlined,

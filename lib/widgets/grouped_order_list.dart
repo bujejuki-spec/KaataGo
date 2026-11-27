@@ -35,6 +35,16 @@ class GroupedOrderList extends StatelessWidget {
   /// sudah siap. Dipakai layar Status Pesanan — lihat [OrderCard].
   final bool nomorBesar;
 
+  /// Yang masuk duluan di paling atas, bukan yang terbaru.
+  ///
+  /// Daftar pesanan di tempat lain dibaca seperti kabar: yang terbaru
+  /// paling penting, jadi ia di atas. Antrean kerja dibaca terbalik —
+  /// yang dikerjakan berikutnya adalah yang paling lama menunggu, dan
+  /// menaruhnya di dasar daftar berarti ia terus terdorong ke bawah
+  /// oleh pesanan baru. Yang paling lama menunggu jadi yang paling
+  /// jarang terlihat.
+  final bool terlamaDulu;
+
   const GroupedOrderList({
     super.key,
     required this.orders,
@@ -42,20 +52,32 @@ class GroupedOrderList extends StatelessWidget {
     this.expandItems = true,
     this.collapsibleDays = false,
     this.nomorBesar = false,
+    this.terlamaDulu = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final dateFmt = DateFormat('EEEE, dd MMMM yyyy', 'id_ID');
 
-    final sorted = [...orders]..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    // Tanggalnya ikut dibalik, bukan hanya isinya.
+    //
+    // Kalau hanya isi tiap tanggal yang dibalik sementara tanggalnya
+    // tetap terbaru di atas, pesanan kemarin yang tidak pernah ditutup
+    // justru tersembunyi di bawah seluruh pesanan hari ini — padahal
+    // dialah yang paling lama menunggu, dan satu-satunya alasan
+    // mengurutkan begini.
+    final sorted = [...orders]..sort((a, b) =>
+        terlamaDulu
+            ? a.createdAt.compareTo(b.createdAt)
+            : b.createdAt.compareTo(a.createdAt));
     final byDate = <DateTime, List<CustomerOrder>>{};
     for (final o in sorted) {
       final wib = o.createdAt.toWib();
       final day = DateTime(wib.year, wib.month, wib.day);
       byDate.putIfAbsent(day, () => []).add(o);
     }
-    final dateKeys = byDate.keys.toList()..sort((a, b) => b.compareTo(a));
+    final dateKeys = byDate.keys.toList()
+      ..sort((a, b) => terlamaDulu ? a.compareTo(b) : b.compareTo(a));
 
     return ListView.builder(
       padding: const EdgeInsets.all(12),

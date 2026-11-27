@@ -267,4 +267,222 @@ void main() {
       }
     });
   });
+
+  group('kartu antrean menyebut siapa pesanannya', () {
+    CustomerOrder milik({
+      String? nama,
+      String? meja,
+      OrderType tipe = OrderType.dineIn,
+    }) =>
+        CustomerOrder(
+          id: '3f8c1a94-7b2d-4e51-9a60-5c7d2e1f8b43',
+          orderNo: 7,
+          createdAt: DateTime.now(),
+          items: const [],
+          total: 10000,
+          paymentStatus: OrderPaymentStatus.paid,
+          customerLabel: 'orang@contoh.com',
+          customerName: nama,
+          tableNumber: meja,
+          source: OrderSource.customer,
+          kitchenStatus: KitchenStatus.onProgress,
+          restoId: 'r1',
+          orderType: tipe,
+        );
+
+    Future<void> pasang(WidgetTester t, Widget k) => t.pumpWidget(
+        MaterialApp(home: Scaffold(body: ListView(children: [k]))));
+
+    testWidgets('namanya tampil berikut tempatnya', (tester) async {
+      await pasang(tester,
+          OrderCard(order: milik(nama: 'Budi', meja: '4'), nomorBesar: true));
+      expect(find.text('Budi · Meja 4'), findsOneWidget);
+    });
+
+    testWidgets('tanpa nama, tempatnya berdiri sendiri', (tester) async {
+      // "Tamu · Meja 4" cuma menambah satu kata yang tidak memberi tahu
+      // apa pun.
+      await pasang(
+          tester, OrderCard(order: milik(meja: '4'), nomorBesar: true));
+      expect(find.text('Meja 4'), findsOneWidget);
+    });
+
+    testWidgets('email pemesan tidak pernah tampil', (tester) async {
+      // `customerLabel` berisi email atau kata "Tamu". Layar ini dibaca
+      // sambil lalu oleh siapa pun yang lewat.
+      await pasang(tester,
+          OrderCard(order: milik(meja: '4'), nomorBesar: true));
+      expect(find.textContaining('@'), findsNothing);
+    });
+
+    testWidgets('take away disebut take away', (tester) async {
+      await pasang(
+          tester,
+          OrderCard(
+              order: milik(nama: 'Sari', tipe: OrderType.takeAway),
+              nomorBesar: true));
+      expect(find.text('Sari · Take Away'), findsOneWidget);
+    });
+
+    testWidgets('nomornya tidak disebut dua kali', (tester) async {
+      // Kepala antrean sudah memuat nomornya, besar. Chip kecil tepat
+      // di bawahnya membuat satu pesanan menyebut nomornya dua kali
+      // dengan ukuran berbeda.
+      await pasang(tester,
+          OrderCard(order: milik(nama: 'Budi', meja: '4'), nomorBesar: true));
+      // Nomornya tiga digit: '#007' di chip, '007' di kepala besar.
+      expect(find.text('007'), findsOneWidget);
+      expect(find.text('#007'), findsNothing);
+      // Dan mejanya juga tidak, karena sudah di barisnya.
+      expect(find.text('Meja 4'), findsNothing);
+    });
+
+    testWidgets('di luar Status Pesanan, chip kecilnya tetap ada',
+        (tester) async {
+      await pasang(tester, OrderCard(order: milik(nama: 'Budi', meja: '4')));
+      expect(find.text('#007'), findsOneWidget);
+      expect(find.text('Meja 4'), findsOneWidget);
+    });
+  });
+
+  group('antrean diurutkan yang masuk duluan', () {
+    test('daftarnya dibalik, berikut tanggalnya', () {
+      // Membalik isi tiap tanggal saja tidak cukup: pesanan kemarin
+      // yang tidak pernah ditutup justru tersembunyi di bawah seluruh
+      // pesanan hari ini, padahal dialah yang paling lama menunggu.
+      final sumber = baca('lib/widgets/grouped_order_list.dart');
+      final blok = sumber.substring(sumber.indexOf('final sorted ='));
+      expect(blok.substring(0, 400), contains('terlamaDulu'));
+      final kunci = sumber.substring(sumber.indexOf('final dateKeys'));
+      expect(kunci.substring(0, 160), contains('terlamaDulu'));
+    });
+
+    test('dipakai tab Diproses, bukan tab lain', () {
+      final layar = baca('lib/screens/chef_home_screen.dart');
+      expect(layar, contains('terlamaDulu: tab.\$1 == KitchenStatus.onProgress'));
+    });
+  });
+
+  group('penanda merah Status Pesanan', () {
+    CustomerOrder o({
+      required KitchenStatus dapur,
+      OrderPaymentStatus bayar = OrderPaymentStatus.paid,
+      OrderSource dari = OrderSource.customer,
+    }) =>
+        CustomerOrder(
+          id: 'id-${dapur.name}-${bayar.name}-${dari.name}',
+          orderNo: 1,
+          createdAt: DateTime.now(),
+          items: const [],
+          total: 1000,
+          paymentStatus: bayar,
+          customerLabel: 'Tamu',
+          source: dari,
+          kitchenStatus: dapur,
+          restoId: 'r1',
+          orderType: OrderType.dineIn,
+        );
+
+    test('yang sedang diproses dan sudah lunas ikut dihitung', () {
+      expect(o(dapur: KitchenStatus.onProgress).sedangDisiapkan, isTrue);
+    });
+
+    test('yang belum diproses atau sudah selesai tidak ikut', () {
+      expect(o(dapur: KitchenStatus.waiting).sedangDisiapkan, isFalse);
+      expect(o(dapur: KitchenStatus.done).sedangDisiapkan, isFalse);
+    });
+
+    test('yang hangus atau dibatalkan tidak ikut', () {
+      // Kolom kitchen_status-nya berhenti di nilai terakhirnya —
+      // riwayat butuh itu — tapi dapur tidak lagi mengerjakannya.
+      for (final b in [
+        OrderPaymentStatus.cancelled,
+        OrderPaymentStatus.expired,
+      ]) {
+        expect(o(dapur: KitchenStatus.onProgress, bayar: b).sedangDisiapkan,
+            isFalse,
+            reason: b.name);
+      }
+    });
+
+    test('pesanan pelanggan yang belum dibayar tidak ikut', () {
+      expect(
+          o(
+            dapur: KitchenStatus.onProgress,
+            bayar: OrderPaymentStatus.pending,
+          ).sedangDisiapkan,
+          isFalse);
+    });
+
+    test('tapi pesanan kasir yang belum dilunasi tetap ikut', () {
+      // `isAwaitingPayment` hanya berlaku untuk pesanan dari pelanggan.
+      // Pesanan yang diinput kasir sudah di tangan dapur apa pun status
+      // bayarnya.
+      expect(
+          o(
+            dapur: KitchenStatus.onProgress,
+            bayar: OrderPaymentStatus.pending,
+            dari: OrderSource.kasir,
+          ).sedangDisiapkan,
+          isTrue);
+    });
+
+    test('daftar dan penanda menanyakan hal yang sama', () {
+      // Penanda yang berkata "2" di atas daftar berisi 5 lebih buruk
+      // daripada tidak ada penanda: yang memercayainya tidak pernah
+      // tahu ada tiga yang tidak terhitung. Itu sudah terjadi sekali
+      // pada penanda Pending Payment.
+      expect(baca('lib/screens/chef_home_screen.dart'),
+          contains('o.sedangDisiapkan'));
+
+      final repo = baca('lib/db/order_repository.dart');
+      final blok = repo.substring(repo.indexOf('countSedangDisiapkan'));
+      final fungsi = blok.substring(0, blok.indexOf('}'));
+      expect(fungsi, contains("eq('kitchen_status', 'onProgress')"));
+      expect(fungsi, contains('cancelled'));
+      expect(fungsi, contains('expired'));
+      expect(fungsi, contains('source.neq.customer'));
+      expect(fungsi, contains('payment_status.neq.pending'));
+    });
+
+    test('kartunya berpenanda di SETIAP beranda yang punya menunya', () {
+      // Penanda yang cuma ada di satu beranda berarti kasir yang
+      // membuka aplikasinya sepanjang hari justru yang tidak pernah
+      // melihat antrean tertinggal — padahal dialah yang paling dekat
+      // dengan dapurnya.
+      //
+      // Daftarnya diambil dari katalog, bukan ditulis tangan: beranda
+      // yang ditambahkan nanti ikut terjaring sendiri.
+      final katalog = baca('lib/utils/katalog_menu.dart');
+      final punya = <String>{};
+      for (final m in RegExp(r"'(\w+)': \[(.*?)\n  \]", dotAll: true)
+          .allMatches(katalog)) {
+        if (m.group(2)!.contains("'Status Pesanan'")) punya.add(m.group(1)!);
+      }
+      // Chef TIDAK ikut: layarnya sendiri yang bernama Status Pesanan,
+      // jadi tidak ada kartu menuju ke sana.
+      punya.remove('chef');
+      expect(punya, isNotEmpty);
+
+      for (final peran in punya) {
+        final hub = baca('lib/screens/${peran}_home_screen.dart');
+        final i = hub.indexOf("title: 'Status Pesanan'");
+        expect(i, greaterThan(0), reason: peran);
+        // Dari pembuka kartunya sampai penutupnya, bukan jendela
+        // sejumlah karakter: panjang komentar di atas tiap kartu
+        // berbeda-beda, dan jendela tetap akan memotong kartu yang
+        // komentarnya panjang tepat sebelum bagian yang diperiksa.
+        // Nama kelasnya utuh: pola 'HubTile(' saja ikut cocok dengan
+        // EKOR 'BadgedHubTile(', jadi bloknya dimulai sesudah kata
+        // 'Badged' dan pemeriksaan di bawah selalu gagal.
+        final buka = hub.lastIndexOf(RegExp(r'\b\w*HubTile\('), i);
+        final tutup = hub.indexOf('\n                    ),', i);
+        expect(buka, greaterThan(0), reason: peran);
+        expect(tutup, greaterThan(i), reason: peran);
+        final blok = hub.substring(buka, tutup);
+        expect(blok, contains('BadgedHubTile'), reason: peran);
+        expect(blok, contains('countSedangDisiapkan'), reason: peran);
+      }
+    });
+  });
 }

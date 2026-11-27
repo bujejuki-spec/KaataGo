@@ -21,7 +21,10 @@ const _roleLabels = {
   'owner': 'Owner',
   'admin': 'Admin',
   'kasir': 'Kasir',
-  'chef': 'Chef',
+  // Labelnya saja yang berganti, bukan nilainya di basis data. Nilai
+  // 'chef' disebut puluhan kali di kebijakan RLS — lihat
+  // `_roleDisplayLabels` di lib/providers/auth_provider.dart.
+  'chef': 'Waiters',
   'finance': 'Finance',
   // Disebut lengkap di sini, bukan cuma "HR".
   //

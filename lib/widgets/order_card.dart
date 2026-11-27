@@ -117,7 +117,16 @@ class _OrderCardState extends State<OrderCard> {
                       // Nomor antreannya paling depan: itu yang
                       // diteriakkan ke ruangan, dan yang dicari mata
                       // kasir saat pelanggan menyebutnya.
-                      if (order.punyaNomor) ...[
+                      // Disembunyikan saat kepala antrean menyala.
+                      //
+                      // Kepala itu sudah memuat nomor, nama, dan
+                      // tempatnya — besar, dan di baris paling atas.
+                      // Mengulanginya sebagai chip kecil tepat di
+                      // bawahnya membuat satu pesanan menyebut nomornya
+                      // dua kali dengan ukuran berbeda, dan yang
+                      // membacanya sambil membawa piring harus
+                      // memastikan dulu keduanya memang sama.
+                      if (order.punyaNomor && !widget.nomorBesar) ...[
                         Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 3),
@@ -135,7 +144,7 @@ class _OrderCardState extends State<OrderCard> {
                         ),
                         const SizedBox(width: 8),
                       ],
-                      if (order.tableNumber != null) ...[
+                      if (order.tableNumber != null && !widget.nomorBesar) ...[
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
@@ -149,7 +158,8 @@ class _OrderCardState extends State<OrderCard> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                      ] else if (order.orderType == OrderType.takeAway &&
+                      ] else if (!widget.nomorBesar &&
+                          order.orderType == OrderType.takeAway &&
                           order.customerName != null &&
                           order.customerName!.isNotEmpty) ...[
                         Container(
@@ -341,6 +351,25 @@ class _OrderCardState extends State<OrderCard> {
 /// disiapkan — kolom untuk itu tidak ada, dan menambahkannya berarti
 /// migrasi tersendiri. Angkanya tetap menjawab pertanyaan yang sama:
 /// mana yang paling lama menunggu.
+/// Siapa pesanan ini, dalam satu baris.
+///
+/// Namanya lebih dulu kalau ada, lalu tempatnya. Tanpa nama, tempatnya
+/// berdiri sendiri — "Meja 4" sudah cukup untuk mengantar, dan
+/// "Tamu · Meja 4" cuma menambah satu kata yang tidak memberi tahu apa
+/// pun.
+///
+/// `customerLabel` sengaja TIDAK dipakai sebagai cadangan: isinya email
+/// atau kata "Tamu", dan email orang di layar yang dibaca sambil lalu
+/// oleh siapa pun yang lewat bukan hal yang perlu ditampilkan.
+String _siapa(CustomerOrder order) {
+  final nama = order.customerName?.trim();
+  final tempat = order.tableNumber != null && order.tableNumber!.isNotEmpty
+      ? 'Meja ${order.tableNumber}'
+      : 'Take Away';
+  if (nama == null || nama.isEmpty) return tempat;
+  return '$nama · $tempat';
+}
+
 class _KepalaAntrean extends StatelessWidget {
   final CustomerOrder order;
 
@@ -409,6 +438,35 @@ class _KepalaAntrean extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Siapa, lebih dulu daripada sudah berapa lama.
+              //
+              // Yang memegang layar ini mengantar makanan ke orangnya,
+              // bukan mengawasi jam. Nomor antrean dipakai memanggil,
+              // namanya dipakai memastikan — dan tanpa nama, yang
+              // mengantar harus menyebut nomor ke seluruh ruangan dan
+              // menunggu ada yang mengangkat tangan.
+              Row(
+                children: [
+                  Icon(
+                    order.orderType == OrderType.takeAway
+                        ? Icons.shopping_bag_outlined
+                        : Icons.table_restaurant_outlined,
+                    size: 14,
+                    color: muted,
+                  ),
+                  const SizedBox(width: 5),
+                  Expanded(
+                    child: Text(
+                      _siapa(order),
+                      style: const TextStyle(
+                          fontSize: 14.5, fontWeight: FontWeight.bold),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 5),
               Row(
                 children: [
                   Icon(Icons.schedule,
